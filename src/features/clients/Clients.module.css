@@ -1,0 +1,182 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: var(--spacing-xl);
+}
+
+.title {
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.tableWrapper {
+  flex: 1;
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.clickableRow {
+  cursor: pointer;
+}
+
+.moreButton {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+}
+
+.moreButton:hover {
+  background-color: var(--bg-surface-active);
+  color: var(--text-primary);
+}
+
+.statusBadge {
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.statusBadge.active {
+  background-color: rgba(46, 139, 87, 0.1);
+  color: var(--color-success);
+}
+
+.statusBadge.dormant {
+  background-color: rgba(214, 162, 42, 0.1);
+  color: var(--color-warning);
+}
+
+.statusBadge.churned {
+  background-color: rgba(196, 69, 69, 0.1);
+  color: var(--color-danger);
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0 var(--spacing-sm);
+  width: 300px;
+}
+
+.searchIcon {
+  color: var(--text-muted);
+}
+
+.searchInput {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  padding: var(--spacing-sm);
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.searchInput:focus {
+  outline: none;
+}
+
+.scrollContainer {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.cellId {
+  color: var(--text-muted);
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+.typeBadge {
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--bg-surface-hover);
+  color: var(--text-secondary);
+}
+
+.typeBadge.vip {
+  background-color: rgba(155, 91, 179, 0.1);
+  color: var(--color-primary-purple);
+}
+
+.contactInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.email {
+  color: var(--text-primary);
+  font-size: 0.75rem;
+}
+
+.phone {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.regionsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.regionTag {
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.assignedUser {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.userAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--color-primary-purple);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}

@@ -1,0 +1,211 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: var(--spacing-xl);
+}
+
+.title {
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.board {
+  display: flex;
+  gap: var(--spacing-md);
+  overflow-x: auto;
+  flex: 1;
+  padding-bottom: var(--spacing-md);
+}
+
+.column {
+  min-width: 320px;
+  width: 320px;
+  background-color: var(--bg-surface-hover);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+}
+
+.columnHeader {
+  padding: var(--spacing-md);
+  border-bottom: 2px solid var(--color-primary-purple);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.columnTitle {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.columnMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.leadCount {
+  font-weight: 600;
+}
+
+.columnBody {
+  padding: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.leadCard {
+  cursor: pointer;
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.leadCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary-purple);
+}
+
+.leadHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--spacing-xs);
+}
+
+.leadName {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.moreButton {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.moreButton:hover {
+  background-color: var(--bg-surface-active);
+  color: var(--text-primary);
+}
+
+.leadCompany {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.leadFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+}
+
+.leadValue {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.riskBadge {
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+
+.riskBadge.low {
+  background-color: rgba(46, 139, 87, 0.1);
+  color: var(--color-success);
+}
+
+.riskBadge.medium {
+  background-color: rgba(214, 162, 42, 0.1);
+  color: var(--color-warning);
+}
+
+.riskBadge.high {
+  background-color: rgba(196, 69, 69, 0.1);
+  color: var(--color-danger);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.viewToggle {
+  display: flex;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+.toggleBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.toggleBtn:hover {
+  color: var(--text-primary);
+}
+
+.toggleBtn.active {
+  background-color: var(--bg-surface-active);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.listView {
+  flex: 1;
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.statusBadge {
+  background-color: var(--bg-surface-hover);
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}

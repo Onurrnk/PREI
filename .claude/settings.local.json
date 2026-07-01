@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'İlk commit: PREI CRM temel hali + master plan, tasarım sistemi, onarılmış migration 001 *)"
+    ]
+  }
+}

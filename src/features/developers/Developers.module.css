@@ -1,0 +1,207 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: var(--spacing-xl);
+}
+
+.title {
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.searchBar {
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0 var(--spacing-sm);
+  width: 250px;
+}
+
+.searchIcon {
+  color: var(--text-muted);
+}
+
+.searchInput {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  padding: var(--spacing-sm);
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.searchInput:focus {
+  outline: none;
+}
+
+.tableWrapper {
+  flex: 1;
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.scrollContainer {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.clickableRow {
+  cursor: pointer;
+}
+
+.developerNameCell {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.developerAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.developerName {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.tierBadge {
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--bg-surface-hover);
+}
+
+.tierBadge.tier1 {
+  color: var(--color-primary-purple);
+  background-color: rgba(155, 91, 179, 0.1);
+}
+
+.tierBadge.tier2 {
+  color: var(--text-secondary);
+}
+
+.tierBadge.boutique {
+  color: var(--color-warning);
+  background-color: rgba(214, 162, 42, 0.1);
+}
+
+.locationCell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.iconMuted {
+  color: var(--text-muted);
+}
+
+.portfolioStats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statActive {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.statTotal {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.statusBadge {
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.statusBadge.active {
+  background-color: rgba(46, 139, 87, 0.1);
+  color: var(--color-success);
+}
+
+.statusBadge.negotiating {
+  background-color: rgba(214, 162, 42, 0.1);
+  color: var(--color-warning);
+}
+
+.statusBadge.inactive {
+  background-color: rgba(196, 69, 69, 0.1);
+  color: var(--color-danger);
+}
+
+.commissionRate {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.contactCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.contactName {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.contactEmail {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.moreButton {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+}
+
+.moreButton:hover {
+  background-color: var(--bg-surface-active);
+  color: var(--text-primary);
+}

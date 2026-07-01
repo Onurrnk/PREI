@@ -1,0 +1,21 @@
+.appContainer {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-app);
+}
+
+.mainWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: 280px; /* Sidebar width */
+  transition: margin-left var(--transition-normal);
+  min-width: 0; /* Prevents flex items from overflowing */
+}
+
+.mainContent {
+  flex: 1;
+  padding: var(--spacing-xl);
+  overflow-y: auto;
+  background-color: var(--bg-app);
+}
