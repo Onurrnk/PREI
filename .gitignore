@@ -31,3 +31,6 @@ server/tokens.json
 *.njsproj
 *.sln
 *.sw?
+
+# Claude yerel ayarlar
+.claude/settings.local.json

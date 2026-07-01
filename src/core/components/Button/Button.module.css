@@ -16,14 +16,19 @@
   cursor: not-allowed;
 }
 
+.button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 /* Variants */
 .primary {
-  background-color: var(--color-primary-purple);
-  color: #FFFFFF;
+  background-color: var(--brand-champagne);
+  /* Şampanya zeminde koyu metin — AA kontrast (Design System §5.4) */
+  color: #1B1A18;
 }
 
 .primary:hover:not(:disabled) {
-  background-color: #8A4DA1;
+  background-color: var(--brand-champagne-dim);
 }
 
 .secondary {
@@ -38,12 +43,12 @@
 
 .outline {
   background-color: transparent;
-  color: var(--color-primary-purple);
-  border-color: var(--color-primary-purple);
+  color: var(--brand-champagne);
+  border-color: var(--border-strong);
 }
 
 .outline:hover:not(:disabled) {
-  background-color: rgba(155, 91, 179, 0.1);
+  background-color: var(--brand-champagne-soft);
 }
 
 .ghost {
