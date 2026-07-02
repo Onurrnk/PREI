@@ -17,7 +17,7 @@
   border-radius: var(--radius-md, 8px);
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-raised);
   color: var(--text-primary);
   font-size: 0.875rem;
   animation: slideIn 0.2s ease-out;
@@ -38,12 +38,12 @@
 }
 .close:hover { color: var(--text-primary); }
 
-.success { border-left: 3px solid #16a34a; }
-.success .icon { color: #16a34a; }
-.error { border-left: 3px solid #dc2626; }
-.error .icon { color: #dc2626; }
-.info { border-left: 3px solid #2563eb; }
-.info .icon { color: #2563eb; }
+.success { border-left: 3px solid var(--data-positive); }
+.success .icon { color: var(--data-positive); }
+.error { border-left: 3px solid var(--data-negative); }
+.error .icon { color: var(--data-negative); }
+.info { border-left: 3px solid var(--data-info); }
+.info .icon { color: var(--data-info); }
 
 @keyframes slideIn {
   from { opacity: 0; transform: translateX(20px); }

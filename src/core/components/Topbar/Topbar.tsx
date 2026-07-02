@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Bell, Calendar, Moon, Sun, Globe } from 'lucide-react';
+import { MagnifyingGlass, Bell, CalendarBlank, Moon, Sun, Globe } from '@phosphor-icons/react';
 import { useTheme } from '../../theme/ThemeContext';
 import { useAuth } from '../../auth/AuthContext';
 import styles from './Topbar.module.css';
@@ -13,7 +13,7 @@ export const Topbar: React.FC = () => {
   return (
     <header className={styles.topbar}>
       <div className={styles.searchContainer}>
-        <Search className={styles.searchIcon} size={20} />
+        <MagnifyingGlass className={styles.searchIcon} size={20} />
         <input 
           type="text" 
           placeholder="Global Search (Leads, Clients, Projects...)" 
@@ -24,7 +24,7 @@ export const Topbar: React.FC = () => {
 
       <div className={styles.actions}>
         <button className={styles.actionButton} title="Calendar">
-          <Calendar size={20} />
+          <CalendarBlank size={20} />
         </button>
         <button className={styles.actionButton} title="Notifications">
           <Bell size={20} />

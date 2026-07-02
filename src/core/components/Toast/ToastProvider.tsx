@@ -4,7 +4,7 @@
 // Usage: const toast = useToast(); toast.success('Saved');
 // =====================================================================
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
-import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
+import { CheckCircle, WarningCircle, Info, X } from '@phosphor-icons/react';
 import styles from './Toast.module.css';
 
 type ToastVariant = 'success' | 'error' | 'info';
@@ -23,7 +23,7 @@ interface ToastApi {
 
 const ToastContext = createContext<ToastApi | undefined>(undefined);
 
-const ICONS = { success: CheckCircle2, error: AlertCircle, info: Info };
+const ICONS = { success: CheckCircle, error: WarningCircle, info: Info };
 
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
   const [toasts, setToasts] = useState<ToastItem[]>([]);

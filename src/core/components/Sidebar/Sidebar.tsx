@@ -1,21 +1,21 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard,
-  Users,
-  Building2,
-  Building,
+  SquaresFour,
+  Funnel,
+  UsersThree,
+  Buildings,
   Briefcase,
-  FileSignature,
-  ShieldAlert,
-  FolderOpen,
-  CalendarDays,
+  PenNib,
+  ShieldCheck,
+  Vault,
+  CalendarBlank,
   CheckSquare,
   FileText,
-  LineChart,
-  Settings,
-  LogOut,
-} from 'lucide-react';
+  ChartLineUp,
+  GearSix,
+  SignOut,
+} from '@phosphor-icons/react';
 import styles from './Sidebar.module.css';
 import { useAuth } from '../../auth/AuthContext';
 import { can, type Permission } from '../../auth/permissions';
@@ -28,19 +28,19 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard, permission: 'dashboard' },
-  { path: '/leads', label: 'Leads', icon: Users, permission: 'leads' },
-  { path: '/clients', label: 'Clients', icon: Building2, permission: 'clients' },
-  { path: '/developers', label: 'Developers', icon: Building, permission: 'developers' },
+  { path: '/', label: 'Dashboard', icon: SquaresFour, permission: 'dashboard' },
+  { path: '/leads', label: 'Leads', icon: Funnel, permission: 'leads' },
+  { path: '/clients', label: 'Clients', icon: UsersThree, permission: 'clients' },
+  { path: '/developers', label: 'Developers', icon: Buildings, permission: 'developers' },
   { path: '/projects', label: 'Projects Intelligence', icon: Briefcase, permission: 'projects' },
-  { path: '/proposals', label: 'Proposal Center', icon: FileSignature, permission: 'proposals' },
-  { path: '/documents', label: 'Document Vault', icon: FolderOpen, permission: 'documents' },
-  { path: '/meetings', label: 'Meetings', icon: CalendarDays, permission: 'meetings' },
+  { path: '/proposals', label: 'Proposal Center', icon: PenNib, permission: 'proposals' },
+  { path: '/documents', label: 'Document Vault', icon: Vault, permission: 'documents' },
+  { path: '/meetings', label: 'Meetings', icon: CalendarBlank, permission: 'meetings' },
   { path: '/tasks', label: 'Tasks', icon: CheckSquare, permission: 'tasks' },
   { path: '/contracts', label: 'Contracts', icon: FileText, permission: 'contracts' },
-  { path: '/financials', label: 'Financials', icon: LineChart, permission: 'financials' },
-  { path: '/admin', label: 'Admin & Audit', icon: ShieldAlert, permission: 'admin' },
-  { path: '/settings', label: 'Settings', icon: Settings, permission: 'settings' },
+  { path: '/financials', label: 'Financials', icon: ChartLineUp, permission: 'financials' },
+  { path: '/admin', label: 'Admin & Audit', icon: ShieldCheck, permission: 'admin' },
+  { path: '/settings', label: 'Settings', icon: GearSix, permission: 'settings' },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -82,7 +82,7 @@ export const Sidebar: React.FC = () => {
       <div className={styles.footer}>
         {user && (
           <button className={styles.logoutBtn} onClick={handleLogout} title="Çıkış Yap">
-            <LogOut size={18} />
+            <SignOut size={18} />
             <span>Çıkış Yap</span>
           </button>
         )}

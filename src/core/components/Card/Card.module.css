@@ -1,8 +1,8 @@
 .card {
   background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-subtle);
+  /* Kart gölgesiz — ayrım border ile (Design System §3) */
+  border-radius: var(--radius-surface);
   display: flex;
   flex-direction: column;
 }
@@ -21,10 +21,10 @@
 
 .footer {
   padding: var(--spacing-md);
-  border-top: 1px solid var(--border-color);
-  background-color: var(--bg-app);
-  border-bottom-left-radius: var(--radius-md);
-  border-bottom-right-radius: var(--radius-md);
+  border-top: 1px solid var(--border-subtle);
+  background-color: var(--bg-inset);
+  border-bottom-left-radius: var(--radius-surface);
+  border-bottom-right-radius: var(--radius-surface);
 }
 
 /* Padding utilities — declared last so they override .header/.body/.footer

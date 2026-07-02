@@ -23,12 +23,12 @@
 .logoText {
   color: var(--text-primary);
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 
 .logoSub {
-  color: var(--color-primary-purple);
+  color: var(--brand-champagne);
   font-weight: 400;
 }
 
@@ -65,12 +65,13 @@
 }
 
 .navLink.active {
-  background-color: var(--color-primary-purple);
-  color: var(--color-premium-white, #FFF);
+  background-color: var(--brand-champagne);
+  /* Şampanya zeminde koyu metin — AA kontrast (Design System §5.4) */
+  color: #1B1A18;
 }
 
 .navLink.active .icon {
-  color: var(--color-premium-white, #FFF);
+  color: #1B1A18;
 }
 
 .icon {
@@ -80,7 +81,7 @@
 }
 
 .navLink:hover .icon {
-  color: var(--color-primary-purple);
+  color: var(--brand-champagne);
 }
 
 .footer {
@@ -114,6 +115,6 @@
 }
 
 .logoutBtn:hover {
-  color: #dc2626;
-  border-color: #dc2626;
+  color: var(--data-negative);
+  border-color: var(--data-negative);
 }

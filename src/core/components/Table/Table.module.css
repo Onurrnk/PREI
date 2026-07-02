@@ -1,8 +1,8 @@
 .tableContainer {
   width: 100%;
   overflow-x: auto;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
+  border-radius: var(--radius-surface);
+  border: 1px solid var(--border-subtle);
   background-color: var(--bg-surface);
 }
 
@@ -13,17 +13,16 @@
 }
 
 .thead {
-  background-color: var(--bg-app);
+  background-color: var(--bg-inset);
 }
 
 .th {
-  padding: var(--spacing-md);
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding: var(--sp-3) var(--sp-4);
+  font: var(--text-label);
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-subtle);
   white-space: nowrap;
 }
 
@@ -40,7 +39,8 @@
 }
 
 .td {
-  padding: var(--spacing-md);
+  /* 44px satır yüksekliği hedefi (Design System §5.2) */
+  padding: var(--sp-3) var(--sp-4);
   color: var(--text-primary);
   font-size: 0.875rem;
   vertical-align: middle;
