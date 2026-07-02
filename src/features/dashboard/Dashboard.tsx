@@ -1,189 +1,197 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
-import { Button } from '../../core/components/Button/Button';
-import { useToast } from '../../core/components/Toast/ToastProvider';
 import {
-  TrendingUp, Users, Briefcase, Mail, Calendar,
-  CheckSquare, ArrowRight, Video, MapPin, DollarSign
-} from 'lucide-react';
+  TrendUp,
+  TrendDown,
+  VideoCamera,
+  MapPin,
+  CheckSquare,
+  CalendarBlank,
+  ChartBar,
+} from '@phosphor-icons/react';
+import { TrendArea, Sparkline, DonutMetric, HBarCompare, fmtEUR } from '../../core/charts';
 import styles from './Dashboard.module.css';
 
-// Mock Data specific for "This Week" Focus
-const weeklyKPIs = [
-  { id: 'k1', title: 'Sales This Week', value: '4', trend: 'up', percentage: 25 },
-  { id: 'k2', title: 'Leads This Week', value: '12', trend: 'up', percentage: 10 },
-  { id: 'k3', title: 'Total Sales (YTD)', value: '42', trend: 'neutral', percentage: 0 },
-  { id: 'k4', title: 'Pending Sales', value: '5', trend: 'down', percentage: -2 },
+// ---------------------------------------------------------------------
+// Mock veri — Faz 1'de gerçek API'ye bağlanacak. Sayılar temsilidir.
+// ---------------------------------------------------------------------
+
+interface KPI {
+  id: string;
+  label: string;
+  value: string;
+  delta: number; // yüzde
+  spark: number[];
+}
+
+const kpis: KPI[] = [
+  { id: 'pipeline', label: 'Pipeline Value', value: '€4.72M', delta: 8.4, spark: [3.1, 3.3, 3.2, 3.6, 3.5, 3.9, 4.1, 4.0, 4.3, 4.5, 4.6, 4.72] },
+  { id: 'leads', label: 'Active Leads', value: '28', delta: 12.0, spark: [19, 21, 20, 22, 24, 23, 25, 24, 26, 27, 26, 28] },
+  { id: 'meetings', label: 'Meetings This Week', value: '6', delta: -14.3, spark: [8, 7, 9, 6, 7, 8, 7, 9, 8, 7, 7, 6] },
+  { id: 'closed', label: 'Closed Won (YTD)', value: '€12.4M', delta: 6.1, spark: [7.2, 7.8, 8.1, 8.9, 9.4, 9.8, 10.3, 10.9, 11.2, 11.8, 12.1, 12.4] },
 ];
 
-const mockEmails = [
-  { id: 'e1', sender: 'John Doe', subject: 'Re: Beachfront Property Offer', preview: 'Hi Sarah, I reviewed the SPA and I am ready to move forward...', time: '10:30 AM', unread: true },
-  { id: 'e2', sender: 'Emaar Developer', subject: 'New Project Launch: Downtown View', preview: 'Exclusive broker briefing tomorrow at 10 AM. Please register...', time: '09:15 AM', unread: true },
-  { id: 'e3', sender: 'Jane Smith', subject: 'Viewing Confirmation', preview: 'Looking forward to seeing the Marina villa at 3 PM today.', time: 'Yesterday', unread: false },
-  { id: 'e4', sender: 'Legal Dept', subject: 'Contract Approved (CL-10024)', preview: 'The revisions for Mr. Al Fayed are approved and ready to sign.', time: 'Yesterday', unread: false },
+const pipelineTrend = [
+  { label: 'W14', value: 3_120_000 },
+  { label: 'W15', value: 3_310_000 },
+  { label: 'W16', value: 3_240_000 },
+  { label: 'W17', value: 3_580_000 },
+  { label: 'W18', value: 3_460_000 },
+  { label: 'W19', value: 3_890_000 },
+  { label: 'W20', value: 4_070_000 },
+  { label: 'W21', value: 3_980_000 },
+  { label: 'W22', value: 4_310_000 },
+  { label: 'W23', value: 4_490_000 },
+  { label: 'W24', value: 4_570_000 },
+  { label: 'W25', value: 4_720_000 },
 ];
 
-const mockMeetings = [
-  { id: 'm1', title: 'Client Viewing: Marina Vista', time: '14:00 - 15:30', type: 'In-person', location: 'Dubai Marina', color: '#3b82f6' },
-  { id: 'm2', title: 'Negotiation Call: John Doe', time: '16:00 - 16:45', type: 'Zoom', location: 'Online Link', color: '#10b981' },
-  { id: 'm3', title: 'Developer Briefing: Emaar', time: 'Tomorrow, 10:00', type: 'In-person', location: 'Downtown', color: '#8b5cf6' },
+const marketSplit = [
+  { name: 'Türkiye', value: 2_740_000 },
+  { name: 'Dubai (UAE)', value: 1_980_000 },
 ];
 
-const mockTasks = [
-  { id: 't1', title: 'Send revised SPA to Legal', status: 'Urgent', done: false },
-  { id: 't2', title: 'Follow up with Jane Smith', status: 'Today', done: false },
-  { id: 't3', title: 'Prepare Q2 Performance Report', status: 'This Week', done: false },
-  { id: 't4', title: 'Update CRM for new leads', status: 'Done', done: true },
+const leadSources = [
+  { name: 'WhatsApp', value: 14 },
+  { name: 'Instagram', value: 9 },
+  { name: 'Referral', value: 6 },
+  { name: 'Website', value: 4 },
+  { name: 'Direct', value: 3 },
+];
+
+const meetings = [
+  { id: 'm1', title: 'Client Viewing: Marina Vista 2B', with: 'Selin Vural', time: '14:00', kind: 'in-person' as const },
+  { id: 'm2', title: 'Negotiation Call', with: 'Khalid Al Mansoori', time: '16:00', kind: 'video' as const },
+  { id: 'm3', title: 'Developer Briefing: Emaar', with: 'Rania Haddad', time: 'Tomorrow 10:00', kind: 'in-person' as const },
+];
+
+const tasks = [
+  { id: 't1', title: 'Send revised SPA to legal — Al Reem 1204', status: 'Urgent' as const },
+  { id: 't2', title: 'Follow up: Selin Vural (Kadıköy 3+1)', status: 'Today' as const },
+  { id: 't3', title: 'Prepare Q3 portfolio report', status: 'This Week' as const },
+  { id: 't4', title: 'Verify title deed copy — DXB-0117', status: 'This Week' as const },
 ];
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const toast = useToast();
 
   return (
     <div className={styles.dashboard}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Weekly Control Center</h1>
-        <p className={styles.subtitle}>Your schedule, communications, and performance for this week.</p>
+        <div>
+          <h1 className={styles.title}>Command Center</h1>
+          <p className={styles.subtitle}>Pipeline, schedule and portfolio at a glance.</p>
+        </div>
+        <span className={styles.headerDate}>{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
       </div>
 
-      {/* This Week's KPIs */}
+      {/* KPI şeridi — Design System §5.1 anatomisi */}
       <div className={styles.kpiGrid}>
-        {weeklyKPIs.map((kpi) => (
+        {kpis.map((kpi) => (
           <Card key={kpi.id} padding="md">
             <div className={styles.kpiCard}>
-              <h3 className={styles.kpiTitle}>{kpi.title}</h3>
+              <span className={styles.kpiLabel}>{kpi.label}</span>
               <div className={styles.kpiValueRow}>
                 <span className={styles.kpiValue}>{kpi.value}</span>
-                <span className={`${styles.kpiTrend} ${styles[kpi.trend]}`}>
-                  {kpi.trend === 'up' && <TrendingUp size={16} />}
-                  {kpi.trend === 'down' && <TrendingUp size={16} style={{ transform: 'rotate(180deg)' }} />}
-                  {kpi.percentage}%
+                <span className={`${styles.kpiDelta} ${kpi.delta >= 0 ? styles.deltaUp : styles.deltaDown}`}>
+                  {kpi.delta >= 0 ? <TrendUp size={14} /> : <TrendDown size={14} />}
+                  {Math.abs(kpi.delta).toFixed(1)}%
                 </span>
+              </div>
+              <div className={styles.kpiSpark}>
+                <Sparkline data={kpi.spark} />
               </div>
             </div>
           </Card>
         ))}
       </div>
 
+      {/* Ana grid: trend + pazar dağılımı */}
       <div className={styles.mainGrid}>
-        {/* Left Column (2fr) */}
-        <div className={styles.leftCol}>
-          
-          {/* Quick Navigation Links */}
-          <div className={styles.quickLinksGrid}>
-            <div className={styles.quickLinkCard} onClick={() => navigate('/leads')}>
-              <div className={`${styles.quickLinkIcon} ${styles.iconBlue}`}><Users size={24} /></div>
-              <span className={styles.quickLinkLabel}>Leads & Clients</span>
-            </div>
-            <div className={styles.quickLinkCard} onClick={() => navigate('/projects')}>
-              <div className={`${styles.quickLinkIcon} ${styles.iconPurple}`}><Briefcase size={24} /></div>
-              <span className={styles.quickLinkLabel}>Projects</span>
-            </div>
-            <div className={styles.quickLinkCard} onClick={() => navigate('/financials')}>
-              <div className={`${styles.quickLinkIcon} ${styles.iconGreen}`}><DollarSign size={24} /></div>
-              <span className={styles.quickLinkLabel}>Financials</span>
-            </div>
-            <div className={styles.quickLinkCard} onClick={() => navigate('/meetings')}>
-              <div className={`${styles.quickLinkIcon} ${styles.iconOrange}`}><Video size={24} /></div>
-              <span className={styles.quickLinkLabel}>Meetings</span>
-            </div>
+        <Card padding="md">
+          <div className={styles.cardTitleRow}>
+            <h2 className={styles.cardTitle}>Pipeline Momentum</h2>
+            <span className={styles.cardMeta}>last 12 weeks</span>
           </div>
+          <TrendArea data={pipelineTrend} formatValue={fmtEUR} name="Pipeline" height={280} />
+        </Card>
 
-          {/* Email Widget */}
-          <Card>
-            <CardHeader>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Mail size={18} /> Recent Emails
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => toast.info('Mail modülü yakında gelecek')}>
-                  View All Inbox <ArrowRight size={14} style={{ marginLeft: '4px' }}/>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardBody padding="none">
-              <div className={styles.listWidget}>
-                {mockEmails.map(email => (
-                  <div key={email.id} className={styles.listItem} onClick={() => toast.info('E-posta açılıyor…')}>
-                    <div className={styles.itemAvatar}>{email.sender.charAt(0)}</div>
-                    <div className={styles.itemContent}>
-                      <div className={styles.itemTitle}>
-                        <span style={{ fontWeight: email.unread ? 700 : 500 }}>{email.sender}</span>
-                        <span className={styles.itemTime}>{email.time}</span>
-                      </div>
-                      <div className={styles.itemSubtitle} style={{ fontWeight: email.unread ? 600 : 400, color: email.unread ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-                        {email.subject}
-                      </div>
-                      <div className={styles.itemTime}>{email.preview}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardBody>
-          </Card>
-        </div>
+        <Card padding="md">
+          <div className={styles.cardTitleRow}>
+            <h2 className={styles.cardTitle}>Portfolio by Market</h2>
+          </div>
+          <DonutMetric
+            data={marketSplit}
+            centerValue="€4.72M"
+            centerLabel="Total"
+            formatValue={fmtEUR}
+            height={192}
+          />
+        </Card>
+      </div>
 
-        {/* Right Column (1fr) */}
-        <div className={styles.rightCol}>
-          
-          {/* Calendar / Meetings Widget */}
-          <Card>
-            <CardHeader>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Calendar size={18} /> This Week's Schedule
-              </div>
-            </CardHeader>
-            <CardBody padding="none">
-              <div className={styles.listWidget}>
-                {mockMeetings.map(meeting => (
-                  <div key={meeting.id} className={styles.listItem} onClick={() => navigate('/meetings')}>
-                    <div className={styles.itemIcon} style={{ backgroundColor: meeting.color + '20', color: meeting.color }}>
-                      {meeting.type === 'Zoom' ? <Video size={20} /> : <MapPin size={20} />}
-                    </div>
-                    <div className={styles.itemContent}>
-                      <div className={styles.itemTitle}>{meeting.title}</div>
-                      <div className={styles.itemTime}>{meeting.time} • {meeting.location}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardBody>
-          </Card>
+      {/* Alt grid: kaynaklar + takvim + görevler */}
+      <div className={styles.bottomGrid}>
+        <Card padding="md">
+          <div className={styles.cardTitleRow}>
+            <h2 className={styles.cardTitle}>
+              <ChartBar size={16} className={styles.titleIcon} /> Lead Sources
+            </h2>
+            <span className={styles.cardMeta}>30 days</span>
+          </div>
+          <HBarCompare data={leadSources} />
+        </Card>
 
-          {/* Tasks Widget */}
-          <Card>
-            <CardHeader>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckSquare size={18} /> Pending Tasks
-              </div>
-            </CardHeader>
-            <CardBody padding="none">
-              <div className={styles.listWidget}>
-                {mockTasks.map(task => (
-                  <div key={task.id} className={styles.listItem} style={{ opacity: task.done ? 0.6 : 1 }}>
-                    <div className={styles.itemIcon} style={{ color: task.done ? 'var(--color-success)' : 'var(--text-muted)' }}>
-                      <CheckSquare size={20} />
-                    </div>
-                    <div className={styles.itemContent}>
-                      <div className={styles.itemTitle} style={{ textDecoration: task.done ? 'line-through' : 'none' }}>
-                        {task.title}
-                        <span className={styles.itemStatus} style={{ 
-                          backgroundColor: task.status === 'Urgent' ? '#fecaca' : '',
-                          color: task.status === 'Urgent' ? '#b91c1c' : ''
-                        }}>
-                          {task.status}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardBody>
-          </Card>
+        <Card padding="none">
+          <CardHeader>
+            <div className={styles.cardTitleRow}>
+              <h2 className={styles.cardTitle}>
+                <CalendarBlank size={16} className={styles.titleIcon} /> Schedule
+              </h2>
+            </div>
+          </CardHeader>
+          <CardBody padding="none">
+            <div className={styles.listWidget}>
+              {meetings.map((m) => (
+                <button key={m.id} className={styles.listItem} onClick={() => navigate('/meetings')}>
+                  <span className={styles.itemIcon}>
+                    {m.kind === 'video' ? <VideoCamera size={18} /> : <MapPin size={18} />}
+                  </span>
+                  <span className={styles.itemContent}>
+                    <span className={styles.itemTitle}>{m.title}</span>
+                    <span className={styles.itemSub}>{m.with}</span>
+                  </span>
+                  <span className={styles.itemTime}>{m.time}</span>
+                </button>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
 
-        </div>
+        <Card padding="none">
+          <CardHeader>
+            <div className={styles.cardTitleRow}>
+              <h2 className={styles.cardTitle}>
+                <CheckSquare size={16} className={styles.titleIcon} /> Priority Tasks
+              </h2>
+            </div>
+          </CardHeader>
+          <CardBody padding="none">
+            <div className={styles.listWidget}>
+              {tasks.map((t) => (
+                <button key={t.id} className={styles.listItem} onClick={() => navigate('/tasks')}>
+                  <span className={styles.itemContent}>
+                    <span className={styles.itemTitle}>{t.title}</span>
+                  </span>
+                  <span className={`${styles.statusChip} ${t.status === 'Urgent' ? styles.statusUrgent : ''}`}>
+                    {t.status}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
       </div>
     </div>
   );
