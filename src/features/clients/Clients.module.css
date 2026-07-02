@@ -57,25 +57,25 @@
 }
 
 .statusBadge {
-  padding: 4px 8px;
-  border-radius: var(--radius-full);
+  padding: 3px 8px;
+  border-radius: var(--radius-control);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .statusBadge.active {
-  background-color: rgba(46, 139, 87, 0.1);
-  color: var(--color-success);
+  background-color: color-mix(in srgb, var(--data-positive) 12%, transparent);
+  color: var(--data-positive);
 }
 
 .statusBadge.dormant {
-  background-color: rgba(214, 162, 42, 0.1);
-  color: var(--color-warning);
+  background-color: color-mix(in srgb, var(--data-warning) 12%, transparent);
+  color: var(--data-warning);
 }
 
 .statusBadge.churned {
-  background-color: rgba(196, 69, 69, 0.1);
-  color: var(--color-danger);
+  background-color: color-mix(in srgb, var(--data-negative) 12%, transparent);
+  color: var(--data-negative);
 }
 
 .searchBar {
@@ -113,22 +113,28 @@
 
 .cellId {
   color: var(--text-muted);
-  font-family: monospace;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 0.75rem;
 }
 
+.numCell {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
 .typeBadge {
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
+  padding: 2px 8px;
+  border-radius: var(--radius-control);
   font-size: 0.75rem;
-  font-weight: 600;
-  background-color: var(--bg-surface-hover);
+  font-weight: 500;
+  background-color: var(--bg-inset);
   color: var(--text-secondary);
 }
 
 .typeBadge.vip {
-  background-color: rgba(155, 91, 179, 0.1);
-  color: var(--color-primary-purple);
+  background-color: var(--brand-primary-soft);
+  color: var(--brand-secondary);
 }
 
 .contactInfo {
@@ -171,12 +177,36 @@
 .userAvatar {
   width: 24px;
   height: 24px;
-  border-radius: 50%;
-  background-color: var(--color-primary-purple);
-  color: white;
+  border-radius: var(--radius-full);
+  background-color: var(--brand-primary);
+  color: var(--on-brand);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.75rem;
   font-weight: 600;
+}
+
+.formStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.exportState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.exportIcon {
+  color: var(--data-positive);
+}
+
+.mutedText {
+  color: var(--text-secondary);
 }

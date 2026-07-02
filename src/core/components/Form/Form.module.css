@@ -1,0 +1,76 @@
+/* PREI | Form alanları (Design System §4.6: etiket üstte, hata altta) */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.label {
+  font: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.control {
+  width: 100%;
+  padding: 10px 12px;
+  font: var(--text-body);
+  color: var(--text-primary);
+  background-color: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  outline: none;
+  transition: border-color var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.control::placeholder {
+  color: var(--text-muted);
+}
+
+.control:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--brand-primary-soft);
+}
+
+.control:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+select.control {
+  appearance: none;
+  cursor: pointer;
+}
+
+textarea.control {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.error {
+  font-size: 0.75rem;
+  color: var(--data-negative);
+}
+
+.controlError {
+  border-color: var(--data-negative);
+}
+
+/* İki kolonlu form satırı — <768px tek kolona düşer */
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-4);
+}
+
+@media (max-width: 768px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}

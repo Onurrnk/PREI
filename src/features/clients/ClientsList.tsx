@@ -5,9 +5,11 @@ import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
 import { Button } from '../../core/components/Button/Button';
-import { Plus, MoreHorizontal, Filter, Download, Search, CheckCircle2 } from 'lucide-react';
+import { Plus, DotsThree, FunnelSimple, DownloadSimple, MagnifyingGlass, CheckCircle } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../core/components/Modal/Modal';
+import { Field, Input, Select, FormRow } from '../../core/components/Form/Form';
+import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import styles from './Clients.module.css';
 
 export const ClientsList: React.FC = () => {
@@ -27,70 +29,63 @@ export const ClientsList: React.FC = () => {
     setModalTitle(actionName);
     if (actionName === 'Add New Client') {
       setModalContent(
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Full Name</label>
-              <input type="text" placeholder="e.g. Elena Rodriguez" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)' }} />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Nationality</label>
-              <input type="text" placeholder="e.g. Spanish" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)' }} />
-            </div>
-          </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Email Address</label>
-              <input type="email" placeholder="elena@example.com" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)' }} />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Phone Number</label>
-              <input type="tel" placeholder="+34 600 123 456" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)' }} />
-            </div>
-          </div>
+        <div className={styles.formStack}>
+          <FormRow>
+            <Field label="Full Name">
+              <Input type="text" placeholder="e.g. Beatriz Almeida" />
+            </Field>
+            <Field label="Nationality">
+              <Input type="text" placeholder="e.g. Portuguese" />
+            </Field>
+          </FormRow>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Client Type</label>
-              <select style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)' }}>
+          <FormRow>
+            <Field label="Email Address">
+              <Input type="email" placeholder="beatriz.almeida@atlanticocapital.pt" />
+            </Field>
+            <Field label="Phone Number">
+              <Input type="tel" placeholder="+351 912 384 706" />
+            </Field>
+          </FormRow>
+
+          <FormRow>
+            <Field label="Client Type">
+              <Select defaultValue="investor">
                 <option value="investor">Investor</option>
                 <option value="end-user">End-User</option>
                 <option value="corporate">Corporate</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Lead Source</label>
-              <select style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)' }}>
+              </Select>
+            </Field>
+            <Field label="Lead Source">
+              <Select defaultValue="website">
                 <option value="website">Website</option>
                 <option value="referral">Referral</option>
                 <option value="event">Event / Exhibition</option>
                 <option value="campaign">Marketing Campaign</option>
-              </select>
-            </div>
-          </div>
-          
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Preferred Regions</label>
-            <input type="text" placeholder="e.g. Downtown Dubai, Palm Jumeirah" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)' }} />
-          </div>
+              </Select>
+            </Field>
+          </FormRow>
+
+          <Field label="Preferred Regions">
+            <Input type="text" placeholder="e.g. Downtown Dubai, Palm Jumeirah" />
+          </Field>
         </div>
       );
     } else if (actionName.includes('Export')) {
       setModalContent(
-        <div style={{ textAlign: 'center', padding: '20px' }}>
-          <CheckCircle2 size={48} color="var(--color-success)" style={{ marginBottom: '16px' }} />
-          <p style={{ color: 'var(--text-secondary)' }}>Data export has started and will be downloaded shortly.</p>
+        <div className={styles.exportState}>
+          <CheckCircle size={40} weight="duotone" className={styles.exportIcon} />
+          <p>Data export has started and will be downloaded shortly.</p>
         </div>
       );
     } else {
-      setModalContent(<p style={{color: 'var(--text-secondary)'}}>This feature is under development.</p>);
+      setModalContent(<p className={styles.mutedText}>This feature is under development.</p>);
     }
     setShowModal(true);
   };
 
   if (loading) {
-    return <div className={styles.loading}>Loading Clients...</div>;
+    return <TableSkeleton rows={8} />;
   }
 
   const formatCurrency = (value: number) => {
@@ -111,7 +106,7 @@ export const ClientsList: React.FC = () => {
         </div>
         <div className={styles.headerActions}>
           <div className={styles.searchBar}>
-            <Search size={16} className={styles.searchIcon} />
+            <MagnifyingGlass size={16} className={styles.searchIcon} />
             <input 
               type="text" 
               placeholder="Search clients, IDs, or emails..." 
@@ -120,8 +115,8 @@ export const ClientsList: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button variant="outline" onClick={() => handleActionClick('Filter Clients')}><Filter size={16} /> Filter</Button>
-          <Button variant="outline" onClick={() => handleActionClick('Export Data (CSV/Excel)')}><Download size={16} /> Export</Button>
+          <Button variant="outline" onClick={() => handleActionClick('Filter Clients')}><FunnelSimple size={16} /> Filter</Button>
+          <Button variant="outline" onClick={() => handleActionClick('Export Data (CSV/Excel)')}><DownloadSimple size={16} /> Export</Button>
           <Button variant="primary" onClick={() => handleActionClick('Add New Client')}><Plus size={16} /> Add Client</Button>
         </div>
       </div>
@@ -169,8 +164,8 @@ export const ClientsList: React.FC = () => {
                       <span className={styles.phone}>{client.phone}</span>
                     </div>
                   </TableCell>
-                  <TableCell style={{ fontWeight: 600 }}>{formatCurrency(client.totalInvestment)}</TableCell>
-                  <TableCell>{client.activeProperties}</TableCell>
+                  <TableCell><span className={styles.numCell}>{formatCurrency(client.totalInvestment)}</span></TableCell>
+                  <TableCell><span className={styles.numCell}>{client.activeProperties}</span></TableCell>
                   <TableCell>
                     <div className={styles.regionsList}>
                       {client.preferredRegions.map((region, i) => (
@@ -199,7 +194,7 @@ export const ClientsList: React.FC = () => {
                         handleActionClick(`Row Actions for ${client.name}`);
                       }}
                     >
-                      <MoreHorizontal size={16} />
+                      <DotsThree size={18} weight="bold" />
                     </button>
                   </TableCell>
                 </TableRow>

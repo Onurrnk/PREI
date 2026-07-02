@@ -1,0 +1,50 @@
+/* PREI | Skeleton loader — spinner yasak, iskelet final layout'un şeklini alır (§5.3) */
+
+.block {
+  background: var(--bg-surface-raised);
+  border-radius: var(--radius-control);
+  position: relative;
+  overflow: hidden;
+}
+
+.block::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--border-subtle),
+    transparent
+  );
+  animation: shimmer 1.4s var(--ease-out) infinite;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block::after {
+    animation: none;
+  }
+}
+
+.tableWrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-surface);
+}
+
+.tableRow {
+  display: flex;
+  gap: var(--sp-4);
+  align-items: center;
+}

@@ -5,11 +5,13 @@ import type { LeadDTO } from '../../core/types';
 import { leadsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
-import { MoreHorizontal, Plus, LayoutGrid, List } from 'lucide-react';
+import { DotsThree, Plus, SquaresFour, ListBullets } from '@phosphor-icons/react';
 import styles from './LeadsPipeline.module.css';
 import { Button } from '../../core/components/Button/Button';
 import { Modal } from '../../core/components/Modal/Modal';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
+import { Field, Input, Select, Textarea, FormRow } from '../../core/components/Form/Form';
+import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 
 const PIPELINE_STAGES = [
   'New Lead', 'Contacted', 'Qualified', 'Meeting Scheduled', 
@@ -34,11 +36,11 @@ export const LeadsPipeline: React.FC = () => {
   const toast = useToast();
 
   if (loading) {
-    return <div className={styles.loading}>Loading Pipeline...</div>;
+    return <TableSkeleton rows={7} />;
   }
 
   if (error) {
-    return <div className={styles.loading}>Adaylar yüklenemedi: {error}</div>;
+    return <div className={styles.errorState}>Adaylar yüklenemedi: {error}</div>;
   }
 
   const formatCurrency = (value: number) => {
@@ -59,14 +61,14 @@ export const LeadsPipeline: React.FC = () => {
               onClick={() => setViewMode('kanban')}
               title="Kanban View"
             >
-              <LayoutGrid size={18} />
+              <SquaresFour size={18} />
             </button>
             <button 
               className={`${styles.toggleBtn} ${viewMode === 'list' ? styles.active : ''}`}
               onClick={() => setViewMode('list')}
               title="List View"
             >
-              <List size={18} />
+              <ListBullets size={18} />
             </button>
           </div>
           <Button variant="primary" onClick={() => setShowAddModal(true)}><Plus size={16} /> New Lead</Button>
@@ -94,7 +96,7 @@ export const LeadsPipeline: React.FC = () => {
                     <Card key={lead.id} padding="md" className={styles.leadCard}>
                       <div className={styles.leadHeader}>
                         <Link to={`/clients/${lead.id}`} className={styles.leadName}>{lead.name}</Link>
-                        <button className={styles.moreButton}><MoreHorizontal size={16} /></button>
+                        <button className={styles.moreButton}><DotsThree size={18} weight="bold" /></button>
                       </div>
                       <div className={styles.leadCompany}>{lead.company}</div>
                       <div className={styles.leadFooter}>
@@ -132,15 +134,15 @@ export const LeadsPipeline: React.FC = () => {
                   <TableCell>
                     <span className={styles.statusBadge}>{lead.status}</span>
                   </TableCell>
-                  <TableCell>{formatCurrency(lead.value)}</TableCell>
-                  <TableCell>{lead.probability}%</TableCell>
+                  <TableCell><span className={styles.numCell}>{formatCurrency(lead.value)}</span></TableCell>
+                  <TableCell><span className={styles.numCell}>{lead.probability}%</span></TableCell>
                   <TableCell>
                     <span className={`${styles.riskBadge} ${styles[lead.aiRiskScore.toLowerCase()]}`}>
                       {lead.aiRiskScore}
                     </span>
                   </TableCell>
                   <TableCell align="right">
-                    <button className={styles.moreButton}><MoreHorizontal size={16} /></button>
+                    <button className={styles.moreButton}><DotsThree size={18} weight="bold" /></button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -164,58 +166,50 @@ export const LeadsPipeline: React.FC = () => {
           </>
         }
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Full Name</label>
-              <input type="text" placeholder="e.g. Michael Smith" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)' }} />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Company / Affiliation</label>
-              <input type="text" placeholder="e.g. Global Tech LLC" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)' }} />
-            </div>
-          </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Email Address</label>
-              <input type="email" placeholder="michael@example.com" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)' }} />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Phone Number</label>
-              <input type="tel" placeholder="+971 50 123 4567" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)' }} />
-            </div>
-          </div>
+        <div className={styles.formStack}>
+          <FormRow>
+            <Field label="Full Name">
+              <Input type="text" placeholder="e.g. Arda Yılmazer" />
+            </Field>
+            <Field label="Company / Affiliation">
+              <Input type="text" placeholder="e.g. Bosphorus Holding" />
+            </Field>
+          </FormRow>
 
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Interested Project</label>
-            <select style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)' }}>
+          <FormRow>
+            <Field label="Email Address">
+              <Input type="email" placeholder="arda@bosphorusholding.com" />
+            </Field>
+            <Field label="Phone Number">
+              <Input type="tel" placeholder="+971 50 217 4863" />
+            </Field>
+          </FormRow>
+
+          <Field label="Interested Project">
+            <Select defaultValue="">
               <option value="">Select Project...</option>
               <option value="p1">Marina Vista (Emaar)</option>
               <option value="p2">Safa Two (DAMAC)</option>
               <option value="p3">Palm Beach Towers (Nakheel)</option>
-            </select>
-          </div>
+            </Select>
+          </Field>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Estimated Value (USD)</label>
-              <input type="number" placeholder="e.g. 1500000" style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)' }} />
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Priority</label>
-              <select style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)' }}>
+          <FormRow>
+            <Field label="Estimated Value (USD)">
+              <Input type="number" placeholder="e.g. 1500000" />
+            </Field>
+            <Field label="Priority">
+              <Select defaultValue="medium">
                 <option value="high">High (Hot Lead)</option>
                 <option value="medium">Medium</option>
                 <option value="low">Low (Cold Lead)</option>
-              </select>
-            </div>
-          </div>
-          
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Notes</label>
-            <textarea placeholder="Initial contact details or special requirements..." rows={3} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)', resize: 'vertical' }}></textarea>
-          </div>
+              </Select>
+            </Field>
+          </FormRow>
+
+          <Field label="Notes">
+            <Textarea placeholder="Initial contact details or special requirements..." rows={3} />
+          </Field>
         </div>
       </Modal>
     </div>

@@ -3,7 +3,8 @@ import { Card, CardBody } from '../../core/components/Card/Card';
 import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from '../../core/components/Table/Table';
 import { Button } from '../../core/components/Button/Button';
 import { useToast } from '../../core/components/Toast/ToastProvider';
-import { FileText, Download, X, Building, Calendar, Percent, ShieldCheck } from 'lucide-react';
+import { FileText, DownloadSimple, Buildings, CalendarBlank, Percent, ShieldCheck } from '@phosphor-icons/react';
+import { Modal } from '../../core/components/Modal/Modal';
 import styles from './Contracts.module.css';
 
 // --- MOCK DATA ---
@@ -116,8 +117,8 @@ export const ContractsList: React.FC = () => {
                   <TableCell>{contract.developer}</TableCell>
                   <TableCell>{contract.project}</TableCell>
                   <TableCell>{getStatusBadge(contract.status)}</TableCell>
-                  <TableCell>{contract.commission}</TableCell>
-                  <TableCell>{contract.expiryDate}</TableCell>
+                  <TableCell><span className={styles.numCell}>{contract.commission}</span></TableCell>
+                  <TableCell><span className={styles.numCell}>{contract.expiryDate}</span></TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" onClick={() => setSelectedContract(contract)}>
                       View Details
@@ -131,74 +132,67 @@ export const ContractsList: React.FC = () => {
       </Card>
 
       {/* Contract Details Modal */}
-      {selectedContract && (
-        <div className={styles.modalOverlay} onClick={() => setSelectedContract(null)}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <div className={styles.modalTitle}>
-                <FileText size={24} color="var(--color-primary-purple)" />
-                {selectedContract.developer} - Agreement Details
+      <Modal
+        isOpen={selectedContract !== null}
+        onClose={() => setSelectedContract(null)}
+        title={selectedContract ? `${selectedContract.developer} Agreement` : ''}
+        size="lg"
+      >
+        {selectedContract && (
+          <div className={styles.modalStack}>
+            <div className={styles.detailGrid}>
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}><Buildings size={12} /> Legal Entity</span>
+                <span className={styles.detailValue}>{selectedContract.legalEntity}</span>
               </div>
-              <button className={styles.closeButton} onClick={() => setSelectedContract(null)}>
-                <X size={20} />
-              </button>
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}><ShieldCheck size={12} /> Status</span>
+                <span className={styles.detailValue}>{getStatusBadge(selectedContract.status)}</span>
+              </div>
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}><CalendarBlank size={12} /> Valid From</span>
+                <span className={`${styles.detailValue} ${styles.numCell}`}>{selectedContract.startDate}</span>
+              </div>
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}><CalendarBlank size={12} /> Valid To (Expiry)</span>
+                <span className={`${styles.detailValue} ${styles.numCell}`}>{selectedContract.expiryDate}</span>
+              </div>
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}><Percent size={12} /> Commission Rate</span>
+                <span className={`${styles.detailValue} ${styles.numCell}`}>{selectedContract.commission}</span>
+              </div>
+              <div className={styles.detailItem}>
+                <span className={styles.detailLabel}>Payment Terms</span>
+                <span className={styles.detailValue}>{selectedContract.paymentTerms}</span>
+              </div>
             </div>
-            
-            <div className={styles.modalBody}>
-              <div className={styles.detailGrid}>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}><Building size={12} style={{display:'inline', marginRight: 4}}/> Legal Entity</span>
-                  <span className={styles.detailValue}>{selectedContract.legalEntity}</span>
-                </div>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}><ShieldCheck size={12} style={{display:'inline', marginRight: 4}}/> Status</span>
-                  <span className={styles.detailValue}>{getStatusBadge(selectedContract.status)}</span>
-                </div>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}><Calendar size={12} style={{display:'inline', marginRight: 4}}/> Valid From</span>
-                  <span className={styles.detailValue}>{selectedContract.startDate}</span>
-                </div>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}><Calendar size={12} style={{display:'inline', marginRight: 4}}/> Valid To (Expiry)</span>
-                  <span className={styles.detailValue}>{selectedContract.expiryDate}</span>
-                </div>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}><Percent size={12} style={{display:'inline', marginRight: 4}}/> Commission Rate</span>
-                  <span className={styles.detailValue}>{selectedContract.commission}</span>
-                </div>
-                <div className={styles.detailItem}>
-                  <span className={styles.detailLabel}>Payment Terms</span>
-                  <span className={styles.detailValue}>{selectedContract.paymentTerms}</span>
-                </div>
-              </div>
 
-              <div>
-                <h3 className={styles.sectionTitle}>
-                  <FileText size={18} /> Attached PDF Documents
-                </h3>
-                <div className={styles.documentsList}>
-                  {selectedContract.documents.map(doc => (
-                    <div key={doc.id} className={styles.documentItem}>
-                      <div className={styles.documentInfo}>
-                        <div className={styles.documentIcon}>
-                          <FileText size={24} />
-                        </div>
-                        <div>
-                          <div className={styles.documentName}>{doc.name}</div>
-                          <div className={styles.documentSize}>{doc.size} • PDF Document</div>
-                        </div>
+            <div>
+              <h3 className={styles.sectionTitle}>
+                <FileText size={18} /> Attached PDF Documents
+              </h3>
+              <div className={styles.documentsList}>
+                {selectedContract.documents.map(doc => (
+                  <div key={doc.id} className={styles.documentItem}>
+                    <div className={styles.documentInfo}>
+                      <div className={styles.documentIcon}>
+                        <FileText size={22} />
                       </div>
-                      <Button variant="outline" size="sm" onClick={() => handleDownload(doc.name)}>
-                        <Download size={16} style={{ marginRight: 8 }}/> Download
-                      </Button>
+                      <div>
+                        <div className={styles.documentName}>{doc.name}</div>
+                        <div className={styles.documentSize}>{doc.size} · PDF</div>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                    <Button variant="outline" size="sm" onClick={() => handleDownload(doc.name)}>
+                      <DownloadSimple size={16} /> Download
+                    </Button>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
     </div>
   );

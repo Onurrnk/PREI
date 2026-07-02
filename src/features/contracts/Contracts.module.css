@@ -1,140 +1,85 @@
+/* PREI | Developer Contracts (Design System §5.2) */
+
 .pageContainer {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
-  padding-bottom: var(--spacing-xl);
+  gap: var(--sp-5);
+  padding-bottom: var(--sp-6);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--sp-2);
 }
 
 .title {
+  font: var(--text-display);
   color: var(--text-primary);
-  font-size: 1.5rem;
-  font-weight: 600;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--sp-1);
 }
 
 .subtitle {
-  color: var(--text-muted);
-  font-size: 0.875rem;
+  font: var(--text-body);
+  color: var(--text-secondary);
+}
+
+.numCell {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .statusBadge {
-  padding: 4px 12px;
-  border-radius: var(--radius-full);
+  padding: 3px 10px;
+  border-radius: var(--radius-control);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 500;
   display: inline-block;
 }
 
 .statusActive {
-  background-color: rgba(16, 185, 129, 0.1);
-  color: #059669;
+  background-color: color-mix(in srgb, var(--data-positive) 12%, transparent);
+  color: var(--data-positive);
 }
 
 .statusExpiring {
-  background-color: rgba(245, 158, 11, 0.1);
-  color: #d97706;
+  background-color: color-mix(in srgb, var(--data-warning) 12%, transparent);
+  color: var(--data-warning);
 }
 
 .statusExpired {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
+  background-color: color-mix(in srgb, var(--data-negative) 12%, transparent);
+  color: var(--data-negative);
 }
 
-/* Modal specific styles */
-.modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease;
-}
-
-.modalContent {
-  background-color: var(--bg-app);
-  width: 90%;
-  max-width: 700px;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  max-height: 90vh;
-  overflow-y: auto;
-  border: 1px solid var(--border-color);
-  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.modalHeader {
-  padding: var(--spacing-lg);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.modalTitle {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.closeButton {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 8px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.closeButton:hover {
-  background-color: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.modalBody {
-  padding: var(--spacing-lg);
+/* ===== Modal içeriği (core Modal kullanılıyor) ===== */
+.modalStack {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xl);
+  gap: var(--sp-5);
 }
 
 .detailGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-md);
+  gap: var(--sp-4);
 }
 
 .detailItem {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--sp-1);
 }
 
 .detailLabel {
-  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font: var(--text-label);
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  font-weight: 500;
 }
 
 .detailValue {
@@ -144,45 +89,45 @@
 }
 
 .sectionTitle {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: var(--spacing-md);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
+  font: var(--text-title);
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  margin-bottom: var(--sp-3);
 }
 
 .documentsList {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--sp-2);
 }
 
 .documentItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-md);
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  transition: all 0.2s;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background-color: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  transition: border-color var(--dur-fast) var(--ease-out);
 }
 
 .documentItem:hover {
-  border-color: var(--color-primary-purple);
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  border-color: var(--border-strong);
 }
 
 .documentInfo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 .documentIcon {
-  color: #ef4444; /* PDF Red */
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -195,16 +140,13 @@
 }
 
 .documentSize {
+  font-family: var(--font-mono);
   font-size: 0.75rem;
   color: var(--text-muted);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+@media (max-width: 640px) {
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
 }
