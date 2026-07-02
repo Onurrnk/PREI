@@ -18,6 +18,7 @@ import { Settings } from '../../features/settings/Settings';
 import { Meetings } from '../../features/meetings/Meetings';
 import { FinancialsDashboard } from '../../features/financials/FinancialsDashboard';
 import { ContractsList } from '../../features/contracts/ContractsList';
+import { Marketing } from '../../features/marketing/Marketing';
 import { Tasks } from '../../features/tasks/Tasks';
 import { Login } from '../../features/auth/Login';
 import { RequireAuth } from '../auth/RequireAuth';
@@ -115,6 +116,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth permission="contracts">
             <ContractsList />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: 'marketing',
+        element: (
+          <RequireAuth permission="marketing">
+            <Marketing />
           </RequireAuth>
         ),
       },

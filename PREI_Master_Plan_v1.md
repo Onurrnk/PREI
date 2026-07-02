@@ -178,6 +178,13 @@ Onur'un kararı (2026-07-02): ürün 100M USD seviyesinde bir ürün algısıyla
 
 **Çıkış kriterleri:** `PREI_Design_System_v1.md` §9'daki 9 maddelik kabul listesi. Not: Bu faz mock veri üzerinde tamamlanır — tasarımın backend'i beklemesi gerekmez; Faz 1'de API bağlanırken görsel dil artık sabittir.
 
+**T7 — Frontend Complete (Onur kararı, 2026-07-02: "tüm ön yüz bitmeden backend'e girmeyelim"):**
+FAZ 0 öncesine çekilen ek kapsam — uygulamanın TÜM yüzeyleri mock veriyle eksiksiz ve Apple-konforunda hazır olacak:
+- **T7a · Marketing/Analytics modülü** (Faz 5'in ön yüzü öne alındı): reklam harcaması, CPL, conversion funnel (gösterim → CTWA → konuşma → qualified → toplantı → kapanış), ROAS'lı kampanya tablosu, pazar bazlı kırılım, Eylül konuşma verileri paneli. FunnelSteps + ComboSpend grafik bileşenleri.
+- **T7b · Bildirim merkezi:** Topbar'daki ölü zil → gerçek bildirim paneli (tip bazlı ikonlar, okundu yönetimi, boş durum).
+- **T7c · Client kartları & profil** yeniden tasarımı; **T7d · Mail alanı** (EmailClient) yeniden tasarımı; **T7e · Proje sunum sayfası** (galeri, ödeme planı görselleştirmesi, doküman kartları); **T7f · Login + kalan cilalar + 390px mobil tur.**
+Faz 0–1 bu blok bitince başlar; §6.5 çizelgesinde backend hattı 1 hafta sağa kayar (risk payı korunuyor).
+
 ---
 
 ### FAZ 0 — Temel: Auth, RBAC, Gerçek Backend İskeleti  *(ön koşul: yok)*

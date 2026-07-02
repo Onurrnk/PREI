@@ -1,0 +1,220 @@
+/* PREI | Bildirim Merkezi (T7b) */
+
+.root {
+  position: relative;
+}
+
+.trigger {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: var(--sp-2);
+  border-radius: var(--radius-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--dur-fast) var(--ease-out);
+  position: relative;
+}
+
+.trigger:hover {
+  background-color: var(--bg-surface-raised);
+  color: var(--text-primary);
+}
+
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background-color: var(--data-negative);
+  color: #FFFFFF;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 500;
+  height: 16px;
+  min-width: 16px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid var(--bg-surface);
+}
+
+/* Panel — yüzen katman: raised yüzey + tek gölge */
+.panel {
+  position: absolute;
+  top: calc(100% + var(--sp-2));
+  right: 0;
+  width: 380px;
+  max-height: 480px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-surface);
+  box-shadow: var(--shadow-raised);
+  z-index: 200;
+  overflow: hidden;
+  animation: panelIn var(--dur-fast) var(--ease-out);
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.panelTitle {
+  font: var(--text-title);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.markAll {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  background: transparent;
+  border: none;
+  color: var(--brand-primary);
+  font: var(--text-label);
+  cursor: pointer;
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--radius-control);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.markAll:hover {
+  background: var(--brand-primary-soft);
+}
+
+.list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.item:hover {
+  background: var(--bg-surface);
+}
+
+.itemUnread {
+  background: color-mix(in srgb, var(--brand-primary) 4%, transparent);
+}
+
+.kindIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--radius-control);
+  margin-top: 1px;
+}
+
+.kindPositive { color: var(--data-positive); background: color-mix(in srgb, var(--data-positive) 12%, transparent); }
+.kindNegative { color: var(--data-negative); background: color-mix(in srgb, var(--data-negative) 12%, transparent); }
+.kindWarning  { color: var(--data-warning);  background: color-mix(in srgb, var(--data-warning) 12%, transparent); }
+.kindInfo     { color: var(--data-info);     background: color-mix(in srgb, var(--data-info) 12%, transparent); }
+.kindNeutral  { color: var(--text-secondary); background: var(--bg-inset); }
+
+.itemBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.itemTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.itemTitle {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.itemTime {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.itemText {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+/* Okunmamış işareti — gerçek semantik durum (radius-full istisnası) */
+.unreadDot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--brand-primary);
+  flex-shrink: 0;
+  margin-top: 8px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-7) var(--sp-4);
+  color: var(--text-muted);
+  font: var(--text-body);
+}
+
+@media (max-width: 480px) {
+  .panel {
+    width: calc(100vw - 32px);
+    right: -8px;
+  }
+}

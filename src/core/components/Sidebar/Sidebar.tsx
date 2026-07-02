@@ -13,6 +13,7 @@ import {
   CheckSquare,
   FileText,
   ChartLineUp,
+  Megaphone,
   GearSix,
   SignOut,
 } from '@phosphor-icons/react';
@@ -39,6 +40,7 @@ const navItems: NavItem[] = [
   { path: '/tasks', label: 'Tasks', icon: CheckSquare, permission: 'tasks' },
   { path: '/contracts', label: 'Contracts', icon: FileText, permission: 'contracts' },
   { path: '/financials', label: 'Financials', icon: ChartLineUp, permission: 'financials' },
+  { path: '/marketing', label: 'Marketing', icon: Megaphone, permission: 'marketing' },
   { path: '/admin', label: 'Admin & Audit', icon: ShieldCheck, permission: 'admin' },
   { path: '/settings', label: 'Settings', icon: GearSix, permission: 'settings' },
 ];

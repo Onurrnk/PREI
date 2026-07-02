@@ -1,7 +1,8 @@
 import React from 'react';
-import { MagnifyingGlass, Bell, CalendarBlank, Moon, Sun, Globe } from '@phosphor-icons/react';
+import { MagnifyingGlass, CalendarBlank, Moon, Sun, Globe } from '@phosphor-icons/react';
 import { useTheme } from '../../theme/ThemeContext';
 import { useAuth } from '../../auth/AuthContext';
+import { NotificationCenter } from '../Notifications/NotificationCenter';
 import styles from './Topbar.module.css';
 
 export const Topbar: React.FC = () => {
@@ -26,10 +27,7 @@ export const Topbar: React.FC = () => {
         <button className={styles.actionButton} title="Calendar">
           <CalendarBlank size={20} />
         </button>
-        <button className={styles.actionButton} title="Notifications">
-          <Bell size={20} />
-          <span className={styles.notificationBadge}>3</span>
-        </button>
+        <NotificationCenter />
         <div className={styles.divider}></div>
         <button className={styles.actionButton} onClick={toggleTheme} title="Toggle Theme">
           {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}

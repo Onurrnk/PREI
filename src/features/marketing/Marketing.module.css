@@ -1,0 +1,285 @@
+/* PREI | Marketing Intelligence (T7a — Faz 5 ön yüzü) */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+
+.title {
+  font: var(--text-display);
+  color: var(--text-primary);
+  margin-bottom: var(--sp-1);
+}
+
+.subtitle {
+  font: var(--text-body);
+  color: var(--text-secondary);
+}
+
+.headerMeta {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ===== KPI ===== */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-4);
+}
+
+.kpiCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.kpiLabel {
+  font: var(--text-label);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.kpiValueRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.kpiValue {
+  font: var(--text-metric);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.kpiDelta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-control);
+}
+
+.deltaUp {
+  color: var(--data-positive);
+  background: color-mix(in srgb, var(--data-positive) 12%, transparent);
+}
+
+.deltaDown {
+  color: var(--data-negative);
+  background: color-mix(in srgb, var(--data-negative) 12%, transparent);
+}
+
+.kpiSpark {
+  margin: 0 calc(-1 * var(--sp-1));
+}
+
+/* ===== Grid'ler ===== */
+.mainGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: var(--sp-4);
+  align-items: start;
+}
+
+.bottomGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.8fr;
+  gap: var(--sp-4);
+  align-items: start;
+}
+
+.cardTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-4);
+}
+
+.cardTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font: var(--text-title);
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+}
+
+.titleIcon {
+  color: var(--text-muted);
+}
+
+.cardMeta {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Card header içindeki başlık satırı boşluksuz */
+.convCard .cardTitleRow {
+  margin-bottom: 0;
+}
+
+/* ===== Tablo hücreleri ===== */
+.numCell {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.roasStrong {
+  color: var(--data-positive);
+  font-weight: 500;
+}
+
+.marketChip {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text-secondary);
+  background: var(--bg-inset);
+  padding: 2px 7px;
+  border-radius: var(--radius-control);
+  white-space: nowrap;
+}
+
+.statusChip {
+  font: var(--text-label);
+  color: var(--text-muted);
+  background: var(--bg-inset);
+  padding: 3px 8px;
+  border-radius: var(--radius-control);
+}
+
+.statusActive {
+  color: var(--data-positive);
+  background: color-mix(in srgb, var(--data-positive) 12%, transparent);
+}
+
+/* ===== Konuşma paneli ===== */
+.convList {
+  display: flex;
+  flex-direction: column;
+}
+
+.convItem {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.convItem:last-child {
+  border-bottom: none;
+}
+
+.convChannel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--radius-control);
+  background: var(--bg-inset);
+  color: var(--text-secondary);
+}
+
+.convBody {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.convTop {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.convName {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.convTime {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.convSnippet {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Eylül qualification skoru — anlam taşıyan renk */
+.scoreChip {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: var(--radius-control);
+  flex-shrink: 0;
+}
+
+.scoreHigh {
+  color: var(--data-positive);
+  background: color-mix(in srgb, var(--data-positive) 12%, transparent);
+}
+
+.scoreMid {
+  color: var(--data-warning);
+  background: color-mix(in srgb, var(--data-warning) 12%, transparent);
+}
+
+.scoreLow {
+  color: var(--text-muted);
+  background: var(--bg-inset);
+}
+
+/* ===== Mobil ===== */
+@media (max-width: 1200px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .mainGrid,
+  .bottomGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-2);
+  }
+}

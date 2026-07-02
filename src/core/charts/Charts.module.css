@@ -98,3 +98,62 @@
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
 }
+
+/* Funnel (§6.2) */
+.funnel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.funnelStep {
+  display: grid;
+  grid-template-columns: 128px 1fr 56px;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.funnelLabel {
+  font: var(--text-label);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Arka plan track YASAK — bar boşluğa çizilir */
+.funnelTrackless {
+  min-width: 0;
+}
+
+.funnelBar {
+  height: 14px;
+  border-radius: var(--radius-control);
+  transition: width var(--dur-slow) var(--ease-out);
+}
+
+.funnelValue {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.funnelConversion {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  padding-left: calc(128px + var(--sp-3));
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .funnelStep {
+    grid-template-columns: 96px 1fr 48px;
+  }
+  .funnelConversion {
+    padding-left: calc(96px + var(--sp-3));
+  }
+}

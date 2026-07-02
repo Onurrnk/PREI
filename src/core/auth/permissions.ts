@@ -20,12 +20,13 @@ export type Permission =
   | 'tasks'
   | 'contracts'
   | 'financials'
+  | 'marketing'
   | 'admin'
   | 'settings';
 
 const ALL: Permission[] = [
   'dashboard', 'leads', 'clients', 'developers', 'projects', 'proposals',
-  'documents', 'meetings', 'tasks', 'contracts', 'financials', 'admin', 'settings',
+  'documents', 'meetings', 'tasks', 'contracts', 'financials', 'marketing', 'admin', 'settings',
 ];
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
