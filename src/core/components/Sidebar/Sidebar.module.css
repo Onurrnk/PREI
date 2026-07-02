@@ -28,7 +28,7 @@
 }
 
 .logoSub {
-  color: var(--brand-champagne);
+  color: var(--brand-secondary);
   font-weight: 400;
 }
 
@@ -65,13 +65,13 @@
 }
 
 .navLink.active {
-  background-color: var(--brand-champagne);
-  /* Şampanya zeminde koyu metin — AA kontrast (Design System §5.4) */
-  color: #1B1A18;
+  background-color: var(--brand-primary);
+  /* Mor zeminde beyaz metin — 4.6:1 AA (Design System §5.4) */
+  color: var(--on-brand);
 }
 
 .navLink.active .icon {
-  color: #1B1A18;
+  color: var(--on-brand);
 }
 
 .icon {
@@ -81,7 +81,7 @@
 }
 
 .navLink:hover .icon {
-  color: var(--brand-champagne);
+  color: var(--brand-primary);
 }
 
 .footer {

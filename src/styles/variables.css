@@ -5,10 +5,12 @@
 */
 
 :root {
-  /* ===== Marka ===== */
-  --brand-champagne:      #C6A15B;
-  --brand-champagne-dim:  #A88A4F;
-  --brand-champagne-soft: rgba(198, 161, 91, 0.12);
+  /* ===== Marka (PREI logo paleti) ===== */
+  --brand-primary:      #9B5BB3;                    /* logo moru */
+  --brand-primary-dim:  #8A4DA1;                    /* hover/pressed */
+  --brand-primary-soft: rgba(155, 91, 179, 0.14);   /* seçili zemin, chip, focus ring */
+  --brand-secondary:    #B89AC9;                    /* lavanta — ikincil vurgu */
+  --on-brand:           #FFFFFF;                    /* accent üstü metin (mor üstünde 4.6:1 AA) */
 
   /* ===== Veri semantiği (yalnız veri anlamı için; dekorasyon yasak) ===== */
   --data-positive: #3FA372;
@@ -17,10 +19,10 @@
   --data-warning:  #C99441;
 
   /* ===== Kategorik grafik rampası (sıra sabit) ===== */
-  --chart-1: #C6A15B;
+  --chart-1: #9B5BB3;
   --chart-2: #5B8DB8;
   --chart-3: #3FA372;
-  --chart-4: #8B7CB8;
+  --chart-4: #B89AC9;
   --chart-5: #C2554F;
   --chart-6: #4FA8A0;
   --chart-7: #B8845B;
@@ -62,8 +64,8 @@
      GEÇİŞ ALIAS'LARI — eski token adları yeni değerlere bağlanır.
      Modüller T4-T5'te yeni adlara taşındıkça bu blok küçülür ve silinir.
      ===================================================================== */
-  --color-primary-purple:     var(--brand-champagne);
-  --color-secondary-lavender: var(--brand-champagne-dim);
+  --color-primary-purple:     var(--brand-primary);
+  --color-secondary-lavender: var(--brand-secondary);
   --color-graphite:           #7A8699;
 
   --color-success: var(--data-positive);
@@ -101,7 +103,7 @@
 
   --border-subtle:  rgba(236, 234, 230, 0.07);
   --border-strong:  rgba(236, 234, 230, 0.14);
-  --border-focus:   var(--brand-champagne);
+  --border-focus:   var(--brand-primary);
 
   --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.4);
   --chart-grid: rgba(236, 234, 230, 0.06);
@@ -129,7 +131,7 @@
 
   --border-subtle:  rgba(27, 26, 24, 0.08);
   --border-strong:  rgba(27, 26, 24, 0.16);
-  --border-focus:   var(--brand-champagne-dim);
+  --border-focus:   var(--brand-primary);
 
   --shadow-raised: 0 8px 24px rgba(27, 26, 24, 0.10);
   --chart-grid: rgba(27, 26, 24, 0.07);

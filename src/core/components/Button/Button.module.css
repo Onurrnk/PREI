@@ -22,13 +22,13 @@
 
 /* Variants */
 .primary {
-  background-color: var(--brand-champagne);
-  /* Şampanya zeminde koyu metin — AA kontrast (Design System §5.4) */
-  color: #1B1A18;
+  background-color: var(--brand-primary);
+  /* Mor zeminde beyaz metin — 4.6:1 AA (Design System §5.4) */
+  color: var(--on-brand);
 }
 
 .primary:hover:not(:disabled) {
-  background-color: var(--brand-champagne-dim);
+  background-color: var(--brand-primary-dim);
 }
 
 .secondary {
@@ -43,12 +43,12 @@
 
 .outline {
   background-color: transparent;
-  color: var(--brand-champagne);
+  color: var(--brand-primary);
   border-color: var(--border-strong);
 }
 
 .outline:hover:not(:disabled) {
-  background-color: var(--brand-champagne-soft);
+  background-color: var(--brand-primary-soft);
 }
 
 .ghost {

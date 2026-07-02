@@ -162,7 +162,7 @@ Overhaul        (Auth+RBAC)    (mock'suz)      Eylül RAG        Toplantı Notu 
 Onur'un kararı (2026-07-02): ürün 100M USD seviyesinde bir ürün algısıyla kurgulanacak; grafikler ve istatistik ekranları imza kalitesinde olacak. **Önce tasarım finale gelir, backend işleri ardından tamamlanır.**
 
 **Kapsam** — tamamı `PREI_Design_System_v1.md`'de tanımlı ("Private Banking Terminal" dili):
-- Token katmanının yeniden yazımı: AI-moru paletin sökülmesi → off-black nötrler + şampanya accent + veri-semantiği renkleri; Geist + Geist Mono (self-host); radius/gölge kilidi.
+- Token katmanının yeniden yazımı: off-black nötrler + **logo moru accent** (#9B5BB3 — Onur kararı 2026-07-02: renkler logodan, altın denendi ve geri alındı) + veri-semantiği renkleri; Geist + Geist Mono (self-host); radius/gölge kilidi.
 - Core bileşen overhaul'u (Button, Card, Table, Modal, Sidebar, Topbar) + lucide → Phosphor ikon geçişi.
 - **`src/core/charts/` grafik tema katmanı:** TrendArea, Sparkline, HBarCompare, DonutMetric, FunnelSteps, ComboSpend sarmalayıcıları — çıplak recharts feature kodunda yasak.
 - Dashboard'un "Komuta Merkezi v0" olarak yeniden tasarımı (kalite çıtası bu ekranda belirlenir), ardından 13 modülün tamamının taşınması.

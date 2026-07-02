@@ -24,7 +24,7 @@
 
 .searchContainer:focus-within {
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 2px var(--brand-champagne-soft);
+  box-shadow: 0 0 0 2px var(--brand-primary-soft);
 }
 
 .searchIcon {
@@ -125,8 +125,8 @@
   width: 36px;
   height: 36px;
   border-radius: var(--radius-full);
-  background-color: var(--brand-champagne);
-  color: #1B1A18;
+  background-color: var(--brand-primary);
+  color: var(--on-brand);
   display: flex;
   align-items: center;
   justify-content: center;
