@@ -3,21 +3,11 @@ import type { VaultDocumentDTO } from '../../core/types';
 import { documentsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
+import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { Modal } from '../../core/components/Modal/Modal';
-import { 
-  Folder, 
-  FileText, 
-  Image as ImageIcon, 
-  FileSpreadsheet, 
-  UploadCloud, 
-  Search, 
-  MoreVertical, 
-  Download,
-  Share2,
-  FolderOpen
-} from 'lucide-react';
+import { Folder, FileText, Image as ImageIcon, FileXls, CloudArrowUp, MagnifyingGlass, DotsThreeVertical, DownloadSimple, ShareNetwork, FolderOpen } from '@phosphor-icons/react';
 import styles from './DocumentVault.module.css';
 
 const FOLDERS = ['Root', 'Client KYC', 'Contracts', 'Marketing', 'Developer Agreements'];
@@ -36,10 +26,10 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
   
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  // Hook'lar her render'da aynı sırada çağrılmalı; koşullu return'lerden önce durur.
+  const toast = useToast();
 
-  // documents loaded via useFetch above
-
-  if (loading) return <div className={styles.loading}>Loading Vault...</div>;
+  if (loading) return <TableSkeleton rows={6} />;
 
   const filteredDocs = documents.filter(doc => {
     const matchesFolder = doc.folder === currentFolder;
@@ -51,13 +41,11 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
     switch(type) {
       case 'pdf': return <FileText size={32} className={styles.iconPdf} />;
       case 'image': return <ImageIcon size={32} className={styles.iconImage} />;
-      case 'excel': return <FileSpreadsheet size={32} className={styles.iconExcel} />;
+      case 'excel': return <FileXls size={32} className={styles.iconExcel} />;
       case 'word': return <FileText size={32} className={styles.iconWord} />;
       default: return <FileText size={32} className={styles.iconDefault} />;
     }
   };
-
-  const toast = useToast();
 
   const handleUploadClick = () => {
     setShowUploadModal(true);
@@ -81,7 +69,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
         </div>
         <div className={styles.headerActions}>
           <div className={styles.searchBar}>
-            <Search size={16} className={styles.searchIcon} />
+            <MagnifyingGlass size={16} className={styles.searchIcon} />
             <input 
               type="text" 
               placeholder="Search documents..." 
@@ -91,7 +79,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
             />
           </div>
           <Button variant="primary" onClick={handleUploadClick}>
-            <UploadCloud size={16} style={{marginRight: 8}} /> 
+            <CloudArrowUp size={16} style={{marginRight: 8}} /> 
             Upload File
           </Button>
         </div>
@@ -151,15 +139,15 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
                 <div key={doc.id} className={styles.fileCard}>
                   <div className={styles.fileCardHeader}>
                     {getFileIcon(doc.type)}
-                    <button className={styles.moreBtn}><MoreVertical size={16} /></button>
+                    <button className={styles.moreBtn}><DotsThreeVertical size={16} /></button>
                   </div>
                   <div className={styles.fileCardBody}>
                     <h4 className={styles.fileName} title={doc.name}>{doc.name}</h4>
                     <p className={styles.fileMeta}>{doc.sizeMB} MB • {doc.uploadedAt}</p>
                   </div>
                   <div className={styles.fileCardFooter}>
-                    <button className={styles.actionBtn} title="Download"><Download size={14} /></button>
-                    <button className={styles.actionBtn} title="Share Link"><Share2 size={14} /></button>
+                    <button className={styles.actionBtn} title="Download"><DownloadSimple size={14} /></button>
+                    <button className={styles.actionBtn} title="Share Link"><ShareNetwork size={14} /></button>
                   </div>
                 </div>
               ))}
@@ -182,7 +170,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
         }
       >
         <div style={{ padding: '40px', border: '2px dashed var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', backgroundColor: 'var(--bg-surface)' }}>
-          <UploadCloud size={48} color="var(--color-primary-blue)" style={{ marginBottom: '16px' }} />
+          <CloudArrowUp size={48} color="var(--color-primary-blue)" style={{ marginBottom: '16px' }} />
           <h3 style={{ marginBottom: '8px', color: 'var(--text-primary)' }}>Drag and drop your files here</h3>
           <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Supports PDF, DOCX, XLSX, PNG, JPG (Max 50MB)</p>
           <Button variant="outline">Browse Files</Button>

@@ -5,7 +5,7 @@ import { projectsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
 import { Button } from '../../core/components/Button/Button';
-import { Plus, Search, Building2 } from 'lucide-react';
+import { Plus, MagnifyingGlass, Buildings } from '@phosphor-icons/react';
 import styles from './ProjectsList.module.css';
 
 export const ProjectsList: React.FC = () => {
@@ -31,7 +31,7 @@ export const ProjectsList: React.FC = () => {
         </div>
         <div className={styles.headerActions}>
           <div className={styles.searchBar}>
-            <Search size={16} className={styles.searchIcon} />
+            <MagnifyingGlass size={16} className={styles.searchIcon} />
             <input 
               type="text" 
               placeholder="Search projects..." 
@@ -65,7 +65,7 @@ export const ProjectsList: React.FC = () => {
               <TableRow key={proj.id} className={styles.clickableRow} onClick={() => navigate(`/projects/${proj.id}`)}>
                 <TableCell>
                   <div className={styles.projectNameCell}>
-                    <Building2 size={16} className={styles.iconMuted} />
+                    <Buildings size={16} className={styles.iconMuted} />
                     <span className={styles.projectName}>{proj.name}</span>
                   </div>
                 </TableCell>

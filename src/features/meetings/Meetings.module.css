@@ -196,20 +196,20 @@
 
 .eventViewing {
   background-color: rgba(99, 102, 241, 0.1);
-  color: #6366f1;
-  border-left-color: #6366f1;
+  color: var(--data-info);
+  border-left-color: var(--data-info);
 }
 
 .eventMeeting {
   background-color: rgba(245, 158, 11, 0.1);
-  color: #f59e0b;
-  border-left-color: #f59e0b;
+  color: var(--data-warning);
+  border-left-color: var(--data-warning);
 }
 
 .eventSigning {
   background-color: rgba(16, 185, 129, 0.1);
-  color: #10b981;
-  border-left-color: #10b981;
+  color: var(--data-positive);
+  border-left-color: var(--data-positive);
 }
 
 /* Sidebar List */

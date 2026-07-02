@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../core/auth/AuthContext';
 import { Button } from '../../core/components/Button/Button';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from '@phosphor-icons/react';
 import styles from './Login.module.css';
 
 interface LocationState {

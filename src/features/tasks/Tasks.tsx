@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Clock, Calendar, CheckCircle2, Circle } from 'lucide-react';
+import { Shield, Clock, CalendarBlank, CheckCircle, Circle } from '@phosphor-icons/react';
 import type { UserDTO, TaskDTO } from '../../core/types';
 import { usersApi, tasksApi } from '../../core/api/resources';
 import styles from './Tasks.module.css';
@@ -120,7 +120,7 @@ export const Tasks: React.FC = () => {
                   
                   {groupedTasks[status].length === 0 ? (
                     <div className={styles.emptyState}>
-                      <CheckCircle2 size={32} />
+                      <CheckCircle size={32} />
                       <p>No {status.toLowerCase()} tasks</p>
                     </div>
                   ) : (
@@ -142,7 +142,7 @@ export const Tasks: React.FC = () => {
                         
                         <div className={styles.taskFooter}>
                           <div className={styles.taskDate}>
-                            {task.type === 'Meeting' ? <Calendar size={14} /> : <Clock size={14} />}
+                            {task.type === 'Meeting' ? <CalendarBlank size={14} /> : <Clock size={14} />}
                             {formatDate(task.dueDate)}
                           </div>
                           
@@ -152,7 +152,7 @@ export const Tasks: React.FC = () => {
                               onClick={() => handleToggleComplete(task)}
                               title={task.status === 'Completed' ? 'Mark as Pending' : 'Mark as Completed'}
                             >
-                              {task.status === 'Completed' ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                              {task.status === 'Completed' ? <CheckCircle size={18} /> : <Circle size={18} />}
                             </button>
                           </div>
                         </div>

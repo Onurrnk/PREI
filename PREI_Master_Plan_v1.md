@@ -45,6 +45,14 @@ n8n dış dünya ile (WhatsApp, Telegram, Calendly, Meta, SendGrid, Perplexity) 
 ### K-5 — Meta Ads verisi CRM'e akar, atıf lead'de kapanır
 Reklam → lead → satış zinciri tek yerde izlenir: WhatsApp Click-to-Ad (CTWA) `referral` payload'ındaki `ad_id/adset_id/campaign_id` lead kaydına yazılır; Meta Insights API'den gelen harcama/performans verisi `ad_insights` tablosuna günlük sync edilir. Böylece "hangi kampanya kaç €'ya kaç qualified lead ve kaç kapanış getirdi" sorusu SQL ile cevaplanır — sistemin "beyin" olmasının özü budur.
 
+
+### K-6 — Pazar modeli çok ülkeli ve genişletilebilir (Onur, 2026-07-02)
+Aktif satış pazarları: **Türkiye, BAE (Dubai), İspanya, İngiltere**. Planlanan: **Tayland, Almanya**. Sonuç olarak:
+- Master Prompt'taki `CHECK (country IN ('TR','UAE'))` ve `target_market IN ('TR','UAE','both')` kısıtları **kullanılmaz** — migration 002'de `markets` lookup tablosu kurulur (`code, name, currency, timezone, is_active`); properties/leads bu tabloya FK verir. Yeni ülke = 1 satır INSERT, migration yok.
+- Eylül'ün qualification mantığındaki pazar regex'i (TR/Dubai) tüm aktif pazarları kapsayacak şekilde genişletilir; `knowledge_chunks.market` değerleri mevcut haliyle kalır, yeni pazar içerikleri geldikçe eklenir.
+- Raporlama para birimi normalizasyonu (B-7 `fx_rates`) artık zorunluluk: EUR baz; GBP/THB dahil.
+- Haftalık bülten (Faz 6) pazar başına özet üretecek şekilde parametrik kurulur.
+
 ---
 
 ## 3. Şema Uzlaştırma Haritası (Master Prompt → PREI)

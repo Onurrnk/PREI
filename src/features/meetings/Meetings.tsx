@@ -3,18 +3,7 @@ import { Card } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { Modal } from '../../core/components/Modal/Modal';
 import { useToast } from '../../core/components/Toast/ToastProvider';
-import {
-  Calendar as CalendarIcon,
-  ChevronLeft, 
-  ChevronRight, 
-  Plus, 
-  MapPin, 
-  User, 
-  Video,
-  RefreshCw,
-  Clock,
-  FileText
-} from 'lucide-react';
+import { CalendarBlank as CalendarIcon, CaretLeft, CaretRight, Plus, MapPin, User, VideoCamera, ArrowsClockwise, Clock, FileText } from '@phosphor-icons/react';
 import styles from './Meetings.module.css';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -46,7 +35,7 @@ export const Meetings: React.FC = () => {
 
   const upcomingMeetings = [
     { id: 3, title: 'Contract Signing: Marina Vista', date: 'Today, Jun 15', time: '11:30 AM - 12:30 PM', client: 'Elena Rodriguez (VIP Investor)', location: 'Emaar Sales Center', platform: 'In-person', icon: <MapPin size={14} />, notes: 'Ensure all SPA documents are printed and ready.' },
-    { id: 4, title: 'Project Pitch: Safa Two', date: 'Next Week, Jun 22', time: '04:00 PM - 05:00 PM', client: 'Michael Smith', location: 'Zoom', platform: 'Zoom', icon: <Video size={14} />, notes: 'Pitching Safa Two project.' }
+    { id: 4, title: 'Project Pitch: Safa Two', date: 'Next Week, Jun 22', time: '04:00 PM - 05:00 PM', client: 'Michael Smith', location: 'Zoom', platform: 'Zoom', icon: <VideoCamera size={14} />, notes: 'Pitching Safa Two project.' }
   ];
 
   const handleSync = () => {
@@ -75,7 +64,7 @@ export const Meetings: React.FC = () => {
             Synced with Google Calendar
           </div>
           <Button variant="outline" onClick={handleSync} disabled={isSyncing}>
-            <RefreshCw size={16} className={isSyncing ? 'spin' : ''} /> 
+            <ArrowsClockwise size={16} className={isSyncing ? 'spin' : ''} /> 
             {isSyncing ? 'Syncing...' : 'Sync Now'}
           </Button>
           <Button variant="primary" onClick={() => setShowAddModal(true)}>
@@ -89,9 +78,9 @@ export const Meetings: React.FC = () => {
         <Card className={styles.calendarCard}>
           <div className={styles.calendarHeader}>
             <div className={styles.monthNav}>
-              <button className={styles.navBtn}><ChevronLeft size={20} /></button>
+              <button className={styles.navBtn}><CaretLeft size={20} /></button>
               <h2 className={styles.monthTitle}>June 2026</h2>
-              <button className={styles.navBtn}><ChevronRight size={20} /></button>
+              <button className={styles.navBtn}><CaretRight size={20} /></button>
             </div>
             <div className={styles.viewToggles}>
               <button className={`${styles.viewBtn} ${styles.viewBtnActive}`}>Month</button>
@@ -207,7 +196,7 @@ export const Meetings: React.FC = () => {
               <div>
                 <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Location / Platform</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontWeight: 500 }}>
-                  {selectedMeeting.platform === 'Zoom' ? <Video size={14} /> : <MapPin size={14} />} 
+                  {selectedMeeting.platform === 'Zoom' ? <VideoCamera size={14} /> : <MapPin size={14} />} 
                   {selectedMeeting.location || 'N/A'}
                 </span>
               </div>
@@ -224,7 +213,7 @@ export const Meetings: React.FC = () => {
             
             {selectedMeeting.platform === 'Zoom' && (
               <Button variant="primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => toast.info('Zoom toplantısına katılınıyor…')}>
-                <Video size={16} /> Join Zoom Meeting
+                <VideoCamera size={16} /> Join Zoom Meeting
               </Button>
             )}
           </div>

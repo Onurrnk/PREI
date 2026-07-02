@@ -6,7 +6,7 @@ import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { ArrowLeft, MapPin, Building2, Calendar, DollarSign, CheckCircle2, FileText, Send, Paperclip } from 'lucide-react';
+import { ArrowLeft, MapPin, Buildings, CalendarBlank, CurrencyDollar, CheckCircle, FileText, PaperPlaneTilt, Paperclip } from '@phosphor-icons/react';
 import styles from './ProjectProfile.module.css';
 
 export const ProjectProfile: React.FC = () => {
@@ -49,7 +49,7 @@ export const ProjectProfile: React.FC = () => {
               </span>
             </div>
             <p className={styles.subtitle}>
-              <Building2 size={14} className={styles.inlineIcon} /> By {project.developerName} &bull; 
+              <Buildings size={14} className={styles.inlineIcon} /> By {project.developerName} &bull; 
               <MapPin size={14} className={styles.inlineIcon} style={{ marginLeft: '8px' }} /> {project.location}
             </p>
           </div>
@@ -88,17 +88,17 @@ export const ProjectProfile: React.FC = () => {
                 <p className={styles.description}>{project.description}</p>
                 <div className={styles.statsGrid}>
                   <div className={styles.statBox}>
-                    <DollarSign size={16} className={styles.statIcon} />
+                    <CurrencyDollar size={16} className={styles.statIcon} />
                     <span className={styles.statLabel}>Starting Price</span>
                     <span className={styles.statValue}>{formatCurrency(project.startingPrice)}</span>
                   </div>
                   <div className={styles.statBox}>
-                    <Building2 size={16} className={styles.statIcon} />
+                    <Buildings size={16} className={styles.statIcon} />
                     <span className={styles.statLabel}>Availability</span>
                     <span className={styles.statValue}>{project.availableUnits} / {project.totalUnits} Units</span>
                   </div>
                   <div className={styles.statBox}>
-                    <Calendar size={16} className={styles.statIcon} />
+                    <CalendarBlank size={16} className={styles.statIcon} />
                     <span className={styles.statLabel}>Handover</span>
                     <span className={styles.statValue}>{project.completionDate}</span>
                   </div>
@@ -111,7 +111,7 @@ export const ProjectProfile: React.FC = () => {
               <CardBody>
                 <ul className={styles.amenitiesList}>
                   {project.amenities.map((amenity, i) => (
-                    <li key={i}><CheckCircle2 size={14} className={styles.checkIcon} /> {amenity}</li>
+                    <li key={i}><CheckCircle size={14} className={styles.checkIcon} /> {amenity}</li>
                   ))}
                 </ul>
               </CardBody>
@@ -197,7 +197,7 @@ export const ProjectProfile: React.FC = () => {
 
               <div className={styles.composerFooter}>
                 <Button variant="outline" onClick={() => handleActionClick('Preview Email')}>Preview</Button>
-                <Button variant="primary" onClick={() => handleActionClick('Send Email to Client')}><Send size={16} style={{ marginRight: '8px' }} /> Send Email</Button>
+                <Button variant="primary" onClick={() => handleActionClick('Send Email to Client')}><PaperPlaneTilt size={16} style={{ marginRight: '8px' }} /> Send Email</Button>
               </div>
             </CardBody>
           </Card>

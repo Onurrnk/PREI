@@ -6,7 +6,7 @@ import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { ArrowLeft, Mail, Phone, Calendar, Globe, Building2, MapPin, FileText, Plus } from 'lucide-react';
+import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, Globe, Buildings, MapPin, FileText, Plus } from '@phosphor-icons/react';
 import { EmailClient } from '../clients/components/EmailClient';
 import styles from './DeveloperProfile.module.css';
 
@@ -54,7 +54,7 @@ export const DeveloperProfile: React.FC = () => {
         </div>
         <div className={styles.headerActions}>
           <Button variant="outline" onClick={() => handleActionClick('Visit Website')}><Globe size={16} /> Website</Button>
-          <Button variant="outline" onClick={() => handleActionClick('Schedule Meeting')}><Calendar size={16} /> Meeting</Button>
+          <Button variant="outline" onClick={() => handleActionClick('Schedule Meeting')}><CalendarBlank size={16} /> Meeting</Button>
           <Button variant="primary" onClick={() => handleActionClick('Edit Developer Profile')}>Edit Profile</Button>
         </div>
       </div>
@@ -71,7 +71,7 @@ export const DeveloperProfile: React.FC = () => {
                 <span className={styles.detailValue} style={{ fontWeight: 600 }}>{developer.keyContactName}</span>
               </div>
               <div className={styles.detailRow}>
-                <span className={styles.detailIcon}><Mail size={14} /></span>
+                <span className={styles.detailIcon}><EnvelopeSimple size={14} /></span>
                 <span className={styles.detailValue}>{developer.keyContactEmail}</span>
               </div>
               <div className={styles.detailRow}>
@@ -88,12 +88,12 @@ export const DeveloperProfile: React.FC = () => {
             <CardBody>
               <div className={styles.kpiGrid}>
                 <div className={styles.kpiBox}>
-                  <Building2 size={16} className={styles.kpiIcon} />
+                  <Buildings size={16} className={styles.kpiIcon} />
                   <span className={styles.kpiLabel}>Active Projects</span>
                   <span className={styles.kpiValue}>{developer.activeProjects}</span>
                 </div>
                 <div className={styles.kpiBox}>
-                  <Building2 size={16} className={styles.kpiIcon} style={{ color: 'var(--color-success)' }} />
+                  <Buildings size={16} className={styles.kpiIcon} style={{ color: 'var(--color-success)' }} />
                   <span className={styles.kpiLabel}>Completed</span>
                   <span className={styles.kpiValue}>{developer.totalCompletedProjects}</span>
                 </div>
@@ -106,7 +106,7 @@ export const DeveloperProfile: React.FC = () => {
               <h3 className={styles.cardTitle}>Quick Actions</h3>
             </CardHeader>
             <CardBody>
-              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Request Inventory Update')}><Mail size={16} /> Request Inventory</Button>
+              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Request Inventory Update')}><EnvelopeSimple size={16} /> Request Inventory</Button>
               <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Log Call with Developer')}><Phone size={16} /> Log Call</Button>
               <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Review Commission Agreement')}><FileText size={16} /> Review Contracts</Button>
             </CardBody>
@@ -153,7 +153,7 @@ export const DeveloperProfile: React.FC = () => {
                         <div className={styles.managerHeader}>Project Manager</div>
                         <div className={styles.managerName}>{project.projectManagerName}</div>
                         <div className={styles.managerContact}>
-                          <span><Mail size={10} /> {project.projectManagerEmail}</span>
+                          <span><EnvelopeSimple size={10} /> {project.projectManagerEmail}</span>
                           <span><Phone size={10} /> {project.projectManagerPhone}</span>
                         </div>
                       </div>
@@ -162,7 +162,7 @@ export const DeveloperProfile: React.FC = () => {
                 </div>
               ) : (
                 <div className={styles.emptyState}>
-                  <Building2 size={48} className={styles.emptyIcon} />
+                  <Buildings size={48} className={styles.emptyIcon} />
                   <p>No active projects linked to this developer.</p>
                   <Button variant="outline" onClick={() => handleActionClick('Sync Projects from ERP')}>Sync Projects</Button>
                 </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Paperclip, Send, Reply, Trash2, MoreVertical } from 'lucide-react';
+import { MagnifyingGlass, Paperclip, PaperPlaneTilt, ArrowBendUpLeft, Trash, DotsThreeVertical } from '@phosphor-icons/react';
 import { Card, CardHeader, CardBody } from '../../../core/components/Card/Card';
 import { Button } from '../../../core/components/Button/Button';
 import styles from './EmailClient.module.css';
@@ -45,7 +45,7 @@ export const EmailClient: React.FC<{ clientEmail: string, clientName: string }> 
           <div className={styles.adminBadge}>Admin View</div>
         </div>
         <div className={styles.searchBar}>
-          <Search size={14} className={styles.searchIcon} />
+          <MagnifyingGlass size={14} className={styles.searchIcon} />
           <input type="text" placeholder={`Search emails with ${clientEmail}...`} className={styles.searchInput} />
         </div>
       </CardHeader>
@@ -83,9 +83,9 @@ export const EmailClient: React.FC<{ clientEmail: string, clientName: string }> 
                   </div>
                 </div>
                 <div className={styles.messageActions}>
-                  <button className={styles.iconBtn}><Reply size={16} /></button>
-                  <button className={styles.iconBtn}><Trash2 size={16} /></button>
-                  <button className={styles.iconBtn}><MoreVertical size={16} /></button>
+                  <button className={styles.iconBtn}><ArrowBendUpLeft size={16} /></button>
+                  <button className={styles.iconBtn}><Trash size={16} /></button>
+                  <button className={styles.iconBtn}><DotsThreeVertical size={16} /></button>
                 </div>
               </div>
               <div className={styles.messageBody}>
@@ -101,7 +101,7 @@ export const EmailClient: React.FC<{ clientEmail: string, clientName: string }> 
                 <textarea className={styles.replyInput} placeholder="Type your reply here..."></textarea>
                 <div className={styles.replyActions}>
                   <button className={styles.attachBtn}><Paperclip size={16} /></button>
-                  <Button variant="primary"><Send size={14} style={{ marginRight: '8px' }} /> Send</Button>
+                  <Button variant="primary"><PaperPlaneTilt size={14} style={{ marginRight: '8px' }} /> Send</Button>
                 </div>
               </div>
             </div>

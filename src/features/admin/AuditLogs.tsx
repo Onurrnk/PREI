@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
-import { ShieldAlert, Search, Users, X, Activity, DollarSign } from 'lucide-react';
+import { ShieldWarning, MagnifyingGlass, UsersThree, X, Pulse, CurrencyDollar } from '@phosphor-icons/react';
 import { Button } from '../../core/components/Button/Button';
 import styles from './AuditLogs.module.css';
 
@@ -126,7 +126,7 @@ export const AuditLogs: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div className={styles.titleArea}>
-          <ShieldAlert size={28} className={styles.headerIcon} />
+          <ShieldWarning size={28} className={styles.headerIcon} />
           <div>
             <h1 className={styles.title}>User Management & Performance</h1>
             <p className={styles.subtitle}>Track user accounts, business performance, and operational activities.</p>
@@ -138,7 +138,7 @@ export const AuditLogs: React.FC = () => {
         <CardHeader className={styles.tableHeaderSection}>
           <div className={styles.filters}>
             <div className={styles.searchBar}>
-              <Search size={16} className={styles.searchIcon} />
+              <MagnifyingGlass size={16} className={styles.searchIcon} />
               <input 
                 type="text" 
                 placeholder="Search by name or role..." 
@@ -194,7 +194,7 @@ export const AuditLogs: React.FC = () => {
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <div className={styles.modalTitle}>
-                <Users size={24} color="var(--color-primary-purple)" />
+                <UsersThree size={24} color="var(--color-primary-purple)" />
                 {selectedUser.name} - Account Summary
               </div>
               <button className={styles.closeButton} onClick={() => {
@@ -229,7 +229,7 @@ export const AuditLogs: React.FC = () => {
 
               {/* Lead Pipeline Breakdown */}
               <div>
-                <h3 className={styles.sectionTitle}><Users size={20}/> Lead Pipeline Breakdown</h3>
+                <h3 className={styles.sectionTitle}><UsersThree size={20}/> Lead Pipeline Breakdown</h3>
                 <div className={styles.pipelineGrid}>
                   <div 
                     className={`${styles.pipelineCard} ${styles.pipeHot} ${selectedPipelineCategory === 'hotLeads' ? styles.activePipelineCard : ''}`}
@@ -307,7 +307,7 @@ export const AuditLogs: React.FC = () => {
 
               {/* Transactions Section */}
               <div>
-                <h3 className={styles.sectionTitle}><DollarSign size={20}/> Transactions & Deals</h3>
+                <h3 className={styles.sectionTitle}><CurrencyDollar size={20}/> Transactions & Deals</h3>
                 <Card>
                   <Table>
                     <TableHead>
@@ -346,7 +346,7 @@ export const AuditLogs: React.FC = () => {
 
               {/* Operational Activity Timeline */}
               <div>
-                <h3 className={styles.sectionTitle}><Activity size={20}/> Activity & Operations Log</h3>
+                <h3 className={styles.sectionTitle}><Pulse size={20}/> Activity & Operations Log</h3>
                 <div className={styles.timelineContainer}>
                   {selectedUser.timeline.map(tl => (
                     <div key={tl.id} className={styles.timelineItem}>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { ArrowLeft, UploadCloud, Plus, X, FileText, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CloudArrowUp, Plus, X, FileText, CheckCircle } from '@phosphor-icons/react';
 import { Modal } from '../../core/components/Modal/Modal';
 import styles from './AddProject.module.css';
 
@@ -66,7 +66,7 @@ export const AddProject: React.FC = () => {
         <div className={styles.headerActions}>
           <Button variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
           <Button variant="primary" onClick={handleSave} disabled={isSaving}>
-            <CheckCircle2 size={16} style={{ marginRight: 6 }} /> 
+            <CheckCircle size={16} style={{ marginRight: 6 }} /> 
             {isSaving ? 'Saving...' : 'Save Project'}
           </Button>
         </div>
@@ -208,7 +208,7 @@ export const AddProject: React.FC = () => {
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
                     <label>High-Resolution Photos (Gallery)</label>
                     <div className={styles.dropZone}>
-                      <UploadCloud size={32} className={styles.dropIcon} />
+                      <CloudArrowUp size={32} className={styles.dropIcon} />
                       <p>Drag and drop exterior, interior, and amenity images here</p>
                       <span className={styles.dropHint}>Supports JPG, PNG (Max 10MB per file)</span>
                       <Button variant="outline" style={{ marginTop: '12px' }}>Browse Files</Button>
@@ -293,7 +293,7 @@ export const AddProject: React.FC = () => {
         }
       >
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
-          <CheckCircle2 size={48} color="var(--color-success)" style={{ marginBottom: '16px' }} />
+          <CheckCircle size={48} color="var(--color-success)" style={{ marginBottom: '16px' }} />
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}>
             The new property project has been saved successfully.<br/>
             It is now available in the intelligence database and can be included in proposals.

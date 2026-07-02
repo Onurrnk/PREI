@@ -262,10 +262,10 @@
   color: var(--text-primary);
 }
 
-.iconPdf { color: #e11d48; }
-.iconImage { color: #0284c7; }
-.iconExcel { color: #16a34a; }
-.iconWord { color: #2563eb; }
+.iconPdf { color: var(--data-negative); }
+.iconImage { color: var(--data-info); }
+.iconExcel { color: var(--data-positive); }
+.iconWord { color: var(--data-info); }
 .iconDefault { color: var(--text-muted); }
 
 .fileCardBody {

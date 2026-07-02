@@ -5,7 +5,7 @@ import { proposalsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
 import { Button } from '../../core/components/Button/Button';
-import { Plus, Search, FileSignature, Eye, Calendar, DollarSign } from 'lucide-react';
+import { Plus, MagnifyingGlass, PenNib, Eye, CalendarBlank, CurrencyDollar } from '@phosphor-icons/react';
 import styles from './ProposalsList.module.css';
 
 import { ProposalView } from './ProposalView';
@@ -33,7 +33,7 @@ export const ProposalsList: React.FC = () => {
         </div>
         <div className={styles.headerActions}>
           <div className={styles.searchBar}>
-            <Search size={16} className={styles.searchIcon} />
+            <MagnifyingGlass size={16} className={styles.searchIcon} />
             <input type="text" placeholder="Search proposals..." className={styles.searchInput} />
           </div>
           <Button variant="primary" onClick={() => navigate('/proposals/new')}><Plus size={16} /> Create Proposal</Button>
@@ -72,16 +72,16 @@ export const ProposalsList: React.FC = () => {
               <TableRow key={prop.id} className={styles.clickableRow} onClick={() => setSelectedProposalId(prop.id)}>
                 <TableCell>
                   <div className={styles.proposalNameCell}>
-                    <FileSignature size={16} className={styles.iconMuted} />
+                    <PenNib size={16} className={styles.iconMuted} />
                     <div className={styles.proposalInfo}>
                       <span className={styles.proposalTitle}>{prop.title}</span>
-                      <span className={styles.proposalDate}><Calendar size={12}/> {prop.createdAt}</span>
+                      <span className={styles.proposalDate}><CalendarBlank size={12}/> {prop.createdAt}</span>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>{prop.clientName}</TableCell>
                 <TableCell>{prop.projectName}</TableCell>
-                <TableCell style={{ fontWeight: 600 }}><DollarSign size={14} className={styles.iconMuted}/> {formatCurrency(prop.totalValue)}</TableCell>
+                <TableCell style={{ fontWeight: 600 }}><CurrencyDollar size={14} className={styles.iconMuted}/> {formatCurrency(prop.totalValue)}</TableCell>
                 <TableCell>
                   <span className={`${styles.statusBadge} ${styles[prop.status.toLowerCase().replace(/ /g, '-')]}`}>
                     {prop.status}

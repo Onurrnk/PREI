@@ -1,22 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { 
-  User, 
-  Settings as SettingsIcon, 
-  Palette, 
-  Plug, 
-  Users, 
-  Save, 
-  MessageSquare, 
-  Globe, 
-  Building2,
-  CheckCircle2,
-  Plus,
-  Mail,
-  Calendar,
-  Send
-} from 'lucide-react';
+import { User, GearSix as SettingsIcon, Palette, Plug, UsersThree, FloppyDisk, ChatCircle, Globe, Buildings, CheckCircle, Plus, EnvelopeSimple, CalendarBlank, PaperPlaneTilt } from '@phosphor-icons/react';
 import { Modal } from '../../core/components/Modal/Modal';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import styles from './Settings.module.css';
@@ -204,7 +189,7 @@ export const Settings: React.FC = () => {
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Company Logo</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                   <div style={{ width: '80px', height: '80px', borderRadius: '8px', backgroundColor: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border-color)' }}>
-                    <Building2 size={32} color="var(--text-muted)" />
+                    <Buildings size={32} color="var(--text-muted)" />
                   </div>
                   <Button variant="outline">Upload New Logo</Button>
                   <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Recommended: 400x100px PNG</span>
@@ -213,8 +198,8 @@ export const Settings: React.FC = () => {
               <div style={{ marginTop: '24px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Primary Brand Color</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <input type="color" defaultValue="#60a5fa" style={{ width: '40px', height: '40px', padding: '0', border: 'none', borderRadius: '4px', cursor: 'pointer' }} />
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>#60A5FA (Used in PDF Proposals)</span>
+                  <input type="color" defaultValue="#9B5BB3" style={{ width: '40px', height: '40px', padding: '0', border: 'none', borderRadius: 'var(--radius-control)', cursor: 'pointer' }} />
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>#9B5BB3 (Used in PDF Proposals)</span>
                 </div>
               </div>
             </div>
@@ -234,10 +219,10 @@ export const Settings: React.FC = () => {
               <div className={styles.teamList}>
                 <div className={styles.teamMember}>
                   <div className={styles.memberInfo}>
-                    <div className={styles.memberAvatar}>JA</div>
+                    <div className={styles.memberAvatar}>OK</div>
                     <div>
-                      <div className={styles.memberName}>Jane Agent (You)</div>
-                      <div className={styles.memberRole}>jane@produality.com</div>
+                      <div className={styles.memberName}>Onur Nazım Karataş (You)</div>
+                      <div className={styles.memberRole}>onur@produality.com</div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -248,10 +233,10 @@ export const Settings: React.FC = () => {
                 
                 <div className={styles.teamMember}>
                   <div className={styles.memberInfo}>
-                    <div className={styles.memberAvatar} style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>MS</div>
+                    <div className={styles.memberAvatar} style={{ backgroundColor: 'color-mix(in srgb, var(--data-positive) 12%, transparent)', color: 'var(--data-positive)' }}>MA</div>
                     <div>
-                      <div className={styles.memberName}>Michael Smith</div>
-                      <div className={styles.memberRole}>michael@produality.com</div>
+                      <div className={styles.memberName}>Mert Aydınlar</div>
+                      <div className={styles.memberRole}>mert@produality.com</div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -262,7 +247,7 @@ export const Settings: React.FC = () => {
 
                 <div className={styles.teamMember}>
                   <div className={styles.memberInfo}>
-                    <div className={styles.memberAvatar} style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>ER</div>
+                    <div className={styles.memberAvatar} style={{ backgroundColor: 'color-mix(in srgb, var(--data-warning) 12%, transparent)', color: 'var(--data-warning)' }}>ER</div>
                     <div>
                       <div className={styles.memberName}>Elena Rodriguez</div>
                       <div className={styles.memberRole}>elena@produality.com</div>
@@ -319,7 +304,7 @@ export const Settings: React.FC = () => {
                 <div className={styles.integrationCard}>
                   <div className={styles.integrationInfo}>
                     <div className={styles.integrationIcon}>
-                      <Globe size={24} color="#10b981" />
+                      <Globe size={24} color="var(--data-positive)" />
                     </div>
                     <div>
                       <div className={styles.integrationName}>Bayut API</div>
@@ -332,12 +317,12 @@ export const Settings: React.FC = () => {
                 <div className={styles.integrationCard}>
                   <div className={styles.integrationInfo}>
                     <div className={styles.integrationIcon}>
-                      <MessageSquare size={24} color="#25D366" />
+                      <ChatCircle size={24} color="#25D366" />
                     </div>
                     <div>
                       <div className={styles.integrationName}>WhatsApp Business</div>
                       <div className={styles.integrationDesc}>Send automated messages and proposals via WhatsApp.</div>
-                      <div style={{ marginTop: '8px', fontSize: '0.75rem', color: '#10b981', fontWeight: 600 }}>• Connected (Number: +971 50 *** **67)</div>
+                      <div style={{ marginTop: '8px', fontSize: '0.75rem', color: 'var(--data-positive)', fontWeight: 500 }}>Connected (Number: +971 50 *** **67)</div>
                     </div>
                   </div>
                   <Button variant="outline">Manage</Button>
@@ -346,7 +331,7 @@ export const Settings: React.FC = () => {
                 <div className={styles.integrationCard}>
                   <div className={styles.integrationInfo}>
                     <div className={styles.integrationIcon}>
-                      <Calendar size={24} color="#4285F4" />
+                      <CalendarBlank size={24} color="#4285F4" />
                     </div>
                     <div>
                       <div className={styles.integrationName}>Google Calendar</div>
@@ -359,7 +344,7 @@ export const Settings: React.FC = () => {
                 <div className={styles.integrationCard}>
                   <div className={styles.integrationInfo}>
                     <div className={styles.integrationIcon}>
-                      <Mail size={24} color="#EA4335" />
+                      <EnvelopeSimple size={24} color="#EA4335" />
                     </div>
                     <div>
                       <div className={styles.integrationName}>Gmail Integration</div>
@@ -372,7 +357,7 @@ export const Settings: React.FC = () => {
                 <div className={styles.integrationCard}>
                   <div className={styles.integrationInfo}>
                     <div className={styles.integrationIcon}>
-                      <Send size={24} color="#229ED9" />
+                      <PaperPlaneTilt size={24} color="#229ED9" />
                     </div>
                     <div>
                       <div className={styles.integrationName}>Telegram Bot</div>
@@ -419,7 +404,7 @@ export const Settings: React.FC = () => {
             className={`${styles.navItem} ${activeTab === 'team' ? styles.navItemActive : ''}`}
             onClick={() => setActiveTab('team')}
           >
-            <Users size={18} /> Team & Roles
+            <UsersThree size={18} /> Team & Roles
           </button>
           <button 
             className={`${styles.navItem} ${activeTab === 'integrations' ? styles.navItemActive : ''}`}
@@ -435,7 +420,7 @@ export const Settings: React.FC = () => {
             
             <div className={styles.saveAction}>
               <Button variant="primary" onClick={handleSave} disabled={isSaving}>
-                <Save size={16} style={{ marginRight: '8px' }} /> 
+                <FloppyDisk size={16} style={{ marginRight: '8px' }} /> 
                 {isSaving ? 'Saving Changes...' : 'Save Changes'}
               </Button>
             </div>
@@ -450,7 +435,7 @@ export const Settings: React.FC = () => {
         footer={<Button variant="primary" onClick={() => setShowSaveModal(false)}>Close</Button>}
       >
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
-          <CheckCircle2 size={48} color="var(--color-success)" style={{ marginBottom: '16px' }} />
+          <CheckCircle size={48} color="var(--color-success)" style={{ marginBottom: '16px' }} />
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}>
             Your settings have been successfully updated.<br/>
             Some preferences may require a page reload to take full effect.

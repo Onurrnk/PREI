@@ -215,9 +215,9 @@
   text-transform: uppercase;
 }
 
-.badgeAdmin { background-color: rgba(99, 102, 241, 0.1); color: #6366f1; }
-.badgeManager { background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; }
-.badgeAgent { background-color: rgba(16, 185, 129, 0.1); color: #10b981; }
+.badgeAdmin { background-color: var(--brand-primary-soft); color: var(--brand-secondary); }
+.badgeManager { background-color: color-mix(in srgb, var(--data-warning) 12%, transparent); color: var(--data-warning); }
+.badgeAgent { background-color: color-mix(in srgb, var(--data-positive) 12%, transparent); color: var(--data-positive); }
 
 .saveAction {
   display: flex;

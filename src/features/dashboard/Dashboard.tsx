@@ -47,9 +47,12 @@ const pipelineTrend = [
   { label: 'W25', value: 4_720_000 },
 ];
 
+// Pazarlar (K-6): TR, UAE, ES, UK aktif; TH ve DE yolda
 const marketSplit = [
-  { name: 'Türkiye', value: 2_740_000 },
-  { name: 'Dubai (UAE)', value: 1_980_000 },
+  { name: 'Dubai (UAE)', value: 1_860_000 },
+  { name: 'Türkiye', value: 1_540_000 },
+  { name: 'Spain', value: 780_000 },
+  { name: 'United Kingdom', value: 540_000 },
 ];
 
 const leadSources = [
@@ -63,14 +66,14 @@ const leadSources = [
 const meetings = [
   { id: 'm1', title: 'Client Viewing: Marina Vista 2B', with: 'Selin Vural', time: '14:00', kind: 'in-person' as const },
   { id: 'm2', title: 'Negotiation Call', with: 'Khalid Al Mansoori', time: '16:00', kind: 'video' as const },
-  { id: 'm3', title: 'Developer Briefing: Emaar', with: 'Rania Haddad', time: 'Tomorrow 10:00', kind: 'in-person' as const },
+  { id: 'm3', title: 'Nine Elms Unit Tour (London)', with: 'James Whitmore', time: 'Tomorrow 10:00', kind: 'video' as const },
 ];
 
 const tasks = [
-  { id: 't1', title: 'Send revised SPA to legal — Al Reem 1204', status: 'Urgent' as const },
+  { id: 't1', title: 'Send revised SPA to legal (Al Reem 1204)', status: 'Urgent' as const },
   { id: 't2', title: 'Follow up: Selin Vural (Kadıköy 3+1)', status: 'Today' as const },
-  { id: 't3', title: 'Prepare Q3 portfolio report', status: 'This Week' as const },
-  { id: 't4', title: 'Verify title deed copy — DXB-0117', status: 'This Week' as const },
+  { id: 't3', title: 'Golden Visa docs: La Zagaleta villa, Marbella', status: 'This Week' as const },
+  { id: 't4', title: 'Verify title deed copy (DXB-0117)', status: 'This Week' as const },
 ];
 
 export const Dashboard: React.FC = () => {

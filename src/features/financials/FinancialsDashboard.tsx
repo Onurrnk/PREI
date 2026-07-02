@@ -21,19 +21,20 @@ const kpis = [
   { id: 'commission', label: 'Commission Earned', value: '$735K', delta: 15.2 },
 ];
 
-const salesByRegion = [
-  { name: 'Downtown Dubai', value: 8_500_000 },
-  { name: 'Dubai Marina', value: 6_200_000 },
-  { name: 'Palm Jumeirah', value: 5_800_000 },
-  { name: 'Business Bay', value: 4_000_000 },
+// Pazarlar (K-6): TR, UAE, ES, UK aktif; TH ve DE yolda
+const salesByMarket = [
+  { name: 'Dubai (UAE)', value: 9_800_000 },
+  { name: 'Türkiye', value: 7_400_000 },
+  { name: 'Spain', value: 4_300_000 },
+  { name: 'United Kingdom', value: 3_000_000 },
 ];
 
 const salesByProject = [
-  { name: 'Burj Khalifa Res.', value: 2_500_000 },
-  { name: 'Palm Beach Towers', value: 1_800_000 },
-  { name: 'Marina Vista', value: 1_200_000 },
-  { name: 'Safa Two', value: 900_000 },
-  { name: 'Other', value: 600_000 },
+  { name: 'Palm Beach Towers · DXB', value: 2_500_000 },
+  { name: 'Nişantaşı Koru · IST', value: 1_800_000 },
+  { name: 'Marina Vista · DXB', value: 1_200_000 },
+  { name: 'La Zagaleta Villas · MRB', value: 950_000 },
+  { name: 'Nine Elms Residences · LDN', value: 700_000 },
 ];
 
 const propertyTypeSplit = [
@@ -146,10 +147,10 @@ export const FinancialsDashboard: React.FC = () => {
       <div className={styles.chartsGrid}>
         <Card padding="md">
           <div className={styles.cardTitleRow}>
-            <h2 className={styles.cardTitle}>Sales by Region</h2>
+            <h2 className={styles.cardTitle}>Sales by Market</h2>
           </div>
           <DonutMetric
-            data={salesByRegion}
+            data={salesByMarket}
             centerValue="$24.5M"
             centerLabel="Total"
             formatValue={fmtUSD}

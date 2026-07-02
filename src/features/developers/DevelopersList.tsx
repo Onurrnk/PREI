@@ -5,7 +5,7 @@ import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
 import { Button } from '../../core/components/Button/Button';
-import { Plus, MoreHorizontal, Filter, Download, Search, Building2, MapPin } from 'lucide-react';
+import { Plus, DotsThree, FunnelSimple, DownloadSimple, MagnifyingGlass, Buildings, MapPin } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Developers.module.css';
 
@@ -34,7 +34,7 @@ export const DevelopersList: React.FC = () => {
         </div>
         <div className={styles.headerActions}>
           <div className={styles.searchBar}>
-            <Search size={16} className={styles.searchIcon} />
+            <MagnifyingGlass size={16} className={styles.searchIcon} />
             <input 
               type="text" 
               placeholder="Search developers..." 
@@ -43,8 +43,8 @@ export const DevelopersList: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button variant="outline" onClick={() => handleActionClick('Filter Developers')}><Filter size={16} /> Filter</Button>
-          <Button variant="outline" onClick={() => handleActionClick('Export Developers Data')}><Download size={16} /> Export</Button>
+          <Button variant="outline" onClick={() => handleActionClick('Filter Developers')}><FunnelSimple size={16} /> Filter</Button>
+          <Button variant="outline" onClick={() => handleActionClick('Export Developers Data')}><DownloadSimple size={16} /> Export</Button>
           <Button variant="primary" onClick={() => handleActionClick('Add New Developer')}><Plus size={16} /> Add Developer</Button>
         </div>
       </div>
@@ -74,7 +74,7 @@ export const DevelopersList: React.FC = () => {
                   <TableCell>
                     <div className={styles.developerNameCell}>
                       <div className={styles.developerAvatar}>
-                        <Building2 size={16} />
+                        <Buildings size={16} />
                       </div>
                       <span className={styles.developerName}>{dev.name}</span>
                     </div>
@@ -118,7 +118,7 @@ export const DevelopersList: React.FC = () => {
                         handleActionClick(`Options for ${dev.name}`);
                       }}
                     >
-                      <MoreHorizontal size={16} />
+                      <DotsThree size={16} />
                     </button>
                   </TableCell>
                 </TableRow>

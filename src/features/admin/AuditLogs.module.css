@@ -72,7 +72,7 @@
 }
 
 .iconWarningBg {
-  color: #f59e0b;
+  color: var(--data-warning);
   background-color: rgba(245, 158, 11, 0.1);
   border-color: rgba(245, 158, 11, 0.2);
 }
@@ -191,7 +191,7 @@
 
 .iconSuccess { color: var(--color-success); }
 .iconFailed { color: var(--color-danger); }
-.iconWarning { color: #f59e0b; }
+.iconWarning { color: var(--data-warning); }
 
 .statusText {
   font-weight: 600;
@@ -200,7 +200,7 @@
 
 .statusSuccess { color: var(--color-success); }
 .statusFailed { color: var(--color-danger); }
-.statusWarning { color: #f59e0b; }
+.statusWarning { color: var(--data-warning); }
 
 .nameLink {
   background: none;
@@ -383,8 +383,8 @@
 .pipeNegotiating { border-top: 3px solid var(--color-primary-purple); }
 .pipeNegotiating .pipelineValue { color: var(--color-primary-purple); }
 
-.pipeFrozen { border-top: 3px solid #64748b; }
-.pipeFrozen .pipelineValue { color: #64748b; }
+.pipeFrozen { border-top: 3px solid var(--text-muted); }
+.pipeFrozen .pipelineValue { color: var(--text-muted); }
 
 .pipeLost { border-top: 3px solid var(--text-muted); }
 .pipeLost .pipelineValue { color: var(--text-muted); }

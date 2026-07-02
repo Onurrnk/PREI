@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { ArrowLeft, CheckCircle2, User, Building2, Calculator, Image as ImageIcon, FileSignature, Send, Download } from 'lucide-react';
+import { ArrowLeft, CheckCircle, User, Buildings, Calculator, Image as ImageIcon, PenNib, PaperPlaneTilt, DownloadSimple } from '@phosphor-icons/react';
 import { Modal } from '../../core/components/Modal/Modal';
 import styles from './CreateProposal.module.css';
 
@@ -45,7 +45,7 @@ export const CreateProposal: React.FC = () => {
         <div className={styles.headerActions}>
           <Button variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
           <Button variant="primary" onClick={handleSaveAndSend} disabled={currentStep !== totalSteps || isSending}>
-            <Send size={16} style={{ marginRight: 6 }} /> 
+            <PaperPlaneTilt size={16} style={{ marginRight: 6 }} /> 
             {isSending ? 'Sending...' : 'Send Proposal'}
           </Button>
         </div>
@@ -77,7 +77,7 @@ export const CreateProposal: React.FC = () => {
                 </div>
               </div>
               <div className={`${styles.stepItem} ${currentStep >= 4 ? styles.stepActive : ''}`} onClick={() => setCurrentStep(4)}>
-                <div className={styles.stepCircle}><FileSignature size={14} /></div>
+                <div className={styles.stepCircle}><PenNib size={14} /></div>
                 <div className={styles.stepInfo}>
                   <div className={styles.stepTitle}>Preview & Send</div>
                   <div className={styles.stepDesc}>Final review</div>
@@ -189,11 +189,11 @@ export const CreateProposal: React.FC = () => {
                     <div className={styles.photoGrid}>
                       <div className={`${styles.photoItem} ${styles.photoSelected}`}>
                         <img src="/images/exterior.png" alt="Exterior" />
-                        <div className={styles.checkOverlay}><CheckCircle2 size={24} /></div>
+                        <div className={styles.checkOverlay}><CheckCircle size={24} /></div>
                       </div>
                       <div className={`${styles.photoItem} ${styles.photoSelected}`}>
                         <img src="/images/interior.png" alt="Interior" />
-                        <div className={styles.checkOverlay}><CheckCircle2 size={24} /></div>
+                        <div className={styles.checkOverlay}><CheckCircle size={24} /></div>
                       </div>
                       <div className={styles.photoItem}>
                         <img src="/images/amenities.png" alt="Amenities" />
@@ -210,7 +210,7 @@ export const CreateProposal: React.FC = () => {
                     <div className={styles.proposalHeader}>
                       {/* ProDuality Branding explicitly requested by user */}
                       <div className={styles.brandLogo}>
-                        <Building2 size={28} />
+                        <Buildings size={28} />
                         <span>ProDuality</span>
                       </div>
                       <div className={styles.proposalMeta}>
@@ -264,15 +264,15 @@ export const CreateProposal: React.FC = () => {
                       <div className={styles.attachmentsSectionPreview}>
                         <h3>Included Attachments</h3>
                         <div className={styles.attachmentPills}>
-                          <div className={styles.pill}><FileSignature size={14}/> Project_Brochure.pdf</div>
-                          <div className={styles.pill}><FileSignature size={14}/> Floor_Plans.pdf</div>
+                          <div className={styles.pill}><PenNib size={14}/> Project_Brochure.pdf</div>
+                          <div className={styles.pill}><PenNib size={14}/> Floor_Plans.pdf</div>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   <div className={styles.previewActions}>
-                    <Button variant="outline"><Download size={16} style={{marginRight: 6}}/> Download as PDF</Button>
+                    <Button variant="outline"><DownloadSimple size={16} style={{marginRight: 6}}/> Download as PDF</Button>
                     <p className={styles.hintText}>The client will receive an email with a secure link to this digital proposal. You will be notified when they open it.</p>
                   </div>
                 </div>
@@ -316,7 +316,7 @@ export const CreateProposal: React.FC = () => {
         }
       >
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
-          <CheckCircle2 size={48} color="var(--color-success)" style={{ marginBottom: '16px' }} />
+          <CheckCircle size={48} color="var(--color-success)" style={{ marginBottom: '16px' }} />
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}>
             The proposal has been successfully generated and sent to the client.<br/>
             You can track its status in the Proposal Center.

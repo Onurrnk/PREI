@@ -9,7 +9,7 @@ import { Button } from '../../core/components/Button/Button';
 import { EmailClient } from './components/EmailClient';
 import { DocumentVault } from '../documents/DocumentVault';
 import { Modal } from '../../core/components/Modal/Modal';
-import { ArrowLeft, Mail, Phone, Calendar, MessageSquare, FileText, MapPin, Building, DollarSign, FolderOpen } from 'lucide-react';
+import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen } from '@phosphor-icons/react';
 import styles from './ClientProfile.module.css';
 
 export const ClientProfile: React.FC = () => {
@@ -85,7 +85,7 @@ export const ClientProfile: React.FC = () => {
           </div>
         </div>
         <div className={styles.headerActions}>
-          <Button variant="outline" onClick={() => handleActionClick('Send Email')}><Mail size={16} /> Email</Button>
+          <Button variant="outline" onClick={() => handleActionClick('Send Email')}><EnvelopeSimple size={16} /> Email</Button>
           <Button variant="outline" onClick={() => handleActionClick('Log Call')}><Phone size={16} /> Call</Button>
           <Button variant="primary" onClick={() => handleActionClick('Edit Profile')}>Edit Profile</Button>
         </div>
@@ -99,7 +99,7 @@ export const ClientProfile: React.FC = () => {
             </CardHeader>
             <CardBody>
               <div className={styles.detailRow}>
-                <span className={styles.detailIcon}><Mail size={14} /></span>
+                <span className={styles.detailIcon}><EnvelopeSimple size={14} /></span>
                 <span className={styles.detailValue}>{client.email}</span>
               </div>
               <div className={styles.detailRow}>
@@ -120,12 +120,12 @@ export const ClientProfile: React.FC = () => {
             <CardBody>
               <div className={styles.kpiGrid}>
                 <div className={styles.kpiBox}>
-                  <DollarSign size={16} className={styles.kpiIcon} />
+                  <CurrencyDollar size={16} className={styles.kpiIcon} />
                   <span className={styles.kpiLabel}>Total Value</span>
                   <span className={styles.kpiValue}>{formatCurrency(client.totalInvestment)}</span>
                 </div>
                 <div className={styles.kpiBox}>
-                  <Building size={16} className={styles.kpiIcon} />
+                  <BuildingOffice size={16} className={styles.kpiIcon} />
                   <span className={styles.kpiLabel}>Properties</span>
                   <span className={styles.kpiValue}>{client.activeProperties} Active</span>
                 </div>
@@ -152,7 +152,7 @@ export const ClientProfile: React.FC = () => {
               <h3 className={styles.cardTitle}>Quick Actions</h3>
             </CardHeader>
             <CardBody>
-              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Schedule Meeting')}><Calendar size={16} /> Schedule Meeting</Button>
+              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Schedule Meeting')}><CalendarBlank size={16} /> Schedule Meeting</Button>
               <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Create Proposal')}><FileText size={16} /> Create Proposal</Button>
               <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('View Contracts')}><FolderOpen size={16} /> View Client Vault</Button>
             </CardBody>
@@ -165,7 +165,7 @@ export const ClientProfile: React.FC = () => {
               className={`${styles.tabBtn} ${activeTab === 'communication' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('communication')}
             >
-              <MessageSquare size={16} /> Communication Center
+              <ChatCircle size={16} /> Communication Center
             </button>
             <button 
               className={`${styles.tabBtn} ${activeTab === 'vault' ? styles.activeTab : ''}`}
@@ -189,7 +189,7 @@ export const ClientProfile: React.FC = () => {
                 <CardBody className={styles.commBody}>
                   <div className={styles.timeline}>
                     <div className={styles.timelineItem}>
-                      <div className={styles.timelineIcon}><Mail size={16} /></div>
+                      <div className={styles.timelineIcon}><EnvelopeSimple size={16} /></div>
                       <div className={styles.timelineContent}>
                         <div className={styles.timelineHeader}>
                           <span className={styles.timelineTitle}>Email Sent: Property Portfolio Update</span>

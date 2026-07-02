@@ -5,7 +5,7 @@ import { proposalsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { ArrowLeft, Download, Building2, FileSignature } from 'lucide-react';
+import { ArrowLeft, DownloadSimple, Buildings, PenNib } from '@phosphor-icons/react';
 import styles from './ProposalView.module.css';
 
 interface ProposalViewProps {
@@ -44,7 +44,7 @@ export const ProposalView: React.FC<ProposalViewProps> = ({ proposalId, onClose 
           </div>
         </div>
         <div className={styles.headerActions}>
-          <Button variant="outline"><Download size={16} style={{marginRight: 6}}/> Download PDF</Button>
+          <Button variant="outline"><DownloadSimple size={16} style={{marginRight: 6}}/> Download PDF</Button>
         </div>
       </div>
 
@@ -53,7 +53,7 @@ export const ProposalView: React.FC<ProposalViewProps> = ({ proposalId, onClose 
           <CardBody className={styles.digitalProposal}>
             <div className={styles.proposalHeader}>
               <div className={styles.brandLogo}>
-                <Building2 size={28} />
+                <Buildings size={28} />
                 <span>ProDuality</span>
               </div>
               <div className={styles.proposalMeta}>
@@ -103,8 +103,8 @@ export const ProposalView: React.FC<ProposalViewProps> = ({ proposalId, onClose 
               <div className={styles.attachmentsSectionPreview}>
                 <h3>Included Attachments</h3>
                 <div className={styles.attachmentPills}>
-                  <div className={styles.pill}><FileSignature size={14}/> Project_Brochure.pdf</div>
-                  <div className={styles.pill}><FileSignature size={14}/> Floor_Plans.pdf</div>
+                  <div className={styles.pill}><PenNib size={14}/> Project_Brochure.pdf</div>
+                  <div className={styles.pill}><PenNib size={14}/> Floor_Plans.pdf</div>
                 </div>
               </div>
             </div>
