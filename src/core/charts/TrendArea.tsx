@@ -9,7 +9,7 @@ import {
   Tooltip,
 } from 'recharts';
 import { ChartTooltip } from './ChartTooltip';
-import { AXIS_TICK, GRID_STROKE, ANIMATION_MS } from './theme';
+import { AXIS_TICK, GRID_STROKE, ANIMATION_MS, MOTION_OK } from './theme';
 
 export interface TrendPoint {
   label: string;
@@ -75,6 +75,7 @@ export const TrendArea: React.FC<TrendAreaProps> = ({
           fill={`url(#${gradientId})`}
           dot={false}
           activeDot={{ r: 4, strokeWidth: 0 }}
+          isAnimationActive={MOTION_OK}
           animationDuration={ANIMATION_MS}
         />
       </AreaChart>

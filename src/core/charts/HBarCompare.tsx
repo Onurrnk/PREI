@@ -7,7 +7,7 @@ import {
   YAxis,
   LabelList,
 } from 'recharts';
-import { ANIMATION_MS } from './theme';
+import { ANIMATION_MS, MOTION_OK } from './theme';
 
 export interface HBarItem {
   name: string;
@@ -55,6 +55,7 @@ export const HBarCompare: React.FC<HBarCompareProps> = ({
           fill={color}
           barSize={12}
           radius={[6, 6, 6, 6]}
+          isAnimationActive={MOTION_OK}
           animationDuration={ANIMATION_MS}
         >
           <LabelList

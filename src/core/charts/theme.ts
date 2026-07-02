@@ -23,6 +23,11 @@ export const AXIS_TICK = {
 export const GRID_STROKE = 'var(--chart-grid)';
 export const ANIMATION_MS = 600;
 
+/** prefers-reduced-motion: grafik animasyonları tamamen kapanır (Design System §7). */
+export const MOTION_OK: boolean =
+  typeof window !== 'undefined' &&
+  !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 /** 1_240_000 → "1.2M", 45_300 → "45.3K" */
 export const fmtCompact = (v: number): string => {
   const abs = Math.abs(v);

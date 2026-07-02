@@ -77,7 +77,7 @@ export const Login: React.FC = () => {
 
         <div className={styles.hint}>
           Demo hesapları (şifre fark etmez):<br />
-          admin@prei.app · sarah@prei.app · jane@prei.app
+          admin@prei.app · sarah@prei.app · elif@prei.app
         </div>
       </form>
     </div>

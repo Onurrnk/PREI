@@ -273,7 +273,7 @@
   background-color: var(--color-primary-purple);
   color: white;
   padding: 4px 10px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-control);
   font-size: 0.875rem;
 }
 

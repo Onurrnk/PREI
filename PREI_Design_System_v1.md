@@ -228,14 +228,17 @@ Yasak: sonsuz döngü animasyonlar, parallax, scroll-hijack, hover'da zıplayan 
 | T5 | Kalan modüller: Projects, Developers, Proposals, Documents, Meetings, Tasks, Admin, Settings, Login | |
 | T6 | Mock veri temizliği (gerçekçi isimler/sayılar) + iki temada tam tur QA + kontrast denetimi | Ship |
 
-## 9. Kabul Kriterleri (FAZ T çıkışı)
+## 9. Kabul Kriterleri (FAZ T çıkışı) — Denetim: 2026-07-02
 
-- [ ] Altın/şampanya (#C6A15B) kod tabanında sıfır geçiyor; tek accent = logo moru (#9B5BB3), sayfa genelinde kilitli ve yalnız marka/aksiyon anlamında.
-- [ ] Tüm sayısal değerler (para, %, tarih, ID) Geist Mono + tabular-nums.
-- [ ] Hiçbir ekranda çıplak recharts bileşeni yok; tüm grafikler `core/charts` sarmalayıcılarından.
-- [ ] Her modülde loading (skeleton) + empty + error durumu var.
-- [ ] Radius kilidi: control 8 / surface 12 / full yalnız avatar — istisna sıfır.
-- [ ] İki temada da WCAG AA kontrast (buton, form, chip dahil) denetlendi.
-- [ ] Tek ikon ailesi (Phosphor) — lucide importu kalmadı.
-- [ ] Mock verilerde "John Doe" sınıfı isim/sayı kalmadı.
-- [ ] `prefers-reduced-motion` tüm animasyonları kapatıyor.
+- [x] Altın/şampanya (#C6A15B) kod tabanında sıfır geçiyor; tek accent = logo moru (#9B5BB3). *(grep: 0 sonuç)*
+- [x] Sayısal değerler Geist Mono + tabular-nums — KPI'lar, tablo para/ID/oran kolonları, grafik eksenleri. *(inspect ile ölçüldü)*
+- [x] Feature kodunda çıplak recharts importu sıfır; tüm grafikler `core/charts`'tan. *(grep: 0 dosya)*
+- [~] Loading (TableSkeleton) ana liste modüllerinde ✅; **empty/error durumları henüz evrensel değil** — Faz 1'de her modül gerçek API'ye bağlanırken tamamlanacak (bilinçli erteleme; gerçek hata/boş senaryoları API ile birlikte anlam kazanıyor).
+- [x] Radius kilidi: 13 chip/pill `radius-control`'a çekildi; `radius-full` yalnız avatar, bildirim noktası, scrollbar. *(satır satır denetlendi)*
+- [x] İki temada AA kontrast: aktif nav 4.62, muted metin koyu 4.94 / açık 4.73, primary buton 4.6, form 15.7. **Denetim 2 ihlal yakaladı ve düzeltildi:** buton beyaz-üstü-şampanya (T1'de) ve `--text-muted` her iki temada (T6'da).
+- [x] Tek ikon ailesi: lucide-react **paketten kaldırıldı**; yalnız Phosphor.
+- [x] Mock isimler: "John Doe / Jane Smith / Jane Agent / Acme Corp" sıfır; çok pazarlı gerçekçi isimler (TR/UAE/ES/UK/DE).
+- [x] `prefers-reduced-motion`: global CSS kill-switch + skeleton shimmer + recharts `MOTION_OK` guard'ı.
+- [ ] **Açık kalem (B-14):** 390px mobil tur — Faz 1 PWA çalışmasıyla birlikte.
+
+**FAZ T durumu: KAPANDI** (2 açık kalem Faz 1'e devredildi, gerekçeleri yukarıda). Görsel dil donduruldu; bundan sonra UI değişiklikleri bu dokümana uygunluk denetiminden geçer.

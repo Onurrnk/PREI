@@ -31,7 +31,7 @@
   gap: var(--spacing-sm);
   background: var(--bg-surface-hover);
   padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-control);
   font-size: 0.9rem;
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
@@ -161,7 +161,7 @@
   background: var(--bg-surface-hover);
   color: var(--text-secondary);
   padding: 2px 8px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-control);
   font-size: 0.8rem;
   font-weight: 500;
 }

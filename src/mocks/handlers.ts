@@ -18,35 +18,35 @@ import type {
 export type * from '../core/types';
 
 const mockProposals: ProposalDTO[] = [
-  { id: 'prop1', title: 'Beachfront Residences - 3BR Pitch', clientName: 'John Doe', projectName: 'Beachfront Residences', status: 'Sent', totalValue: 2800000, createdAt: '2026-06-15', viewCount: 0 },
+  { id: 'prop1', title: 'Beachfront Residences - 3BR Pitch', clientName: 'Oliver Hartwell', projectName: 'Beachfront Residences', status: 'Sent', totalValue: 2800000, createdAt: '2026-06-15', viewCount: 0 },
   { id: 'prop2', title: 'Downtown Heights - Penthouse Offer', clientName: 'Sarah Ahmed', projectName: 'Downtown Heights', status: 'Viewed', totalValue: 4200000, createdAt: '2026-06-14', lastViewed: '2026-06-16T10:30:00Z', viewCount: 3 },
   { id: 'prop3', title: 'DAMAC Hills - Villa 45', clientName: 'Mohammed Al Fayed', projectName: 'DAMAC Hills Villas', status: 'Accepted', totalValue: 3800000, createdAt: '2026-06-10', lastViewed: '2026-06-12T14:15:00Z', viewCount: 5 },
-  { id: 'prop4', title: 'Belmont Investment Portfolio', clientName: 'Jane Smith', projectName: 'Belmont Residences', status: 'Draft', totalValue: 1200000, createdAt: '2026-06-16', viewCount: 0 }
+  { id: 'prop4', title: 'Belmont Investment Portfolio', clientName: 'Carmen Ortega', projectName: 'Belmont Residences', status: 'Draft', totalValue: 1200000, createdAt: '2026-06-16', viewCount: 0 }
 ];
 
 const mockVaultDocuments: VaultDocumentDTO[] = [
-  { id: 'doc1', name: 'John_Doe_Passport.pdf', folder: 'Client KYC', type: 'pdf', sizeMB: 2.4, uploadedAt: '2026-06-15', uploadedBy: 'Jane Agent' },
+  { id: 'doc1', name: 'Oliver_Hartwell_Passport.pdf', folder: 'Client KYC', type: 'pdf', sizeMB: 2.4, uploadedAt: '2026-06-15', uploadedBy: 'Elif Şahin' },
   { id: 'doc2', name: 'Beachfront_Brochure_V2.pdf', folder: 'Marketing', type: 'pdf', sizeMB: 15.6, uploadedAt: '2026-06-10', uploadedBy: 'Marketing Team' },
   { id: 'doc3', name: 'SPA_Template_Emaar.word', folder: 'Contracts', type: 'word', sizeMB: 1.1, uploadedAt: '2026-06-01', uploadedBy: 'Legal Dept' },
-  { id: 'doc4', name: 'Downtown_Heights_Floorplans.pdf', folder: 'Marketing', type: 'pdf', sizeMB: 8.2, uploadedAt: '2026-05-20', uploadedBy: 'Jane Agent' },
-  { id: 'doc5', name: 'MOU_Sarah_Ahmed_Signed.pdf', folder: 'Contracts', type: 'pdf', sizeMB: 4.5, uploadedAt: '2026-06-14', uploadedBy: 'Jane Agent' },
+  { id: 'doc4', name: 'Downtown_Heights_Floorplans.pdf', folder: 'Marketing', type: 'pdf', sizeMB: 8.2, uploadedAt: '2026-05-20', uploadedBy: 'Elif Şahin' },
+  { id: 'doc5', name: 'MOU_Sarah_Ahmed_Signed.pdf', folder: 'Contracts', type: 'pdf', sizeMB: 4.5, uploadedAt: '2026-06-14', uploadedBy: 'Elif Şahin' },
   { id: 'doc6', name: 'ROI_Calculator_2026.excel', folder: 'Root', type: 'excel', sizeMB: 0.5, uploadedAt: '2026-01-10', uploadedBy: 'Finance' },
 ];
 
 const mockAuditLogs: AuditLogDTO[] = [
-  { id: 'al1', actor: 'Jane Agent', action: 'Downloaded Document', resource: 'SPA_Template_Emaar.word', timestamp: '2026-06-16T10:45:00Z', ipAddress: '192.168.1.45', status: 'Success' },
+  { id: 'al1', actor: 'Elif Şahin', action: 'Downloaded Document', resource: 'SPA_Template_Emaar.word', timestamp: '2026-06-16T10:45:00Z', ipAddress: '192.168.1.45', status: 'Success' },
   { id: 'al2', actor: 'System', action: 'Nightly Backup', resource: 'DB_Cluster_Primary', timestamp: '2026-06-16T03:00:00Z', ipAddress: '10.0.0.1', status: 'Success' },
-  { id: 'al3', actor: 'John Smith', action: 'Failed Login', resource: 'Admin Portal', timestamp: '2026-06-15T22:15:30Z', ipAddress: '45.22.11.90', status: 'Failed' },
+  { id: 'al3', actor: 'Daniel Okafor', action: 'Failed Login', resource: 'Admin Portal', timestamp: '2026-06-15T22:15:30Z', ipAddress: '45.22.11.90', status: 'Failed' },
   { id: 'al4', actor: 'Marketing Team', action: 'Sent Proposal', resource: 'prop2', timestamp: '2026-06-15T14:20:00Z', ipAddress: '192.168.1.112', status: 'Success' },
   { id: 'al5', actor: 'Unknown', action: 'Unauthorized API Access', resource: '/api/kpi/dashboard', timestamp: '2026-06-15T09:12:00Z', ipAddress: '188.134.55.2', status: 'Warning' },
-  { id: 'al6', actor: 'Jane Agent', action: 'Created Lead', resource: 'Mohammed Al Fayed', timestamp: '2026-06-14T11:05:00Z', ipAddress: '192.168.1.45', status: 'Success' },
+  { id: 'al6', actor: 'Elif Şahin', action: 'Created Lead', resource: 'Mohammed Al Fayed', timestamp: '2026-06-14T11:05:00Z', ipAddress: '192.168.1.45', status: 'Success' },
 ];
 
 export const mockUsers: UserDTO[] = [
-  { id: 'u1', name: 'Admin User', role: 'Admin', email: 'admin@prei.app', avatar: 'https://ui-avatars.com/api/?name=Admin+User&background=0D8ABC&color=fff' },
+  { id: 'u1', name: 'Onur Nazım Karataş', role: 'Admin', email: 'admin@prei.app', avatar: 'https://ui-avatars.com/api/?name=Onur+Karatas&background=0D8ABC&color=fff' },
   { id: 'u2', name: 'Sarah Ahmed', role: 'Consultant', email: 'sarah@prei.app', avatar: 'https://ui-avatars.com/api/?name=Sarah+Ahmed&background=1D9A6C&color=fff' },
   { id: 'u3', name: 'Michael Chen', role: 'Manager', email: 'michael@prei.app', avatar: 'https://ui-avatars.com/api/?name=Michael+Chen&background=F4A261&color=fff' },
-  { id: 'u4', name: 'Jane Agent', role: 'Consultant', email: 'jane@prei.app', avatar: 'https://ui-avatars.com/api/?name=Jane+Agent&background=E76F51&color=fff' },
+  { id: 'u4', name: 'Elif Şahin', role: 'Consultant', email: 'elif@prei.app', avatar: 'https://ui-avatars.com/api/?name=Elif+Sahin&background=E76F51&color=fff' },
 ];
 
 // --- Mock auth (token format: "mock-token-<userId>") ---
@@ -59,7 +59,7 @@ const userIdFromToken = (auth: string | null): string | null => {
 
 export let mockTasks: TaskDTO[] = [
   { id: 't1', title: 'Prepare Proposal for Downtown Heights', description: 'Draft the initial proposal for Sarah Ahmed focusing on penthouses.', dueDate: '2026-06-21T14:00:00Z', priority: 'High', status: 'In Progress', assigneeId: 'u2', relatedEntity: { type: 'Lead', name: 'Sarah Ahmed', id: '2' }, type: 'Task' },
-  { id: 't2', title: 'Follow up with John Doe', description: 'Call John regarding the Beachfront Residences documents.', dueDate: '2026-06-20T10:00:00Z', priority: 'Medium', status: 'Pending', assigneeId: 'u2', relatedEntity: { type: 'Client', name: 'John Doe', id: '1' }, type: 'Task' },
+  { id: 't2', title: 'Follow up with Oliver Hartwell', description: 'Call Oliver regarding the Beachfront Residences documents.', dueDate: '2026-06-20T10:00:00Z', priority: 'Medium', status: 'Pending', assigneeId: 'u2', relatedEntity: { type: 'Client', name: 'Oliver Hartwell', id: '1' }, type: 'Task' },
   { id: 't3', title: 'Weekly Pipeline Review', description: 'Review all new leads and update statuses.', dueDate: '2026-06-22T09:00:00Z', priority: 'High', status: 'Pending', assigneeId: 'u3', type: 'Meeting' },
   { id: 't4', title: 'Send Contract to Elena Rossi', description: 'Finalize the SPA and send it for digital signature.', dueDate: '2026-06-20T16:00:00Z', priority: 'High', status: 'Pending', assigneeId: 'u4', relatedEntity: { type: 'Lead', name: 'Elena Rossi', id: '4' }, type: 'Task' },
   { id: 't5', title: 'Site Visit: DAMAC Hills', description: 'Accompany Mr. Al Fayed to the villa show home.', dueDate: '2026-06-23T11:00:00Z', priority: 'Medium', status: 'Pending', assigneeId: 'u2', relatedEntity: { type: 'Client', name: 'Mohammed Al Fayed', id: '4' }, type: 'Meeting' },
@@ -138,52 +138,52 @@ export const handlers = [
       {
         id: '1',
         type: 'LEAD_CREATED',
-        actor: 'Admin User',
+        actor: 'Onur Nazım Karataş',
         timestamp: new Date().toISOString(),
         details: 'Added new lead from Dubai office.'
       },
       {
         id: '2',
         type: 'MEETING_SCHEDULED',
-        actor: 'Sarah Consultant',
+        actor: 'Sarah Ahmed',
         timestamp: new Date(Date.now() - 3600000).toISOString(),
-        details: 'Meeting scheduled with John Doe for tomorrow.'
+        details: 'Meeting scheduled with Oliver Hartwell for tomorrow.'
       }
     ]);
   }),
 
   http.get('/api/leads', () => {
     return HttpResponse.json<LeadDTO[]>([
-      { id: '1', name: 'Michael Chen', company: 'Global Tech', status: 'New Lead', value: 1500000, probability: 15, aiRiskScore: 'Low' },
+      { id: '1', name: 'Stefan Brandt', company: 'Nordwind Capital', status: 'New Lead', value: 1500000, probability: 15, aiRiskScore: 'Low' },
       { id: '2', name: 'Sarah Ahmed', company: 'Emirates Corp', status: 'Contacted', value: 3200000, probability: 30, aiRiskScore: 'Medium' },
-      { id: '3', name: 'David Smith', company: 'InvestUK', status: 'Meeting Scheduled', value: 850000, probability: 50, aiRiskScore: 'Low' },
+      { id: '3', name: 'Edward Langley', company: 'InvestUK', status: 'Meeting Scheduled', value: 850000, probability: 50, aiRiskScore: 'Low' },
       { id: '4', name: 'Elena Rossi', company: 'Rossi Group', status: 'Proposal Sent', value: 4500000, probability: 75, aiRiskScore: 'High' },
-      { id: '5', name: 'Ahmet Yilmaz', company: 'Yilmaz Holding', status: 'Negotiation', value: 2100000, probability: 85, aiRiskScore: 'Low' },
+      { id: '5', name: 'Ahmet Yılmaz', company: 'Yılmaz Holding', status: 'Negotiation', value: 2100000, probability: 85, aiRiskScore: 'Low' },
     ]);
   }),
 
   http.get('/api/clients', () => {
     return HttpResponse.json<ClientDTO[]>([
       {
-        id: '1', clientId: 'CL-10024', name: 'John Doe', type: 'VIP', nationality: 'UK',
-        email: 'john.doe@example.com', phone: '+44 7700 900077', totalInvestment: 4500000,
+        id: '1', clientId: 'CL-10024', name: 'Oliver Hartwell', type: 'VIP', nationality: 'UK',
+        email: 'o.hartwell@hartwellestates.co.uk', phone: '+44 7700 900077', totalInvestment: 4500000,
         activeProperties: 3, preferredRegions: ['Dubai Marina', 'Downtown Dubai'],
         investmentProfile: 'Balanced', source: 'Referral', relationshipStatus: 'Active',
         assignedConsultant: 'Sarah Ahmed', lastContactDate: '2026-06-15T10:30:00Z'
       },
       {
-        id: '2', clientId: 'CL-10025', name: 'Jane Smith', type: 'Individual', nationality: 'USA',
-        email: 'jane.smith@example.com', phone: '+1 212 555 0199', totalInvestment: 850000,
+        id: '2', clientId: 'CL-10025', name: 'Carmen Ortega', type: 'Individual', nationality: 'Spain',
+        email: 'carmen.ortega@ortegapatrimonio.es', phone: '+34 612 480 375', totalInvestment: 850000,
         activeProperties: 1, preferredRegions: ['JVC', 'Business Bay'],
         investmentProfile: 'Conservative', source: 'Web Lead', relationshipStatus: 'Active',
         assignedConsultant: 'Michael Chen', lastContactDate: '2026-06-10T14:15:00Z'
       },
       {
-        id: '3', clientId: 'CL-10026', name: 'Acme Corp Investments', type: 'Corporate', nationality: 'UAE',
-        email: 'investments@acmecorp.ae', phone: '+971 4 332 2111', totalInvestment: 12500000,
+        id: '3', clientId: 'CL-10026', name: 'Meridian Gulf Investments', type: 'Corporate', nationality: 'UAE',
+        email: 'investments@meridiangulf.ae', phone: '+971 4 332 2111', totalInvestment: 12500000,
         activeProperties: 8, preferredRegions: ['Palm Jumeirah', 'DIFC'],
         investmentProfile: 'Aggressive', source: 'Event', relationshipStatus: 'Active',
-        assignedConsultant: 'Admin User', lastContactDate: '2026-06-16T09:00:00Z'
+        assignedConsultant: 'Onur Nazım Karataş', lastContactDate: '2026-06-16T09:00:00Z'
       },
       {
         id: '4', clientId: 'CL-10027', name: 'Mohammed Al Fayed', type: 'VIP', nationality: 'KSA',

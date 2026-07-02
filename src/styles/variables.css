@@ -99,7 +99,8 @@
 
   --text-primary:   #ECEAE6;
   --text-secondary: #9C9A94;
-  --text-muted:     #605F5B;
+  /* AA denetimi (2026-07-02): #605F5B koyu zeminde 3.1:1 kalıyordu → 4.9:1 */
+  --text-muted:     #828076;
 
   --border-subtle:  rgba(236, 234, 230, 0.07);
   --border-strong:  rgba(236, 234, 230, 0.14);
@@ -127,7 +128,8 @@
 
   --text-primary:   #1B1A18;
   --text-secondary: #5C5A55;
-  --text-muted:     #8E8C86;
+  /* AA denetimi (2026-07-02): #8E8C86 açık zeminde 3.0:1 kalıyordu → 4.7:1 */
+  --text-muted:     #6E6C66;
 
   --border-subtle:  rgba(27, 26, 24, 0.08);
   --border-strong:  rgba(27, 26, 24, 0.16);

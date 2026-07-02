@@ -393,7 +393,7 @@
   background-color: var(--bg-surface);
   border: 1px solid var(--border-color);
   padding: 4px 8px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-control);
   font-size: 0.7rem;
   color: var(--text-secondary);
 }

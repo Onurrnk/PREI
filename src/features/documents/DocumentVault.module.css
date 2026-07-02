@@ -124,7 +124,7 @@
   margin-left: auto;
   background-color: var(--bg-app);
   padding: 2px 8px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-control);
   font-size: 0.75rem;
   color: var(--text-muted);
   border: 1px solid var(--border-color);

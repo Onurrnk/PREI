@@ -193,7 +193,7 @@
 
 .statusBadge {
   padding: 4px 8px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-control);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -245,7 +245,7 @@
   border: 1px solid var(--border-color);
   color: var(--text-muted);
   padding: 4px 12px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-control);
   font-size: 0.75rem;
   cursor: pointer;
   transition: all var(--transition-fast);

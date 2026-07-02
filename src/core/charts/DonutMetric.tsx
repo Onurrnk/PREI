@@ -1,7 +1,7 @@
 import React from 'react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 import { ChartTooltip } from './ChartTooltip';
-import { CHART_SERIES, ANIMATION_MS } from './theme';
+import { CHART_SERIES, ANIMATION_MS, MOTION_OK } from './theme';
 import styles from './Charts.module.css';
 
 export interface DonutSlice {
@@ -45,6 +45,7 @@ export const DonutMetric: React.FC<DonutMetricProps> = ({
               outerRadius="90%"
               paddingAngle={2}
               strokeWidth={0}
+              isAnimationActive={MOTION_OK}
               animationDuration={ANIMATION_MS}
             >
               {data.map((slice, i) => (
