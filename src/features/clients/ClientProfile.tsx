@@ -9,8 +9,48 @@ import { Button } from '../../core/components/Button/Button';
 import { EmailClient } from './components/EmailClient';
 import { DocumentVault } from '../documents/DocumentVault';
 import { Modal } from '../../core/components/Modal/Modal';
-import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen } from '@phosphor-icons/react';
+import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo } from '@phosphor-icons/react';
+import { Field, Textarea } from '../../core/components/Form/Form';
+import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import styles from './ClientProfile.module.css';
+
+// ---------------------------------------------------------------------
+// Mock iletişim zaman çizelgesi — Faz 1-2'de communications tablosuna bağlanır.
+// WhatsApp kayıtları Eylül'ün qualification skorunu taşır.
+// ---------------------------------------------------------------------
+type TimelineKind = 'email' | 'call' | 'whatsapp' | 'meeting';
+
+interface TimelineEntry {
+  id: string;
+  kind: TimelineKind;
+  title: string;
+  body: string;
+  time: string;
+  score?: number; // Eylül qualification skoru (yalnız whatsapp)
+}
+
+const timelineEntries: TimelineEntry[] = [
+  { id: 'tl1', kind: 'whatsapp', title: 'WhatsApp · Eylül qualified the lead', body: '"Golden Visa için minimum yatırım tutarını teyit edebilir misiniz?" Score reached 85, Calendly link sent.', time: '12m', score: 85 },
+  { id: 'tl2', kind: 'email', title: 'Email sent: Property Portfolio Update', body: 'Latest Dubai Marina off-plan portfolio PDF shared (4 units, Q4 2027 handover).', time: '2h' },
+  { id: 'tl3', kind: 'call', title: 'Call logged: Payment plan review', body: '18 min. Prefers 60/40 construction-linked plan; asked for Nişantaşı comparison.', time: '1d' },
+  { id: 'tl4', kind: 'meeting', title: 'Meeting: Marina Vista 2B viewing', body: 'On-site viewing completed. Strong interest; requested SPA draft within the week.', time: '3d' },
+  { id: 'tl5', kind: 'whatsapp', title: 'WhatsApp · First contact via CTWA ad', body: 'Arrived from "Golden Visa · Dubai Off-Plan (TR)" campaign. Eylül opened conversation.', time: '6d', score: 25 },
+];
+
+const TIMELINE_ICON: Record<TimelineKind, React.ReactNode> = {
+  email: <EnvelopeSimple size={16} />,
+  call: <Phone size={16} />,
+  whatsapp: <WhatsappLogo size={16} />,
+  meeting: <CalendarBlank size={16} />,
+};
+
+const FILTERS: Array<{ key: 'all' | TimelineKind; label: string }> = [
+  { key: 'all', label: 'All' },
+  { key: 'whatsapp', label: 'WhatsApp' },
+  { key: 'email', label: 'Emails' },
+  { key: 'call', label: 'Calls' },
+  { key: 'meeting', label: 'Meetings' },
+];
 
 export const ClientProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,7 +58,8 @@ export const ClientProfile: React.FC = () => {
   const { data, loading } = useFetch<ClientDTO[]>(() => clientsApi.list(), [id]);
   const client = (data ?? []).find(c => c.id === id) ?? null;
   const [activeTab, setActiveTab] = useState<'communication' | 'vault'>('communication');
-  
+  const [timelineFilter, setTimelineFilter] = useState<'all' | TimelineKind>('all');
+
   const [showActivityModal, setShowActivityModal] = useState(false);
   const [activityType, setActivityType] = useState<'Call' | 'Meeting' | 'Note'>('Note');
   const [activityNote, setActivityNote] = useState('');
@@ -55,7 +96,7 @@ export const ClientProfile: React.FC = () => {
   };
 
   if (loading) {
-    return <div className={styles.loading}>Loading Profile...</div>;
+    return <TableSkeleton rows={6} />;
   }
 
   if (!client) {
@@ -73,6 +114,9 @@ export const ClientProfile: React.FC = () => {
           <button className={styles.backButton} onClick={() => navigate('/clients')}>
             <ArrowLeft size={20} />
           </button>
+          <div className={styles.avatar}>
+            {client.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()}
+          </div>
           <div>
             <div className={styles.titleWrapper}>
               <h1 className={styles.title}>{client.name}</h1>
@@ -181,34 +225,48 @@ export const ClientProfile: React.FC = () => {
                 <CardHeader className={styles.commHeader}>
                   <h3 className={styles.cardTitle}>Communication Timeline</h3>
                   <div className={styles.commFilters}>
-                    <button className={`${styles.filterBtn} ${styles.active}`} onClick={() => handleActionClick('Filter: All')}>All</button>
-                    <button className={styles.filterBtn} onClick={() => handleActionClick('Filter: Emails')}>Emails</button>
-                    <button className={styles.filterBtn} onClick={() => handleActionClick('Filter: Calls')}>Calls</button>
+                    {FILTERS.map((f) => (
+                      <button
+                        key={f.key}
+                        className={`${styles.filterBtn} ${timelineFilter === f.key ? styles.active : ''}`}
+                        onClick={() => setTimelineFilter(f.key)}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
                   </div>
                 </CardHeader>
                 <CardBody className={styles.commBody}>
                   <div className={styles.timeline}>
-                    <div className={styles.timelineItem}>
-                      <div className={styles.timelineIcon}><EnvelopeSimple size={16} /></div>
-                      <div className={styles.timelineContent}>
-                        <div className={styles.timelineHeader}>
-                          <span className={styles.timelineTitle}>Email Sent: Property Portfolio Update</span>
-                          <span className={styles.timelineDate}>Today, 10:30 AM</span>
+                    {timelineEntries
+                      .filter((e) => timelineFilter === 'all' || e.kind === timelineFilter)
+                      .map((entry) => (
+                        <div key={entry.id} className={styles.timelineItem}>
+                          <div className={`${styles.timelineIcon} ${styles[`kind_${entry.kind}`]}`}>
+                            {TIMELINE_ICON[entry.kind]}
+                          </div>
+                          <div className={styles.timelineContent}>
+                            <div className={styles.timelineHeader}>
+                              <span className={styles.timelineTitle}>{entry.title}</span>
+                              <span className={styles.timelineMeta}>
+                                {entry.score !== undefined && (
+                                  <span className={`${styles.scoreChip} ${entry.score >= 75 ? styles.scoreHigh : ''}`}>
+                                    {entry.score}
+                                  </span>
+                                )}
+                                <span className={styles.timelineDate}>{entry.time}</span>
+                              </span>
+                            </div>
+                            <p className={styles.timelineText}>{entry.body}</p>
+                          </div>
                         </div>
-                        <p className={styles.timelineText}>Sent the latest Dubai Marina off-plan portfolio PDF.</p>
+                      ))}
+                    {timelineEntries.filter((e) => timelineFilter === 'all' || e.kind === timelineFilter).length === 0 && (
+                      <div className={styles.timelineEmpty}>
+                        <ChatCircle size={28} weight="duotone" />
+                        <p>No records for this channel yet.</p>
                       </div>
-                    </div>
-
-                    <div className={styles.timelineItem}>
-                      <div className={styles.timelineIcon}><Phone size={16} /></div>
-                      <div className={styles.timelineContent}>
-                        <div className={styles.timelineHeader}>
-                          <span className={styles.timelineTitle}>Call Logged: Initial Consultation</span>
-                          <span className={styles.timelineDate}>Yesterday, 2:15 PM</span>
-                        </div>
-                        <p className={styles.timelineText}>Discussed requirements. Looking for 2BR in Downtown, budget $1.5M.</p>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </CardBody>
               </Card>
@@ -243,30 +301,14 @@ export const ClientProfile: React.FC = () => {
           </>
         }
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '8px' }}>
-              {activityType} Details
-            </label>
-            <textarea 
-              style={{ 
-                width: '100%', 
-                minHeight: '120px', 
-                padding: '12px', 
-                borderRadius: '8px', 
-                border: '1px solid var(--border-color)', 
-                backgroundColor: 'var(--bg-app)', 
-                color: 'var(--text-primary)',
-                fontFamily: 'inherit',
-                fontSize: '0.875rem',
-                resize: 'vertical'
-              }}
-              placeholder={`Enter notes for this ${activityType.toLowerCase()}...`}
-              value={activityNote}
-              onChange={(e) => setActivityNote(e.target.value)}
-            />
-          </div>
-        </div>
+        <Field label={`${activityType} Details`}>
+          <Textarea
+            rows={5}
+            placeholder={`Enter notes for this ${activityType.toLowerCase()}...`}
+            value={activityNote}
+            onChange={(e) => setActivityNote(e.target.value)}
+          />
+        </Field>
       </Modal>
     </div>
   );

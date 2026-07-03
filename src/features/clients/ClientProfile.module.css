@@ -42,8 +42,24 @@
 }
 
 .typeBadge.vip {
-  background-color: rgba(155, 91, 179, 0.1);
-  color: var(--color-primary-purple);
+  background-color: var(--brand-primary-soft);
+  color: var(--brand-secondary);
+}
+
+/* Profil avatarı — radius-full istisnası */
+.avatar {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  background: var(--brand-primary);
+  color: var(--on-brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  letter-spacing: 0.02em;
 }
 
 .titleWrapper {
@@ -79,29 +95,33 @@
 }
 
 .kpiBox {
-  background-color: var(--bg-app);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-md);
+  background-color: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  padding: var(--sp-3);
   display: flex;
   flex-direction: column;
 }
 
 .kpiIcon {
-  color: var(--color-primary-purple);
+  color: var(--text-muted);
   margin-bottom: var(--spacing-xs);
 }
 
 .kpiLabel {
+  font: var(--text-label);
   color: var(--text-muted);
-  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin-bottom: 4px;
 }
 
 .kpiValue {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   color: var(--text-primary);
-  font-weight: 600;
-  font-size: 1.125rem;
+  font-weight: 500;
+  font-size: 1.0625rem;
 }
 
 .regionsContainer {
@@ -199,18 +219,18 @@
 }
 
 .statusBadge.active {
-  background-color: rgba(46, 139, 87, 0.1);
-  color: var(--color-success);
+  background-color: color-mix(in srgb, var(--data-positive) 12%, transparent);
+  color: var(--data-positive);
 }
 
 .statusBadge.dormant {
-  background-color: rgba(214, 162, 42, 0.1);
-  color: var(--color-warning);
+  background-color: color-mix(in srgb, var(--data-warning) 12%, transparent);
+  color: var(--data-warning);
 }
 
 .statusBadge.churned {
-  background-color: rgba(196, 69, 69, 0.1);
-  color: var(--color-danger);
+  background-color: color-mix(in srgb, var(--data-negative) 12%, transparent);
+  color: var(--data-negative);
 }
 
 .quickActions .actionBtn {
@@ -257,9 +277,9 @@
 }
 
 .filterBtn.active {
-  background-color: var(--color-primary-purple);
-  border-color: var(--color-primary-purple);
-  color: white;
+  background-color: var(--brand-primary);
+  border-color: var(--brand-primary);
+  color: var(--on-brand);
 }
 
 .commBody {
@@ -279,21 +299,74 @@
   gap: var(--spacing-lg);
 }
 
+/* Dikey iplik: kayıtlar tek bir çizgiye bağlanır */
 .timelineItem {
   display: flex;
   gap: var(--spacing-md);
+  position: relative;
+}
+
+.timelineItem:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 36px;
+  bottom: calc(-1 * var(--spacing-lg));
+  width: 1px;
+  background: var(--border-subtle);
 }
 
 .timelineIcon {
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  background-color: var(--bg-surface-hover);
+  border-radius: var(--radius-control);
+  background-color: var(--bg-inset);
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--text-secondary);
   flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Kanal semantiği */
+.kind_whatsapp { color: var(--data-positive); background: color-mix(in srgb, var(--data-positive) 12%, transparent); }
+.kind_email    { color: var(--data-info);     background: color-mix(in srgb, var(--data-info) 12%, transparent); }
+.kind_call     { color: var(--brand-secondary); background: var(--brand-primary-soft); }
+.kind_meeting  { color: var(--data-warning);  background: color-mix(in srgb, var(--data-warning) 12%, transparent); }
+
+.timelineMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+
+.scoreChip {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: var(--radius-control);
+  color: var(--text-muted);
+  background: var(--bg-inset);
+}
+
+.scoreHigh {
+  color: var(--data-positive);
+  background: color-mix(in srgb, var(--data-positive) 12%, transparent);
+}
+
+.timelineEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-7) var(--sp-4);
+  color: var(--text-muted);
+  font: var(--text-body);
 }
 
 .timelineContent {
@@ -317,8 +390,10 @@
 }
 
 .timelineDate {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   color: var(--text-muted);
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
 }
 
 .timelineText {
@@ -350,7 +425,8 @@
 
 .composerInput:focus {
   outline: none;
-  border-color: var(--color-primary-purple);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--brand-primary-soft);
 }
 
 .composerActions {
@@ -406,8 +482,8 @@
 
 .vaultTabWrapper {
   height: 600px; /* Fixed height for the vault inside the tab so it scrolls properly */
-  background-color: var(--bg-app);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  background-color: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-surface);
   padding: var(--spacing-md);
 }
