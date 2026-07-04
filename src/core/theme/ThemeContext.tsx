@@ -33,6 +33,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- context + hook aynı dosyada (proje deseni); HMR'da tema state sıfırlanması kabul edilebilir
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (context === undefined) {

@@ -8,10 +8,25 @@ import styles from './Meetings.module.css';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+// Takvim hücresi ve "upcoming" kartlarının ortak şekli — detay modalı ikisini de açar.
+interface MeetingItem {
+  id: number;
+  title: string;
+  time: string;
+  client: string;
+  location: string;
+  platform: string;
+  notes: string;
+  type?: string;
+  duration?: string;
+  date?: string;
+  icon?: React.ReactNode;
+}
+
 export const Meetings: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedMeeting, setSelectedMeeting] = useState<any>(null);
+  const [selectedMeeting, setSelectedMeeting] = useState<MeetingItem | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const toast = useToast();
 
@@ -46,7 +61,7 @@ export const Meetings: React.FC = () => {
     }, 1500);
   };
 
-  const openMeetingDetails = (meeting: any) => {
+  const openMeetingDetails = (meeting: MeetingItem) => {
     setSelectedMeeting(meeting);
     setShowDetailsModal(true);
   };

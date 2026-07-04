@@ -20,15 +20,13 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserDTO | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Token yoksa oturum geri yüklenmeyecek — loading hiç başlamaz (efekt içinde
+  // senkron setState'e gerek kalmaz).
+  const [loading, setLoading] = useState(() => Boolean(tokenStore.get()));
 
   // Restore session on first load if a token is present.
   useEffect(() => {
-    const token = tokenStore.get();
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+    if (!tokenStore.get()) return;
     authApi
       .me()
       .then(setUser)

@@ -1,0 +1,93 @@
+name: CI
+
+# Hafta-0 iskeleti (Master Plan v1.1 §4.7/6): lint → typecheck → test → build → migration-dry-run.
+# Kırmızı pipeline = deploy yok (B-11).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gitleaks:
+    name: Secret taraması (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  frontend:
+    name: Frontend lint + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      # Vitest B-11 gereği Faz 0'da zorunlu olacak; script eklendiğinde bu adım otomatik devreye girer.
+      - name: Test (varsa)
+        run: |
+          if node -e "process.exit(require('./package.json').scripts.test ? 0 : 1)"; then
+            npm test
+          else
+            echo "test script'i henüz yok — Faz 0'da zorunlu (B-11)"
+          fi
+      - run: npm run build
+
+  server:
+    name: Server typecheck + build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Test (varsa)
+        run: |
+          if node -e "process.exit(require('./package.json').scripts.test ? 0 : 1)"; then
+            npm test
+          else
+            echo "test script'i henüz yok — Faz 0'da zorunlu (B-11)"
+          fi
+      - run: npm run build
+
+  migration-dry-run:
+    name: Migration dry-run (boş Postgres'e)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: prei_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      # B-2 dersi: migration'lar boş DB'ye karşı sırayla uygulanır; syntax/sıra hatası CI'da patlar.
+      - name: Apply migrations in order
+        env:
+          PGPASSWORD: ci
+        run: |
+          for f in migrations/*.sql; do
+            echo "== applying $f"
+            psql -h localhost -U postgres -d prei_ci -v ON_ERROR_STOP=1 -f "$f"
+          done

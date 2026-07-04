@@ -34,3 +34,4 @@ server/tokens.json
 
 # Claude yerel ayarlar
 .claude/settings.local.json
+graphify-out/

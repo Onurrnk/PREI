@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Shield, Clock, CalendarBlank, CheckCircle, Circle } from '@phosphor-icons/react';
 import type { UserDTO, TaskDTO } from '../../core/types';
 import { usersApi, tasksApi } from '../../core/api/resources';
@@ -14,15 +14,7 @@ export const Tasks: React.FC = () => {
   // Hardcoded "current user" for normal mode
   const currentUserId = 'u2'; // Sarah Ahmed
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  useEffect(() => {
-    fetchTasks();
-  }, [isAdminMode, selectedUserId]);
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const data = await usersApi.list();
       setUsers(data);
@@ -32,9 +24,9 @@ export const Tasks: React.FC = () => {
     } catch (err) {
       console.error('Failed to fetch users', err);
     }
-  };
+  }, []);
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     setIsLoading(true);
     try {
       const queryUser = isAdminMode ? selectedUserId : currentUserId;
@@ -45,7 +37,17 @@ export const Tasks: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAdminMode, selectedUserId]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mock-faz veri çekme; Faz 1'de useFetch'e taşınacak
+    fetchUsers();
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- mock-faz veri çekme; Faz 1'de useFetch'e taşınacak
+    fetchTasks();
+  }, [fetchTasks]);
 
   const handleToggleComplete = async (task: TaskDTO) => {
     const newStatus = task.status === 'Completed' ? 'Pending' : 'Completed';

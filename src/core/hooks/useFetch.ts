@@ -34,6 +34,9 @@ export function useFetch<T>(
     const controller = new AbortController();
     let active = true;
 
+    // Deps değişince loading'in senkron resetlenmesi bu hook'un sözleşmesi —
+    // bilinçli tek render; TanStack Query'ye geçiş seam'inde kalkacak.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError(null);
 
