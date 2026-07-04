@@ -19,3 +19,13 @@
   overflow-y: auto;
   background-color: var(--bg-app);
 }
+
+@media (max-width: 900px) {
+  .mainWrapper {
+    margin-left: 0;
+  }
+
+  .mainContent {
+    padding: var(--spacing-md);
+  }
+}

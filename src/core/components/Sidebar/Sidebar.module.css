@@ -12,6 +12,32 @@
   transition: width var(--transition-normal);
 }
 
+.overlay {
+  display: none;
+}
+
+/* ≤900px: sidebar çekmece olur — kapalıyken ekran dışında, .open ile kayar gelir */
+@media (max-width: 900px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform var(--transition-normal);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background-color: color-mix(in srgb, var(--bg-app) 55%, transparent);
+    backdrop-filter: blur(2px);
+  }
+}
+
 .logoContainer {
   padding: var(--spacing-xl) var(--spacing-lg);
   border-bottom: 1px solid var(--border-color);

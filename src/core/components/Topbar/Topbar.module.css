@@ -11,6 +11,24 @@
   z-index: 90;
 }
 
+.menuButton {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.menuButton:hover {
+  background-color: var(--bg-surface-hover);
+}
+
 .searchContainer {
   display: flex;
   align-items: center;
@@ -20,6 +38,30 @@
   padding: var(--spacing-xs) var(--spacing-md);
   width: 400px;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* ≤900px: hamburger görünür, arama esner, kısayol/isim gibi ikincil öğeler gizlenir */
+@media (max-width: 900px) {
+  .topbar {
+    padding: 0 var(--spacing-md);
+    gap: var(--spacing-sm);
+  }
+
+  .menuButton {
+    display: flex;
+  }
+
+  .searchContainer {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .searchShortcut,
+  .userInfo,
+  .divider {
+    display: none;
+  }
 }
 
 .searchContainer:focus-within {

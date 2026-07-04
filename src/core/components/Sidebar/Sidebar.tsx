@@ -45,7 +45,13 @@ const navItems: NavItem[] = [
   { path: '/settings', label: 'Settings', icon: GearSix, permission: 'settings' },
 ];
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  /** ≤900px çekmece durumu; desktop'ta etkisiz (CSS her zaman görünür tutar) */
+  open?: boolean;
+  onClose?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -53,12 +59,15 @@ export const Sidebar: React.FC = () => {
   const visibleItems = navItems.filter((item) => can(user?.role, item.permission));
 
   const handleLogout = () => {
+    onClose?.();
     logout();
     navigate('/login', { replace: true });
   };
 
   return (
-    <aside className={styles.sidebar}>
+    <>
+    {open && <div className={styles.overlay} onClick={onClose} aria-hidden="true" />}
+    <aside className={`${styles.sidebar} ${open ? styles.open : ''}`}>
       <div className={styles.logoContainer}>
         <h2 className={styles.logoText}>PREI <span className={styles.logoSub}>Smart Suites</span></h2>
       </div>
@@ -71,6 +80,7 @@ export const Sidebar: React.FC = () => {
                 <NavLink
                   to={item.path}
                   end={item.path === '/'}
+                  onClick={onClose}
                   className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
                 >
                   <Icon className={styles.icon} size={20} />
@@ -91,5 +101,6 @@ export const Sidebar: React.FC = () => {
         <div className={styles.poweredBy}>Powered by ProDuality</div>
       </div>
     </aside>
+    </>
   );
 };

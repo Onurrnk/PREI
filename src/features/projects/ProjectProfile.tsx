@@ -6,7 +6,7 @@ import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { ArrowLeft, MapPin, Buildings, CalendarBlank, CurrencyDollar, CheckCircle, FileText, PaperPlaneTilt, Paperclip } from '@phosphor-icons/react';
+import { ArrowLeft, MapPin, Buildings, CalendarBlank, CurrencyDollar, CheckCircle, FileText, FilePdf, Table, DownloadSimple, PaperPlaneTilt, Paperclip } from '@phosphor-icons/react';
 import styles from './ProjectProfile.module.css';
 
 export const ProjectProfile: React.FC = () => {
@@ -33,6 +33,12 @@ export const ProjectProfile: React.FC = () => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
   };
+
+  const soldPct = Math.round(((project.totalUnits - project.availableUnits) / project.totalUnits) * 100);
+  // Segment tonları: marka morunun kademeli opaklığı — ilk taksit en koyu.
+  const segmentAlpha = (i: number, total: number) => 1 - (i / Math.max(total, 1)) * 0.62;
+  const docIcon = (type: string) =>
+    type === 'PDF' ? <FilePdf size={20} /> : type === 'Spreadsheet' ? <Table size={20} /> : <FileText size={20} />;
 
   return (
     <div className={styles.container}>
@@ -65,6 +71,7 @@ export const ProjectProfile: React.FC = () => {
           <Card className={styles.galleryCard}>
             <div className={styles.galleryMain}>
               <img src={project.images[selectedImage]} alt={project.name} className={styles.mainImage} />
+              <span className={styles.galleryCounter}>{selectedImage + 1} / {project.images.length}</span>
             </div>
             {project.images.length > 1 && (
               <div className={styles.galleryThumbnails}>
@@ -96,6 +103,10 @@ export const ProjectProfile: React.FC = () => {
                     <Buildings size={16} className={styles.statIcon} />
                     <span className={styles.statLabel}>Availability</span>
                     <span className={styles.statValue}>{project.availableUnits} / {project.totalUnits} Units</span>
+                    <div className={styles.availabilityTrack} role="img" aria-label={`${soldPct}% sold`}>
+                      <div className={styles.availabilityFill} style={{ width: `${soldPct}%` }} />
+                    </div>
+                    <span className={styles.availabilityNote}>{soldPct}% sold</span>
                   </div>
                   <div className={styles.statBox}>
                     <CalendarBlank size={16} className={styles.statIcon} />
@@ -123,8 +134,23 @@ export const ProjectProfile: React.FC = () => {
               <CardHeader><h3 className={styles.cardTitle}>Payment Plan</h3></CardHeader>
               <CardBody>
                 <div className={styles.paymentPlan}>
+                  <div className={styles.planBar} role="img" aria-label="Payment plan distribution">
+                    {project.paymentPlan.map((plan, i) => (
+                      <div
+                        key={i}
+                        className={styles.planSegment}
+                        style={{ width: `${plan.percentage}%`, opacity: segmentAlpha(i, project.paymentPlan.length) }}
+                      >
+                        {plan.percentage >= 15 && <span className={styles.planSegmentLabel}>{plan.percentage}%</span>}
+                      </div>
+                    ))}
+                  </div>
                   {project.paymentPlan.map((plan, i) => (
                     <div key={i} className={styles.paymentRow}>
+                      <span
+                        className={styles.paymentDot}
+                        style={{ opacity: segmentAlpha(i, project.paymentPlan.length) }}
+                      />
                       <div className={styles.paymentMilestone}>{plan.milestone}</div>
                       <div className={styles.paymentPercent}>{plan.percentage}%</div>
                       <div className={styles.paymentDate}>{plan.date}</div>
@@ -139,12 +165,19 @@ export const ProjectProfile: React.FC = () => {
               <CardBody>
                 <div className={styles.docsList}>
                   {project.documents.map(doc => (
-                    <div key={doc.id} className={styles.docItem} onClick={() => handleActionClick(`View Document: ${doc.title}`)}>
-                      <div className={styles.docIcon}><FileText size={16} /></div>
+                    <div key={doc.id} className={styles.docCard} onClick={() => handleActionClick(`View Document: ${doc.title}`)}>
+                      <div className={styles.docIcon} data-type={doc.type}>{docIcon(doc.type)}</div>
                       <div className={styles.docInfo}>
                         <span className={styles.docTitle}>{doc.title}</span>
                         <span className={styles.docSize}>{doc.type} &bull; {doc.size}</span>
                       </div>
+                      <button
+                        className={styles.docAction}
+                        aria-label={`Download ${doc.title}`}
+                        onClick={(e) => { e.stopPropagation(); handleActionClick(`Download: ${doc.title}`); }}
+                      >
+                        <DownloadSimple size={16} />
+                      </button>
                     </div>
                   ))}
                 </div>

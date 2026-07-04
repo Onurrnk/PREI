@@ -1,11 +1,16 @@
 import React from 'react';
-import { MagnifyingGlass, CalendarBlank, Moon, Sun, Globe } from '@phosphor-icons/react';
+import { MagnifyingGlass, CalendarBlank, Moon, Sun, Globe, List } from '@phosphor-icons/react';
 import { useTheme } from '../../theme/ThemeContext';
 import { useAuth } from '../../auth/AuthContext';
 import { NotificationCenter } from '../Notifications/NotificationCenter';
 import styles from './Topbar.module.css';
 
-export const Topbar: React.FC = () => {
+interface TopbarProps {
+  /** ≤900px'te görünen hamburger; sidebar çekmecesini açar */
+  onMenuClick?: () => void;
+}
+
+export const Topbar: React.FC<TopbarProps> = ({ onMenuClick }) => {
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
   const initials =
@@ -13,6 +18,9 @@ export const Topbar: React.FC = () => {
 
   return (
     <header className={styles.topbar}>
+      <button className={styles.menuButton} onClick={onMenuClick} aria-label="Menüyü aç">
+        <List size={22} />
+      </button>
       <div className={styles.searchContainer}>
         <MagnifyingGlass className={styles.searchIcon} size={20} />
         <input 
