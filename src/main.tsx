@@ -5,6 +5,7 @@ import './index.css'
 import { AppRouter } from './core/router'
 import { AuthProvider } from './core/auth/AuthContext'
 import { ToastProvider } from './core/components/Toast/ToastProvider'
+import { ThemeProvider } from './core/theme/ThemeContext'
 
 async function enableMocking() {
   if (!import.meta.env.DEV) {
@@ -19,11 +20,13 @@ async function enableMocking() {
 enableMocking().then(() => {
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
-      <AuthProvider>
-        <ToastProvider>
-          <AppRouter />
-        </ToastProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <AppRouter />
+          </ToastProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </StrictMode>,
   )
 })

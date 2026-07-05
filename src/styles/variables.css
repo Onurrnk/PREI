@@ -90,7 +90,10 @@
   --transition-normal: var(--dur-base) var(--ease-out);
 }
 
-/* ===== KOYU TEMA (varsayılan deneyim) ===== */
+/* ===== KOYU TEMA (varsayılan deneyim) =====
+   :root'ta da tanımlı: data-theme attribute'u henüz set edilmemişken
+   (ilk boya, login rotası) sayfa beyaza düşmesin — FINDING-001. */
+:root,
 [data-theme='dark'] {
   --bg-app:            #0B0C0E;
   --bg-surface:        #131418;
