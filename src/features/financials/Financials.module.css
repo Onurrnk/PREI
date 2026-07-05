@@ -38,7 +38,7 @@
 /* ===== KPI şeridi ===== */
 .kpiGrid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--sp-4);
 }
 
@@ -96,7 +96,7 @@
 /* ===== Hedef kartları ===== */
 .targetsGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--sp-4);
 }
 
@@ -174,7 +174,7 @@
 
 .chartsGrid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--sp-4);
   align-items: start;
 }
@@ -182,20 +182,20 @@
 /* ===== Mobil çöküş ===== */
 @media (max-width: 1400px) {
   .kpiGrid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 1200px) {
   .targetsGrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 900px) {
   .kpiGrid,
   .chartsGrid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
   .header {
     flex-direction: column;
