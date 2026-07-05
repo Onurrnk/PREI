@@ -205,7 +205,9 @@
 
 .infoGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* Dar ana kolonda (composer açıkken ~600px) kartlar ezilmesin: 300px'in
+     altına düşecekse tek kolona in — FINDING-003 */
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: var(--spacing-lg);
 }
 
@@ -224,7 +226,7 @@
 
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: var(--spacing-md);
   background-color: var(--bg-app);
   padding: var(--spacing-md);
