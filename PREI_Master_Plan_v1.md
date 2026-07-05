@@ -157,7 +157,7 @@ Güvenlik ayrı bir faz değil, **her fazın çıkış kapısıdır** — ilgili
 
 Sıralı checklist — uzun onay süreçleri bugün başlar:
 
-1. **Meta Business doğrulaması + WABA kontrolü** (HSM'in gerçek uzun-yol kalemi). Doğrulanmamışsa İLK aksiyon bu.
+1. **Meta Business doğrulaması — ŞİRKET KURULUŞUNA ERTELENDİ (Onur kararı, 2026-07-05):** Tüzel kişilik henüz yok (ilk müşteri geliriyle kurulacak); marka tescili MEVCUT ama Meta doğrulaması için belge olarak geçmiyor (tüzel varlık kanıtı gerekir). **Birincil yol: doğrulamasız Cloud API** (~250 benzersiz kişi/gün — başlangıç hacmi için yeterli; HSM şablon başvurusu doğrulamasız da yapılır). Şirket kurulunca: doğrulama → limitler yükselir + marka tesciliyle resmi işletme adı alınır. `ads_read` de doğrulama istediğinden **Faz 5 CSV fallback birincil yol** olur (madde 4).
 2. **Ayrı bot numarası** (OV-6 kararı): Eylül + tüm otomasyonlar için yeni numara WABA'ya bağlanır; CTWA reklamları bu numaraya yönlenir; ana işletme hattı insan iletişiminde ve dokunulmaz kalır.
 3. **HSM şablon başvuruları** (WABA hazır olur olmaz): `meeting_summary`, `payment_reminder`, `birthday_greeting`, `contract_renewal` — **TR/EN/NL**. Sabit kural: reddedilen şablon 48 saat içinde revize edilip yeniden sunulur. **Contingency:** 1 Ağustos'a kadar onay yoksa proaktif müşteri bildirimleri Telegram'dan Onur'a düşer (müşteriye pencere-dışı mesaj denenmez); Faz 3-4 çıkışları bu modda da sağlanır.
 4. **Meta System User + `ads_read` App Review başvurusu** (OV-7): şimdi başvurulur. Onay gecikirse Faz 5a fallback: Ads Manager haftalık CSV export → n8n ile `ad_insights_daily`'ye yükleme (ekran aynı, kaynak geçici manuel). CTWA attribution webhook'tan gelir — App Review'a muhtaç değildir.
