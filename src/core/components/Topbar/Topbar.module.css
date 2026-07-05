@@ -40,30 +40,6 @@
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-/* ≤900px: hamburger görünür, arama esner, kısayol/isim gibi ikincil öğeler gizlenir */
-@media (max-width: 900px) {
-  .topbar {
-    padding: 0 var(--spacing-md);
-    gap: var(--spacing-sm);
-  }
-
-  .menuButton {
-    display: flex;
-  }
-
-  .searchContainer {
-    width: auto;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .searchShortcut,
-  .userInfo,
-  .divider {
-    display: none;
-  }
-}
-
 .searchContainer:focus-within {
   border-color: var(--border-focus);
   box-shadow: 0 0 0 2px var(--brand-primary-soft);
@@ -191,4 +167,43 @@
 .userRole {
   color: var(--text-muted);
   font-size: 0.75rem;
+}
+
+/* ≤900px: hamburger görünür, arama esner, kısayol/isim gibi ikincil öğeler gizlenir.
+   NOT: Bu blok dosyanın SONUNDA durmak zorunda — eşit özgüllükteki temel kurallar
+   (.userInfo, .searchShortcut) sonradan gelirse media içindeki display:none'ı ezer
+   (FINDING-004'ün kök nedeni buydu). */
+@media (max-width: 900px) {
+  .topbar {
+    padding: 0 var(--spacing-md);
+    gap: var(--spacing-sm);
+  }
+
+  .menuButton {
+    display: flex;
+  }
+
+  .searchContainer {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .searchShortcut,
+  .userInfo,
+  .divider {
+    display: none;
+  }
+}
+
+/* ≤480px: yalnız çekirdek eylemler — takvim/dil ikonları çekmeceye devreder */
+@media (max-width: 480px) {
+  .actions {
+    gap: 2px;
+  }
+
+  .actionButton[title="Calendar"],
+  .actionButton[title="Language"] {
+    display: none;
+  }
 }
