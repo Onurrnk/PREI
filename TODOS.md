@@ -25,3 +25,12 @@ CEO review (2026-07-04) ertelemeleri. Format: What/Why/Context/Effort/Priority.
 - **Why:** Gerçek müşteri dili sentetik senaryolardan sapar; eval seti canlı veriyle güçlenir.
 - **Context:** OV-2 kararıyla eval seti Faz 2'de kuruluyor; bu onun v2 beslemesi.
 - **Effort:** S · **Priority:** P3 · **Depends:** Faz 2 + ~1 ay canlı veri
+
+## 5. UI dil tutarlılığı (design-review 2026-07-05)
+- **What:** EN/TR karışımı ("Command Center", "Schedule" vs "Çıkış Yap") tek dile veya dil anahtarına bağlanır; i18next zaten kurulu.
+- **Why:** Çok pazarlı ekip (A-2 danışman katılımı) + profesyonel algı; karışım şu an tek kullanıcıda zararsız.
+- **Effort:** M → CC: S · **Priority:** P3 · **Depends:** Faz 1
+## 6. Kalan bare-1fr grid süpürmesi (design-review 2026-07-05)
+- **What:** Tasks/Contracts/Admin/Settings/Meetings/ClientProfile modüllerindeki `grid-template-columns: ...1fr...` kuralları minmax(0,1fr)'a çekilir.
+- **Why:** FINDING-002/005'in kök nedeni aynı tuzak; şu an bu sayfalarda grafik+uzun metin kombinasyonu az olduğu için ısırmıyor, koruyucu bakım.
+- **Effort:** S · **Priority:** P3 · **Depends:** yok
