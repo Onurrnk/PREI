@@ -11,8 +11,11 @@ import { CTX_KEY, type RequestContext, type WithContext } from './request-contex
 @Injectable()
 export class CorrelationMiddleware implements NestMiddleware {
   use(req: Request & WithContext, res: Response, next: NextFunction): void {
+    // correlation_id DB'de uuid tipinde (audit_log/events) → yalnız geçerli UUID
+    // gelen header'ı koru, aksi halde yeni üret.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     const incoming = req.header('x-correlation-id');
-    const correlationId = incoming && /^[\w-]{8,64}$/.test(incoming) ? incoming : uuidv4();
+    const correlationId = incoming && UUID_RE.test(incoming) ? incoming : uuidv4();
     const ctx: RequestContext = {
       correlationId,
       tenantId: null,

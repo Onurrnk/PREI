@@ -61,7 +61,8 @@ export class LeadsRepository {
             budget_min, budget_max, currency, target_market_code, score, notes,
             created_by, updated_by)
          VALUES ($1,$2,$3,$4,
-            COALESCE($5,'new'), COALESCE($6,'buy'), COALESCE($7,'medium'),
+            COALESCE($5::lead_status,'new'), COALESCE($6::lead_interest_type,'buy'),
+            COALESCE($7::priority_level,'medium'),
             $8,$9, COALESCE($10,'EUR'), $11,$12,$13, $14,$14)
          RETURNING *`,
         [
@@ -89,8 +90,8 @@ export class LeadsRepository {
 
       const { rows } = await c.query<LeadRow>(
         `UPDATE leads SET
-           status   = COALESCE($2, status),
-           priority = COALESCE($3, priority),
+           status   = COALESCE($2::lead_status, status),
+           priority = COALESCE($3::priority_level, priority),
            owner_id = COALESCE($4, owner_id),
            score    = COALESCE($5, score),
            notes    = COALESCE($6, notes),
