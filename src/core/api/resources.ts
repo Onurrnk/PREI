@@ -31,8 +31,34 @@ export const authApi = {
   realMe: () => api.get<MeResponse>('/api/me'),
 };
 
+export interface CreateLeadInput {
+  contact_id: string;
+  owner_id?: string;
+  status?: LeadDTO['status'];
+  interest_type?: LeadDTO['interestType'];
+  priority?: LeadDTO['priority'];
+  budget_min?: number;
+  budget_max?: number;
+  currency?: string;
+  target_market_code?: string;
+  score?: number;
+  notes?: string;
+}
+
+export interface UpdateLeadInput {
+  status?: LeadDTO['status'];
+  priority?: LeadDTO['priority'];
+  owner_id?: string;
+  score?: number;
+  notes?: string;
+  version: number; // optimistic concurrency → 409
+}
+
 export const leadsApi = {
   list: () => api.get<LeadDTO[]>('/api/leads'),
+  get: (id: string) => api.get<LeadDTO>(`/api/leads/${id}`),
+  create: (input: CreateLeadInput) => api.post<LeadDTO>('/api/leads', input),
+  update: (id: string, input: UpdateLeadInput) => api.patch<LeadDTO>(`/api/leads/${id}`, input),
 };
 
 export const clientsApi = {

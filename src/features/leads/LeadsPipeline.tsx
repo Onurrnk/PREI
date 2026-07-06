@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Card } from '../../core/components/Card/Card';
-import type { LeadDTO } from '../../core/types';
+import type { LeadDTO, LeadStatus } from '../../core/types';
 import { leadsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
-import { DotsThree, Plus, SquaresFour, ListBullets } from '@phosphor-icons/react';
+import { DotsThree, Plus, SquaresFour, ListBullets, UsersThree } from '@phosphor-icons/react';
 import styles from './LeadsPipeline.module.css';
 import { Button } from '../../core/components/Button/Button';
 import { Modal } from '../../core/components/Modal/Modal';
@@ -13,12 +12,44 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Field, Input, Select, Textarea, FormRow } from '../../core/components/Form/Form';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 
-const PIPELINE_STAGES = [
-  'New Lead', 'Contacted', 'Qualified', 'Meeting Scheduled', 
-  'Proposal Sent', 'Negotiation', 'Reservation', 'Closed Won', 'Closed Lost'
+// Kanban kolonları = backend lead_status enum (7 değer). Dondurulmuş 9-aşamalı
+// tasarım Faz 1'de DB'nin tek doğruluk kaynağına hizalandı.
+const PIPELINE_STAGES: { value: LeadStatus; label: string }[] = [
+  { value: 'new', label: 'New' },
+  { value: 'contacted', label: 'Contacted' },
+  { value: 'qualified', label: 'Qualified' },
+  { value: 'nurturing', label: 'Nurturing' },
+  { value: 'converted', label: 'Converted' },
+  { value: 'unqualified', label: 'Unqualified' },
+  { value: 'lost', label: 'Lost' },
 ];
 
+const STATUS_LABEL: Record<LeadStatus, string> = Object.fromEntries(
+  PIPELINE_STAGES.map((s) => [s.value, s.label]),
+) as Record<LeadStatus, string>;
+
 type ViewMode = 'kanban' | 'list';
+
+// Qualification skoru (0..100) → renk bandı. Yüksek skor = daha nitelikli.
+function scoreBand(score: number | null): 'low' | 'medium' | 'high' {
+  if (score === null || score < 40) return 'low';
+  if (score < 70) return 'medium';
+  return 'high';
+}
+
+function formatMoney(value: number | null, currency: string): string {
+  if (value === null) return '—';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency || 'EUR',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+// Kart/tablo için bütçe: max varsa onu, yoksa min'i göster.
+function leadBudget(lead: LeadDTO): string {
+  return formatMoney(lead.budgetMax ?? lead.budgetMin, lead.currency);
+}
 
 export const LeadsPipeline: React.FC = () => {
   const { data, loading, error } = useFetch<LeadDTO[]>(() => leadsApi.list(), []);
@@ -43,10 +74,6 @@ export const LeadsPipeline: React.FC = () => {
     return <div className={styles.errorState}>Adaylar yüklenemedi: {error}</div>;
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
-  };
-
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -56,14 +83,14 @@ export const LeadsPipeline: React.FC = () => {
         </div>
         <div className={styles.headerActions}>
           <div className={styles.viewToggle}>
-            <button 
+            <button
               className={`${styles.toggleBtn} ${viewMode === 'kanban' ? styles.active : ''}`}
               onClick={() => setViewMode('kanban')}
               title="Kanban View"
             >
               <SquaresFour size={18} />
             </button>
-            <button 
+            <button
               className={`${styles.toggleBtn} ${viewMode === 'list' ? styles.active : ''}`}
               onClick={() => setViewMode('list')}
               title="List View"
@@ -75,34 +102,40 @@ export const LeadsPipeline: React.FC = () => {
         </div>
       </div>
 
-      {viewMode === 'kanban' ? (
+      {leads.length === 0 ? (
+        <div className={styles.emptyState}>
+          <UsersThree size={40} weight="thin" />
+          <h3>Henüz aday yok</h3>
+          <p>Yeni bir aday ekleyin ya da WhatsApp/reklam kanallarından gelen ilk temaslar burada görünecek.</p>
+        </div>
+      ) : viewMode === 'kanban' ? (
         <div className={styles.board}>
           {PIPELINE_STAGES.map((stage) => {
-            const stageLeads = leads.filter(l => l.status === stage);
-            const stageValue = stageLeads.reduce((sum, l) => sum + l.value, 0);
-            
+            const stageLeads = leads.filter((l) => l.status === stage.value);
+            const stageValue = stageLeads.reduce((sum, l) => sum + (l.budgetMax ?? l.budgetMin ?? 0), 0);
+
             return (
-              <div key={stage} className={styles.column}>
+              <div key={stage.value} className={styles.column}>
                 <div className={styles.columnHeader}>
-                  <h3 className={styles.columnTitle}>{stage}</h3>
+                  <h3 className={styles.columnTitle}>{stage.label}</h3>
                   <div className={styles.columnMeta}>
                     <span className={styles.leadCount}>{stageLeads.length}</span>
-                    <span className={styles.stageValue}>{formatCurrency(stageValue)}</span>
+                    <span className={styles.stageValue}>{formatMoney(stageValue, stageLeads[0]?.currency ?? 'EUR')}</span>
                   </div>
                 </div>
-                
+
                 <div className={styles.columnBody}>
-                  {stageLeads.map(lead => (
+                  {stageLeads.map((lead) => (
                     <Card key={lead.id} padding="md" className={styles.leadCard}>
                       <div className={styles.leadHeader}>
-                        <Link to={`/clients/${lead.id}`} className={styles.leadName}>{lead.name}</Link>
+                        <span className={styles.leadName}>{lead.contactName || 'İsimsiz aday'}</span>
                         <button className={styles.moreButton}><DotsThree size={18} weight="bold" /></button>
                       </div>
-                      <div className={styles.leadCompany}>{lead.company}</div>
+                      <div className={styles.leadCompany}>{lead.company ?? '—'}</div>
                       <div className={styles.leadFooter}>
-                        <span className={styles.leadValue}>{formatCurrency(lead.value)}</span>
-                        <span className={`${styles.riskBadge} ${styles[lead.aiRiskScore.toLowerCase()]}`}>
-                          Risk: {lead.aiRiskScore}
+                        <span className={styles.leadValue}>{leadBudget(lead)}</span>
+                        <span className={`${styles.riskBadge} ${styles[scoreBand(lead.score)]}`}>
+                          Skor: {lead.score ?? '—'}
                         </span>
                       </div>
                     </Card>
@@ -120,29 +153,25 @@ export const LeadsPipeline: React.FC = () => {
                 <TableHeader>Name</TableHeader>
                 <TableHeader>Company</TableHeader>
                 <TableHeader>Status</TableHeader>
-                <TableHeader>Value</TableHeader>
-                <TableHeader>Probability</TableHeader>
-                <TableHeader>AI Risk Score</TableHeader>
-                <TableHeader align="right">Actions</TableHeader>
+                <TableHeader>Budget</TableHeader>
+                <TableHeader>Interest</TableHeader>
+                <TableHeader align="right">Score</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
-              {leads.map(lead => (
+              {leads.map((lead) => (
                 <TableRow key={lead.id}>
-                  <TableCell style={{ fontWeight: 600 }}><Link to={`/clients/${lead.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{lead.name}</Link></TableCell>
-                  <TableCell>{lead.company}</TableCell>
+                  <TableCell style={{ fontWeight: 600 }}>{lead.contactName || 'İsimsiz aday'}</TableCell>
+                  <TableCell>{lead.company ?? '—'}</TableCell>
                   <TableCell>
-                    <span className={styles.statusBadge}>{lead.status}</span>
+                    <span className={styles.statusBadge}>{STATUS_LABEL[lead.status]}</span>
                   </TableCell>
-                  <TableCell><span className={styles.numCell}>{formatCurrency(lead.value)}</span></TableCell>
-                  <TableCell><span className={styles.numCell}>{lead.probability}%</span></TableCell>
-                  <TableCell>
-                    <span className={`${styles.riskBadge} ${styles[lead.aiRiskScore.toLowerCase()]}`}>
-                      {lead.aiRiskScore}
-                    </span>
-                  </TableCell>
+                  <TableCell><span className={styles.numCell}>{leadBudget(lead)}</span></TableCell>
+                  <TableCell>{lead.interestType}</TableCell>
                   <TableCell align="right">
-                    <button className={styles.moreButton}><DotsThree size={18} weight="bold" /></button>
+                    <span className={`${styles.riskBadge} ${styles[scoreBand(lead.score)]}`}>
+                      {lead.score ?? '—'}
+                    </span>
                   </TableCell>
                 </TableRow>
               ))}
@@ -151,8 +180,8 @@ export const LeadsPipeline: React.FC = () => {
         </div>
       )}
 
-      <Modal 
-        isOpen={showAddModal} 
+      <Modal
+        isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         title="Add New Lead"
         size="md"
@@ -160,7 +189,10 @@ export const LeadsPipeline: React.FC = () => {
           <>
             <Button variant="outline" onClick={() => setShowAddModal(false)}>Cancel</Button>
             <Button variant="primary" onClick={() => {
-              toast.success("Aday kaydedildi");
+              // Aday oluşturma mevcut bir contact gerektirir (contact_id).
+              // Contacts modülü Faz 1'in sıradaki adımında bağlanınca bu form
+              // gerçek POST /api/leads'e kablolanır.
+              toast.info('Aday oluşturma Contacts modülüyle birlikte bağlanacak (sıradaki adım).');
               setShowAddModal(false);
             }}>Save Lead</Button>
           </>

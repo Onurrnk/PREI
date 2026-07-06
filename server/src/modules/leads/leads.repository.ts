@@ -28,32 +28,60 @@ export interface LeadRow {
   updated_at: string;
 }
 
+/** list/detail için join'lenmiş satır: contact adı + org (şirket) adı. */
+export interface LeadJoinedRow extends LeadRow {
+  contact_first_name: string;
+  contact_last_name: string | null;
+  company: string | null;
+}
+
+// leads + contact (ad) + organization (şirket) — presentation join'i.
+// RLS bağlamında çalışır; contacts/organizations aynı tenant politikasıyla korunur.
+const JOINED_SELECT = `
+  SELECT l.*,
+         ct.first_name AS contact_first_name,
+         ct.last_name  AS contact_last_name,
+         org.name      AS company
+    FROM leads l
+    JOIN contacts ct       ON ct.id = l.contact_id
+    LEFT JOIN organizations org ON org.id = l.organization_id`;
+
 @Injectable()
 export class LeadsRepository {
   constructor(private readonly db: DatabaseService) {}
 
-  async list(ctx: RequestContext, limit = 50, offset = 0): Promise<LeadRow[]> {
+  async list(ctx: RequestContext, limit = 50, offset = 0): Promise<LeadJoinedRow[]> {
     return this.db.withContext(ctx, async (c) => {
-      const { rows } = await c.query<LeadRow>(
-        `SELECT * FROM leads WHERE deleted_at IS NULL
-           ORDER BY updated_at DESC LIMIT $1 OFFSET $2`,
+      const { rows } = await c.query<LeadJoinedRow>(
+        `${JOINED_SELECT}
+          WHERE l.deleted_at IS NULL
+          ORDER BY l.updated_at DESC LIMIT $1 OFFSET $2`,
         [limit, offset],
       );
       return rows;
     });
   }
 
-  async findById(ctx: RequestContext, id: string): Promise<LeadRow | null> {
+  async findById(ctx: RequestContext, id: string): Promise<LeadJoinedRow | null> {
     return this.db.withContext(ctx, async (c) => {
-      const { rows } = await c.query<LeadRow>(
-        `SELECT * FROM leads WHERE id = $1 AND deleted_at IS NULL`,
+      const { rows } = await c.query<LeadJoinedRow>(
+        `${JOINED_SELECT} WHERE l.id = $1 AND l.deleted_at IS NULL`,
         [id],
       );
       return rows[0] ?? null;
     });
   }
 
-  async create(ctx: RequestContext, dto: CreateLeadDto): Promise<LeadRow> {
+  /** Aynı transaction içinde mutasyon sonrası join'lenmiş satırı geri okur. */
+  private async selectJoined(c: PoolClient, id: string): Promise<LeadJoinedRow> {
+    const { rows } = await c.query<LeadJoinedRow>(
+      `${JOINED_SELECT} WHERE l.id = $1`,
+      [id],
+    );
+    return rows[0];
+  }
+
+  async create(ctx: RequestContext, dto: CreateLeadDto): Promise<LeadJoinedRow> {
     return this.db.withContext(ctx, async (c) => {
       const { rows } = await c.query<LeadRow>(
         `INSERT INTO leads
@@ -75,11 +103,11 @@ export class LeadsRepository {
       );
       const lead = rows[0];
       await this.writeAuditAndEvent(c, ctx, 'lead.created', lead.id, { after: lead });
-      return lead;
+      return this.selectJoined(c, lead.id);
     });
   }
 
-  async update(ctx: RequestContext, id: string, dto: UpdateLeadDto): Promise<LeadRow | 'not_found' | 'conflict'> {
+  async update(ctx: RequestContext, id: string, dto: UpdateLeadDto): Promise<LeadJoinedRow | 'not_found' | 'conflict'> {
     return this.db.withContext(ctx, async (c) => {
       const { rows: before } = await c.query<LeadRow>(
         `SELECT * FROM leads WHERE id = $1 AND deleted_at IS NULL`, [id],
@@ -106,7 +134,7 @@ export class LeadsRepository {
       await this.writeAuditAndEvent(c, ctx, 'lead.updated', lead.id, {
         before: before[0], after: lead,
       });
-      return lead;
+      return this.selectJoined(c, lead.id);
     });
   }
 

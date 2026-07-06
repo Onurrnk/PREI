@@ -153,12 +153,20 @@ export const handlers = [
   }),
 
   http.get('/api/leads', () => {
+    // Şekil, gerçek API sözleşmesi (LeadResponse) ile birebir — mock↔API kayması
+    // derleme anında yakalanır (OV-8). Çok pazarlı gerçekçi set.
+    const mk = (o: Partial<LeadDTO> & Pick<LeadDTO, 'id' | 'contactName' | 'status'>): LeadDTO => ({
+      contactId: o.id, company: null, priority: 'medium', interestType: 'buy',
+      budgetMin: null, budgetMax: null, currency: 'EUR', targetMarketCode: null,
+      score: null, ownerId: null, notes: null, version: 1,
+      createdAt: '2026-06-01T00:00:00Z', updatedAt: '2026-06-15T00:00:00Z', ...o,
+    });
     return HttpResponse.json<LeadDTO[]>([
-      { id: '1', name: 'Stefan Brandt', company: 'Nordwind Capital', status: 'New Lead', value: 1500000, probability: 15, aiRiskScore: 'Low' },
-      { id: '2', name: 'Sarah Ahmed', company: 'Emirates Corp', status: 'Contacted', value: 3200000, probability: 30, aiRiskScore: 'Medium' },
-      { id: '3', name: 'Edward Langley', company: 'InvestUK', status: 'Meeting Scheduled', value: 850000, probability: 50, aiRiskScore: 'Low' },
-      { id: '4', name: 'Elena Rossi', company: 'Rossi Group', status: 'Proposal Sent', value: 4500000, probability: 75, aiRiskScore: 'High' },
-      { id: '5', name: 'Ahmet Yılmaz', company: 'Yılmaz Holding', status: 'Negotiation', value: 2100000, probability: 85, aiRiskScore: 'Low' },
+      mk({ id: '1', contactName: 'Stefan Brandt', company: 'Nordwind Capital', status: 'new', budgetMax: 1500000, currency: 'EUR', targetMarketCode: 'ES', interestType: 'invest', score: 30 }),
+      mk({ id: '2', contactName: 'Sarah Ahmed', company: 'Emirates Corp', status: 'contacted', budgetMax: 3200000, currency: 'AED', targetMarketCode: 'AE', interestType: 'buy', score: 48 }),
+      mk({ id: '3', contactName: 'Edward Langley', company: 'InvestUK', status: 'qualified', budgetMax: 850000, currency: 'GBP', targetMarketCode: 'GB', interestType: 'buy', score: 62 }),
+      mk({ id: '4', contactName: 'Elena Rossi', company: 'Rossi Group', status: 'nurturing', budgetMax: 4500000, currency: 'EUR', targetMarketCode: 'ES', interestType: 'invest', score: 74 }),
+      mk({ id: '5', contactName: 'Ahmet Yılmaz', company: 'Yılmaz Holding', status: 'converted', budgetMax: 2100000, currency: 'TRY', targetMarketCode: 'TR', interestType: 'buy', score: 88 }),
     ]);
   }),
 

@@ -22,23 +22,39 @@ export interface KPIDTO {
   percentage: number;
 }
 
+// Backend lead_status enum (7 değer) — dondurulmuş 9-aşamalı Kanban buna hizalandı (Faz 1 kararı).
+export type LeadStatus =
+  | 'new'
+  | 'contacted'
+  | 'qualified'
+  | 'unqualified'
+  | 'nurturing'
+  | 'converted'
+  | 'lost';
+
+export type LeadPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type LeadInterest = 'buy' | 'rent' | 'sell' | 'invest';
+
+// GET /api/leads sözleşmesi — backend LeadResponse ile elle senkron (OV-8).
+// Alan adları/tipleri backend dto/lead-response.dto.ts ile birebir eşleşmeli.
 export interface LeadDTO {
   id: string;
-  name: string;
-  company: string;
-  status:
-    | 'New Lead'
-    | 'Contacted'
-    | 'Qualified'
-    | 'Meeting Scheduled'
-    | 'Proposal Sent'
-    | 'Negotiation'
-    | 'Reservation'
-    | 'Closed Won'
-    | 'Closed Lost';
-  value: number;
-  probability: number;
-  aiRiskScore: 'Low' | 'Medium' | 'High';
+  contactId: string;
+  contactName: string;
+  company: string | null;
+  status: LeadStatus;
+  priority: LeadPriority;
+  interestType: LeadInterest;
+  budgetMin: number | null;
+  budgetMax: number | null;
+  currency: string;
+  targetMarketCode: string | null;
+  score: number | null; // 0..100 qualification skoru
+  ownerId: string | null;
+  notes: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ClientDTO {
