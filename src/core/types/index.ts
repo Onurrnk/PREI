@@ -155,6 +155,25 @@ export interface ProposalDTO {
   viewCount: number;
 }
 
+// GET /api/contracts sözleşmesi — backend ContractResponse ile senkron (OV-8).
+export type ContractStatus = 'Draft' | 'Active' | 'Expiring' | 'Expired' | 'Terminated' | 'Renewed';
+export interface ContractDocRef { id: string; name: string; size: string }
+export interface ContractDTO {
+  id: string;
+  developer: string;
+  project: string;
+  status: ContractStatus;
+  contractType: string;
+  startDate: string | null;
+  expiryDate: string | null;
+  commission: string;
+  legalEntity: string;
+  paymentTerms: string;
+  amount: number | null;
+  currency: string;
+  documents: ContractDocRef[];
+}
+
 export interface VaultDocumentDTO {
   id: string;
   name: string;

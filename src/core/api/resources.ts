@@ -11,6 +11,7 @@ import type {
   AuditLogDTO,
   ClientDTO,
   ContactDTO,
+  ContractDTO,
   DeveloperDTO,
   KPIDTO,
   LeadDTO,
@@ -93,6 +94,11 @@ export const projectsApi = {
 
 export const proposalsApi = {
   list: () => api.get<ProposalDTO[]>('/api/proposals'),
+};
+
+export const contractsApi = {
+  list: () => api.get<ContractDTO[]>('/api/contracts'),
+  get: (id: string) => api.get<ContractDTO>(`/api/contracts/${id}`),
 };
 
 export const documentsApi = {

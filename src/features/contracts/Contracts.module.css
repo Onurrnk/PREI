@@ -30,6 +30,38 @@
   font-variant-numeric: tabular-nums;
 }
 
+.errorState {
+  padding: var(--sp-5);
+  border: 1px solid color-mix(in srgb, var(--data-negative) 30%, transparent);
+  border-radius: var(--radius-surface);
+  background: color-mix(in srgb, var(--data-negative) 8%, transparent);
+  color: var(--text-primary);
+  font: var(--text-body);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  text-align: center;
+  padding: var(--sp-6) var(--sp-4);
+  color: var(--text-muted);
+}
+
+.emptyState h3 {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.emptyState p {
+  max-width: 42ch;
+  font: var(--text-body);
+  color: var(--text-muted);
+}
+
 .statusBadge {
   padding: 3px 10px;
   border-radius: var(--radius-control);
