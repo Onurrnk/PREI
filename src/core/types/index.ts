@@ -142,10 +142,13 @@ export interface AuditLogDTO {
   status: 'Success' | 'Failed' | 'Warning';
 }
 
+// Rol seti permissions.ts'te tanımlı (legacy mock + gerçek backend rolleri).
+import type { Role } from '../auth/permissions';
+
 export interface UserDTO {
   id: string;
   name: string;
-  role: 'Admin' | 'Consultant' | 'Manager';
+  role: Role;
   avatar: string;
   email?: string;
 }
@@ -153,6 +156,15 @@ export interface UserDTO {
 export interface LoginResponse {
   token: string;
   user: UserDTO;
+}
+
+// GET /api/me yanıtı (gerçek auth modu)
+export interface MeResponse {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  tenantId: string;
 }
 
 export interface TaskDTO {

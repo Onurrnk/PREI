@@ -19,7 +19,7 @@ import { jwtVerify } from 'jose';
 import type { Request } from 'express';
 import type { AppConfig } from '../config/configuration';
 import { DatabaseService } from '../database/database.service';
-import { CTX_KEY, type AppRole, type RequestContext, type WithContext } from '../common/request-context';
+import { CTX_KEY, type AppRole, type WithContext } from '../common/request-context';
 
 const ROLE_RANK: Record<AppRole, number> = {
   super_admin: 6, manager: 5, finance_manager: 4, marketing_manager: 3,

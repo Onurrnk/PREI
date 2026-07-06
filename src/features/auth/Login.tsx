@@ -75,10 +75,12 @@ export const Login: React.FC = () => {
           {submitting ? 'Giriş yapılıyor…' : 'Giriş Yap'}
         </Button>
 
-        <div className={styles.hint}>
-          Demo hesapları (şifre fark etmez):<br />
-          admin@prei.app · sarah@prei.app · elif@prei.app
-        </div>
+        {import.meta.env.VITE_USE_REAL_API !== 'true' && (
+          <div className={styles.hint}>
+            Demo hesapları (şifre fark etmez):<br />
+            admin@prei.app · sarah@prei.app · elif@prei.app
+          </div>
+        )}
       </form>
     </div>
   );

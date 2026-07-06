@@ -11,6 +11,10 @@ async function enableMocking() {
   if (!import.meta.env.DEV) {
     return
   }
+  // Gerçek auth/backend modunda MSW başlatma → istekler gerçek backend'e gider.
+  if (import.meta.env.VITE_USE_REAL_API === 'true') {
+    return
+  }
   const { worker } = await import('./mocks/browser')
   // `worker.start()` returns a Promise that resolves
   // once the Service Worker is up and ready to intercept requests.

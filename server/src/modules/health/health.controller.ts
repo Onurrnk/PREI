@@ -11,7 +11,7 @@ export class HealthController {
 
   @Get()
   async check() {
-    let dbOk = false;
+    let dbOk: boolean;
     try {
       const rows = await this.db.raw<{ ok: number }>('SELECT 1 AS ok');
       dbOk = rows[0]?.ok === 1;

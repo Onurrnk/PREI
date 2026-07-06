@@ -14,6 +14,7 @@ import type {
   KPIDTO,
   LeadDTO,
   LoginResponse,
+  MeResponse,
   ProjectDTO,
   ProposalDTO,
   TaskDTO,
@@ -22,9 +23,12 @@ import type {
 } from '../types';
 
 export const authApi = {
+  // Legacy mock login (FAZ T demo)
   login: (email: string, password: string) =>
     api.post<LoginResponse>('/api/auth/login', { email, password }),
   me: () => api.get<UserDTO>('/api/auth/me'),
+  // Gerçek auth modu: backend GET /api/me → profil + rol
+  realMe: () => api.get<MeResponse>('/api/me'),
 };
 
 export const leadsApi = {
