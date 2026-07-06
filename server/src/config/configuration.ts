@@ -13,7 +13,11 @@ export interface AppConfig {
     ssl: boolean;
   };
   supabase: {
-    // Supabase Auth JWT doğrulaması (HS256, proje JWT secret'ı).
+    // Proje URL'i (token uzaktan doğrulama /auth/v1/user için).
+    url: string;
+    // anon/publishable key — uzaktan doğrulama çağrısının apikey header'ı.
+    anonKey: string;
+    // Legacy HS256 shared secret (opsiyonel; verilirse hızlı lokal doğrulama).
     jwtSecret: string;
     // Tek tenant operasyonu: varsayılan tenant slug (Onur onayına kadar).
     defaultTenantSlug: string;
@@ -34,6 +38,8 @@ export default (): AppConfig => ({
     ssl: (process.env.DATABASE_SSL ?? 'true') !== 'false',
   },
   supabase: {
+    url: process.env.SUPABASE_URL ?? 'https://kkcvfvbjmohlplepadip.supabase.co',
+    anonKey: process.env.SUPABASE_ANON_KEY ?? '',
     jwtSecret: process.env.SUPABASE_JWT_SECRET ?? '',
     defaultTenantSlug: process.env.DEFAULT_TENANT_SLUG ?? 'produality',
   },
