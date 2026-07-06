@@ -11,9 +11,6 @@ export const Tasks: React.FC = () => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Hardcoded "current user" for normal mode
-  const currentUserId = 'u2'; // Sarah Ahmed
-
   const fetchUsers = useCallback(async () => {
     try {
       const data = await usersApi.list();
@@ -29,7 +26,8 @@ export const Tasks: React.FC = () => {
   const fetchTasks = useCallback(async () => {
     setIsLoading(true);
     try {
-      const queryUser = isAdminMode ? selectedUserId : currentUserId;
+      // Normal mod: filtresiz (RLS/super_admin kapsar). Admin mod: seçili kişi.
+      const queryUser = isAdminMode ? selectedUserId : null;
       const data = await tasksApi.list(queryUser ?? undefined);
       setTasks(data);
     } catch (err) {

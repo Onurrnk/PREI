@@ -14,6 +14,8 @@ import { LeadsModule } from './modules/leads/leads.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { ContractsModule } from './modules/contracts/contracts.module';
 import { ProposalsModule } from './modules/proposals/proposals.module';
+import { TasksModule } from './modules/tasks/tasks.module';
+import { UsersModule } from './modules/users/users.module';
 import { AgentModule } from './modules/agent/agent.module';
 import { HealthModule } from './modules/health/health.module';
 import { MeModule } from './modules/me/me.module';
@@ -51,6 +53,8 @@ import { MeModule } from './modules/me/me.module';
     CatalogModule,
     ContractsModule,
     ProposalsModule,
+    TasksModule,
+    UsersModule,
     AgentModule,
     HealthModule,
     MeModule,
