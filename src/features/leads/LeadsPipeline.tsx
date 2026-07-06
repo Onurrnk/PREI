@@ -30,11 +30,13 @@ const STATUS_LABEL: Record<LeadStatus, string> = Object.fromEntries(
 
 type ViewMode = 'kanban' | 'list';
 
-// Qualification skoru (0..100) → renk bandı. Yüksek skor = daha nitelikli.
-function scoreBand(score: number | null): 'low' | 'medium' | 'high' {
-  if (score === null || score < 40) return 'low';
-  if (score < 70) return 'medium';
-  return 'high';
+// Qualification skoru (0..100) → renk bandı. Yüksek skor = daha nitelikli (yeşil);
+// düşük = zayıf (kırmızı); skorsuz = nötr. NOT: eski aiRiskScore'un tersi semantik.
+function scoreBand(score: number | null): 'weak' | 'moderate' | 'strong' | 'unscored' {
+  if (score === null) return 'unscored';
+  if (score < 40) return 'weak';
+  if (score < 70) return 'moderate';
+  return 'strong';
 }
 
 function formatMoney(value: number | null, currency: string): string {

@@ -142,19 +142,25 @@
   font-weight: 500;
 }
 
-.riskBadge.low {
+/* Qualification skoru: yüksek = güçlü/yeşil, düşük = zayıf/kırmızı. */
+.riskBadge.strong {
   background-color: color-mix(in srgb, var(--data-positive) 12%, transparent);
   color: var(--data-positive);
 }
 
-.riskBadge.medium {
+.riskBadge.moderate {
   background-color: color-mix(in srgb, var(--data-warning) 12%, transparent);
   color: var(--data-warning);
 }
 
-.riskBadge.high {
+.riskBadge.weak {
   background-color: color-mix(in srgb, var(--data-negative) 12%, transparent);
   color: var(--data-negative);
+}
+
+.riskBadge.unscored {
+  background-color: var(--bg-inset);
+  color: var(--text-muted);
 }
 
 .headerActions {
