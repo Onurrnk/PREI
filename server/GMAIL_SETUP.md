@@ -56,7 +56,7 @@ Backend `http://localhost:4000/api` üzerinde ayağa kalkar.
 ## Önemli notlar / yapılacaklar (production)
 
 - **Token saklama:** Şu an `InMemoryTokenStore` kullanılıyor (sadece dev). Production'da token'lar **şifrelenmiş** olarak Postgres/Supabase'e yazılmalı (`TokenStore` arayüzünün Supabase implementasyonu). — DEBT-GMAIL-001
-- **userId:** Şu an query param ile geliyor (placeholder). Production'da PREI JWT oturumundan alınmalı, asla client'tan güvenilmemeli. — DEBT-GMAIL-002
+- **userId:** ✅ **KAPANDI (Faz 0, 2026-07-05).** userId artık `ctx.userId` (doğrulanmış Supabase JWT) üzerinden geliyor; query param kaldırıldı. GmailController `JwtAuthGuard + RbacGuard('documents')` ile korunuyor. Yabancı userId gönderilse yok sayılır. — DEBT-GMAIL-002 (çözüldü)
 - **Webhook/push:** Gerçek zamanlı gelen kutusu için Gmail `watch` + Pub/Sub eklenebilir (şimdilik pull/list).
 - **Rate limit & retry:** Gmail API kotaları için exponential backoff eklenmeli.
 - **Scope minimizasyonu:** Sadece okuma istiyorsan `gmail.send` scope'unu kaldır.
