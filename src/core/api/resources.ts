@@ -10,6 +10,7 @@ import type {
   ActivityDTO,
   AuditLogDTO,
   ClientDTO,
+  ContactDTO,
   DeveloperDTO,
   KPIDTO,
   LeadDTO,
@@ -53,6 +54,23 @@ export interface UpdateLeadInput {
   notes?: string;
   version: number; // optimistic concurrency → 409
 }
+
+export interface CreateContactInput {
+  first_name: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  whatsapp?: string;
+  preferred_lang?: string;
+  marketing_consent?: boolean;
+  notes?: string;
+}
+
+export const contactsApi = {
+  list: (search?: string) => api.get<ContactDTO[]>('/api/contacts', { params: { search } }),
+  get: (id: string) => api.get<ContactDTO>(`/api/contacts/${id}`),
+  create: (input: CreateContactInput) => api.post<ContactDTO>('/api/contacts', input),
+};
 
 export const leadsApi = {
   list: () => api.get<LeadDTO[]>('/api/leads'),

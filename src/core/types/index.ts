@@ -57,6 +57,23 @@ export interface LeadDTO {
   updatedAt: string;
 }
 
+// GET/POST /api/contacts sözleşmesi — backend ContactResponse ile senkron (OV-8).
+export interface ContactDTO {
+  id: string;
+  firstName: string;
+  lastName: string | null;
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  preferredLang: string;
+  marketingConsent: boolean;
+  notes: string | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ClientDTO {
   id: string;
   clientId: string;

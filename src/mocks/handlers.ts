@@ -4,6 +4,7 @@ import type {
   KPIDTO,
   LeadDTO,
   ClientDTO,
+  ContactDTO,
   ProjectDTO,
   DeveloperDTO,
   ProposalDTO,
@@ -168,6 +169,38 @@ export const handlers = [
       mk({ id: '4', contactName: 'Elena Rossi', company: 'Rossi Group', status: 'nurturing', budgetMax: 4500000, currency: 'EUR', targetMarketCode: 'ES', interestType: 'invest', score: 74 }),
       mk({ id: '5', contactName: 'Ahmet Yılmaz', company: 'Yılmaz Holding', status: 'converted', budgetMax: 2100000, currency: 'TRY', targetMarketCode: 'TR', interestType: 'buy', score: 88 }),
     ]);
+  }),
+
+  // FAZ 1 create akışı — mock demoda hata vermesin diye plausible yanıt döner
+  // (kalıcı değil; gerçek yazım VITE_USE_REAL_API=true backend'inde).
+  http.post('/api/contacts', async ({ request }) => {
+    const b = (await request.json()) as { first_name?: string; last_name?: string; email?: string; phone?: string };
+    const first = b.first_name ?? 'Yeni';
+    const last = b.last_name ?? null;
+    const now = new Date().toISOString();
+    return HttpResponse.json<ContactDTO>({
+      id: crypto.randomUUID(), firstName: first, lastName: last,
+      fullName: [first, last].filter(Boolean).join(' '), email: b.email ?? null,
+      phone: b.phone ?? null, whatsapp: null, preferredLang: 'tr',
+      marketingConsent: false, notes: null, version: 1, createdAt: now, updatedAt: now,
+    }, { status: 201 });
+  }),
+
+  http.post('/api/leads', async ({ request }) => {
+    // Gövde snake_case create input'u (CreateLeadInput) ile gelir.
+    const b = (await request.json()) as {
+      contact_id?: string; status?: LeadDTO['status']; interest_type?: LeadDTO['interestType'];
+      priority?: LeadDTO['priority']; budget_max?: number; currency?: string;
+      target_market_code?: string; notes?: string;
+    };
+    const now = new Date().toISOString();
+    return HttpResponse.json<LeadDTO>({
+      id: crypto.randomUUID(), contactId: b.contact_id ?? crypto.randomUUID(),
+      contactName: 'Yeni Aday', company: null, status: b.status ?? 'new', priority: b.priority ?? 'medium',
+      interestType: b.interest_type ?? 'buy', budgetMin: null, budgetMax: b.budget_max ?? null,
+      currency: b.currency ?? 'EUR', targetMarketCode: b.target_market_code ?? null,
+      score: null, ownerId: null, notes: b.notes ?? null, version: 1, createdAt: now, updatedAt: now,
+    }, { status: 201 });
   }),
 
   http.get('/api/clients', () => {

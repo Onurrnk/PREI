@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '../../core/components/Card/Card';
-import type { LeadDTO, LeadStatus } from '../../core/types';
-import { leadsApi } from '../../core/api/resources';
+import type { LeadDTO, LeadStatus, LeadInterest, LeadPriority } from '../../core/types';
+import { leadsApi, contactsApi } from '../../core/api/resources';
+import { ApiError } from '../../core/api/client';
 import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { DotsThree, Plus, SquaresFour, ListBullets, UsersThree } from '@phosphor-icons/react';
@@ -53,8 +54,32 @@ function leadBudget(lead: LeadDTO): string {
   return formatMoney(lead.budgetMax ?? lead.budgetMin, lead.currency);
 }
 
+// Aktif pazarlar (K-6) ve para birimi eşlemesi — seed ile tutarlı.
+const MARKETS: { code: string; label: string; currency: string }[] = [
+  { code: 'TR', label: 'Türkiye', currency: 'TRY' },
+  { code: 'AE', label: 'BAE / Dubai', currency: 'AED' },
+  { code: 'ES', label: 'İspanya', currency: 'EUR' },
+  { code: 'GB', label: 'İngiltere', currency: 'GBP' },
+];
+
+interface NewLeadForm {
+  fullName: string;
+  email: string;
+  phone: string;
+  interest: LeadInterest;
+  market: string;
+  value: string;
+  priority: LeadPriority;
+  notes: string;
+}
+
+const EMPTY_FORM: NewLeadForm = {
+  fullName: '', email: '', phone: '', interest: 'buy',
+  market: 'AE', value: '', priority: 'medium', notes: '',
+};
+
 export const LeadsPipeline: React.FC = () => {
-  const { data, loading, error } = useFetch<LeadDTO[]>(() => leadsApi.list(), []);
+  const { data, loading, error, refetch } = useFetch<LeadDTO[]>(() => leadsApi.list(), []);
   const leads = data ?? [];
 
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -66,7 +91,58 @@ export const LeadsPipeline: React.FC = () => {
     localStorage.setItem('prei_leads_viewMode', viewMode);
   }, [viewMode]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [form, setForm] = useState<NewLeadForm>(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
   const toast = useToast();
+
+  const setField = <K extends keyof NewLeadForm>(key: K, value: NewLeadForm[K]) =>
+    setForm((f) => ({ ...f, [key]: value }));
+
+  const closeModal = () => {
+    setShowAddModal(false);
+    setForm(EMPTY_FORM);
+  };
+
+  const handleCreate = async () => {
+    const name = form.fullName.trim();
+    if (!name) {
+      toast.error('Ad Soyad zorunlu.');
+      return;
+    }
+    const [firstName, ...rest] = name.split(/\s+/);
+    const lastName = rest.join(' ') || undefined;
+    const market = MARKETS.find((m) => m.code === form.market);
+    const valueNum = form.value ? Number(form.value) : undefined;
+
+    setSaving(true);
+    try {
+      // 1) Kişi (dedup: aynı telefon → mevcut kişi). 2) Lead (kişiye bağlı).
+      const contact = await contactsApi.create({
+        first_name: firstName,
+        last_name: lastName,
+        email: form.email.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+      });
+      await leadsApi.create({
+        contact_id: contact.id,
+        status: 'new',
+        interest_type: form.interest,
+        priority: form.priority,
+        budget_max: Number.isFinite(valueNum) ? valueNum : undefined,
+        currency: market?.currency,
+        target_market_code: form.market,
+        notes: form.notes.trim() || undefined,
+      });
+      toast.success(`Aday oluşturuldu: ${name}`);
+      closeModal();
+      refetch();
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Aday kaydedilemedi.';
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return <TableSkeleton rows={7} />;
@@ -184,65 +260,71 @@ export const LeadsPipeline: React.FC = () => {
 
       <Modal
         isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        onClose={closeModal}
         title="Add New Lead"
         size="md"
         footer={
           <>
-            <Button variant="outline" onClick={() => setShowAddModal(false)}>Cancel</Button>
-            <Button variant="primary" onClick={() => {
-              // Aday oluşturma mevcut bir contact gerektirir (contact_id).
-              // Contacts modülü Faz 1'in sıradaki adımında bağlanınca bu form
-              // gerçek POST /api/leads'e kablolanır.
-              toast.info('Aday oluşturma Contacts modülüyle birlikte bağlanacak (sıradaki adım).');
-              setShowAddModal(false);
-            }}>Save Lead</Button>
+            <Button variant="outline" onClick={closeModal} disabled={saving}>Cancel</Button>
+            <Button variant="primary" onClick={handleCreate} disabled={saving}>
+              {saving ? 'Kaydediliyor…' : 'Save Lead'}
+            </Button>
           </>
         }
       >
         <div className={styles.formStack}>
           <FormRow>
             <Field label="Full Name">
-              <Input type="text" placeholder="e.g. Arda Yılmazer" />
+              <Input type="text" placeholder="e.g. Arda Yılmazer"
+                value={form.fullName} onChange={(e) => setField('fullName', e.target.value)} />
             </Field>
-            <Field label="Company / Affiliation">
-              <Input type="text" placeholder="e.g. Bosphorus Holding" />
-            </Field>
-          </FormRow>
-
-          <FormRow>
             <Field label="Email Address">
-              <Input type="email" placeholder="arda@bosphorusholding.com" />
-            </Field>
-            <Field label="Phone Number">
-              <Input type="tel" placeholder="+971 50 217 4863" />
+              <Input type="email" placeholder="arda@bosphorusholding.com"
+                value={form.email} onChange={(e) => setField('email', e.target.value)} />
             </Field>
           </FormRow>
 
-          <Field label="Interested Project">
-            <Select defaultValue="">
-              <option value="">Select Project...</option>
-              <option value="p1">Marina Vista (Emaar)</option>
-              <option value="p2">Safa Two (DAMAC)</option>
-              <option value="p3">Palm Beach Towers (Nakheel)</option>
-            </Select>
-          </Field>
-
           <FormRow>
-            <Field label="Estimated Value (USD)">
-              <Input type="number" placeholder="e.g. 1500000" />
+            <Field label="Phone Number">
+              <Input type="tel" placeholder="+971 50 217 4863"
+                value={form.phone} onChange={(e) => setField('phone', e.target.value)} />
             </Field>
-            <Field label="Priority">
-              <Select defaultValue="medium">
-                <option value="high">High (Hot Lead)</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low (Cold Lead)</option>
+            <Field label="Target Market">
+              <Select value={form.market} onChange={(e) => setField('market', e.target.value)}>
+                {MARKETS.map((m) => (
+                  <option key={m.code} value={m.code}>{m.label} ({m.currency})</option>
+                ))}
               </Select>
             </Field>
           </FormRow>
 
+          <FormRow>
+            <Field label="Interest">
+              <Select value={form.interest} onChange={(e) => setField('interest', e.target.value as LeadInterest)}>
+                <option value="buy">Buy</option>
+                <option value="rent">Rent</option>
+                <option value="invest">Invest</option>
+                <option value="sell">Sell</option>
+              </Select>
+            </Field>
+            <Field label="Priority">
+              <Select value={form.priority} onChange={(e) => setField('priority', e.target.value as LeadPriority)}>
+                <option value="urgent">Urgent</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </Select>
+            </Field>
+          </FormRow>
+
+          <Field label={`Estimated Value (${MARKETS.find((m) => m.code === form.market)?.currency ?? 'EUR'})`}>
+            <Input type="number" placeholder="e.g. 1500000"
+              value={form.value} onChange={(e) => setField('value', e.target.value)} />
+          </Field>
+
           <Field label="Notes">
-            <Textarea placeholder="Initial contact details or special requirements..." rows={3} />
+            <Textarea placeholder="Initial contact details or special requirements..." rows={3}
+              value={form.notes} onChange={(e) => setField('notes', e.target.value)} />
           </Field>
         </div>
       </Modal>
