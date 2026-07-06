@@ -18,8 +18,8 @@ export const ProjectsList: React.FC = () => {
 
   if (loading) return <div className={styles.loading}>Loading Projects...</div>;
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+  const formatCurrency = (value: number, currency: string) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'EUR', maximumFractionDigits: 0 }).format(value);
   };
 
   return (
@@ -76,7 +76,7 @@ export const ProjectsList: React.FC = () => {
                     {proj.status}
                   </span>
                 </TableCell>
-                <TableCell style={{ fontWeight: 600 }}>{formatCurrency(proj.startingPrice)}</TableCell>
+                <TableCell style={{ fontWeight: 600 }}>{formatCurrency(proj.startingPrice, proj.currency)}</TableCell>
                 <TableCell>{proj.availableUnits} / {proj.totalUnits}</TableCell>
               </TableRow>
             ))}

@@ -30,8 +30,8 @@ export const DeveloperProfile: React.FC = () => {
     return <div className={styles.error}>Developer not found</div>;
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+  const formatCurrency = (value: number, currency = 'EUR') => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'EUR', maximumFractionDigits: 0 }).format(value);
   };
 
   return (
@@ -137,7 +137,7 @@ export const DeveloperProfile: React.FC = () => {
                       <div className={styles.projectMetrics}>
                         <div className={styles.metric}>
                           <span className={styles.metricLabel}>Starting Price</span>
-                          <span className={styles.metricValue}>{formatCurrency(project.startingPrice)}</span>
+                          <span className={styles.metricValue}>{formatCurrency(project.startingPrice, project.currency)}</span>
                         </div>
                         <div className={styles.metric}>
                           <span className={styles.metricLabel}>Available</span>

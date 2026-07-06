@@ -115,6 +115,7 @@ export interface ProjectDTO {
   totalUnits: number;
   availableUnits: number;
   startingPrice: number;
+  currency: string;
   completionDate: string;
   projectManagerName: string;
   projectManagerPhone: string;

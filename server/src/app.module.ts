@@ -11,6 +11,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { GmailModule } from './modules/gmail/gmail.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
 import { LeadsModule } from './modules/leads/leads.module';
+import { CatalogModule } from './modules/catalog/catalog.module';
 import { AgentModule } from './modules/agent/agent.module';
 import { HealthModule } from './modules/health/health.module';
 import { MeModule } from './modules/me/me.module';
@@ -45,6 +46,7 @@ import { MeModule } from './modules/me/me.module';
     ContactsModule,
     GmailModule,
     LeadsModule,
+    CatalogModule,
     AgentModule,
     HealthModule,
     MeModule,

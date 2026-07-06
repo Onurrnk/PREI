@@ -31,10 +31,13 @@ export const ProjectProfile: React.FC = () => {
   }
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: project.currency || 'EUR', maximumFractionDigits: 0 }).format(value);
   };
 
-  const soldPct = Math.round(((project.totalUnits - project.availableUnits) / project.totalUnits) * 100);
+  // totalUnits 0/eksikse sıfıra bölmeyi önle (metadata olmayan properties).
+  const soldPct = project.totalUnits > 0
+    ? Math.round(((project.totalUnits - project.availableUnits) / project.totalUnits) * 100)
+    : 0;
   // Segment tonları: marka morunun kademeli opaklığı — ilk taksit en koyu.
   const segmentAlpha = (i: number, total: number) => 1 - (i / Math.max(total, 1)) * 0.62;
   const docIcon = (type: string) =>

@@ -251,7 +251,7 @@ export const handlers = [
         projects: [
           {
             id: 'p1', developerId: '1', developerName: 'Emaar Properties', name: 'Beachfront Residences', location: 'Dubai Marina', status: 'Off-plan',
-            totalUnits: 350, availableUnits: 42, startingPrice: 2500000, completionDate: 'Q4 2027',
+            totalUnits: 350, availableUnits: 42, startingPrice: 2500000, currency: 'AED', completionDate: 'Q4 2027',
             projectManagerName: 'Tariq Mansour', projectManagerEmail: 'tariq.m@emaar.ae', projectManagerPhone: '+971 55 987 6543',
             description: 'Ultra-luxury waterfront apartments featuring panoramic views of the Arabian Gulf and Dubai Marina skyline. Exclusive private beach access and premium lifestyle amenities.',
             images: ['/images/exterior.png', '/images/interior.png', '/images/amenities.png'],
@@ -269,7 +269,7 @@ export const handlers = [
           },
           {
             id: 'p2', developerId: '1', developerName: 'Emaar Properties', name: 'Downtown Heights', location: 'Downtown Dubai', status: 'Under Construction',
-            totalUnits: 200, availableUnits: 15, startingPrice: 4200000, completionDate: 'Q2 2026',
+            totalUnits: 200, availableUnits: 15, startingPrice: 4200000, currency: 'AED', completionDate: 'Q2 2026',
             projectManagerName: 'Leila Hassan', projectManagerEmail: 'leila.h@emaar.ae', projectManagerPhone: '+971 50 456 7890',
             description: 'Premium penthouses and apartments steps away from the Burj Khalifa and Dubai Mall. Unrivaled urban luxury.',
             images: ['/images/interior.png', '/images/exterior.png'],
@@ -291,7 +291,7 @@ export const handlers = [
         projects: [
           {
             id: 'p3', developerId: '2', developerName: 'DAMAC Properties', name: 'DAMAC Hills Villas', location: 'DAMAC Hills', status: 'Under Construction',
-            totalUnits: 150, availableUnits: 30, startingPrice: 3800000, completionDate: 'Q1 2026',
+            totalUnits: 150, availableUnits: 30, startingPrice: 3800000, currency: 'AED', completionDate: 'Q1 2026',
             projectManagerName: 'Faisal Qureshi', projectManagerEmail: 'faisal.q@damac.ae', projectManagerPhone: '+971 56 111 2233',
             description: 'Exclusive golf course villas with Trump International Golf Club access. Luxury family living in a gated community.',
             images: ['/images/exterior.png', '/images/amenities.png'],
@@ -318,7 +318,7 @@ export const handlers = [
         projects: [
           {
             id: 'p4', developerId: '4', developerName: 'Ellington Properties', name: 'Belmont Residences', location: 'JVT', status: 'Off-plan',
-            totalUnits: 85, availableUnits: 12, startingPrice: 1200000, completionDate: 'Q3 2026',
+            totalUnits: 85, availableUnits: 12, startingPrice: 1200000, currency: 'AED', completionDate: 'Q3 2026',
             projectManagerName: 'Elena Rostova', projectManagerEmail: 'elena.r@ellington.ae', projectManagerPhone: '+971 55 444 3322',
             description: 'Boutique apartments designed with a focus on art and aesthetics. Prime location with excellent ROI potential.',
             images: ['/images/interior.png'],
@@ -347,7 +347,7 @@ export const handlers = [
     const allProjects: ProjectDTO[] = [
       {
         id: 'p1', developerId: '1', developerName: 'Emaar Properties', name: 'Beachfront Residences', location: 'Dubai Marina', status: 'Off-plan',
-        totalUnits: 350, availableUnits: 42, startingPrice: 2500000, completionDate: 'Q4 2027',
+        totalUnits: 350, availableUnits: 42, startingPrice: 2500000, currency: 'AED', completionDate: 'Q4 2027',
         projectManagerName: 'Tariq Mansour', projectManagerEmail: 'tariq.m@emaar.ae', projectManagerPhone: '+971 55 987 6543',
         description: 'Ultra-luxury waterfront apartments featuring panoramic views of the Arabian Gulf and Dubai Marina skyline. Exclusive private beach access and premium lifestyle amenities.',
         images: ['/images/exterior.png', '/images/interior.png', '/images/amenities.png'],
@@ -365,7 +365,7 @@ export const handlers = [
       },
       {
         id: 'p2', developerId: '1', developerName: 'Emaar Properties', name: 'Downtown Heights', location: 'Downtown Dubai', status: 'Under Construction',
-        totalUnits: 200, availableUnits: 15, startingPrice: 4200000, completionDate: 'Q2 2026',
+        totalUnits: 200, availableUnits: 15, startingPrice: 4200000, currency: 'AED', completionDate: 'Q2 2026',
         projectManagerName: 'Leila Hassan', projectManagerEmail: 'leila.h@emaar.ae', projectManagerPhone: '+971 50 456 7890',
         description: 'Premium penthouses and apartments steps away from the Burj Khalifa and Dubai Mall. Unrivaled urban luxury.',
         images: ['/images/interior.png', '/images/exterior.png'],
@@ -381,7 +381,7 @@ export const handlers = [
       },
       {
         id: 'p3', developerId: '2', developerName: 'DAMAC Properties', name: 'DAMAC Hills Villas', location: 'DAMAC Hills', status: 'Under Construction',
-        totalUnits: 150, availableUnits: 30, startingPrice: 3800000, completionDate: 'Q1 2026',
+        totalUnits: 150, availableUnits: 30, startingPrice: 3800000, currency: 'AED', completionDate: 'Q1 2026',
         projectManagerName: 'Faisal Qureshi', projectManagerEmail: 'faisal.q@damac.ae', projectManagerPhone: '+971 56 111 2233',
         description: 'Exclusive golf course villas with Trump International Golf Club access. Luxury family living in a gated community.',
         images: ['/images/exterior.png', '/images/amenities.png'],
@@ -397,7 +397,7 @@ export const handlers = [
       },
       {
         id: 'p4', developerId: '4', developerName: 'Ellington Properties', name: 'Belmont Residences', location: 'JVT', status: 'Off-plan',
-        totalUnits: 85, availableUnits: 12, startingPrice: 1200000, completionDate: 'Q3 2026',
+        totalUnits: 85, availableUnits: 12, startingPrice: 1200000, currency: 'AED', completionDate: 'Q3 2026',
         projectManagerName: 'Elena Rostova', projectManagerEmail: 'elena.r@ellington.ae', projectManagerPhone: '+971 55 444 3322',
         description: 'Boutique apartments designed with a focus on art and aesthetics. Prime location with excellent ROI potential.',
         images: ['/images/interior.png'],
