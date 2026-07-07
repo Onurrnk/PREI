@@ -10,6 +10,7 @@ import { CTX_KEY } from './common/request-context';
 import { AuthModule } from './modules/auth/auth.module';
 import { GmailModule } from './modules/gmail/gmail.module';
 import { ContactsModule } from './modules/contacts/contacts.module';
+import { ClientsModule } from './modules/clients/clients.module';
 import { LeadsModule } from './modules/leads/leads.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { ContractsModule } from './modules/contracts/contracts.module';
@@ -50,6 +51,7 @@ import { MeModule } from './modules/me/me.module';
     DatabaseModule,
     AuthModule,
     ContactsModule,
+    ClientsModule,
     GmailModule,
     LeadsModule,
     CatalogModule,
