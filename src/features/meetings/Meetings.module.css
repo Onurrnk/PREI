@@ -335,3 +335,19 @@
   color: var(--text-primary);
   width: 100%;
 }
+
+.errorState {
+  padding: var(--sp-5);
+  border: 1px solid color-mix(in srgb, var(--data-negative) 30%, transparent);
+  border-radius: var(--radius-surface);
+  background: color-mix(in srgb, var(--data-negative) 8%, transparent);
+  color: var(--text-primary);
+  font: var(--text-body);
+}
+
+.calendarLoading {
+  padding: var(--sp-4);
+  text-align: center;
+  color: var(--text-muted);
+  font: var(--text-body);
+}

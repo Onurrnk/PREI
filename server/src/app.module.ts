@@ -15,6 +15,7 @@ import { CatalogModule } from './modules/catalog/catalog.module';
 import { ContractsModule } from './modules/contracts/contracts.module';
 import { ProposalsModule } from './modules/proposals/proposals.module';
 import { TasksModule } from './modules/tasks/tasks.module';
+import { MeetingsModule } from './modules/meetings/meetings.module';
 import { UsersModule } from './modules/users/users.module';
 import { AgentModule } from './modules/agent/agent.module';
 import { HealthModule } from './modules/health/health.module';
@@ -54,6 +55,7 @@ import { MeModule } from './modules/me/me.module';
     ContractsModule,
     ProposalsModule,
     TasksModule,
+    MeetingsModule,
     UsersModule,
     AgentModule,
     HealthModule,

@@ -6,6 +6,7 @@ import type {
   ClientDTO,
   ContactDTO,
   ContractDTO,
+  MeetingDTO,
   ProjectDTO,
   DeveloperDTO,
   ProposalDTO,
@@ -211,6 +212,18 @@ export const handlers = [
       { id: 'C-1002', developer: 'Nakheel', project: 'Palm Beach Towers', status: 'Active', contractType: 'pm', startDate: '2024-06-15', expiryDate: '2025-06-14', commission: '4%', legalEntity: 'Nakheel PJSC', paymentTerms: '45 Days Net', amount: null, currency: 'AED', documents: [doc('d4', 'Nakheel_Broker_Agreement.pdf', '3.1 MB')] },
       { id: 'C-1003', developer: 'Damac Properties', project: 'Damac Hills', status: 'Expiring', contractType: 'pm', startDate: '2023-08-01', expiryDate: '2024-07-31', commission: '6%', legalEntity: 'Damac Real Estate Dev.', paymentTerms: '15 Days Net', amount: null, currency: 'AED', documents: [doc('d6', 'Damac_Agency_Contract.pdf', '1.9 MB')] },
       { id: 'C-1004', developer: 'Meraas', project: 'City Walk', status: 'Expired', contractType: 'pm', startDate: '2022-01-01', expiryDate: '2023-01-01', commission: '5%', legalEntity: 'Meraas Holding', paymentTerms: '30 Days Net', amount: null, currency: 'AED', documents: [doc('d8', 'Old_Agreement_Meraas.pdf', '2.0 MB')] },
+    ]);
+  }),
+
+  http.get('/api/meetings', () => {
+    // Bu ayın günlerine yerleşen toplantılar (takvim mock modda da dolu görünsün).
+    const now = new Date();
+    const day = (d: number, h: number, m = 0) => new Date(now.getFullYear(), now.getMonth(), d, h, m).toISOString();
+    return HttpResponse.json<MeetingDTO[]>([
+      { id: 'm1', title: 'Viewing: Marina Vista', date: day(12, 10), durationLabel: '1h', client: 'John Doe', location: 'Marina Vista Tower B', platform: 'In-person', notes: '3BR deniz manzaralı birimlerle ilgileniyor.', kind: 'viewing' },
+      { id: 'm2', title: 'Consultation: M. Smith', date: day(12, 14), durationLabel: '45m', client: 'Michael Smith', location: 'Zoom', platform: 'Zoom', notes: 'Off-plan yatırım ilk görüşme.', kind: 'meeting' },
+      { id: 'm3', title: 'Contract Signing', date: day(15, 11, 30), durationLabel: '1h', client: 'Elena Rodriguez', location: 'Emaar Sales Center', platform: 'In-person', notes: 'Tüm SPA dokümanları hazır olsun.', kind: 'signing' },
+      { id: 'm4', title: 'Zoom: Project Pitch', date: day(22, 16), durationLabel: '1h', client: 'Michael Smith', location: 'Zoom', platform: 'Zoom', notes: 'Safa Two projesi sunumu.', kind: 'meeting' },
     ]);
   }),
 

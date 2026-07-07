@@ -174,6 +174,20 @@ export interface ContractDTO {
   documents: ContractDocRef[];
 }
 
+// GET /api/meetings sözleşmesi — backend MeetingResponse ile senkron (OV-8).
+// Kaynak: tasks(task_type='meeting'); toplantıya özgü alanlar metadata'dan.
+export interface MeetingDTO {
+  id: string;
+  title: string;
+  date: string | null;    // ISO (due_date)
+  durationLabel: string;
+  client: string;
+  location: string;
+  platform: string;
+  notes: string;
+  kind: string;           // viewing | signing | meeting
+}
+
 export interface VaultDocumentDTO {
   id: string;
   name: string;
