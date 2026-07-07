@@ -6,6 +6,7 @@ import type {
   ClientDTO,
   ContactDTO,
   ContractDTO,
+  DashboardSummaryDTO,
   MeetingDTO,
   ProjectDTO,
   DeveloperDTO,
@@ -213,6 +214,22 @@ export const handlers = [
       { id: 'C-1003', developer: 'Damac Properties', project: 'Damac Hills', status: 'Expiring', contractType: 'pm', startDate: '2023-08-01', expiryDate: '2024-07-31', commission: '6%', legalEntity: 'Damac Real Estate Dev.', paymentTerms: '15 Days Net', amount: null, currency: 'AED', documents: [doc('d6', 'Damac_Agency_Contract.pdf', '1.9 MB')] },
       { id: 'C-1004', developer: 'Meraas', project: 'City Walk', status: 'Expired', contractType: 'pm', startDate: '2022-01-01', expiryDate: '2023-01-01', commission: '5%', legalEntity: 'Meraas Holding', paymentTerms: '30 Days Net', amount: null, currency: 'AED', documents: [doc('d8', 'Old_Agreement_Meraas.pdf', '2.0 MB')] },
     ]);
+  }),
+
+  http.get('/api/dashboard/summary', () => {
+    return HttpResponse.json<DashboardSummaryDTO>({
+      activeLeads: 28,
+      pipelineValueEur: 4_720_000,
+      closedWonEur: 12_400_000,
+      proposalsActive: 5,
+      meetingsThisWeek: 6,
+      marketSplit: [
+        { code: 'AE', name: 'Dubai (UAE)', valueEur: 1_860_000 },
+        { code: 'TR', name: 'Türkiye', valueEur: 1_540_000 },
+        { code: 'ES', name: 'Spain', valueEur: 780_000 },
+        { code: 'GB', name: 'United Kingdom', valueEur: 540_000 },
+      ],
+    });
   }),
 
   http.get('/api/meetings', () => {

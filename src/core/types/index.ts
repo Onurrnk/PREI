@@ -14,6 +14,18 @@ export interface ActivityDTO {
   details: string;
 }
 
+// GET /api/dashboard/summary — gerçek aggregate (EUR bazlı). Trend/spark yok
+// (zaman-serisi geçmiş ister); frontend onları temsili tutar.
+export interface MarketSplitItemDTO { code: string; name: string; valueEur: number }
+export interface DashboardSummaryDTO {
+  activeLeads: number;
+  pipelineValueEur: number;
+  closedWonEur: number;
+  proposalsActive: number;
+  meetingsThisWeek: number;
+  marketSplit: MarketSplitItemDTO[];
+}
+
 export interface KPIDTO {
   id: string;
   title: string;

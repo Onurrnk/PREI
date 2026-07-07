@@ -12,6 +12,7 @@ import type {
   ClientDTO,
   ContactDTO,
   ContractDTO,
+  DashboardSummaryDTO,
   DeveloperDTO,
   MeetingDTO,
   KPIDTO,
@@ -126,6 +127,7 @@ export const tasksApi = {
 };
 
 export const dashboardApi = {
+  summary: () => api.get<DashboardSummaryDTO>('/api/dashboard/summary'),
   kpis: () => api.get<KPIDTO[]>('/api/kpi/dashboard'),
   globalActivities: () => api.get<ActivityDTO[]>('/api/activities/global'),
 };
