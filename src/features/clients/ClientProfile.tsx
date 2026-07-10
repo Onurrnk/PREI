@@ -52,11 +52,58 @@ const FILTERS: Array<{ key: 'all' | TimelineKind; label: string }> = [
   { key: 'meeting', label: 'Meetings' },
 ];
 
+// Satır-içi düzenlenebilir metin: hover'da kalem, Enter/blur kaydeder, Esc iptal.
+// Mock-persist (local state) — gerçek PATCH FAZ 1 create-edit işinde bağlanır.
+const InlineText: React.FC<{
+  value: string;
+  onSave: (v: string) => void;
+  ariaLabel: string;
+  type?: string;
+}> = ({ value, onSave, ariaLabel, type = 'text' }) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  if (!editing) {
+    return (
+      <span className={styles.inlineWrap}>
+        <span className={styles.detailValue}>{value}</span>
+        <button
+          type="button"
+          className={styles.inlineEditBtn}
+          aria-label={`Edit ${ariaLabel}`}
+          onClick={() => { setDraft(value); setEditing(true); }}
+        >
+          <PencilSimple size={12} />
+        </button>
+      </span>
+    );
+  }
+  return (
+    <input
+      autoFocus
+      type={type}
+      className={styles.inlineInput}
+      value={draft}
+      aria-label={ariaLabel}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => { setEditing(false); const v = draft.trim(); if (v && v !== value) onSave(v); }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+        if (e.key === 'Escape') { setDraft(value); setEditing(false); }
+      }}
+    />
+  );
+};
+
 export const ClientProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data, loading } = useFetch<ClientDTO[]>(() => clientsApi.list(), [id]);
-  const client = (data ?? []).find(c => c.id === id) ?? null;
+  const fetched = (data ?? []).find(c => c.id === id) ?? null;
+  // Satır-içi düzenlemeler (mock-persist): fetch edilen kaydın üstüne bindirilir.
+  const [overrides, setOverrides] = useState<Partial<ClientDTO>>({});
+  const client = fetched ? { ...fetched, ...overrides } : null;
+  const [newRegion, setNewRegion] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'communication' | 'vault'>('communication');
   const [timelineFilter, setTimelineFilter] = useState<'all' | TimelineKind>('all');
 
@@ -145,11 +192,21 @@ export const ClientProfile: React.FC = () => {
             <CardBody>
               <div className={styles.detailRow}>
                 <span className={styles.detailIcon}><EnvelopeSimple size={14} /></span>
-                <span className={styles.detailValue}>{client.email}</span>
+                <InlineText
+                  value={client.email}
+                  type="email"
+                  ariaLabel="email"
+                  onSave={(v) => { setOverrides(o => ({ ...o, email: v })); toast.success('Email updated'); }}
+                />
               </div>
               <div className={styles.detailRow}>
                 <span className={styles.detailIcon}><Phone size={14} /></span>
-                <span className={styles.detailValue}>{client.phone}</span>
+                <InlineText
+                  value={client.phone}
+                  type="tel"
+                  ariaLabel="phone"
+                  onSave={(v) => { setOverrides(o => ({ ...o, phone: v })); toast.success('Phone updated'); }}
+                />
               </div>
               <div className={styles.detailRow}>
                 <span className={styles.detailLabel}>Assigned Consultant</span>
@@ -178,15 +235,58 @@ export const ClientProfile: React.FC = () => {
               
               <div className={styles.detailRow}>
                 <span className={styles.detailLabel}>Risk Profile</span>
-                <span className={styles.detailValue}>{client.investmentProfile}</span>
+                <InlineText
+                  value={client.investmentProfile}
+                  ariaLabel="risk profile"
+                  onSave={(v) => { setOverrides(o => ({ ...o, investmentProfile: v })); toast.success('Risk profile updated'); }}
+                />
               </div>
-              
+
               <div className={styles.regionsContainer}>
                 <span className={styles.detailLabel} style={{ marginBottom: '8px', display: 'block' }}>Preferred Regions</span>
                 <div className={styles.regionsList}>
-                  {client.preferredRegions.map((region, i) => (
-                    <span key={i} className={styles.regionTag}><MapPin size={10} /> {region}</span>
+                  {client.preferredRegions.map((region) => (
+                    <span key={region} className={styles.regionTag}>
+                      <MapPin size={10} /> {region}
+                      <button
+                        type="button"
+                        className={styles.regionRemove}
+                        aria-label={`Remove ${region}`}
+                        onClick={() => {
+                          setOverrides(o => ({ ...o, preferredRegions: client.preferredRegions.filter(r => r !== region) }));
+                          toast.success('Region removed');
+                        }}
+                      >
+                        ×
+                      </button>
+                    </span>
                   ))}
+                  {newRegion === null ? (
+                    <button type="button" className={styles.regionAdd} onClick={() => setNewRegion('')}>
+                      + Add Region
+                    </button>
+                  ) : (
+                    <input
+                      autoFocus
+                      className={styles.regionInput}
+                      value={newRegion}
+                      placeholder="e.g. Palm Jumeirah"
+                      aria-label="new region"
+                      onChange={(e) => setNewRegion(e.target.value)}
+                      onBlur={() => setNewRegion(null)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') setNewRegion(null);
+                        if (e.key === 'Enter') {
+                          const v = newRegion.trim();
+                          if (v && !client.preferredRegions.includes(v)) {
+                            setOverrides(o => ({ ...o, preferredRegions: [...client.preferredRegions, v] }));
+                            toast.success('Region added');
+                          }
+                          setNewRegion(null);
+                        }
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             </CardBody>
