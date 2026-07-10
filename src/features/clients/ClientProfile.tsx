@@ -9,7 +9,7 @@ import { Button } from '../../core/components/Button/Button';
 import { EmailClient } from './components/EmailClient';
 import { DocumentVault } from '../documents/DocumentVault';
 import { Modal } from '../../core/components/Modal/Modal';
-import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo } from '@phosphor-icons/react';
+import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo, PencilSimple } from '@phosphor-icons/react';
 import { Field, Textarea } from '../../core/components/Form/Form';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import styles from './ClientProfile.module.css';
@@ -131,7 +131,8 @@ export const ClientProfile: React.FC = () => {
         <div className={styles.headerActions}>
           <Button variant="outline" onClick={() => handleActionClick('Send Email')}><EnvelopeSimple size={16} /> Email</Button>
           <Button variant="outline" onClick={() => handleActionClick('Log Call')}><Phone size={16} /> Call</Button>
-          <Button variant="primary" onClick={() => handleActionClick('Edit Profile')}>Edit Profile</Button>
+          {/* DS §5.4: sayfada tek primary — vault sekmesindeki Upload File primary kalır */}
+          <Button variant="secondary" onClick={() => handleActionClick('Edit Profile')}><PencilSimple size={16} /> Edit Profile</Button>
         </div>
       </div>
 

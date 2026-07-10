@@ -65,9 +65,10 @@ export const AddProject: React.FC = () => {
         </div>
         <div className={styles.headerActions}>
           <Button variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
-          <Button variant="primary" onClick={handleSave} disabled={isSaving}>
-            <CheckCircle size={16} style={{ marginRight: 6 }} /> 
-            {isSaving ? 'Saving...' : 'Save Project'}
+          {/* DS §5.4: sayfada tek primary — sihirbazın asıl CTA'sı alttaki Next/Complete */}
+          <Button variant="secondary" onClick={handleSave} disabled={isSaving}>
+            <CheckCircle size={16} style={{ marginRight: 6 }} />
+            {isSaving ? 'Saving…' : 'Save Draft'}
           </Button>
         </div>
       </div>
