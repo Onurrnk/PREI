@@ -10,7 +10,8 @@ import styles from './LeadsPipeline.module.css';
 import { Button } from '../../core/components/Button/Button';
 import { Modal } from '../../core/components/Modal/Modal';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
-import { Field, Input, Select, Textarea, FormRow } from '../../core/components/Form/Form';
+import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form';
+import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 
 // Kanban kolonları = backend lead_status enum (7 değer). Dondurulmuş 9-aşamalı
@@ -290,30 +291,41 @@ export const LeadsPipeline: React.FC = () => {
                 value={form.phone} onChange={(e) => setField('phone', e.target.value)} />
             </Field>
             <Field label="Target Market">
-              <Select value={form.market} onChange={(e) => setField('market', e.target.value)}>
-                {MARKETS.map((m) => (
-                  <option key={m.code} value={m.code}>{m.label} ({m.currency})</option>
-                ))}
-              </Select>
+              <SelectMenu
+                aria-label="Target Market"
+                value={form.market}
+                onChange={(v) => setField('market', v)}
+                options={MARKETS.map((m) => ({ value: m.code, label: `${m.label} (${m.currency})` }))}
+              />
             </Field>
           </FormRow>
 
           <FormRow>
             <Field label="Interest">
-              <Select value={form.interest} onChange={(e) => setField('interest', e.target.value as LeadInterest)}>
-                <option value="buy">Buy</option>
-                <option value="rent">Rent</option>
-                <option value="invest">Invest</option>
-                <option value="sell">Sell</option>
-              </Select>
+              <SelectMenu
+                aria-label="Interest"
+                value={form.interest}
+                onChange={(v) => setField('interest', v as LeadInterest)}
+                options={[
+                  { value: 'buy', label: 'Buy' },
+                  { value: 'rent', label: 'Rent' },
+                  { value: 'invest', label: 'Invest' },
+                  { value: 'sell', label: 'Sell' },
+                ]}
+              />
             </Field>
             <Field label="Priority">
-              <Select value={form.priority} onChange={(e) => setField('priority', e.target.value as LeadPriority)}>
-                <option value="urgent">Urgent</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </Select>
+              <SelectMenu
+                aria-label="Priority"
+                value={form.priority}
+                onChange={(v) => setField('priority', v as LeadPriority)}
+                options={[
+                  { value: 'urgent', label: 'Urgent' },
+                  { value: 'high', label: 'High' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'low', label: 'Low' },
+                ]}
+              />
             </Field>
           </FormRow>
 

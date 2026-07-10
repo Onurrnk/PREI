@@ -1,0 +1,120 @@
+.root {
+  position: relative;
+  width: 100%;
+}
+
+/* Tetik: form .control diliyle birebir */
+.trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2, 8px);
+  padding: 10px 12px;
+  font: var(--text-body);
+  color: var(--text-primary);
+  background-color: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  outline: none;
+  text-align: left;
+  transition: border-color var(--dur-fast) var(--ease-out),
+              box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.trigger:focus-visible,
+.triggerOpen {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px var(--brand-primary-soft);
+}
+
+.value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placeholder {
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.caret {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.caretOpen {
+  transform: rotate(180deg);
+}
+
+/* Menü: yüzen katman (DS: shadow yalnız gerçekten yüzenlerde) */
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background-color: var(--bg-surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-raised);
+  max-height: 260px;
+  overflow-y: auto;
+  animation: selectIn var(--dur-fast) var(--ease-out);
+  transform-origin: top center;
+}
+
+@keyframes selectIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu { animation: none; }
+  .caret { transition: none; }
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2, 8px);
+  padding: 8px 10px;
+  border-radius: calc(var(--radius-control) - 2px);
+  font: var(--text-body);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.optionActive {
+  background-color: var(--bg-surface-hover, rgba(255, 255, 255, 0.05));
+}
+
+.optionSelected .optionLabel {
+  color: var(--brand-primary);
+  font-weight: 500;
+}
+
+.optionLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.check {
+  color: var(--brand-primary);
+  flex-shrink: 0;
+}

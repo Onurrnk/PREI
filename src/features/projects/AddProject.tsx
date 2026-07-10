@@ -5,6 +5,7 @@ import { Button } from '../../core/components/Button/Button';
 import { ArrowLeft, Plus, X, CheckCircle } from '@phosphor-icons/react';
 import { Modal } from '../../core/components/Modal/Modal';
 import { UploadZone } from '../../core/components/Form/UploadZone';
+import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import styles from './AddProject.module.css';
 
 export const AddProject: React.FC = () => {
@@ -12,6 +13,8 @@ export const AddProject: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
 
+  const [developer, setDeveloper] = useState('');
+  const [projectStatus, setProjectStatus] = useState('off-plan');
   const [paymentPlans, setPaymentPlans] = useState([{ milestone: '', percentage: '', date: '' }]);
   const [amenities, setAmenities] = useState<string[]>(['Pool', 'Gym']);
   const [newAmenity, setNewAmenity] = useState('');
@@ -132,21 +135,31 @@ export const AddProject: React.FC = () => {
                   
                   <div className={styles.formGroup}>
                     <label>Developer</label>
-                    <select className={styles.selectInput} defaultValue="">
-                      <option value="" disabled>Select Developer...</option>
-                      <option value="emaar">Emaar Properties</option>
-                      <option value="damac">DAMAC Properties</option>
-                      <option value="nakheel">Nakheel</option>
-                    </select>
+                    <SelectMenu
+                      aria-label="Developer"
+                      value={developer}
+                      onChange={setDeveloper}
+                      placeholder="Select Developer…"
+                      options={[
+                        { value: 'emaar', label: 'Emaar Properties' },
+                        { value: 'damac', label: 'DAMAC Properties' },
+                        { value: 'nakheel', label: 'Nakheel' },
+                      ]}
+                    />
                   </div>
-                  
+
                   <div className={styles.formGroup}>
                     <label>Status</label>
-                    <select className={styles.selectInput} defaultValue="off-plan">
-                      <option value="off-plan">Off-plan</option>
-                      <option value="under-construction">Under Construction</option>
-                      <option value="completed">Completed</option>
-                    </select>
+                    <SelectMenu
+                      aria-label="Status"
+                      value={projectStatus}
+                      onChange={setProjectStatus}
+                      options={[
+                        { value: 'off-plan', label: 'Off-plan' },
+                        { value: 'under-construction', label: 'Under Construction' },
+                        { value: 'completed', label: 'Completed' },
+                      ]}
+                    />
                   </div>
 
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
