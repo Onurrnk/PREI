@@ -102,6 +102,11 @@ export interface ClientDTO {
   relationshipStatus: 'Active' | 'Dormant' | 'Churned';
   assignedConsultant: string;
   lastContactDate: string;
+  /* Yatırım kriterleri (opsiyonel — gerçek backend'de contacts.metadata'ya eşlenir) */
+  unitTypes?: string[];              // aranan daire tipleri: Studio, 1+1, 2+1...
+  purpose?: 'Investment' | 'End-use' | 'Golden Visa' | 'Relocation';
+  budgetRange?: string;              // örn. '€1.5M – €3.0M'
+  requirements?: string;             // özel talepler: deniz manzarası, yüksek kat...
 }
 
 export interface DocumentDTO {

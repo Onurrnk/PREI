@@ -9,7 +9,7 @@ import { Button } from '../../core/components/Button/Button';
 import { EmailClient } from './components/EmailClient';
 import { DocumentVault } from '../documents/DocumentVault';
 import { Modal } from '../../core/components/Modal/Modal';
-import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo, PencilSimple } from '@phosphor-icons/react';
+import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo, PencilSimple, NotePencil } from '@phosphor-icons/react';
 import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
@@ -148,7 +148,36 @@ const RegionsEditor: React.FC<{
 // Edit Profile formunun alan seti (mock-persist; PATCH FAZ 1 create-edit işinde)
 type EditableProfile = Pick<ClientDTO,
   'name' | 'email' | 'phone' | 'nationality' | 'type' | 'relationshipStatus' |
-  'investmentProfile' | 'assignedConsultant' | 'source' | 'preferredRegions'>;
+  'investmentProfile' | 'assignedConsultant' | 'source' | 'preferredRegions'> & {
+  unitTypes: string[];
+  purpose: NonNullable<ClientDTO['purpose']>;
+  budgetRange: string;
+  requirements: string;
+};
+
+// Aranan daire tipi seçenekleri (çoklu seçim chip'leri)
+const UNIT_TYPE_OPTIONS = ['Studio', '1+1', '2+1', '3+1', '4+1+', 'Penthouse', 'Villa'];
+
+// Danışman iç notları (mock — gerçek hedef: meeting_notes tablosu, FAZ 2)
+interface ConsultantNote {
+  id: string;
+  author: string;
+  role: string;
+  tag: 'Meeting' | 'Call' | 'General';
+  time: string;
+  text: string;
+}
+
+const seedNotes: ConsultantNote[] = [
+  {
+    id: 'n1', author: 'Sarah Ahmed', role: 'Senior Consultant', tag: 'Meeting', time: '3d ago',
+    text: 'Marina Vista 2B viewing debrief: strong buy signal. He compared service charges with Downtown; wants SPA draft before Friday. Wife joins the next call — prepare the school-district one-pager.',
+  },
+  {
+    id: 'n2', author: 'Sarah Ahmed', role: 'Senior Consultant', tag: 'Call', time: '1d ago',
+    text: 'Payment plan call (18 min): insists on 60/40 construction-linked. Asked for a Nişantaşı comparison — coordinate with Istanbul desk before sending numbers.',
+  },
+];
 
 export const ClientProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -160,7 +189,11 @@ export const ClientProfile: React.FC = () => {
   const client = fetched ? { ...fetched, ...overrides } : null;
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState<EditableProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<'communication' | 'vault'>('communication');
+  const [activeTab, setActiveTab] = useState<'communication' | 'vault' | 'notes'>('communication');
+  // Danışman iç notları (mock-persist; gerçek hedef meeting_notes tablosu)
+  const [notes, setNotes] = useState<ConsultantNote[]>(seedNotes);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [noteTag, setNoteTag] = useState<ConsultantNote['tag']>('Meeting');
   const [timelineFilter, setTimelineFilter] = useState<'all' | TimelineKind>('all');
 
   const [showActivityModal, setShowActivityModal] = useState(false);
@@ -249,6 +282,10 @@ export const ClientProfile: React.FC = () => {
                 assignedConsultant: client.assignedConsultant,
                 source: client.source,
                 preferredRegions: client.preferredRegions,
+                unitTypes: client.unitTypes ?? [],
+                purpose: client.purpose ?? 'Investment',
+                budgetRange: client.budgetRange ?? '',
+                requirements: client.requirements ?? '',
               });
               setShowEditModal(true);
             }}
@@ -317,6 +354,35 @@ export const ClientProfile: React.FC = () => {
                 />
               </div>
 
+              {client.purpose && (
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Purpose</span>
+                  <span className={styles.detailValue}>{client.purpose}</span>
+                </div>
+              )}
+              {client.budgetRange && (
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>Budget Range</span>
+                  <span className={`${styles.detailValue} ${styles.monoValue}`}>{client.budgetRange}</span>
+                </div>
+              )}
+              {client.unitTypes && client.unitTypes.length > 0 && (
+                <div className={styles.regionsContainer}>
+                  <span className={styles.detailLabel} style={{ marginBottom: '8px', display: 'block' }}>Unit Type Search</span>
+                  <div className={styles.regionsList}>
+                    {client.unitTypes.map((u) => (
+                      <span key={u} className={styles.unitTag}>{u}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {client.requirements && (
+                <div className={styles.requirementsBox}>
+                  <span className={styles.detailLabel} style={{ marginBottom: '6px', display: 'block' }}>Specific Requirements</span>
+                  <p className={styles.requirementsText}>{client.requirements}</p>
+                </div>
+              )}
+
               <div className={styles.regionsContainer}>
                 <span className={styles.detailLabel} style={{ marginBottom: '8px', display: 'block' }}>Preferred Regions</span>
                 <RegionsEditor
@@ -347,11 +413,18 @@ export const ClientProfile: React.FC = () => {
             >
               <ChatCircle size={16} /> Communication Center
             </button>
-            <button 
+            <button
               className={`${styles.tabBtn} ${activeTab === 'vault' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('vault')}
             >
               <FolderOpen size={16} /> Client Document Vault
+            </button>
+            <button
+              className={`${styles.tabBtn} ${activeTab === 'notes' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('notes')}
+            >
+              <NotePencil size={16} /> Internal Notes
+              <span className={styles.tabCount}>{notes.length}</span>
             </button>
           </div>
 
@@ -423,6 +496,80 @@ export const ClientProfile: React.FC = () => {
               <DocumentVault clientId={client.id} />
             </div>
           )}
+
+          {activeTab === 'notes' && (
+            <Card>
+              <CardHeader>
+                <h3 className={styles.cardTitle}>Internal Notes</h3>
+                <span className={styles.notesHint}>Consultant debriefs — visible to team &amp; admin, never to the client</span>
+              </CardHeader>
+              <CardBody>
+                {/* Kompozer: görüşme özeti + etiket */}
+                <div className={styles.noteComposer}>
+                  <Textarea
+                    rows={3}
+                    placeholder="What was discussed? Key signals, objections, next steps…"
+                    value={noteDraft}
+                    onChange={(e) => setNoteDraft(e.target.value)}
+                  />
+                  <div className={styles.noteComposerRow}>
+                    <div className={styles.noteTagSelect}>
+                      <SelectMenu
+                        aria-label="Note type"
+                        value={noteTag}
+                        onChange={(v) => setNoteTag(v as ConsultantNote['tag'])}
+                        options={[
+                          { value: 'Meeting', label: 'Meeting Debrief' },
+                          { value: 'Call', label: 'Call Note' },
+                          { value: 'General', label: 'General' },
+                        ]}
+                      />
+                    </div>
+                    <Button
+                      variant="primary"
+                      disabled={!noteDraft.trim()}
+                      onClick={() => {
+                        const text = noteDraft.trim();
+                        if (!text) return;
+                        setNotes(n => [{
+                          id: `n${Date.now()}`,
+                          author: 'Onur Nazım Karataş',
+                          role: 'Admin',
+                          tag: noteTag,
+                          time: 'Just now',
+                          text,
+                        }, ...n]);
+                        setNoteDraft('');
+                        toast.success('Note added');
+                      }}
+                    >
+                      <NotePencil size={16} /> Add Note
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Not akışı — en yeni üstte */}
+                <div className={styles.notesThread}>
+                  {notes.map((n) => (
+                    <div key={n.id} className={styles.noteItem}>
+                      <span className={styles.noteAvatar}>
+                        {n.author.split(' ').map(w => w[0]).slice(0, 2).join('')}
+                      </span>
+                      <div className={styles.noteBody}>
+                        <div className={styles.noteHead}>
+                          <span className={styles.noteAuthor}>{n.author}</span>
+                          <span className={styles.noteRole}>{n.role}</span>
+                          <span className={`${styles.noteTagChip} ${styles[`noteTag${n.tag}`] ?? ''}`}>{n.tag}</span>
+                          <span className={styles.noteTime}>{n.time}</span>
+                        </div>
+                        <p className={styles.noteText}>{n.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -452,6 +599,7 @@ export const ClientProfile: React.FC = () => {
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         title="Edit Client Profile"
+        size="lg"
         footer={
           <>
             <Button variant="outline" onClick={() => setShowEditModal(false)}>Cancel</Button>
@@ -474,76 +622,136 @@ export const ClientProfile: React.FC = () => {
         }
       >
         {editForm && (
-          <>
-            <Field label="Full Name">
-              <Input value={editForm.name} onChange={(e) => setEditForm(f => f && { ...f, name: e.target.value })} />
-            </Field>
-            <FormRow>
-              <Field label="Email">
-                <Input type="email" value={editForm.email} onChange={(e) => setEditForm(f => f && { ...f, email: e.target.value })} />
+          <div className={styles.editSections}>
+            <section className={styles.editSection}>
+              <h4 className={styles.editSectionTitle}><EnvelopeSimple size={13} /> Identity &amp; Contact</h4>
+              <Field label="Full Name">
+                <Input value={editForm.name} onChange={(e) => setEditForm(f => f && { ...f, name: e.target.value })} />
               </Field>
-              <Field label="Phone">
-                <Input type="tel" value={editForm.phone} onChange={(e) => setEditForm(f => f && { ...f, phone: e.target.value })} />
+              <FormRow>
+                <Field label="Email">
+                  <Input type="email" value={editForm.email} onChange={(e) => setEditForm(f => f && { ...f, email: e.target.value })} />
+                </Field>
+                <Field label="Phone">
+                  <Input type="tel" value={editForm.phone} onChange={(e) => setEditForm(f => f && { ...f, phone: e.target.value })} />
+                </Field>
+              </FormRow>
+              <FormRow>
+                <Field label="Nationality">
+                  <Input value={editForm.nationality} onChange={(e) => setEditForm(f => f && { ...f, nationality: e.target.value })} />
+                </Field>
+                <Field label="Source">
+                  <Input value={editForm.source} onChange={(e) => setEditForm(f => f && { ...f, source: e.target.value })} />
+                </Field>
+              </FormRow>
+            </section>
+
+            <section className={styles.editSection}>
+              <h4 className={styles.editSectionTitle}><BuildingOffice size={13} /> Classification</h4>
+              <FormRow>
+                <Field label="Client Type">
+                  <SelectMenu
+                    aria-label="Client Type"
+                    value={editForm.type}
+                    onChange={(v) => setEditForm(f => f && { ...f, type: v as ClientDTO['type'] })}
+                    options={[
+                      { value: 'Individual', label: 'Individual' },
+                      { value: 'Corporate', label: 'Corporate' },
+                      { value: 'VIP', label: 'VIP' },
+                    ]}
+                  />
+                </Field>
+                <Field label="Relationship Status">
+                  <SelectMenu
+                    aria-label="Relationship Status"
+                    value={editForm.relationshipStatus}
+                    onChange={(v) => setEditForm(f => f && { ...f, relationshipStatus: v as ClientDTO['relationshipStatus'] })}
+                    options={[
+                      { value: 'Active', label: 'Active' },
+                      { value: 'Dormant', label: 'Dormant' },
+                      { value: 'Churned', label: 'Churned' },
+                    ]}
+                  />
+                </Field>
+              </FormRow>
+              <FormRow>
+                <Field label="Risk Profile">
+                  <SelectMenu
+                    aria-label="Risk Profile"
+                    value={editForm.investmentProfile}
+                    onChange={(v) => setEditForm(f => f && { ...f, investmentProfile: v as ClientDTO['investmentProfile'] })}
+                    options={[
+                      { value: 'Conservative', label: 'Conservative' },
+                      { value: 'Balanced', label: 'Balanced' },
+                      { value: 'Aggressive', label: 'Aggressive' },
+                    ]}
+                  />
+                </Field>
+                <Field label="Assigned Consultant">
+                  <Input value={editForm.assignedConsultant} onChange={(e) => setEditForm(f => f && { ...f, assignedConsultant: e.target.value })} />
+                </Field>
+              </FormRow>
+            </section>
+
+            <section className={styles.editSection}>
+              <h4 className={styles.editSectionTitle}><CurrencyDollar size={13} /> Investment Criteria</h4>
+              <Field label="Unit Type Search">
+                <div className={styles.unitChipRow}>
+                  {UNIT_TYPE_OPTIONS.map((u) => {
+                    const active = editForm.unitTypes.includes(u);
+                    return (
+                      <button
+                        key={u}
+                        type="button"
+                        className={`${styles.unitChip} ${active ? styles.unitChipActive : ''}`}
+                        aria-pressed={active}
+                        onClick={() => setEditForm(f => f && {
+                          ...f,
+                          unitTypes: active ? f.unitTypes.filter(x => x !== u) : [...f.unitTypes, u],
+                        })}
+                      >
+                        {u}
+                      </button>
+                    );
+                  })}
+                </div>
               </Field>
-            </FormRow>
-            <FormRow>
-              <Field label="Nationality">
-                <Input value={editForm.nationality} onChange={(e) => setEditForm(f => f && { ...f, nationality: e.target.value })} />
-              </Field>
-              <Field label="Client Type">
-                <SelectMenu
-                  aria-label="Client Type"
-                  value={editForm.type}
-                  onChange={(v) => setEditForm(f => f && { ...f, type: v as ClientDTO['type'] })}
-                  options={[
-                    { value: 'Individual', label: 'Individual' },
-                    { value: 'Corporate', label: 'Corporate' },
-                    { value: 'VIP', label: 'VIP' },
-                  ]}
+              <FormRow>
+                <Field label="Purpose">
+                  <SelectMenu
+                    aria-label="Purpose"
+                    value={editForm.purpose}
+                    onChange={(v) => setEditForm(f => f && { ...f, purpose: v as EditableProfile['purpose'] })}
+                    options={[
+                      { value: 'Investment', label: 'Investment' },
+                      { value: 'End-use', label: 'End-use' },
+                      { value: 'Golden Visa', label: 'Golden Visa' },
+                      { value: 'Relocation', label: 'Relocation' },
+                    ]}
+                  />
+                </Field>
+                <Field label="Budget Range">
+                  <Input placeholder="e.g. €1.5M – €3.0M" value={editForm.budgetRange} onChange={(e) => setEditForm(f => f && { ...f, budgetRange: e.target.value })} />
+                </Field>
+              </FormRow>
+              <Field label="Specific Requirements">
+                <Textarea
+                  rows={3}
+                  placeholder="Sea view, high floor, payment plan preference…"
+                  value={editForm.requirements}
+                  onChange={(e) => setEditForm(f => f && { ...f, requirements: e.target.value })}
                 />
               </Field>
-            </FormRow>
-            <FormRow>
-              <Field label="Relationship Status">
-                <SelectMenu
-                  aria-label="Relationship Status"
-                  value={editForm.relationshipStatus}
-                  onChange={(v) => setEditForm(f => f && { ...f, relationshipStatus: v as ClientDTO['relationshipStatus'] })}
-                  options={[
-                    { value: 'Active', label: 'Active' },
-                    { value: 'Dormant', label: 'Dormant' },
-                    { value: 'Churned', label: 'Churned' },
-                  ]}
-                />
-              </Field>
-              <Field label="Risk Profile">
-                <SelectMenu
-                  aria-label="Risk Profile"
-                  value={editForm.investmentProfile}
-                  onChange={(v) => setEditForm(f => f && { ...f, investmentProfile: v as ClientDTO['investmentProfile'] })}
-                  options={[
-                    { value: 'Conservative', label: 'Conservative' },
-                    { value: 'Balanced', label: 'Balanced' },
-                    { value: 'Aggressive', label: 'Aggressive' },
-                  ]}
-                />
-              </Field>
-            </FormRow>
-            <FormRow>
-              <Field label="Assigned Consultant">
-                <Input value={editForm.assignedConsultant} onChange={(e) => setEditForm(f => f && { ...f, assignedConsultant: e.target.value })} />
-              </Field>
-              <Field label="Source">
-                <Input value={editForm.source} onChange={(e) => setEditForm(f => f && { ...f, source: e.target.value })} />
-              </Field>
-            </FormRow>
-            <Field label="Preferred Regions">
+            </section>
+
+            <section className={styles.editSection}>
+              <h4 className={styles.editSectionTitle}><MapPin size={13} /> Preferred Locations</h4>
               <RegionsEditor
                 regions={editForm.preferredRegions}
                 onChange={(regions) => setEditForm(f => f && { ...f, preferredRegions: regions })}
               />
-            </Field>
-          </>
+            </section>
+          </div>
         )}
       </Modal>
     </div>

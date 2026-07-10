@@ -133,19 +133,30 @@
 .regionsList {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
+/* Premium lokasyon chip'i: control radius'u, ferah padding, hover'da güçlenen çerçeve */
 .regionTag {
-  background-color: var(--bg-app);
-  border: 1px solid var(--border-color);
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  display: flex;
+  background-color: var(--bg-inset, var(--bg-app));
+  border: 1px solid var(--border-subtle, var(--border-color));
+  padding: 6px 12px;
+  border-radius: var(--radius-control, var(--radius-md));
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  transition: border-color var(--transition-fast);
+}
+
+.regionTag:hover {
+  border-color: var(--border-strong);
+}
+
+.regionTag > svg {
+  color: var(--brand-secondary, var(--text-muted));
 }
 
 .subtitle {
@@ -445,6 +456,8 @@
   margin-bottom: var(--spacing-md);
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
 .tabBtn {
@@ -458,7 +471,10 @@
   font-weight: 500;
   cursor: pointer;
   border-bottom: 2px solid transparent;
-  transition: all var(--transition-fast);
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+  /* Sekme etiketi asla kırılmaz; dar ekranda kapsayıcı yatay kayar */
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tabBtn:hover {
@@ -535,10 +551,6 @@
   max-width: 220px;
 }
 
-.regionTag {
-  gap: 4px;
-}
-
 .regionRemove {
   display: inline-flex;
   align-items: center;
@@ -569,9 +581,9 @@
 .regionAdd {
   background: transparent;
   border: 1px dashed var(--border-strong);
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
+  padding: 6px 12px;
+  border-radius: var(--radius-control, var(--radius-md));
+  font-size: 0.8125rem;
   color: var(--text-muted);
   cursor: pointer;
   transition: color var(--transition-fast), border-color var(--transition-fast);
@@ -585,13 +597,229 @@
 }
 
 .regionInput {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--text-primary);
   background-color: var(--bg-app);
   border: 1px solid var(--border-focus, var(--brand-primary));
-  border-radius: var(--radius-sm);
-  padding: 4px 8px;
+  border-radius: var(--radius-control, var(--radius-md));
+  padding: 6px 12px;
   outline: none;
   box-shadow: 0 0 0 2px var(--brand-primary-soft);
-  width: 140px;
+  width: 160px;
+}
+
+/* ===== Investment Overview kriter satırları (FINDING-011) ===== */
+.monoValue {
+  font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.unitTag {
+  background-color: var(--bg-inset, var(--bg-app));
+  border: 1px solid var(--border-subtle, var(--border-color));
+  padding: 6px 12px;
+  border-radius: var(--radius-control, var(--radius-md));
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.requirementsBox {
+  margin-top: var(--spacing-md);
+  padding: 10px 12px;
+  background-color: var(--bg-inset, var(--bg-app));
+  border: 1px solid var(--border-subtle, var(--border-color));
+  border-radius: var(--radius-md);
+}
+
+.requirementsText {
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ===== Edit Profile modal bölümleri ===== */
+.editSections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.editSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.editSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle, var(--border-color));
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.editSectionTitle svg {
+  color: var(--brand-primary);
+}
+
+.unitChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.unitChip {
+  background-color: var(--bg-inset, var(--bg-app));
+  border: 1px solid var(--border-subtle, var(--border-color));
+  padding: 6px 14px;
+  border-radius: var(--radius-control, var(--radius-md));
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast),
+    background-color var(--transition-fast);
+}
+
+.unitChip:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.unitChipActive,
+.unitChipActive:hover {
+  background-color: var(--brand-primary-soft);
+  border-color: var(--brand-primary);
+  color: var(--brand-primary);
+}
+
+/* ===== Internal Notes (FINDING-013) ===== */
+.tabCount {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background-color: var(--bg-inset, var(--bg-app));
+  border: 1px solid var(--border-subtle, var(--border-color));
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.notesHint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.noteComposer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-subtle, var(--border-color));
+  margin-bottom: var(--spacing-md);
+}
+
+.noteComposerRow {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.noteTagSelect {
+  width: 180px;
+}
+
+.notesThread {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.noteItem {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.noteAvatar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background-color: var(--brand-primary-soft);
+  color: var(--brand-primary);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.noteBody {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  background-color: var(--bg-inset, var(--bg-app));
+  border: 1px solid var(--border-subtle, var(--border-color));
+  border-radius: var(--radius-md);
+}
+
+.noteHead {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.noteAuthor {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.noteRole {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.noteTagChip {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  border: 1px solid var(--border-subtle, var(--border-color));
+  color: var(--text-secondary);
+  background-color: transparent;
+}
+
+.noteTagMeeting {
+  color: var(--brand-primary);
+  border-color: var(--brand-primary-soft);
+  background-color: var(--brand-primary-soft);
+}
+
+.noteTime {
+  margin-left: auto;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.noteText {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
 }
