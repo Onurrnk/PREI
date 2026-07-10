@@ -10,7 +10,8 @@ import { EmailClient } from './components/EmailClient';
 import { DocumentVault } from '../documents/DocumentVault';
 import { Modal } from '../../core/components/Modal/Modal';
 import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo, PencilSimple } from '@phosphor-icons/react';
-import { Field, Textarea } from '../../core/components/Form/Form';
+import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form';
+import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import styles from './ClientProfile.module.css';
 
@@ -95,6 +96,60 @@ const InlineText: React.FC<{
   );
 };
 
+// Bölge chip editörü: hover'da × kaldırma + '+ Add Region' chip-input.
+// Hem Investment Overview kartında hem Edit Profile modalında kullanılır.
+const RegionsEditor: React.FC<{
+  regions: string[];
+  onChange: (regions: string[]) => void;
+}> = ({ regions, onChange }) => {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <div className={styles.regionsList}>
+      {regions.map((region) => (
+        <span key={region} className={styles.regionTag}>
+          <MapPin size={10} /> {region}
+          <button
+            type="button"
+            className={styles.regionRemove}
+            aria-label={`Remove ${region}`}
+            onClick={() => onChange(regions.filter(r => r !== region))}
+          >
+            ×
+          </button>
+        </span>
+      ))}
+      {draft === null ? (
+        <button type="button" className={styles.regionAdd} onClick={() => setDraft('')}>
+          + Add Region
+        </button>
+      ) : (
+        <input
+          autoFocus
+          className={styles.regionInput}
+          value={draft}
+          placeholder="e.g. Palm Jumeirah"
+          aria-label="new region"
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={() => setDraft(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setDraft(null);
+            if (e.key === 'Enter') {
+              const v = draft.trim();
+              if (v && !regions.includes(v)) onChange([...regions, v]);
+              setDraft(null);
+            }
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// Edit Profile formunun alan seti (mock-persist; PATCH FAZ 1 create-edit işinde)
+type EditableProfile = Pick<ClientDTO,
+  'name' | 'email' | 'phone' | 'nationality' | 'type' | 'relationshipStatus' |
+  'investmentProfile' | 'assignedConsultant' | 'source' | 'preferredRegions'>;
+
 export const ClientProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -103,7 +158,8 @@ export const ClientProfile: React.FC = () => {
   // Satır-içi düzenlemeler (mock-persist): fetch edilen kaydın üstüne bindirilir.
   const [overrides, setOverrides] = useState<Partial<ClientDTO>>({});
   const client = fetched ? { ...fetched, ...overrides } : null;
-  const [newRegion, setNewRegion] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState<EditableProfile | null>(null);
   const [activeTab, setActiveTab] = useState<'communication' | 'vault'>('communication');
   const [timelineFilter, setTimelineFilter] = useState<'all' | TimelineKind>('all');
 
@@ -179,7 +235,26 @@ export const ClientProfile: React.FC = () => {
           <Button variant="outline" onClick={() => handleActionClick('Send Email')}><EnvelopeSimple size={16} /> Email</Button>
           <Button variant="outline" onClick={() => handleActionClick('Log Call')}><Phone size={16} /> Call</Button>
           {/* DS §5.4: sayfada tek primary — vault sekmesindeki Upload File primary kalır */}
-          <Button variant="secondary" onClick={() => handleActionClick('Edit Profile')}><PencilSimple size={16} /> Edit Profile</Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setEditForm({
+                name: client.name,
+                email: client.email,
+                phone: client.phone,
+                nationality: client.nationality,
+                type: client.type,
+                relationshipStatus: client.relationshipStatus,
+                investmentProfile: client.investmentProfile,
+                assignedConsultant: client.assignedConsultant,
+                source: client.source,
+                preferredRegions: client.preferredRegions,
+              });
+              setShowEditModal(true);
+            }}
+          >
+            <PencilSimple size={16} /> Edit Profile
+          </Button>
         </div>
       </div>
 
@@ -244,50 +319,10 @@ export const ClientProfile: React.FC = () => {
 
               <div className={styles.regionsContainer}>
                 <span className={styles.detailLabel} style={{ marginBottom: '8px', display: 'block' }}>Preferred Regions</span>
-                <div className={styles.regionsList}>
-                  {client.preferredRegions.map((region) => (
-                    <span key={region} className={styles.regionTag}>
-                      <MapPin size={10} /> {region}
-                      <button
-                        type="button"
-                        className={styles.regionRemove}
-                        aria-label={`Remove ${region}`}
-                        onClick={() => {
-                          setOverrides(o => ({ ...o, preferredRegions: client.preferredRegions.filter(r => r !== region) }));
-                          toast.success('Region removed');
-                        }}
-                      >
-                        ×
-                      </button>
-                    </span>
-                  ))}
-                  {newRegion === null ? (
-                    <button type="button" className={styles.regionAdd} onClick={() => setNewRegion('')}>
-                      + Add Region
-                    </button>
-                  ) : (
-                    <input
-                      autoFocus
-                      className={styles.regionInput}
-                      value={newRegion}
-                      placeholder="e.g. Palm Jumeirah"
-                      aria-label="new region"
-                      onChange={(e) => setNewRegion(e.target.value)}
-                      onBlur={() => setNewRegion(null)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Escape') setNewRegion(null);
-                        if (e.key === 'Enter') {
-                          const v = newRegion.trim();
-                          if (v && !client.preferredRegions.includes(v)) {
-                            setOverrides(o => ({ ...o, preferredRegions: [...client.preferredRegions, v] }));
-                            toast.success('Region added');
-                          }
-                          setNewRegion(null);
-                        }
-                      }}
-                    />
-                  )}
-                </div>
+                <RegionsEditor
+                  regions={client.preferredRegions}
+                  onChange={(regions) => { setOverrides(o => ({ ...o, preferredRegions: regions })); toast.success('Regions updated'); }}
+                />
               </div>
             </CardBody>
           </Card>
@@ -410,6 +445,106 @@ export const ClientProfile: React.FC = () => {
             onChange={(e) => setActivityNote(e.target.value)}
           />
         </Field>
+      </Modal>
+
+      {/* Edit Profile: tüm profil alanları tek formda (mock-persist → overrides) */}
+      <Modal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        title="Edit Client Profile"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShowEditModal(false)}>Cancel</Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                if (!editForm) return;
+                if (!editForm.name.trim() || !editForm.email.trim()) {
+                  toast.error('Name and email are required');
+                  return;
+                }
+                setOverrides(o => ({ ...o, ...editForm, name: editForm.name.trim(), email: editForm.email.trim() }));
+                setShowEditModal(false);
+                toast.success('Profile updated');
+              }}
+            >
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        {editForm && (
+          <>
+            <Field label="Full Name">
+              <Input value={editForm.name} onChange={(e) => setEditForm(f => f && { ...f, name: e.target.value })} />
+            </Field>
+            <FormRow>
+              <Field label="Email">
+                <Input type="email" value={editForm.email} onChange={(e) => setEditForm(f => f && { ...f, email: e.target.value })} />
+              </Field>
+              <Field label="Phone">
+                <Input type="tel" value={editForm.phone} onChange={(e) => setEditForm(f => f && { ...f, phone: e.target.value })} />
+              </Field>
+            </FormRow>
+            <FormRow>
+              <Field label="Nationality">
+                <Input value={editForm.nationality} onChange={(e) => setEditForm(f => f && { ...f, nationality: e.target.value })} />
+              </Field>
+              <Field label="Client Type">
+                <SelectMenu
+                  aria-label="Client Type"
+                  value={editForm.type}
+                  onChange={(v) => setEditForm(f => f && { ...f, type: v as ClientDTO['type'] })}
+                  options={[
+                    { value: 'Individual', label: 'Individual' },
+                    { value: 'Corporate', label: 'Corporate' },
+                    { value: 'VIP', label: 'VIP' },
+                  ]}
+                />
+              </Field>
+            </FormRow>
+            <FormRow>
+              <Field label="Relationship Status">
+                <SelectMenu
+                  aria-label="Relationship Status"
+                  value={editForm.relationshipStatus}
+                  onChange={(v) => setEditForm(f => f && { ...f, relationshipStatus: v as ClientDTO['relationshipStatus'] })}
+                  options={[
+                    { value: 'Active', label: 'Active' },
+                    { value: 'Dormant', label: 'Dormant' },
+                    { value: 'Churned', label: 'Churned' },
+                  ]}
+                />
+              </Field>
+              <Field label="Risk Profile">
+                <SelectMenu
+                  aria-label="Risk Profile"
+                  value={editForm.investmentProfile}
+                  onChange={(v) => setEditForm(f => f && { ...f, investmentProfile: v as ClientDTO['investmentProfile'] })}
+                  options={[
+                    { value: 'Conservative', label: 'Conservative' },
+                    { value: 'Balanced', label: 'Balanced' },
+                    { value: 'Aggressive', label: 'Aggressive' },
+                  ]}
+                />
+              </Field>
+            </FormRow>
+            <FormRow>
+              <Field label="Assigned Consultant">
+                <Input value={editForm.assignedConsultant} onChange={(e) => setEditForm(f => f && { ...f, assignedConsultant: e.target.value })} />
+              </Field>
+              <Field label="Source">
+                <Input value={editForm.source} onChange={(e) => setEditForm(f => f && { ...f, source: e.target.value })} />
+              </Field>
+            </FormRow>
+            <Field label="Preferred Regions">
+              <RegionsEditor
+                regions={editForm.preferredRegions}
+                onChange={(regions) => setEditForm(f => f && { ...f, preferredRegions: regions })}
+              />
+            </Field>
+          </>
+        )}
       </Modal>
     </div>
   );
