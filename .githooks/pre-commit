@@ -1,0 +1,24 @@
+#!/bin/sh
+# gitleaks staged taraması — sır commit'lemeyi engeller (Hafta-0 G-6)
+# Kurulum (her klonda bir kez): git config core.hooksPath .githooks
+
+GITLEAKS="${GITLEAKS_PATH:-gitleaks}"
+if ! command -v "$GITLEAKS" >/dev/null 2>&1; then
+  if [ -x "/c/dev/tools/gitleaks/gitleaks.exe" ]; then
+    GITLEAKS="/c/dev/tools/gitleaks/gitleaks.exe"
+  else
+    echo "[pre-commit] gitleaks bulunamadı — kur: https://github.com/gitleaks/gitleaks/releases"
+    echo "[pre-commit] veya GITLEAKS_PATH ortam değişkenini ayarla. Commit ENGELLENDİ."
+    exit 1
+  fi
+fi
+
+"$GITLEAKS" git --staged --no-banner --redact
+status=$?
+if [ $status -ne 0 ]; then
+  echo ""
+  echo "[pre-commit] gitleaks sır tespit etti — commit ENGELLENDİ."
+  echo "[pre-commit] Yanlış pozitifse .gitleaks.toml allowlist'ine gerekçeyle ekle."
+  exit $status
+fi
+exit 0

@@ -1,5 +1,9 @@
 # PREI — proje talimatları
 
+## Konum & Güvenlik
+- Repo konumu: `C:\dev\prei` (OneDrive'dan taşındı 2026-07-10 — OneDrive kopyası kullanılmaz).
+- Sır taraması: gitleaks. Her klonda bir kez: `git config core.hooksPath .githooks` (pre-commit staged tarama). CI: `.github/workflows/gitleaks.yml`. Bilinçli istisnalar `.gitleaks.toml` allowlist'inde (yalnız public anon key; service_role ASLA).
+
 ## Testing
 - Komut: `npm test` (Vitest, `src/**/*.test.{ts,tsx}`) — detay: TESTING.md
 - Hedef: tam kapsam. Yeni fonksiyon → test; bug fix → regression testi; hata yolu → hatayı tetikleyen test; yeni koşul → her iki dalın testi.

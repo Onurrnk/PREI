@@ -1,0 +1,12 @@
+# gitleaks yapılandırması — Hafta-0 güvenlik kapısı (G-6)
+# Varsayılan kurallar geçerli; yalnız bilinçli istisnalar aşağıda.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Supabase ANON key — tasarım gereği public (tarayıcıya gider, veriyi RLS korur). service_role ASLA allowlist'e girmez."
+regexes = [
+  # kkcvfvbjmohlplepadip projesinin anon JWT'si (role=anon doğrulandı 2026-07-10)
+  '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJpc3MiOiJzdXBhYmFzZSI[A-Za-z0-9_.-]+''',
+]
