@@ -9,6 +9,9 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
+  /* Dar bağlamda (ClientProfile sekmesi) aksiyonlar alta iner — başlık kırılmaz */
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
 }
 
 .title {
@@ -16,6 +19,7 @@
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: var(--spacing-xs);
+  white-space: nowrap;
 }
 
 .subtitle {
