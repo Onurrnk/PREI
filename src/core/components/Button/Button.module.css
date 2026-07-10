@@ -7,8 +7,11 @@
   border-radius: var(--radius-md);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: background-color var(--transition-fast), border-color var(--transition-fast),
+    color var(--transition-fast), transform var(--transition-fast);
   gap: var(--spacing-sm);
+  /* DS §5.4: etiketler tek satır — buton metni asla kırılmaz */
+  white-space: nowrap;
 }
 
 .button:disabled {
