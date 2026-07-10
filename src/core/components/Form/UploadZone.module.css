@@ -1,0 +1,125 @@
+.zone {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background-color: var(--bg-app);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+  cursor: pointer;
+}
+
+.zone:hover,
+.zone:focus-visible {
+  border-color: var(--brand-primary);
+  background-color: var(--brand-primary-soft);
+  outline: none;
+}
+
+/* Sürükleme anı: net durum değişimi (DS: hareket kanıttır) */
+.dragging {
+  border-color: var(--brand-primary);
+  border-style: solid;
+  background-color: var(--brand-primary-soft);
+}
+
+.zoneIcon {
+  color: var(--brand-primary);
+  margin-bottom: var(--spacing-md);
+  display: inline-flex;
+}
+
+.prompt {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.browse {
+  margin-top: var(--spacing-md);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--brand-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 6px 14px;
+  white-space: nowrap;
+}
+
+.input {
+  display: none;
+}
+
+/* ===== Kuyruk ===== */
+.queue {
+  list-style: none;
+  margin: var(--spacing-sm) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.queueItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 6px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface);
+}
+
+.fileIcon {
+  color: var(--text-secondary);
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.fileName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+}
+
+/* DS: sayısal değerler mono */
+.fileSize {
+  font-family: var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.remove:hover {
+  color: var(--data-negative, #C2554F);
+  background-color: var(--bg-surface-hover);
+}

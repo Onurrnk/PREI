@@ -7,6 +7,7 @@ import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { Modal } from '../../core/components/Modal/Modal';
+import { UploadZone } from '../../core/components/Form/UploadZone';
 import { Folder, FileText, Image as ImageIcon, FileXls, CloudArrowUp, MagnifyingGlass, DotsThreeVertical, DownloadSimple, ShareNetwork, FolderOpen } from '@phosphor-icons/react';
 import styles from './DocumentVault.module.css';
 
@@ -164,17 +165,17 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
           <>
             <Button variant="outline" onClick={() => setShowUploadModal(false)}>Cancel</Button>
             <Button variant="primary" onClick={handleSimulateUpload} disabled={isUploading}>
-              {isUploading ? 'Uploading...' : 'Upload Files'}
+              {isUploading ? 'Uploading…' : 'Upload Files'}
             </Button>
           </>
         }
       >
-        <div style={{ padding: '40px', border: '2px dashed var(--border-color)', borderRadius: 'var(--radius-lg)', textAlign: 'center', backgroundColor: 'var(--bg-surface)' }}>
-          <CloudArrowUp size={48} color="var(--color-primary-blue)" style={{ marginBottom: '16px' }} />
-          <h3 style={{ marginBottom: '8px', color: 'var(--text-primary)' }}>Drag and drop your files here</h3>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>Supports PDF, DOCX, XLSX, PNG, JPG (Max 50MB)</p>
-          <Button variant="outline">Browse Files</Button>
-        </div>
+        <UploadZone
+          kind="document"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,image/jpeg,image/png"
+          prompt="Drag and drop your files here"
+          hint="PDF, DOCX, XLSX, PNG, JPG (Max 50MB per file)"
+        />
       </Modal>
     </div>
   );

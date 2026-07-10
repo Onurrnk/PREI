@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { ArrowLeft, CloudArrowUp, Plus, X, FileText, CheckCircle } from '@phosphor-icons/react';
+import { ArrowLeft, Plus, X, CheckCircle } from '@phosphor-icons/react';
 import { Modal } from '../../core/components/Modal/Modal';
+import { UploadZone } from '../../core/components/Form/UploadZone';
 import styles from './AddProject.module.css';
 
 export const AddProject: React.FC = () => {
@@ -208,22 +209,32 @@ export const AddProject: React.FC = () => {
                 <div className={styles.formGrid}>
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
                     <label>High-Resolution Photos (Gallery)</label>
-                    <div className={styles.dropZone}>
-                      <CloudArrowUp size={32} className={styles.dropIcon} />
-                      <p>Drag and drop exterior, interior, and amenity images here</p>
-                      <span className={styles.dropHint}>Supports JPG, PNG (Max 10MB per file)</span>
-                      <Button variant="outline" style={{ marginTop: '12px' }}>Browse Files</Button>
-                    </div>
+                    <UploadZone
+                      kind="image"
+                      accept="image/jpeg,image/png,image/webp"
+                      prompt="Drag and drop exterior, interior, and amenity images here"
+                      hint="JPG, PNG, WebP (Max 10MB per file)"
+                    />
+                  </div>
+
+                  <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
+                    <label>Video Tour (Property Walkthrough)</label>
+                    <UploadZone
+                      kind="video"
+                      accept="video/mp4,video/quicktime,video/webm"
+                      prompt="Drag and drop the property tour video here"
+                      hint="MP4, MOV, WebM (Max 500MB per file)"
+                    />
                   </div>
 
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
                     <label>Documents (Brochures, Floor Plans, Payment Terms)</label>
-                    <div className={styles.dropZone}>
-                      <FileText size={32} className={styles.dropIcon} />
-                      <p>Drag and drop PDF documents here</p>
-                      <span className={styles.dropHint}>Supports PDF, Excel (Max 50MB per file)</span>
-                      <Button variant="outline" style={{ marginTop: '12px' }}>Browse Files</Button>
-                    </div>
+                    <UploadZone
+                      kind="document"
+                      accept=".pdf,.xls,.xlsx,application/pdf"
+                      prompt="Drag and drop PDF documents here"
+                      hint="PDF, Excel (Max 50MB per file)"
+                    />
                   </div>
                 </div>
               )}
