@@ -19,6 +19,13 @@
   cursor: not-allowed;
 }
 
+/* Klavye odağı görünür olmalı (outline:none yalnız ring karşılığıyla) */
+.button:focus-visible {
+  outline: none;
+  border-color: var(--border-focus, var(--brand-primary));
+  box-shadow: 0 0 0 2px var(--brand-primary-soft);
+}
+
 .button:active:not(:disabled) {
   transform: scale(0.98);
 }
