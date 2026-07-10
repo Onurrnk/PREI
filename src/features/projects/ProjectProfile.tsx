@@ -202,7 +202,7 @@ export const ProjectProfile: React.FC = () => {
                   <label>To (Client)</label>
                   <select className={styles.selectInput} defaultValue="default">
                     <option value="default" disabled>Select a client...</option>
-                    <option value="c1">John Doe (CL-10024)</option>
+                    <option value="c1">Oliver Hartwell (CL-10024)</option>
                     <option value="c2">Sarah Ahmed (CL-10025)</option>
                     <option value="c3">Mohammed Al Fayed (VIP)</option>
                   </select>

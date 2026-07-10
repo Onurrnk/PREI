@@ -28,17 +28,17 @@ const mockAdminUsers = [
       lost: 1
     },
     pipelineClients: [
-      { id: 'pc1', status: 'hotLeads', name: 'John Doe', property: 'Marina Vista', date: 'Today', reason: 'Ready with cash offer.' },
+      { id: 'pc1', status: 'hotLeads', name: 'Oliver Hartwell', property: 'Marina Vista', date: 'Today', reason: 'Ready with cash offer.' },
       { id: 'pc2', status: 'hotLeads', name: 'Al Fayed', property: 'Downtown Views II', date: 'Yesterday', reason: 'Loved the penthouse viewing.' },
-      { id: 'pc3', status: 'activeLeads', name: 'Alice Smith', property: 'Emaar Beachfront', date: 'Monday', reason: 'Browsing options.' },
-      { id: 'pc4', status: 'negotiating', name: 'Bob Johnson', property: 'Palm Jumeirah', date: 'Last Week', reason: 'Negotiating 5% discount.' },
-      { id: 'pc5', status: 'frozen', name: 'Charlie Brown', property: 'City Walk', date: 'Jan 10', reason: 'Budget constraints, revisiting in 6 months.' },
-      { id: 'pc6', status: 'frozen', name: 'Diana Prince', property: 'Damac Hills', date: 'Feb 15', reason: 'Relocation delayed.' },
-      { id: 'pc7', status: 'lost', name: 'Bruce Wayne', property: 'JBR Penthouse', date: 'Mar 01', reason: 'Bought with a competitor agency.' }
+      { id: 'pc3', status: 'activeLeads', name: 'Ayşe Demir', property: 'Emaar Beachfront', date: 'Monday', reason: 'Browsing options.' },
+      { id: 'pc4', status: 'negotiating', name: 'Hans Becker', property: 'Palm Jumeirah', date: 'Last Week', reason: 'Negotiating 5% discount.' },
+      { id: 'pc5', status: 'frozen', name: 'Faisal Al Rashid', property: 'City Walk', date: 'Jan 10', reason: 'Budget constraints, revisiting in 6 months.' },
+      { id: 'pc6', status: 'frozen', name: 'Isabella Moreno', property: 'Damac Hills', date: 'Feb 15', reason: 'Relocation delayed.' },
+      { id: 'pc7', status: 'lost', name: 'James Whitfield', property: 'JBR Penthouse', date: 'Mar 01', reason: 'Bought with a competitor agency.' }
     ],
     transactions: [
-      { id: 'tx1', property: 'Marina Vista 2BR', client: 'John Doe', amount: '$1,200,000', status: 'Closed Won' },
-      { id: 'tx2', property: 'Emaar Beachfront', client: 'Alice Smith', amount: '$3,500,000', status: 'Pending' },
+      { id: 'tx1', property: 'Marina Vista 2BR', client: 'Oliver Hartwell', amount: '$1,200,000', status: 'Closed Won' },
+      { id: 'tx2', property: 'Emaar Beachfront', client: 'Ayşe Demir', amount: '$3,500,000', status: 'Pending' },
       { id: 'tx3', property: 'Downtown Views II', client: 'Mr. Al Fayed', amount: '$850,000', status: 'Closed Won' }
     ],
     timeline: [
@@ -82,7 +82,7 @@ const mockAdminUsers = [
   },
   {
     id: 'U-103',
-    name: 'Jane Foster',
+    name: 'Leyla Kaya',
     role: 'Junior Agent',
     status: 'Inactive',
     lastActive: '3 days ago',

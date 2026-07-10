@@ -106,7 +106,7 @@ export const CreateProposal: React.FC = () => {
                     <label>Select Client</label>
                     <select className={styles.selectInput} value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)}>
                       <option value="" disabled>Choose a client...</option>
-                      <option value="c1">John Doe (VIP)</option>
+                      <option value="c1">Oliver Hartwell (VIP)</option>
                       <option value="c2">Sarah Ahmed</option>
                       <option value="c3">Mohammed Al Fayed</option>
                     </select>
@@ -214,7 +214,7 @@ export const CreateProposal: React.FC = () => {
                         <span>ProDuality</span>
                       </div>
                       <div className={styles.proposalMeta}>
-                        <div>Prepared for: <strong>John Doe</strong></div>
+                        <div>Prepared for: <strong>Oliver Hartwell</strong></div>
                         <div>Date: {new Date().toLocaleDateString()}</div>
                       </div>
                     </div>

@@ -51,7 +51,7 @@ export const Settings: React.FC = () => {
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
                   <label>Full Name</label>
-                  <input type="text" className={styles.textInput} defaultValue="Jane Agent" />
+                  <input type="text" className={styles.textInput} defaultValue="Onur Nazım Karataş" />
                 </div>
                 <div className={styles.formGroup}>
                   <label>Job Title</label>

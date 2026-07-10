@@ -237,10 +237,10 @@ export const handlers = [
     const now = new Date();
     const day = (d: number, h: number, m = 0) => new Date(now.getFullYear(), now.getMonth(), d, h, m).toISOString();
     return HttpResponse.json<MeetingDTO[]>([
-      { id: 'm1', title: 'Viewing: Marina Vista', date: day(12, 10), durationLabel: '1h', client: 'John Doe', location: 'Marina Vista Tower B', platform: 'In-person', notes: '3BR deniz manzaralı birimlerle ilgileniyor.', kind: 'viewing' },
-      { id: 'm2', title: 'Consultation: M. Smith', date: day(12, 14), durationLabel: '45m', client: 'Michael Smith', location: 'Zoom', platform: 'Zoom', notes: 'Off-plan yatırım ilk görüşme.', kind: 'meeting' },
-      { id: 'm3', title: 'Contract Signing', date: day(15, 11, 30), durationLabel: '1h', client: 'Elena Rodriguez', location: 'Emaar Sales Center', platform: 'In-person', notes: 'Tüm SPA dokümanları hazır olsun.', kind: 'signing' },
-      { id: 'm4', title: 'Zoom: Project Pitch', date: day(22, 16), durationLabel: '1h', client: 'Michael Smith', location: 'Zoom', platform: 'Zoom', notes: 'Safa Two projesi sunumu.', kind: 'meeting' },
+      { id: 'm1', title: 'Viewing: Marina Vista', date: day(12, 10), durationLabel: '1h', client: 'Oliver Hartwell', location: 'Marina Vista Tower B', platform: 'In-person', notes: '3BR deniz manzaralı birimlerle ilgileniyor.', kind: 'viewing' },
+      { id: 'm2', title: 'Consultation: T. Weber', date: day(12, 14), durationLabel: '45m', client: 'Tobias Weber', location: 'Zoom', platform: 'Zoom', notes: 'Off-plan yatırım ilk görüşme.', kind: 'meeting' },
+      { id: 'm3', title: 'Contract Signing', date: day(15, 11, 30), durationLabel: '1h', client: 'Carmen Ortega', location: 'Emaar Sales Center', platform: 'In-person', notes: 'Tüm SPA dokümanları hazır olsun.', kind: 'signing' },
+      { id: 'm4', title: 'Zoom: Project Pitch', date: day(22, 16), durationLabel: '1h', client: 'Tobias Weber', location: 'Zoom', platform: 'Zoom', notes: 'Safa Two projesi sunumu.', kind: 'meeting' },
     ]);
   }),
 
