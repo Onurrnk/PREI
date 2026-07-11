@@ -128,7 +128,8 @@
 
 .calendarGrid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  /* minmax(0,1fr): uzun event pill'leri kolonu genişletemesin — 7 eşit kolon */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   flex: 1;
   border-left: 1px solid var(--border-color);
   border-top: 1px solid var(--border-color);
@@ -146,6 +147,7 @@
 }
 
 .dayCell {
+  min-width: 0; /* grid çocuğu içerikten dar kalabilsin (ellipsis çalışır) */
   min-height: 100px;
   padding: var(--spacing-xs);
   border-right: 1px solid var(--border-color);
