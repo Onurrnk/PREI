@@ -96,7 +96,7 @@ export const Meetings: React.FC = () => {
         <div className={styles.headerActions}>
           <div className={styles.syncBadge}>
             <CalendarIcon size={16} />
-            Google Calendar (yakında)
+            Google Calendar (coming soon)
           </div>
           <Button variant="outline" onClick={handleSync} disabled={isSyncing}>
             <ArrowsClockwise size={16} className={isSyncing ? 'spin' : ''} />
