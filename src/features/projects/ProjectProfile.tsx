@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import type { ProjectDTO } from '../../core/types';
 import { projectsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
+import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
@@ -15,6 +16,7 @@ export const ProjectProfile: React.FC = () => {
   const { data, loading } = useFetch<ProjectDTO[]>(() => projectsApi.list(), [id]);
   const project = (data ?? []).find(p => p.id === id) ?? null;
   const [selectedImage, setSelectedImage] = useState(0);
+  const [shareClient, setShareClient] = useState('');
 
   const toast = useToast();
 
@@ -200,12 +202,17 @@ export const ProjectProfile: React.FC = () => {
               <div className={styles.composerForm}>
                 <div className={styles.formGroup}>
                   <label>To (Client)</label>
-                  <select className={styles.selectInput} defaultValue="default">
-                    <option value="default" disabled>Select a client...</option>
-                    <option value="c1">Oliver Hartwell (CL-10024)</option>
-                    <option value="c2">Sarah Ahmed (CL-10025)</option>
-                    <option value="c3">Mohammed Al Fayed (VIP)</option>
-                  </select>
+                  <SelectMenu
+                    aria-label="To (Client)"
+                    value={shareClient}
+                    onChange={setShareClient}
+                    placeholder="Select a client…"
+                    options={[
+                      { value: 'c1', label: 'Oliver Hartwell (CL-10024)' },
+                      { value: 'c2', label: 'Sarah Ahmed (CL-10025)' },
+                      { value: 'c3', label: 'Mohammed Al Fayed (VIP)' },
+                    ]}
+                  />
                 </div>
                 
                 <div className={styles.formGroup}>

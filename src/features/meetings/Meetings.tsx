@@ -7,6 +7,7 @@ import { CalendarBlank as CalendarIcon, CaretLeft, CaretRight, Plus, MapPin, Use
 import type { MeetingDTO } from '../../core/types';
 import { meetingsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
+import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import styles from './Meetings.module.css';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -24,6 +25,8 @@ export const Meetings: React.FC = () => {
 
   const [viewDate, setViewDate] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [showAddModal, setShowAddModal] = useState(false);
+  const [newMeetingType, setNewMeetingType] = useState('meeting');
+  const [newMeetingPlatform, setNewMeetingPlatform] = useState('In-person');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingDTO | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -271,18 +274,28 @@ export const Meetings: React.FC = () => {
           <div className={styles.formGrid}>
             <div className={styles.formGroup}>
               <label>Meeting Type</label>
-              <select className={styles.selectInput}>
-                <option value="meeting">Consultation</option>
-                <option value="viewing">Property Viewing</option>
-                <option value="signing">Contract Signing</option>
-              </select>
+              <SelectMenu
+                aria-label="Meeting Type"
+                value={newMeetingType}
+                onChange={setNewMeetingType}
+                options={[
+                  { value: 'meeting', label: 'Consultation' },
+                  { value: 'viewing', label: 'Property Viewing' },
+                  { value: 'signing', label: 'Contract Signing' },
+                ]}
+              />
             </div>
             <div className={styles.formGroup}>
               <label>Platform</label>
-              <select className={styles.selectInput}>
-                <option value="In-person">In-person</option>
-                <option value="Zoom">Zoom</option>
-              </select>
+              <SelectMenu
+                aria-label="Platform"
+                value={newMeetingPlatform}
+                onChange={setNewMeetingPlatform}
+                options={[
+                  { value: 'In-person', label: 'In-person' },
+                  { value: 'Zoom', label: 'Zoom' },
+                ]}
+              />
             </div>
           </div>
           <div className={styles.formGrid}>

@@ -3,6 +3,7 @@ import { Card, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { User, GearSix as SettingsIcon, Palette, Plug, UsersThree, FloppyDisk, ChatCircle, Globe, Buildings, CheckCircle, Plus, EnvelopeSimple, CalendarBlank, PaperPlaneTilt } from '@phosphor-icons/react';
 import { Modal } from '../../core/components/Modal/Modal';
+import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import styles from './Settings.module.css';
 
@@ -10,6 +11,9 @@ type Tab = 'profile' | 'preferences' | 'branding' | 'team' | 'integrations';
 
 export const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
+  const [prefTheme, setPrefTheme] = useState('dark');
+  const [prefLanguage, setPrefLanguage] = useState('en');
+  const [prefTimezone, setPrefTimezone] = useState('dubai');
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const toast = useToast();
@@ -113,31 +117,46 @@ export const Settings: React.FC = () => {
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
                   <label>Interface Theme</label>
-                  <select className={styles.selectInput} defaultValue="dark">
-                    <option value="light">Light Mode</option>
-                    <option value="dark">Dark Mode (Default)</option>
-                    <option value="system">Sync with System</option>
-                  </select>
+                  <SelectMenu
+                    aria-label="Interface Theme"
+                    value={prefTheme}
+                    onChange={setPrefTheme}
+                    options={[
+                      { value: 'light', label: 'Light Mode' },
+                      { value: 'dark', label: 'Dark Mode (Default)' },
+                      { value: 'system', label: 'Sync with System' },
+                    ]}
+                  />
                 </div>
                 <div className={styles.formGroup}>
                   <label>System Language</label>
-                  <select className={styles.selectInput} defaultValue="en">
-                    <option value="en">English</option>
-                    <option value="tr">Turkish (Türkçe)</option>
-                  </select>
+                  <SelectMenu
+                    aria-label="System Language"
+                    value={prefLanguage}
+                    onChange={setPrefLanguage}
+                    options={[
+                      { value: 'en', label: 'English' },
+                      { value: 'tr', label: 'Turkish (Türkçe)' },
+                    ]}
+                  />
                 </div>
                 <div className={styles.formGroup}>
                   <label>Timezone</label>
-                  <select className={styles.selectInput} defaultValue="dubai">
-                    <option value="dubai">Dubai (GST)</option>
-                    <option value="turkey">Türkiye (TRT)</option>
-                    <option value="uk">United Kingdom (GMT/BST)</option>
-                    <option value="spain">Spain (CET/CEST)</option>
-                    <option value="germany">Germany (CET/CEST)</option>
-                    <option value="netherlands">Netherlands (CET/CEST)</option>
-                    <option value="paris">Paris (CET/CEST)</option>
-                    <option value="brussels">Brussels (CET/CEST)</option>
-                  </select>
+                  <SelectMenu
+                    aria-label="Timezone"
+                    value={prefTimezone}
+                    onChange={setPrefTimezone}
+                    options={[
+                      { value: 'dubai', label: 'Dubai (GST)' },
+                      { value: 'turkey', label: 'Türkiye (TRT)' },
+                      { value: 'uk', label: 'United Kingdom (GMT/BST)' },
+                      { value: 'spain', label: 'Spain (CET/CEST)' },
+                      { value: 'germany', label: 'Germany (CET/CEST)' },
+                      { value: 'netherlands', label: 'Netherlands (CET/CEST)' },
+                      { value: 'paris', label: 'Paris (CET/CEST)' },
+                      { value: 'brussels', label: 'Brussels (CET/CEST)' },
+                    ]}
+                  />
                 </div>
               </div>
             </div>

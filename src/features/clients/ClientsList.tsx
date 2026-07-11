@@ -8,7 +8,8 @@ import { Button } from '../../core/components/Button/Button';
 import { Plus, DotsThree, FunnelSimple, DownloadSimple, MagnifyingGlass, CheckCircle } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../core/components/Modal/Modal';
-import { Field, Input, Select, FormRow } from '../../core/components/Form/Form';
+import { Field, Input, FormRow } from '../../core/components/Form/Form';
+import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import styles from './Clients.module.css';
 
@@ -16,6 +17,8 @@ export const ClientsList: React.FC = () => {
   const { data, loading } = useFetch<ClientDTO[]>(() => clientsApi.list(), []);
   const clients = data ?? [];
   const [searchQuery, setSearchQuery] = useState('');
+  const [newClientType, setNewClientType] = useState('investor');
+  const [newClientSource, setNewClientSource] = useState('website');
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -50,19 +53,29 @@ export const ClientsList: React.FC = () => {
 
           <FormRow>
             <Field label="Client Type">
-              <Select defaultValue="investor">
-                <option value="investor">Investor</option>
-                <option value="end-user">End-User</option>
-                <option value="corporate">Corporate</option>
-              </Select>
+              <SelectMenu
+                aria-label="Client Type"
+                value={newClientType}
+                onChange={setNewClientType}
+                options={[
+                  { value: 'investor', label: 'Investor' },
+                  { value: 'end-user', label: 'End-User' },
+                  { value: 'corporate', label: 'Corporate' },
+                ]}
+              />
             </Field>
             <Field label="Lead Source">
-              <Select defaultValue="website">
-                <option value="website">Website</option>
-                <option value="referral">Referral</option>
-                <option value="event">Event / Exhibition</option>
-                <option value="campaign">Marketing Campaign</option>
-              </Select>
+              <SelectMenu
+                aria-label="Lead Source"
+                value={newClientSource}
+                onChange={setNewClientSource}
+                options={[
+                  { value: 'website', label: 'Website' },
+                  { value: 'referral', label: 'Referral' },
+                  { value: 'event', label: 'Event / Exhibition' },
+                  { value: 'campaign', label: 'Marketing Campaign' },
+                ]}
+              />
             </Field>
           </FormRow>
 

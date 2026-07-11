@@ -4,6 +4,7 @@ import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { ArrowLeft, CheckCircle, User, Buildings, Calculator, Image as ImageIcon, PenNib, PaperPlaneTilt, DownloadSimple } from '@phosphor-icons/react';
 import { Modal } from '../../core/components/Modal/Modal';
+import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import styles from './CreateProposal.module.css';
 
 export const CreateProposal: React.FC = () => {
@@ -104,22 +105,32 @@ export const CreateProposal: React.FC = () => {
                 <div className={styles.formGrid}>
                   <div className={styles.formGroup}>
                     <label>Select Client</label>
-                    <select className={styles.selectInput} value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)}>
-                      <option value="" disabled>Choose a client...</option>
-                      <option value="c1">Oliver Hartwell (VIP)</option>
-                      <option value="c2">Sarah Ahmed</option>
-                      <option value="c3">Mohammed Al Fayed</option>
-                    </select>
+                    <SelectMenu
+                      aria-label="Select Client"
+                      value={selectedClient}
+                      onChange={setSelectedClient}
+                      placeholder="Choose a client…"
+                      options={[
+                        { value: 'c1', label: 'Oliver Hartwell (VIP)' },
+                        { value: 'c2', label: 'Sarah Ahmed' },
+                        { value: 'c3', label: 'Mohammed Al Fayed' },
+                      ]}
+                    />
                   </div>
-                  
+
                   <div className={styles.formGroup}>
                     <label>Select Project</label>
-                    <select className={styles.selectInput} value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)}>
-                      <option value="" disabled>Choose a project...</option>
-                      <option value="p1">Beachfront Residences (Emaar)</option>
-                      <option value="p2">Downtown Heights (Emaar)</option>
-                      <option value="p3">DAMAC Hills Villas</option>
-                    </select>
+                    <SelectMenu
+                      aria-label="Select Project"
+                      value={selectedProject}
+                      onChange={setSelectedProject}
+                      placeholder="Choose a project…"
+                      options={[
+                        { value: 'p1', label: 'Beachfront Residences (Emaar)' },
+                        { value: 'p2', label: 'Downtown Heights (Emaar)' },
+                        { value: 'p3', label: 'DAMAC Hills Villas' },
+                      ]}
+                    />
                   </div>
 
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>

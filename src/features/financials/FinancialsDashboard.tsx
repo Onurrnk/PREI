@@ -3,7 +3,7 @@ import { Card } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { FunnelSimple, DownloadSimple, TrendUp, TrendDown } from '@phosphor-icons/react';
 import { TrendArea, DonutMetric, HBarCompare, fmtCompact } from '../../core/charts';
-import { Select } from '../../core/components/Form/Form';
+import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import styles from './Financials.module.css';
 
 const fmtUSD = (v: number): string => `$${fmtCompact(v)}`;
@@ -77,16 +77,19 @@ export const FinancialsDashboard: React.FC = () => {
           <p className={styles.subtitle}>Track revenue, sales velocity, and regional distribution</p>
         </div>
         <div className={styles.headerActions}>
-          <Select
-            value={timeframe}
-            onChange={(e) => setTimeframe(e.target.value)}
-            className={styles.timeframeSelect}
-          >
-            <option value="Q1">Q1 2026</option>
-            <option value="Q2">Q2 2026</option>
-            <option value="YTD">Year to Date</option>
-            <option value="1Y">Last 12 Months</option>
-          </Select>
+          <div className={styles.timeframeSelect}>
+            <SelectMenu
+              aria-label="Timeframe"
+              value={timeframe}
+              onChange={setTimeframe}
+              options={[
+                { value: 'Q1', label: 'Q1 2026' },
+                { value: 'Q2', label: 'Q2 2026' },
+                { value: 'YTD', label: 'Year to Date' },
+                { value: '1Y', label: 'Last 12 Months' },
+              ]}
+            />
+          </div>
           <Button variant="outline"><FunnelSimple size={16} /> Filters</Button>
           <Button variant="outline"><DownloadSimple size={16} /> Export Report</Button>
         </div>
