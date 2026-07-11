@@ -5,7 +5,7 @@ import { proposalsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
 import { Button } from '../../core/components/Button/Button';
-import { Plus, MagnifyingGlass, PenNib, Eye, CalendarBlank, CurrencyDollar } from '@phosphor-icons/react';
+import { Plus, MagnifyingGlass, PenNib, Eye, CalendarBlank } from '@phosphor-icons/react';
 import styles from './ProposalsList.module.css';
 
 import { ProposalView } from './ProposalView';
@@ -81,7 +81,7 @@ export const ProposalsList: React.FC = () => {
                 </TableCell>
                 <TableCell>{prop.clientName}</TableCell>
                 <TableCell>{prop.projectName}</TableCell>
-                <TableCell style={{ fontWeight: 600 }}><CurrencyDollar size={14} className={styles.iconMuted}/> {formatCurrency(prop.totalValue)}</TableCell>
+                <TableCell style={{ fontWeight: 600 }}>{formatCurrency(prop.totalValue)}</TableCell>
                 <TableCell>
                   <span className={`${styles.statusBadge} ${styles[prop.status.toLowerCase().replace(/ /g, '-')]}`}>
                     {prop.status}
