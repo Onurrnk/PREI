@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw';
 import type {
+  ClientNoteDTO,
   ActivityDTO,
   KPIDTO,
   LeadDTO,
@@ -69,6 +70,21 @@ export let mockTasks: TaskDTO[] = [
   { id: 't5', title: 'Site Visit: DAMAC Hills', description: 'Accompany Mr. Al Fayed to the villa show home.', dueDate: '2026-06-23T11:00:00Z', priority: 'Medium', status: 'Pending', assigneeId: 'u2', relatedEntity: { type: 'Client', name: 'Mohammed Al Fayed', id: '4' }, type: 'Meeting' },
   { id: 't6', title: 'Update Marketing Materials', description: 'Upload new brochures for Belmont Residences to the vault.', dueDate: '2026-06-19T17:00:00Z', priority: 'Low', status: 'Completed', assigneeId: 'u4', relatedEntity: { type: 'Project', name: 'Belmont Residences', id: 'p4' }, type: 'Task' },
 ];
+
+// İç notlar (meeting_notes mock'u) — module-level: POST oturum içinde kalıcı.
+const day = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
+const mockNotesByClient: Record<string, ClientNoteDTO[]> = {
+  '1': [
+    {
+      id: 'mn2', author: 'Sarah Ahmed', role: 'Senior Consultant', tag: 'Call', createdAt: day(1),
+      text: 'Payment plan call (18 min): insists on 60/40 construction-linked. Asked for a Nişantaşı comparison — coordinate with Istanbul desk before sending numbers.',
+    },
+    {
+      id: 'mn1', author: 'Sarah Ahmed', role: 'Senior Consultant', tag: 'Meeting', createdAt: day(3),
+      text: 'Marina Vista 2B viewing debrief: strong buy signal. He compared service charges with Downtown; wants SPA draft before Friday. Wife joins the next call — prepare the school-district one-pager.',
+    },
+  ],
+};
 
 // Mock müşteri dizini — module-level: PATCH mutasyonları oturum boyunca kalıcı.
 const mockClients: ClientDTO[] = [
@@ -304,6 +320,25 @@ export const handlers = [
     const patch = (await request.json()) as Partial<ClientDTO>;
     mockClients[idx] = { ...mockClients[idx], ...patch };
     return HttpResponse.json<ClientDTO>(mockClients[idx]);
+  }),
+
+  http.get('/api/clients/:id/notes', ({ params }) => {
+    return HttpResponse.json<ClientNoteDTO[]>(mockNotesByClient[String(params.id)] ?? []);
+  }),
+
+  http.post('/api/clients/:id/notes', async ({ params, request }) => {
+    const body = (await request.json()) as { text: string; tag: ClientNoteDTO['tag'] };
+    const note: ClientNoteDTO = {
+      id: `mn${Date.now()}`,
+      author: 'Onur Nazım Karataş',
+      role: 'Admin',
+      tag: body.tag,
+      createdAt: new Date().toISOString(),
+      text: body.text,
+    };
+    const key = String(params.id);
+    mockNotesByClient[key] = [note, ...(mockNotesByClient[key] ?? [])];
+    return HttpResponse.json<ClientNoteDTO>(note, { status: 201 });
   }),
 
 

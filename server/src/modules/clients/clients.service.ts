@@ -3,6 +3,7 @@ import { ClientsRepository } from './clients.repository';
 import type { RequestContext } from '../../common/request-context';
 import { toClientResponse, type ClientResponse } from './dto/client-response.dto';
 import type { UpdateClientDto } from './dto/client-update.dto';
+import { toClientNoteResponse, type ClientNoteResponse, type CreateClientNoteDto } from './dto/client-note.dto';
 
 @Injectable()
 export class ClientsService {
@@ -23,5 +24,15 @@ export class ClientsService {
     const row = await this.repo.update(ctx, id, dto);
     if (!row) throw new NotFoundException();
     return toClientResponse(row);
+  }
+
+  async listNotes(ctx: RequestContext, contactId: string): Promise<ClientNoteResponse[]> {
+    const rows = await this.repo.listNotes(ctx, contactId);
+    return rows.map(toClientNoteResponse);
+  }
+
+  async createNote(ctx: RequestContext, contactId: string, dto: CreateClientNoteDto): Promise<ClientNoteResponse> {
+    const row = await this.repo.createNote(ctx, contactId, dto.text.trim(), dto.tag);
+    return toClientNoteResponse(row);
   }
 }

@@ -24,6 +24,24 @@ export interface ClientRow {
   last_contact: string | null;
 }
 
+export interface NoteRow {
+  id: string;
+  raw_content: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+  author: string | null;
+  author_role: string | null;
+}
+
+// İç not SELECT gövdesi — yazar adı/rolü users + user_roles'tan.
+const NOTE_SELECT = `
+  SELECT mn.id, mn.raw_content, mn.metadata, mn.created_at,
+         u.full_name AS author,
+         (SELECT r.key FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+            WHERE ur.user_id = u.id LIMIT 1) AS author_role
+    FROM meeting_notes mn
+    LEFT JOIN users u ON u.id = mn.created_by`;
+
 // SELECT gövdesi (WHERE hariç) — list/detail kendi WHERE'ini ekler.
 const CLIENT_SELECT = `
   SELECT c.id, c.first_name, c.last_name, c.email, c.phone, c.metadata, c.updated_at,
@@ -117,6 +135,40 @@ export class ClientsRepository {
         [id],
       );
       return joined[0] ?? null;
+    });
+  }
+
+  // ================= İç notlar (meeting_notes, source='text') =================
+
+  async listNotes(ctx: RequestContext, contactId: string): Promise<NoteRow[]> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<NoteRow>(
+        `${NOTE_SELECT}
+          WHERE mn.contact_id = $1 AND mn.deleted_at IS NULL
+          ORDER BY mn.created_at DESC LIMIT 100`,
+        [contactId],
+      );
+      return rows;
+    });
+  }
+
+  async createNote(
+    ctx: RequestContext, contactId: string, text: string, tag: string,
+  ): Promise<NoteRow> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `INSERT INTO meeting_notes (tenant_id, contact_id, source_type, raw_content, metadata, created_by)
+         VALUES ($1, $2, 'text', $3, $4::jsonb, $5)
+         RETURNING id`,
+        [ctx.tenantId, contactId, text, JSON.stringify({ tag, channel: 'internal' }), ctx.userId],
+      );
+      const noteId = rows[0].id;
+      await this.writeAuditAndEvent(c, ctx, 'client.note_created', contactId, { noteId, tag });
+      const { rows: joined } = await c.query<NoteRow>(
+        `${NOTE_SELECT} WHERE mn.id = $1`,
+        [noteId],
+      );
+      return joined[0];
     });
   }
 

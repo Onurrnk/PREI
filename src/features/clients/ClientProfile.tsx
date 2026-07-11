@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { ClientDTO } from '../../core/types';
+import type { ClientDTO, ClientNoteDTO } from '../../core/types';
 import { clientsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
@@ -158,26 +158,18 @@ type EditableProfile = Pick<ClientDTO,
 // Aranan daire tipi seçenekleri (çoklu seçim chip'leri)
 const UNIT_TYPE_OPTIONS = ['Studio', '1+1', '2+1', '3+1', '4+1+', 'Penthouse', 'Villa'];
 
-// Danışman iç notları (mock — gerçek hedef: meeting_notes tablosu, FAZ 2)
-interface ConsultantNote {
-  id: string;
-  author: string;
-  role: string;
-  tag: 'Meeting' | 'Call' | 'General';
-  time: string;
-  text: string;
+// İç not zamanı: ISO → göreli etiket (listede kompakt okunur)
+function noteTimeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'Just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 14) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString();
 }
-
-const seedNotes: ConsultantNote[] = [
-  {
-    id: 'n1', author: 'Sarah Ahmed', role: 'Senior Consultant', tag: 'Meeting', time: '3d ago',
-    text: 'Marina Vista 2B viewing debrief: strong buy signal. He compared service charges with Downtown; wants SPA draft before Friday. Wife joins the next call — prepare the school-district one-pager.',
-  },
-  {
-    id: 'n2', author: 'Sarah Ahmed', role: 'Senior Consultant', tag: 'Call', time: '1d ago',
-    text: 'Payment plan call (18 min): insists on 60/40 construction-linked. Asked for a Nişantaşı comparison — coordinate with Istanbul desk before sending numbers.',
-  },
-];
 
 export const ClientProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -205,10 +197,12 @@ export const ClientProfile: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState<EditableProfile | null>(null);
   const [activeTab, setActiveTab] = useState<'communication' | 'vault' | 'notes'>('communication');
-  // Danışman iç notları (mock-persist; gerçek hedef meeting_notes tablosu)
-  const [notes, setNotes] = useState<ConsultantNote[]>(seedNotes);
+  // Danışman iç notları — meeting_notes tablosundan (mock modda MSW)
+  const { data: fetchedNotes } = useFetch<ClientNoteDTO[]>(() => clientsApi.notes(id!), [id]);
+  const [addedNotes, setAddedNotes] = useState<ClientNoteDTO[]>([]);
+  const notes: ClientNoteDTO[] = [...addedNotes, ...(fetchedNotes ?? [])];
   const [noteDraft, setNoteDraft] = useState('');
-  const [noteTag, setNoteTag] = useState<ConsultantNote['tag']>('Meeting');
+  const [noteTag, setNoteTag] = useState<ClientNoteDTO['tag']>('Meeting');
   const [timelineFilter, setTimelineFilter] = useState<'all' | TimelineKind>('all');
 
   const [showActivityModal, setShowActivityModal] = useState(false);
@@ -532,7 +526,7 @@ export const ClientProfile: React.FC = () => {
                       <SelectMenu
                         aria-label="Note type"
                         value={noteTag}
-                        onChange={(v) => setNoteTag(v as ConsultantNote['tag'])}
+                        onChange={(v) => setNoteTag(v as ClientNoteDTO['tag'])}
                         options={[
                           { value: 'Meeting', label: 'Meeting Debrief' },
                           { value: 'Call', label: 'Call Note' },
@@ -545,17 +539,14 @@ export const ClientProfile: React.FC = () => {
                       disabled={!noteDraft.trim()}
                       onClick={() => {
                         const text = noteDraft.trim();
-                        if (!text) return;
-                        setNotes(n => [{
-                          id: `n${Date.now()}`,
-                          author: 'Onur Nazım Karataş',
-                          role: 'Admin',
-                          tag: noteTag,
-                          time: 'Just now',
-                          text,
-                        }, ...n]);
-                        setNoteDraft('');
-                        toast.success('Note added');
+                        if (!text || !client) return;
+                        void clientsApi.addNote(client.id, { text, tag: noteTag })
+                          .then((created) => {
+                            setAddedNotes(prev => [created, ...prev]);
+                            setNoteDraft('');
+                            toast.success('Note added');
+                          })
+                          .catch(() => toast.error('Note could not be saved'));
                       }}
                     >
                       <NotePencil size={16} /> Add Note
@@ -575,7 +566,7 @@ export const ClientProfile: React.FC = () => {
                           <span className={styles.noteAuthor}>{n.author}</span>
                           <span className={styles.noteRole}>{n.role}</span>
                           <span className={`${styles.noteTagChip} ${styles[`noteTag${n.tag}`] ?? ''}`}>{n.tag}</span>
-                          <span className={styles.noteTime}>{n.time}</span>
+                          <span className={styles.noteTime}>{noteTimeAgo(n.createdAt)}</span>
                         </div>
                         <p className={styles.noteText}>{n.text}</p>
                       </div>

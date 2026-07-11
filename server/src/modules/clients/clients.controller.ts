@@ -2,7 +2,7 @@
 // PREI | ClientsController — /api/clients (müşteri dizini + profil güncelleme). 'clients' izni.
 // =====================================================================
 import {
-  Controller, Get, Patch, Body, Param, ParseUUIDPipe, Query,
+  Controller, Get, Patch, Post, Body, Param, ParseUUIDPipe, Query,
   DefaultValuePipe, ParseIntPipe, UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -12,6 +12,7 @@ import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { ClientsService } from './clients.service';
 import { UpdateClientDto } from './dto/client-update.dto';
+import { CreateClientNoteDto } from './dto/client-note.dto';
 
 @Controller('clients')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -40,5 +41,19 @@ export class ClientsController {
     @Body() dto: UpdateClientDto,
   ) {
     return this.clients.update(ctx, id, dto);
+  }
+
+  @Get(':id/notes')
+  listNotes(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.clients.listNotes(ctx, id);
+  }
+
+  @Post(':id/notes')
+  createNote(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateClientNoteDto,
+  ) {
+    return this.clients.createNote(ctx, id, dto);
   }
 }

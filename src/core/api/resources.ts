@@ -10,6 +10,7 @@ import type {
   ActivityDTO,
   AuditLogDTO,
   ClientDTO,
+  ClientNoteDTO,
   ContactDTO,
   ContractDTO,
   DashboardSummaryDTO,
@@ -85,6 +86,9 @@ export const leadsApi = {
 export const clientsApi = {
   list: () => api.get<ClientDTO[]>('/api/clients'),
   update: (id: string, patch: Partial<ClientDTO>) => api.patch<ClientDTO>(`/api/clients/${id}`, patch),
+  notes: (id: string) => api.get<ClientNoteDTO[]>(`/api/clients/${id}/notes`),
+  addNote: (id: string, body: { text: string; tag: ClientNoteDTO['tag'] }) =>
+    api.post<ClientNoteDTO>(`/api/clients/${id}/notes`, body),
 };
 
 export const developersApi = {

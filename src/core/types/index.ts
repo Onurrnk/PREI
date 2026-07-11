@@ -109,6 +109,15 @@ export interface ClientDTO {
   requirements?: string;             // özel talepler: deniz manzarası, yüksek kat...
 }
 
+export interface ClientNoteDTO {
+  id: string;
+  author: string;
+  role: string;
+  tag: 'Meeting' | 'Call' | 'General';
+  createdAt: string;
+  text: string;
+}
+
 export interface DocumentDTO {
   id: string;
   title: string;
