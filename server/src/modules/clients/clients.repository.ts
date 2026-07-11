@@ -5,8 +5,10 @@
 // (uyruk/tip/profil/bölge/statü) metadata jsonb'da (operasyonla dolar).
 // =====================================================================
 import { Injectable } from '@nestjs/common';
+import type { PoolClient } from 'pg';
 import { DatabaseService } from '../../database/database.service';
 import type { RequestContext } from '../../common/request-context';
+import type { UpdateClientDto } from './dto/client-update.dto';
 
 export interface ClientRow {
   id: string;
@@ -61,5 +63,76 @@ export class ClientsRepository {
       );
       return rows[0] ?? null;
     });
+  }
+
+  /**
+   * Profil güncelleme: iletişim alanları contacts kolonlarına, müşteriye özgü
+   * alanlar (tip/statü/risk/kriterler/bölgeler) metadata jsonb merge'üne yazılır.
+   * Mutasyon audit_log + events'e bağlı (F10); dönüş joined satır (desen).
+   */
+  async update(ctx: RequestContext, id: string, dto: UpdateClientDto): Promise<ClientRow | null> {
+    return this.db.withContext(ctx, async (c) => {
+      // İsim: son kelime soyad, kalanı ad (tek kelime → soyad boş).
+      let firstName: string | null = null;
+      let lastName: string | null = null;
+      if (dto.name !== undefined) {
+        const parts = dto.name.trim().split(/\s+/);
+        lastName = parts.length > 1 ? parts.pop()! : null;
+        firstName = parts.join(' ') || dto.name.trim();
+      }
+
+      // Metadata merge'üne girecek anahtarlar (yalnız gönderilenler).
+      const meta: Record<string, unknown> = {};
+      if (dto.type !== undefined) meta.client_type = dto.type;
+      if (dto.nationality !== undefined) meta.nationality = dto.nationality;
+      if (dto.relationshipStatus !== undefined) meta.relationship_status = dto.relationshipStatus;
+      if (dto.investmentProfile !== undefined) meta.investment_profile = dto.investmentProfile;
+      if (dto.source !== undefined) meta.source = dto.source;
+      if (dto.assignedConsultant !== undefined) meta.assigned_consultant = dto.assignedConsultant;
+      if (dto.preferredRegions !== undefined) meta.preferred_regions = dto.preferredRegions;
+      if (dto.unitTypes !== undefined) meta.unit_types = dto.unitTypes;
+      if (dto.purpose !== undefined) meta.purpose = dto.purpose;
+      if (dto.budgetRange !== undefined) meta.budget_range = dto.budgetRange;
+      if (dto.requirements !== undefined) meta.requirements = dto.requirements;
+
+      const { rows } = await c.query<{ id: string }>(
+        `UPDATE contacts SET
+            first_name = COALESCE($2, first_name),
+            last_name  = CASE WHEN $2 IS NULL THEN last_name ELSE $3 END,
+            email      = COALESCE($4, email),
+            phone      = COALESCE($5, phone),
+            /* normalized_phone GENERATED — phone'dan kendisi türer, elle yazılamaz */
+            metadata   = COALESCE(metadata, '{}'::jsonb) || $6::jsonb,
+            updated_at = now()
+          WHERE id = $1 AND deleted_at IS NULL
+          RETURNING id`,
+        [id, firstName, lastName, dto.email ?? null, dto.phone ?? null, JSON.stringify(meta)],
+      );
+      if (!rows[0]) return null;
+
+      await this.writeAuditAndEvent(c, ctx, 'client.updated', id, dto);
+
+      const { rows: joined } = await c.query<ClientRow>(
+        `${CLIENT_SELECT} WHERE c.id = $1 AND c.deleted_at IS NULL`,
+        [id],
+      );
+      return joined[0] ?? null;
+    });
+  }
+
+  /** audit_log (forensics) + events (outbox) — aynı transaction, correlation_id bağlı. */
+  private async writeAuditAndEvent(
+    c: PoolClient, ctx: RequestContext, action: string, entityId: string, diff: unknown,
+  ): Promise<void> {
+    await c.query(
+      `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+       VALUES ($1,$2,$3,'contact',$4,$5,$6)`,
+      [ctx.tenantId, ctx.userId, action, entityId, JSON.stringify(diff), ctx.correlationId],
+    );
+    await c.query(
+      `INSERT INTO events (tenant_id, aggregate_type, aggregate_id, event_type, payload, correlation_id, created_by)
+       VALUES ($1,'contact',$2,$3,$4,$5,$6)`,
+      [ctx.tenantId, entityId, action, JSON.stringify(diff), ctx.correlationId, ctx.userId],
+    );
   }
 }

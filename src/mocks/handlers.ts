@@ -70,6 +70,55 @@ export let mockTasks: TaskDTO[] = [
   { id: 't6', title: 'Update Marketing Materials', description: 'Upload new brochures for Belmont Residences to the vault.', dueDate: '2026-06-19T17:00:00Z', priority: 'Low', status: 'Completed', assigneeId: 'u4', relatedEntity: { type: 'Project', name: 'Belmont Residences', id: 'p4' }, type: 'Task' },
 ];
 
+// Mock müşteri dizini — module-level: PATCH mutasyonları oturum boyunca kalıcı.
+const mockClients: ClientDTO[] = [
+      {
+        id: '1', clientId: 'CL-10024', name: 'Oliver Hartwell', type: 'VIP', nationality: 'UK',
+        email: 'o.hartwell@hartwellestates.co.uk', phone: '+44 7700 900077', totalInvestment: 4500000,
+        activeProperties: 3, preferredRegions: ['Dubai Marina', 'Downtown Dubai'],
+        investmentProfile: 'Balanced', source: 'Referral', relationshipStatus: 'Active',
+        assignedConsultant: 'Sarah Ahmed', lastContactDate: '2026-06-15T10:30:00Z',
+        unitTypes: ['2+1', '3+1'], purpose: 'Golden Visa', budgetRange: '€1.5M – €3.0M',
+        requirements: 'Sea view, high floor, 60/40 construction-linked payment plan; handover by Q4 2027.'
+      },
+      {
+        id: '2', clientId: 'CL-10025', name: 'Carmen Ortega', type: 'Individual', nationality: 'Spain',
+        email: 'carmen.ortega@ortegapatrimonio.es', phone: '+34 612 480 375', totalInvestment: 850000,
+        activeProperties: 1, preferredRegions: ['JVC', 'Business Bay'],
+        investmentProfile: 'Conservative', source: 'Web Lead', relationshipStatus: 'Active',
+        assignedConsultant: 'Michael Chen', lastContactDate: '2026-06-10T14:15:00Z',
+        unitTypes: ['1+1'], purpose: 'Investment', budgetRange: '€400K – €700K',
+        requirements: 'High rental yield focus; furnished preferred, near metro.'
+      },
+      {
+        id: '3', clientId: 'CL-10026', name: 'Meridian Gulf Investments', type: 'Corporate', nationality: 'UAE',
+        email: 'investments@meridiangulf.ae', phone: '+971 4 332 2111', totalInvestment: 12500000,
+        activeProperties: 8, preferredRegions: ['Palm Jumeirah', 'DIFC'],
+        investmentProfile: 'Aggressive', source: 'Event', relationshipStatus: 'Active',
+        assignedConsultant: 'Onur Nazım Karataş', lastContactDate: '2026-06-16T09:00:00Z',
+        unitTypes: ['Penthouse', 'Villa'], purpose: 'Investment', budgetRange: '€8M – €15M',
+        requirements: 'Portfolio acquisition; waterfront trophy assets only, off-market access expected.'
+      },
+      {
+        id: '4', clientId: 'CL-10027', name: 'Mohammed Al Fayed', type: 'VIP', nationality: 'KSA',
+        email: 'malfayed@invest.sa', phone: '+966 50 123 4567', totalInvestment: 25000000,
+        activeProperties: 12, preferredRegions: ['Downtown Dubai', 'Riyadh'],
+        investmentProfile: 'Aggressive', source: 'Direct', relationshipStatus: 'Dormant',
+        assignedConsultant: 'Sarah Ahmed', lastContactDate: '2026-04-20T11:00:00Z',
+        unitTypes: ['4+1+', 'Penthouse'], purpose: 'End-use', budgetRange: '€5M – €12M',
+        requirements: 'Family residence + investment mix; branded residences, private pool.'
+      },
+      {
+        id: '5', clientId: 'CL-10028', name: 'Elena Popova', type: 'Individual', nationality: 'Russia',
+        email: 'elena.p@mail.ru', phone: '+7 900 123 4567', totalInvestment: 1200000,
+        activeProperties: 2, preferredRegions: ['Bluewaters', 'Dubai Marina'],
+        investmentProfile: 'Balanced', source: 'Agency', relationshipStatus: 'Active',
+        assignedConsultant: 'Michael Chen', lastContactDate: '2026-06-14T16:45:00Z',
+        unitTypes: ['Studio', '1+1'], purpose: 'Relocation', budgetRange: '€600K – €1.2M',
+        requirements: 'Move-in ready; walking distance to beach, pet-friendly building.'
+      },
+    ];
+
 export const handlers = [
   // ---- Auth ----
   http.post('/api/auth/login', async ({ request }) => {
@@ -244,55 +293,19 @@ export const handlers = [
     ]);
   }),
 
+  // Mock müşteri listesi module-level: PATCH oturum içinde kalıcıdır.
   http.get('/api/clients', () => {
-    return HttpResponse.json<ClientDTO[]>([
-      {
-        id: '1', clientId: 'CL-10024', name: 'Oliver Hartwell', type: 'VIP', nationality: 'UK',
-        email: 'o.hartwell@hartwellestates.co.uk', phone: '+44 7700 900077', totalInvestment: 4500000,
-        activeProperties: 3, preferredRegions: ['Dubai Marina', 'Downtown Dubai'],
-        investmentProfile: 'Balanced', source: 'Referral', relationshipStatus: 'Active',
-        assignedConsultant: 'Sarah Ahmed', lastContactDate: '2026-06-15T10:30:00Z',
-        unitTypes: ['2+1', '3+1'], purpose: 'Golden Visa', budgetRange: '€1.5M – €3.0M',
-        requirements: 'Sea view, high floor, 60/40 construction-linked payment plan; handover by Q4 2027.'
-      },
-      {
-        id: '2', clientId: 'CL-10025', name: 'Carmen Ortega', type: 'Individual', nationality: 'Spain',
-        email: 'carmen.ortega@ortegapatrimonio.es', phone: '+34 612 480 375', totalInvestment: 850000,
-        activeProperties: 1, preferredRegions: ['JVC', 'Business Bay'],
-        investmentProfile: 'Conservative', source: 'Web Lead', relationshipStatus: 'Active',
-        assignedConsultant: 'Michael Chen', lastContactDate: '2026-06-10T14:15:00Z',
-        unitTypes: ['1+1'], purpose: 'Investment', budgetRange: '€400K – €700K',
-        requirements: 'High rental yield focus; furnished preferred, near metro.'
-      },
-      {
-        id: '3', clientId: 'CL-10026', name: 'Meridian Gulf Investments', type: 'Corporate', nationality: 'UAE',
-        email: 'investments@meridiangulf.ae', phone: '+971 4 332 2111', totalInvestment: 12500000,
-        activeProperties: 8, preferredRegions: ['Palm Jumeirah', 'DIFC'],
-        investmentProfile: 'Aggressive', source: 'Event', relationshipStatus: 'Active',
-        assignedConsultant: 'Onur Nazım Karataş', lastContactDate: '2026-06-16T09:00:00Z',
-        unitTypes: ['Penthouse', 'Villa'], purpose: 'Investment', budgetRange: '€8M – €15M',
-        requirements: 'Portfolio acquisition; waterfront trophy assets only, off-market access expected.'
-      },
-      {
-        id: '4', clientId: 'CL-10027', name: 'Mohammed Al Fayed', type: 'VIP', nationality: 'KSA',
-        email: 'malfayed@invest.sa', phone: '+966 50 123 4567', totalInvestment: 25000000,
-        activeProperties: 12, preferredRegions: ['Downtown Dubai', 'Riyadh'],
-        investmentProfile: 'Aggressive', source: 'Direct', relationshipStatus: 'Dormant',
-        assignedConsultant: 'Sarah Ahmed', lastContactDate: '2026-04-20T11:00:00Z',
-        unitTypes: ['4+1+', 'Penthouse'], purpose: 'End-use', budgetRange: '€5M – €12M',
-        requirements: 'Family residence + investment mix; branded residences, private pool.'
-      },
-      {
-        id: '5', clientId: 'CL-10028', name: 'Elena Popova', type: 'Individual', nationality: 'Russia',
-        email: 'elena.p@mail.ru', phone: '+7 900 123 4567', totalInvestment: 1200000,
-        activeProperties: 2, preferredRegions: ['Bluewaters', 'Dubai Marina'],
-        investmentProfile: 'Balanced', source: 'Agency', relationshipStatus: 'Active',
-        assignedConsultant: 'Michael Chen', lastContactDate: '2026-06-14T16:45:00Z',
-        unitTypes: ['Studio', '1+1'], purpose: 'Relocation', budgetRange: '€600K – €1.2M',
-        requirements: 'Move-in ready; walking distance to beach, pet-friendly building.'
-      },
-    ]);
+    return HttpResponse.json<ClientDTO[]>(mockClients);
   }),
+
+  http.patch('/api/clients/:id', async ({ params, request }) => {
+    const idx = mockClients.findIndex(c => c.id === params.id);
+    if (idx === -1) return new HttpResponse(null, { status: 404 });
+    const patch = (await request.json()) as Partial<ClientDTO>;
+    mockClients[idx] = { ...mockClients[idx], ...patch };
+    return HttpResponse.json<ClientDTO>(mockClients[idx]);
+  }),
+
 
   http.get('/api/developers', () => {
     return HttpResponse.json<DeveloperDTO[]>([

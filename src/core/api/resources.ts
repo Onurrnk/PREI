@@ -84,6 +84,7 @@ export const leadsApi = {
 
 export const clientsApi = {
   list: () => api.get<ClientDTO[]>('/api/clients'),
+  update: (id: string, patch: Partial<ClientDTO>) => api.patch<ClientDTO>(`/api/clients/${id}`, patch),
 };
 
 export const developersApi = {

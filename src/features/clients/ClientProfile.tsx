@@ -54,7 +54,7 @@ const FILTERS: Array<{ key: 'all' | TimelineKind; label: string }> = [
 ];
 
 // Satır-içi düzenlenebilir metin: hover'da kalem, Enter/blur kaydeder, Esc iptal.
-// Mock-persist (local state) — gerçek PATCH FAZ 1 create-edit işinde bağlanır.
+// Kaydetme PATCH /api/clients/:id ile kalıcı (mock modda MSW in-memory).
 const InlineText: React.FC<{
   value: string;
   onSave: (v: string) => void;
@@ -145,7 +145,7 @@ const RegionsEditor: React.FC<{
   );
 };
 
-// Edit Profile formunun alan seti (mock-persist; PATCH FAZ 1 create-edit işinde)
+// Edit Profile formunun alan seti — PATCH /api/clients/:id sözleşmesiyle hizalı
 type EditableProfile = Pick<ClientDTO,
   'name' | 'email' | 'phone' | 'nationality' | 'type' | 'relationshipStatus' |
   'investmentProfile' | 'assignedConsultant' | 'source' | 'preferredRegions'> & {
@@ -187,6 +187,21 @@ export const ClientProfile: React.FC = () => {
   // Satır-içi düzenlemeler (mock-persist): fetch edilen kaydın üstüne bindirilir.
   const [overrides, setOverrides] = useState<Partial<ClientDTO>>({});
   const client = fetched ? { ...fetched, ...overrides } : null;
+
+  /**
+   * Kalıcı kaydetme: PATCH /api/clients/:id (gerçek modda contacts + metadata,
+   * mock modda MSW in-memory). Başarıda overrides'a işler; hatada dokunmaz.
+   */
+  const saveClient = async (patch: Partial<ClientDTO>, okMsg: string) => {
+    if (!client) return;
+    try {
+      await clientsApi.update(client.id, patch);
+      setOverrides(prev => ({ ...prev, ...patch }));
+      toast.success(okMsg);
+    } catch {
+      toast.error('Save failed — please try again');
+    }
+  };
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState<EditableProfile | null>(null);
   const [activeTab, setActiveTab] = useState<'communication' | 'vault' | 'notes'>('communication');
@@ -308,7 +323,7 @@ export const ClientProfile: React.FC = () => {
                   value={client.email}
                   type="email"
                   ariaLabel="email"
-                  onSave={(v) => { setOverrides(o => ({ ...o, email: v })); toast.success('Email updated'); }}
+                  onSave={(v) => { void saveClient({ email: v }, 'Email updated'); }}
                 />
               </div>
               <div className={styles.detailRow}>
@@ -317,7 +332,7 @@ export const ClientProfile: React.FC = () => {
                   value={client.phone}
                   type="tel"
                   ariaLabel="phone"
-                  onSave={(v) => { setOverrides(o => ({ ...o, phone: v })); toast.success('Phone updated'); }}
+                  onSave={(v) => { void saveClient({ phone: v }, 'Phone updated'); }}
                 />
               </div>
               <div className={styles.detailRow}>
@@ -350,7 +365,7 @@ export const ClientProfile: React.FC = () => {
                 <InlineText
                   value={client.investmentProfile}
                   ariaLabel="risk profile"
-                  onSave={(v) => { setOverrides(o => ({ ...o, investmentProfile: v })); toast.success('Risk profile updated'); }}
+                  onSave={(v) => { void saveClient({ investmentProfile: v as ClientDTO['investmentProfile'] }, 'Risk profile updated'); }}
                 />
               </div>
 
@@ -387,7 +402,7 @@ export const ClientProfile: React.FC = () => {
                 <span className={styles.detailLabel} style={{ marginBottom: '8px', display: 'block' }}>Preferred Regions</span>
                 <RegionsEditor
                   regions={client.preferredRegions}
-                  onChange={(regions) => { setOverrides(o => ({ ...o, preferredRegions: regions })); toast.success('Regions updated'); }}
+                  onChange={(regions) => { void saveClient({ preferredRegions: regions }, 'Regions updated'); }}
                 />
               </div>
             </CardBody>
@@ -611,9 +626,14 @@ export const ClientProfile: React.FC = () => {
                   toast.error('Name and email are required');
                   return;
                 }
-                setOverrides(o => ({ ...o, ...editForm, name: editForm.name.trim(), email: editForm.email.trim() }));
+                const payload: Partial<ClientDTO> = {
+                  ...editForm,
+                  name: editForm.name.trim(),
+                  email: editForm.email.trim(),
+                  purpose: editForm.purpose,
+                };
+                void saveClient(payload, 'Profile updated');
                 setShowEditModal(false);
-                toast.success('Profile updated');
               }}
             >
               Save Changes

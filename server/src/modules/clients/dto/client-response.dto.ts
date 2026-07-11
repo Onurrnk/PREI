@@ -21,6 +21,10 @@ export interface ClientResponse {
   relationshipStatus: string; // Active | Dormant | Churned
   assignedConsultant: string;
   lastContactDate: string;
+  unitTypes?: string[];
+  purpose?: string;
+  budgetRange?: string;
+  requirements?: string;
 }
 
 function str(v: unknown, fallback = ''): string {
@@ -49,5 +53,9 @@ export function toClientResponse(row: ClientRow): ClientResponse {
     relationshipStatus: str(m.relationship_status, 'Active'),
     assignedConsultant: row.consultant ?? str(m.assigned_consultant, '—'),
     lastContactDate: row.last_contact ?? row.updated_at,
+    ...(Array.isArray(m.unit_types) ? { unitTypes: arr(m.unit_types) } : {}),
+    ...(typeof m.purpose === 'string' && m.purpose ? { purpose: m.purpose } : {}),
+    ...(typeof m.budget_range === 'string' && m.budget_range ? { budgetRange: m.budget_range } : {}),
+    ...(typeof m.requirements === 'string' && m.requirements ? { requirements: m.requirements } : {}),
   };
 }

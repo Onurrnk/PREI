@@ -1,8 +1,8 @@
 // =====================================================================
-// PREI | ClientsController — /api/clients (müşteri dizini, salt-okuma). 'clients' izni.
+// PREI | ClientsController — /api/clients (müşteri dizini + profil güncelleme). 'clients' izni.
 // =====================================================================
 import {
-  Controller, Get, Param, ParseUUIDPipe, Query,
+  Controller, Get, Patch, Body, Param, ParseUUIDPipe, Query,
   DefaultValuePipe, ParseIntPipe, UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -11,6 +11,7 @@ import { RequirePermission } from '../../common/require-permission.decorator';
 import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { ClientsService } from './clients.service';
+import { UpdateClientDto } from './dto/client-update.dto';
 
 @Controller('clients')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -30,5 +31,14 @@ export class ClientsController {
   @Get(':id')
   findOne(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
     return this.clients.findOne(ctx, id);
+  }
+
+  @Patch(':id')
+  update(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateClientDto,
+  ) {
+    return this.clients.update(ctx, id, dto);
   }
 }
