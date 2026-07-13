@@ -30,6 +30,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
+  align-self: start;
+  padding: var(--spacing-sm);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-surface);
+  box-shadow: var(--shadow-1);
 }
 
 .navItem {
@@ -44,6 +50,7 @@
   transition: all var(--transition-fast);
   background: transparent;
   border: none;
+  border-left: 2px solid transparent;
   width: 100%;
   text-align: left;
 }
@@ -57,6 +64,7 @@
   background-color: var(--brand-primary-soft);
   color: var(--brand-primary);
   font-weight: 600;
+  border-left-color: var(--brand-primary);
 }
 
 .content {
