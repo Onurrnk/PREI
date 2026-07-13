@@ -1,7 +1,9 @@
 .card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  /* Kart gölgesiz — ayrım border ile (Design System §3) */
+  /* İnce dinlenme yükseltisi: üst kenarda cam-yansı highlight + ambient
+     gölge (Design System §3, 2026-07-13 revizyonu — --shadow-1). */
+  box-shadow: var(--shadow-1);
   border-radius: var(--radius-surface);
   display: flex;
   flex-direction: column;

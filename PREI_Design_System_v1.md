@@ -98,6 +98,7 @@ Korunanlar: bilgi mimarisi (13 modül, route slug'ları, nav yapısı), CSS Modu
   --border-strong:  rgba(236, 234, 230, 0.14);
   --border-focus:   var(--brand-primary);
 
+  --shadow-1: inset 0 1px 0 rgba(236, 234, 230, 0.05), 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 20px -6px rgba(0, 0, 0, 0.55);
   --shadow-raised: 0 8px 24px rgba(0, 0, 0, 0.4);
   --chart-grid: rgba(236, 234, 230, 0.06);   /* grafik kılavuz çizgileri */
 }
@@ -117,6 +118,7 @@ Korunanlar: bilgi mimarisi (13 modül, route slug'ları, nav yapısı), CSS Modu
   --border-strong:  rgba(27, 26, 24, 0.16);
   --border-focus:   var(--brand-primary);
 
+  --shadow-1: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 2px rgba(27, 26, 24, 0.04), 0 6px 16px -6px rgba(27, 26, 24, 0.12);
   --shadow-raised: 0 8px 24px rgba(27, 26, 24, 0.10);
   --chart-grid: rgba(27, 26, 24, 0.07);
 }
@@ -124,7 +126,7 @@ Korunanlar: bilgi mimarisi (13 modül, route slug'ları, nav yapısı), CSS Modu
 
 Kurallar:
 - **Saf `#000` ve `#FFF` yasak.** Nötrler hafif sıcak (kağıt/karbon hissi), accent'le uyumlu.
-- **Gölge tek katman:** yalnız `--shadow-raised`, yalnız gerçekten yüzen öğelerde (modal, popover, dropdown). Kartlar gölgesiz — `border-subtle` ile ayrılır.
+- **Gölge iki katman (2026-07-13 revizyonu):** `--shadow-1` — dinlenme yükseltisi, üst kenarda ince cam-yansı highlight + ambient gölge; kartlarda ve birincil butonda `border-subtle` ile BİRLİKTE kullanılır (Onur geri bildirimi: tamamen gölgesiz yüzeyler çok düz/"basic" hissettiriyordu — karar: kural gevşetildi, gerçek derinlik eklendi). `--shadow-raised` — yalnız gerçekten yüzen öğelerde (modal, popover, dropdown), daha güçlü. İkisi dışında hiçbir gölge değeri UI'a giremez.
 - Eski `--color-primary-purple` vb. token'lar bir geçiş haritasıyla (`purple → brand-primary`) alias'lanır, modüller taşındıkça alias'lar silinir.
 
 ---
@@ -144,7 +146,7 @@ Google Fonts `<link>` yasak — fontlar `public/fonts/` altında self-host, `@fo
 ## 5. Bileşen Kuralları
 
 ### 5.1 KPI Kartı (imza bileşen — Dashboard'un yapıtaşı)
-Anatomi (yukarıdan aşağı): etiket (`--text-label`, `--text-secondary`) → değer (`--text-metric`, mono) → delta satırı (ok ikonu + mono yüzde, `--data-positive/negative`) → **sparkline** (28px yüksek, alan dolgusu %8 opaklık, çizgi 1.5px). Dört KPI yan yana, kartlar `--bg-surface` + `border-subtle`, gölgesiz.
+Anatomi (yukarıdan aşağı): etiket (`--text-label`, `--text-secondary`) → değer (`--text-metric`, mono) → delta satırı (ok ikonu + mono yüzde, `--data-positive/negative`) → **sparkline** (28px yüksek, alan dolgusu %8 opaklık, çizgi 1.5px). Dört KPI yan yana, kartlar `--bg-surface` + `border-subtle` + `--shadow-1`.
 
 ### 5.2 Tablolar (Leads, Clients, Contracts, Financials)
 - Satır ayracı: yalnız `border-bottom: 1px solid var(--border-subtle)` — asla üst+alt birlikte.
