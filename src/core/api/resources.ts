@@ -19,6 +19,7 @@ import type {
   KPIDTO,
   LeadCommunicationDTO,
   LeadDTO,
+  LeadScoreDTO,
   LoginResponse,
   MeResponse,
   ProjectDTO,
@@ -83,6 +84,7 @@ export const leadsApi = {
   create: (input: CreateLeadInput) => api.post<LeadDTO>('/api/leads', input),
   update: (id: string, input: UpdateLeadInput) => api.patch<LeadDTO>(`/api/leads/${id}`, input),
   communications: (id: string) => api.get<LeadCommunicationDTO[]>(`/api/leads/${id}/communications`),
+  scores: (id: string) => api.get<LeadScoreDTO[]>(`/api/leads/${id}/scores`),
 };
 
 export const clientsApi = {

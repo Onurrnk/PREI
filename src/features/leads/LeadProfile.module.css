@@ -163,10 +163,77 @@
   font-size: 0.8125rem;
 }
 
+.aiBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  background-color: var(--brand-primary-soft);
+  color: var(--brand-primary);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
 .scoreCaveat {
   color: var(--text-muted);
   font-size: 0.8125rem;
   line-height: 1.5;
+}
+
+.scoreReasoning {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  margin-bottom: var(--spacing-xs);
+}
+
+.scoreSourceLine {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.scoreHistory {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scoreHistoryLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.scoreHistoryRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  font-size: 0.75rem;
+}
+
+.scoreHistoryValue {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  min-width: 24px;
+}
+
+.scoreHistoryValue.strong { color: var(--data-positive); }
+.scoreHistoryValue.moderate { color: var(--data-warning); }
+.scoreHistoryValue.weak { color: var(--data-negative); }
+.scoreHistoryValue.unscored { color: var(--text-muted); }
+
+.scoreHistoryDate {
+  color: var(--text-muted);
 }
 
 .scoreCaveat strong {

@@ -5,6 +5,7 @@ import type {
   KPIDTO,
   LeadCommunicationDTO,
   LeadDTO,
+  LeadScoreDTO,
   ClientDTO,
   ContactDTO,
   ContractDTO,
@@ -34,7 +35,7 @@ const mkLead = (o: Partial<LeadDTO> & Pick<LeadDTO, 'id' | 'contactName' | 'stat
 // derleme anında yakalanır (OV-8). Çok pazarlı gerçekçi set.
 const mockLeads: LeadDTO[] = [
   mkLead({ id: '1', contactName: 'Stefan Brandt', company: 'Nordwind Capital', status: 'new', budgetMax: 1500000, currency: 'EUR', targetMarketCode: 'ES', interestType: 'invest', score: 30 }),
-  mkLead({ id: '2', contactName: 'Sarah Ahmed', company: 'Emirates Corp', status: 'contacted', budgetMax: 3200000, currency: 'AED', targetMarketCode: 'AE', interestType: 'buy', score: 48 }),
+  mkLead({ id: '2', contactName: 'Sarah Ahmed', company: 'Emirates Corp', status: 'contacted', budgetMax: 3200000, currency: 'AED', targetMarketCode: 'AE', interestType: 'buy', score: 71 }),
   mkLead({ id: '3', contactName: 'Edward Langley', company: 'InvestUK', status: 'qualified', budgetMax: 850000, currency: 'GBP', targetMarketCode: 'GB', interestType: 'buy', score: 62 }),
   mkLead({ id: '4', contactName: 'Elena Rossi', company: 'Rossi Group', status: 'nurturing', budgetMax: 4500000, currency: 'EUR', targetMarketCode: 'ES', interestType: 'invest', score: 74 }),
   mkLead({ id: '5', contactName: 'Ahmet Yılmaz', company: 'Yılmaz Holding', status: 'converted', budgetMax: 2100000, currency: 'TRY', targetMarketCode: 'TR', interestType: 'buy', score: 88 }),
@@ -53,6 +54,19 @@ const mockCommunicationsByLead: Record<string, LeadCommunicationDTO[]> = {
   '4': [
     { id: 'c5', channel: 'email', direction: 'inbound', subject: 'İspanya yatırım fırsatları', body: 'Merhaba, Rossi Group adına Costa del Sol bölgesinde çoklu ünite yatırımı değerlendiriyoruz.', sentAt: '2026-06-18T11:00:00Z', handledBy: null },
     { id: 'c6', channel: 'email', direction: 'outbound', subject: 'Re: İspanya yatırım fırsatları', body: 'Merhaba Elena, ekte 3 proje özeti bulunuyor. Uygun olduğunuzda görüşme ayarlayalım.', sentAt: '2026-06-18T15:40:00Z', handledBy: 'Onur Nazım Karataş' },
+  ],
+};
+
+// leadId → skor geçmişi — yalnız lead '2'de gerçek n8n_ai örneği var (diğerlerinde
+// leads.score hâlâ eski manuel demo değeri; LeadProfile bu durumda dürüst "manuel" uyarısını gösterir).
+const mockScoresByLead: Record<string, LeadScoreDTO[]> = {
+  '2': [
+    { id: 's2', score: 71, source: 'n8n_ai', createdAt: '2026-06-21T16:10:00Z', createdBy: 'Eylül (WhatsApp Agent)',
+      reasoning: 'Telefon görüşmesinde kurumsal alım (Emirates Corp adına 2. mülk) ve Golden Visa hedefi teyit edildi — bu ikisi birlikte güçlü satın alma niyeti gösteriyor. Peşinat oranı (%30) ve teslim tarihi (2027) netleşti, bütçeyle uyumlu envanter mevcut.',
+      signals: { budget_clarity: 'high', corporate_buyer: true, urgency_signal: 'golden_visa_deadline' } },
+    { id: 's1', score: 52, source: 'n8n_ai', createdAt: '2026-06-20T09:35:00Z', createdBy: 'Eylül (WhatsApp Agent)',
+      reasoning: 'Bütçe net (3-3.5M AED) ve bölge tercihi belirgin (Dubai Marina, 3+1). Ancak henüz tek taraflı ilgi — aciliyet sinyali yok.',
+      signals: { budget_clarity: 'high', urgency_signal: 'none' } },
   ],
 };
 
@@ -267,6 +281,10 @@ export const handlers = [
 
   http.get('/api/leads/:id/communications', ({ params }) => {
     return HttpResponse.json<LeadCommunicationDTO[]>(mockCommunicationsByLead[params.id as string] ?? []);
+  }),
+
+  http.get('/api/leads/:id/scores', ({ params }) => {
+    return HttpResponse.json<LeadScoreDTO[]>(mockScoresByLead[params.id as string] ?? []);
   }),
 
   // FAZ 1 create akışı — mock demoda hata vermesin diye plausible yanıt döner

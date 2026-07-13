@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { LeadCommunicationDTO, LeadDTO, LeadStatus, UserDTO } from '../../core/types';
+import type { LeadCommunicationDTO, LeadDTO, LeadScoreDTO, LeadStatus, UserDTO } from '../../core/types';
 import { leadsApi, usersApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
@@ -8,6 +8,7 @@ import { Button } from '../../core/components/Button/Button';
 import {
   ArrowLeft, CurrencyDollar, Tag, Flag, MapPin, CalendarBlank, UserCircle,
   WhatsappLogo, EnvelopeSimple, Phone, ChatCircleDots, ArrowDown, ArrowUp, ChatCircle,
+  Sparkle,
 } from '@phosphor-icons/react';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import styles from './LeadProfile.module.css';
@@ -57,6 +58,8 @@ export const LeadProfile: React.FC = () => {
   const { data: comms, loading: commsLoading } = useFetch<LeadCommunicationDTO[]>(
     () => leadsApi.communications(id!), [id],
   );
+  const { data: scores } = useFetch<LeadScoreDTO[]>(() => leadsApi.scores(id!), [id]);
+  const latestScore = scores?.[0] ?? null;
   const { data: users } = useFetch<UserDTO[]>(() => usersApi.list(), []);
   const ownerName = users?.find((u) => u.id === lead?.ownerId)?.name ?? null;
 
@@ -144,13 +147,41 @@ export const LeadProfile: React.FC = () => {
                   {lead.score ?? '—'}
                 </span>
                 <span className={styles.scoreOutOf}>/ 100</span>
+                {latestScore?.source === 'n8n_ai' && (
+                  <span className={styles.aiBadge}><Sparkle size={12} weight="fill" /> AI</span>
+                )}
               </div>
-              <p className={styles.scoreCaveat}>
-                Bu değer şu an <strong>manuel girilmiş</strong> bir referans skoru — otomatik
-                bir kural motoru ya da AI modeli tarafından hesaplanmıyor. Gerçek bir
-                skorlama sistemi (hangi sinyallere göre, nasıl ağırlıklandırılacak) henüz
-                tasarlanmadı.
-              </p>
+
+              {latestScore ? (
+                <>
+                  {latestScore.reasoning && (
+                    <p className={styles.scoreReasoning}>{latestScore.reasoning}</p>
+                  )}
+                  <span className={styles.scoreSourceLine}>
+                    {latestScore.source === 'n8n_ai' ? 'RAG destekli AI skorlaması' : 'Manuel girildi'}
+                    {latestScore.createdBy ? ` — ${latestScore.createdBy}` : ''} · {formatDate(latestScore.createdAt)}
+                  </span>
+
+                  {scores && scores.length > 1 && (
+                    <div className={styles.scoreHistory}>
+                      <span className={styles.scoreHistoryLabel}>Geçmiş</span>
+                      {scores.slice(1).map((s) => (
+                        <div key={s.id} className={styles.scoreHistoryRow}>
+                          <span className={`${styles.scoreHistoryValue} ${styles[scoreBand(s.score)]}`}>{s.score}</span>
+                          <span className={styles.scoreHistoryDate}>{formatDate(s.createdAt)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className={styles.scoreCaveat}>
+                  Bu değer şu an <strong>manuel girilmiş</strong> bir referans skoru — otomatik
+                  bir kural motoru ya da AI modeli tarafından hesaplanmıyor. Gerçek bir
+                  skorlama sistemi (hangi sinyallere göre, nasıl ağırlıklandırılacak) henüz
+                  tasarlanmadı.
+                </p>
+              )}
             </CardBody>
           </Card>
 

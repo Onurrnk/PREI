@@ -80,6 +80,17 @@ export interface LeadCommunicationDTO {
   handledBy: string | null;
 }
 
+// GET /api/leads/:id/scores sözleşmesi — backend LeadScoreResponse ile senkron.
+export interface LeadScoreDTO {
+  id: string;
+  score: number;
+  reasoning: string | null;
+  signals: Record<string, unknown>;
+  source: 'manual' | 'n8n_ai';
+  createdAt: string;
+  createdBy: string | null;
+}
+
 // GET/POST /api/contacts sözleşmesi — backend ContactResponse ile senkron (OV-8).
 export interface ContactDTO {
   id: string;
