@@ -45,6 +45,23 @@ export interface CommunicationRow {
   handled_by_name: string | null;
 }
 
+export interface LeadScoreRow {
+  id: string;
+  score: number;
+  reasoning: string | null;
+  signals: Record<string, unknown>;
+  source: string;
+  created_at: string;
+  created_by_name: string | null;
+}
+
+// lead_scores SELECT gövdesi — kaydeden (manuel ise kullanıcı, n8n ise service_agent) adı.
+const SCORE_SELECT = `
+  SELECT ls.id, ls.score, ls.reasoning, ls.signals, ls.source, ls.created_at,
+         u.full_name AS created_by_name
+    FROM lead_scores ls
+    LEFT JOIN users u ON u.id = ls.created_by`;
+
 // communications SELECT gövdesi — işleyen danışman adı users'tan.
 const COMM_SELECT = `
   SELECT cm.id, cm.channel, cm.direction, cm.subject, cm.body, cm.sent_at,
@@ -95,6 +112,18 @@ export class LeadsRepository {
         `${COMM_SELECT}
           WHERE cm.lead_id = $1
           ORDER BY cm.sent_at DESC NULLS LAST, cm.created_at DESC LIMIT 200`,
+        [leadId],
+      );
+      return rows;
+    });
+  }
+
+  async listScores(ctx: RequestContext, leadId: string): Promise<LeadScoreRow[]> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<LeadScoreRow>(
+        `${SCORE_SELECT}
+          WHERE ls.lead_id = $1
+          ORDER BY ls.created_at DESC LIMIT 50`,
         [leadId],
       );
       return rows;

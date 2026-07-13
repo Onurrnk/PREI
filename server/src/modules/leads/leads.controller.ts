@@ -39,6 +39,11 @@ export class LeadsController {
     return this.leads.listCommunications(ctx, id);
   }
 
+  @Get(':id/scores')
+  listScores(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.leads.listScores(ctx, id);
+  }
+
   @Post()
   create(@Ctx() ctx: RequestContext, @Body() dto: CreateLeadDto) {
     return this.leads.create(ctx, dto);

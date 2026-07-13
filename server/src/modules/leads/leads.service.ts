@@ -4,6 +4,7 @@ import type { RequestContext } from '../../common/request-context';
 import type { CreateLeadDto, UpdateLeadDto } from './dto/lead.dto';
 import { toLeadResponse, type LeadResponse } from './dto/lead-response.dto';
 import { toCommunicationResponse, type LeadCommunicationResponse } from './dto/lead-communication.dto';
+import { toLeadScoreResponse, type LeadScoreResponse } from './dto/lead-score.dto';
 
 @Injectable()
 export class LeadsService {
@@ -23,6 +24,11 @@ export class LeadsService {
   async listCommunications(ctx: RequestContext, id: string): Promise<LeadCommunicationResponse[]> {
     const rows = await this.repo.listCommunications(ctx, id);
     return rows.map(toCommunicationResponse);
+  }
+
+  async listScores(ctx: RequestContext, id: string): Promise<LeadScoreResponse[]> {
+    const rows = await this.repo.listScores(ctx, id);
+    return rows.map(toLeadScoreResponse);
   }
 
   async create(ctx: RequestContext, dto: CreateLeadDto): Promise<LeadResponse> {
