@@ -11,6 +11,7 @@ import { WhatsAppEventDto } from './dto/whatsapp-event.dto';
 import { LeadScoreEventDto } from './dto/lead-score-event.dto';
 import { KnowledgeSearchDto } from './dto/knowledge-search.dto';
 import { OutboundMessageDto } from './dto/outbound-message.dto';
+import { LeadProfileDto } from './dto/lead-profile.dto';
 
 @Controller('agent')
 @UseGuards(AgentKeyGuard)
@@ -49,5 +50,11 @@ export class AgentController {
   @HttpCode(200)
   recordOutboundMessage(@Ctx() ctx: RequestContext, @Body() dto: OutboundMessageDto) {
     return this.agent.recordOutboundMessage(ctx, dto);
+  }
+
+  @Post('lead-profile')
+  @HttpCode(200)
+  updateLeadProfile(@Ctx() ctx: RequestContext, @Body() dto: LeadProfileDto) {
+    return this.agent.updateLeadProfile(ctx, dto);
   }
 }

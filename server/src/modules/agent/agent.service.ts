@@ -11,6 +11,7 @@ import type { WhatsAppEventDto } from './dto/whatsapp-event.dto';
 import type { LeadScoreEventDto } from './dto/lead-score-event.dto';
 import type { KnowledgeSearchDto } from './dto/knowledge-search.dto';
 import type { OutboundMessageDto } from './dto/outbound-message.dto';
+import type { LeadProfileDto } from './dto/lead-profile.dto';
 
 export interface IngestResult {
   contact_id: string;
@@ -125,6 +126,92 @@ export class AgentService {
   }
 
   /**
+   * Eylül'ün konuşmadan çıkardığı profili kalıcılaştırır. Fill-only
+   * semantiği: yalnız BOŞ contact alanları doldurulur (kullanıcının/CRM'in
+   * elle girdiği veri ezilmez); Telegram chat-id "telefonu" istisna —
+   * gerçek telefon gelirse onunla DEĞİŞTİRİLİR. Kriterler leads.metadata
+   * .criteria'ya merge edilir (yeni anahtar ekler, eskiyi korur).
+   */
+  async updateLeadProfile(ctx: RequestContext, dto: LeadProfileDto): Promise<{ lead_id: string; updated: string[] }> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows: lead } = await c.query<{ id: string; contact_id: string }>(
+        `SELECT id, contact_id FROM leads WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`,
+        [dto.lead_id, ctx.tenantId],
+      );
+      if (lead.length === 0) throw new NotFoundException('Lead bulunamadı');
+      const contactId = lead[0].contact_id;
+      const updated: string[] = [];
+
+      const { rows: contact } = await c.query<{
+        first_name: string; last_name: string | null; email: string | null; phone: string | null;
+      }>(`SELECT first_name, last_name, email, phone FROM contacts WHERE id = $1`, [contactId]);
+      const cur = contact[0];
+
+      // Telefon güvenli-değiştirme kuralı: yalnız (a) boşsa ya da (b) mevcut
+      // değer whatsapp kolonuyla birebir aynıysa (ingest'in Telegram chat-id
+      // yazma deseni) güncellenir. CRM'de elle düzeltilmiş telefon ezilmez.
+      const { rows: wa } = await c.query<{ whatsapp: string | null }>(
+        `SELECT whatsapp FROM contacts WHERE id = $1`, [contactId]);
+      const phoneReplaceable = !cur.phone || cur.phone === wa[0].whatsapp;
+
+      if (dto.first_name && (!cur.first_name || cur.first_name.split(/\s+/).length < dto.first_name.split(/\s+/).length)) {
+        await c.query(`UPDATE contacts SET first_name = $2, updated_by = $3 WHERE id = $1`, [contactId, dto.first_name, ctx.userId]);
+        updated.push('first_name');
+      }
+      if (dto.last_name && !cur.last_name) {
+        await c.query(`UPDATE contacts SET last_name = $2, updated_by = $3 WHERE id = $1`, [contactId, dto.last_name, ctx.userId]);
+        updated.push('last_name');
+      }
+      if (dto.email && !cur.email) {
+        await c.query(`UPDATE contacts SET email = $2, updated_by = $3 WHERE id = $1`, [contactId, dto.email.toLowerCase(), ctx.userId]);
+        updated.push('email');
+      }
+      if (dto.phone && phoneReplaceable && dto.phone !== cur.phone) {
+        try {
+          await c.query(`SAVEPOINT phone_upd`);
+          await c.query(`UPDATE contacts SET phone = $2, updated_by = $3 WHERE id = $1`, [contactId, dto.phone, ctx.userId]);
+          await c.query(`RELEASE SAVEPOINT phone_upd`);
+          updated.push('phone');
+        } catch {
+          // uq_contacts_phone çakışması: aynı numaralı başka contact var —
+          // sessizce atla (merge kararı insana ait, otomatik birleştirme yok).
+          await c.query(`ROLLBACK TO SAVEPOINT phone_upd`);
+        }
+      }
+
+      if (dto.budget_min !== undefined || dto.budget_max !== undefined || dto.currency) {
+        await c.query(
+          `UPDATE leads SET
+             budget_min = COALESCE($2, budget_min),
+             budget_max = COALESCE($3, budget_max),
+             currency = COALESCE($4, currency),
+             updated_by = $5
+           WHERE id = $1`,
+          [dto.lead_id, dto.budget_min ?? null, dto.budget_max ?? null, dto.currency ?? null, ctx.userId],
+        );
+        updated.push('budget');
+      }
+
+      if (dto.criteria && Object.keys(dto.criteria).length > 0) {
+        await c.query(
+          `UPDATE leads SET
+             metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{criteria}',
+               COALESCE(metadata->'criteria', '{}'::jsonb) || $2::jsonb),
+             updated_by = $3
+           WHERE id = $1`,
+          [dto.lead_id, JSON.stringify(dto.criteria), ctx.userId],
+        );
+        updated.push('criteria');
+      }
+
+      if (updated.length > 0) {
+        await this.writeEvent(c, ctx, 'lead', dto.lead_id, 'lead.profile_extracted', { updated });
+      }
+      return { lead_id: dto.lead_id, updated };
+    });
+  }
+
+  /**
    * n8n'in RAG akışı (communications geçmişi + knowledge_chunks) skoru
    * hesapladıktan sonra buraya yazar. lead_scores'a append-only satır +
    * leads.score önbelleği aynı transaction'da güncellenir.
@@ -163,11 +250,27 @@ export class AgentService {
    * 24 saatte skorlanmamış lead'ler (gereksiz yere hepsini her turda
    * yeniden skorlamamak için basit bir eşik).
    */
-  async leadsNeedingScore(ctx: RequestContext): Promise<Array<{ id: string; contactName: string }>> {
+  async leadsNeedingScore(ctx: RequestContext): Promise<Array<{
+    id: string; contactName: string;
+    budgetMin: number | null; budgetMax: number | null; currency: string | null;
+    hasEmail: boolean; hasRealPhone: boolean;
+    criteria: Record<string, unknown> | null;
+  }>> {
     return this.db.withContext(ctx, async (c) => {
-      const { rows } = await c.query<{ id: string; contact_name: string }>(
+      const { rows } = await c.query<{
+        id: string; contact_name: string;
+        budget_min: string | null; budget_max: string | null; currency: string | null;
+        has_email: boolean; has_real_phone: boolean;
+        criteria: Record<string, unknown> | null;
+      }>(
         `SELECT DISTINCT l.id,
-                trim(ct.first_name || ' ' || COALESCE(ct.last_name, '')) AS contact_name
+                trim(ct.first_name || ' ' || COALESCE(ct.last_name, '')) AS contact_name,
+                l.budget_min::text, l.budget_max::text, l.currency,
+                (ct.email IS NOT NULL) AS has_email,
+                -- Telegram chat-id telefonu whatsapp kolonuyla birebir aynıdır;
+                -- gerçek telefon extraction'la yazılınca ikisi ayrışır.
+                (ct.phone IS NOT NULL AND (ct.whatsapp IS NULL OR ct.phone <> ct.whatsapp)) AS has_real_phone,
+                l.metadata->'criteria' AS criteria
            FROM leads l
            JOIN contacts ct ON ct.id = l.contact_id
            JOIN communications cm ON cm.lead_id = l.id
@@ -180,7 +283,16 @@ export class AgentService {
           ORDER BY l.id LIMIT 100`,
         [ctx.tenantId],
       );
-      return rows.map((r) => ({ id: r.id, contactName: r.contact_name }));
+      return rows.map((r) => ({
+        id: r.id,
+        contactName: r.contact_name,
+        budgetMin: r.budget_min !== null ? Number(r.budget_min) : null,
+        budgetMax: r.budget_max !== null ? Number(r.budget_max) : null,
+        currency: r.currency,
+        hasEmail: r.has_email,
+        hasRealPhone: r.has_real_phone,
+        criteria: r.criteria,
+      }));
     });
   }
 
