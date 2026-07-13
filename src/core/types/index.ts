@@ -240,7 +240,7 @@ export interface VaultDocumentDTO {
   id: string;
   name: string;
   folder: 'Client KYC' | 'Contracts' | 'Marketing' | 'Developer Agreements' | 'Root';
-  type: 'pdf' | 'image' | 'excel' | 'word';
+  type: 'pdf' | 'image' | 'excel' | 'word' | 'other';
   sizeMB: number;
   uploadedAt: string;
   uploadedBy: string;

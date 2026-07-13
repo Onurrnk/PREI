@@ -237,6 +237,43 @@ export const handlers = [
     return HttpResponse.json<VaultDocumentDTO[]>(mockVaultDocuments);
   }),
 
+  // Vault yazma uçları — mock modda oturum-içi kalıcı (module-level dizi).
+  http.post('/api/documents', async ({ request }) => {
+    const form = await request.formData();
+    const file = form.get('file') as File | null;
+    const folder = (form.get('folder') as string | null) ?? 'Root';
+    if (!file) return HttpResponse.json({ message: 'Dosya boş.' }, { status: 400 });
+    const doc: VaultDocumentDTO = {
+      id: crypto.randomUUID(),
+      name: file.name,
+      folder: folder as VaultDocumentDTO['folder'],
+      type: file.type === 'application/pdf' ? 'pdf'
+        : file.type.startsWith('image/') ? 'image'
+        : file.type.includes('sheet') || file.type.includes('excel') ? 'excel'
+        : file.type.includes('word') ? 'word' : 'other',
+      sizeMB: Math.round((file.size / (1024 * 1024)) * 100) / 100,
+      uploadedAt: new Date().toISOString().slice(0, 10),
+      uploadedBy: 'Onur Nazım Karataş',
+    };
+    mockVaultDocuments.unshift(doc);
+    return HttpResponse.json<VaultDocumentDTO>(doc, { status: 201 });
+  }),
+
+  http.get('/api/documents/:id/download', ({ params }) => {
+    const doc = mockVaultDocuments.find(d => d.id === params.id);
+    if (!doc) return new HttpResponse(null, { status: 404 });
+    // Mock modda gerçek Storage yok — bilgilendirici placeholder içerik döneriz.
+    const blobUrl = `data:text/plain;charset=utf-8,${encodeURIComponent(`Mock dosya: ${doc.name}`)}`;
+    return HttpResponse.json({ url: blobUrl, name: doc.name });
+  }),
+
+  http.delete('/api/documents/:id', ({ params }) => {
+    const idx = mockVaultDocuments.findIndex(d => d.id === params.id);
+    if (idx === -1) return new HttpResponse(null, { status: 404 });
+    mockVaultDocuments.splice(idx, 1);
+    return HttpResponse.json({ deleted: true });
+  }),
+
   http.get('/api/proposals', () => {
     return HttpResponse.json<ProposalDTO[]>(mockProposals);
   }),

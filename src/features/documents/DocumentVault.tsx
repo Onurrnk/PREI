@@ -8,7 +8,7 @@ import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { Modal } from '../../core/components/Modal/Modal';
 import { UploadZone } from '../../core/components/Form/UploadZone';
-import { Folder, FileText, Image as ImageIcon, FileXls, CloudArrowUp, MagnifyingGlass, DotsThreeVertical, DownloadSimple, ShareNetwork, FolderOpen } from '@phosphor-icons/react';
+import { Folder, FileText, Image as ImageIcon, FileXls, CloudArrowUp, MagnifyingGlass, DotsThreeVertical, DownloadSimple, Trash, FolderOpen } from '@phosphor-icons/react';
 import styles from './DocumentVault.module.css';
 
 const FOLDERS = ['Root', 'Client KYC', 'Contracts', 'Marketing', 'Developer Agreements'];
@@ -18,15 +18,18 @@ export interface DocumentVaultProps {
 }
 
 export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
-  const { data, loading } = useFetch<VaultDocumentDTO[]>(() => documentsApi.list(), [clientId]);
+  const { data, loading, refetch } = useFetch<VaultDocumentDTO[]>(() => documentsApi.list(), [clientId]);
   const documents = clientId
     ? (data ?? []).filter(d => d.relatedId === clientId || d.folder === 'Client KYC')
     : (data ?? []);
   const [currentFolder, setCurrentFolder] = useState<string>('Root');
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<VaultDocumentDTO | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   // Hook'lar her render'da aynı sırada çağrılmalı; koşullu return'lerden önce durur.
   const toast = useToast();
 
@@ -49,16 +52,53 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
   };
 
   const handleUploadClick = () => {
+    setPendingFiles([]);
     setShowUploadModal(true);
   };
 
-  const handleSimulateUpload = () => {
+  const handleUpload = async () => {
+    if (pendingFiles.length === 0) {
+      toast.error('Önce dosya seçin.');
+      return;
+    }
     setIsUploading(true);
-    setTimeout(() => {
-      setIsUploading(false);
+    try {
+      for (const file of pendingFiles) {
+        await documentsApi.upload(file, currentFolder);
+      }
+      toast.success(`${pendingFiles.length} dosya ${currentFolder === 'Root' ? 'Root' : currentFolder} klasörüne yüklendi`);
       setShowUploadModal(false);
-      toast.success(`Dosyalar ${currentFolder} klasörüne yüklendi`);
-    }, 1500);
+      setPendingFiles([]);
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Yükleme başarısız.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDownload = async (doc: VaultDocumentDTO) => {
+    try {
+      const { url } = await documentsApi.downloadUrl(doc.id);
+      window.open(url, '_blank', 'noopener');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'İndirme bağlantısı alınamadı.');
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await documentsApi.remove(deleteTarget.id);
+      toast.success('Dosya silindi.');
+      setDeleteTarget(null);
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Silme başarısız.');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -112,10 +152,15 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
             <CardBody>
               <div className={styles.storageHeader}>
                 <strong>Storage Usage</strong>
-                <span>45GB / 100GB</span>
-              </div>
-              <div className={styles.progressBar}>
-                <div className={styles.progressFill} style={{ width: '45%' }}></div>
+                {/* Gerçek toplam — vault'taki dosyaların boyutundan; sahte kota yok */}
+                <span>
+                  {(() => {
+                    const totalMB = documents.reduce((s, d) => s + d.sizeMB, 0);
+                    return totalMB >= 1024
+                      ? `${(totalMB / 1024).toFixed(1)} GB`
+                      : `${totalMB.toFixed(1)} MB`;
+                  })()} · {documents.length} dosya
+                </span>
               </div>
             </CardBody>
           </Card>
@@ -147,8 +192,12 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
                     <p className={styles.fileMeta}>{doc.sizeMB} MB • {doc.uploadedAt}</p>
                   </div>
                   <div className={styles.fileCardFooter}>
-                    <button className={styles.actionBtn} title="Download"><DownloadSimple size={14} /></button>
-                    <button className={styles.actionBtn} title="Share Link"><ShareNetwork size={14} /></button>
+                    <button className={styles.actionBtn} title="Download" onClick={() => handleDownload(doc)}>
+                      <DownloadSimple size={14} />
+                    </button>
+                    <button className={styles.actionBtn} title="Delete" onClick={() => setDeleteTarget(doc)}>
+                      <Trash size={14} />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -157,15 +206,15 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
         </div>
       </div>
 
-      <Modal 
-        isOpen={showUploadModal} 
+      <Modal
+        isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
         title={`Upload to ${currentFolder}`}
         footer={
           <>
-            <Button variant="outline" onClick={() => setShowUploadModal(false)}>Cancel</Button>
-            <Button variant="primary" onClick={handleSimulateUpload} disabled={isUploading}>
-              {isUploading ? 'Uploading…' : 'Upload Files'}
+            <Button variant="outline" onClick={() => setShowUploadModal(false)} disabled={isUploading}>Cancel</Button>
+            <Button variant="primary" onClick={handleUpload} disabled={isUploading || pendingFiles.length === 0}>
+              {isUploading ? 'Uploading…' : `Upload ${pendingFiles.length > 0 ? `(${pendingFiles.length}) ` : ''}Files`}
             </Button>
           </>
         }
@@ -175,7 +224,29 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
           accept=".pdf,.doc,.docx,.xls,.xlsx,image/jpeg,image/png"
           prompt="Drag and drop your files here"
           hint="PDF, DOCX, XLSX, PNG, JPG (Max 50MB per file)"
+          multiple
+          onFilesChange={setPendingFiles}
         />
+      </Modal>
+
+      <Modal
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title="Dosyayı Sil"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>Vazgeç</Button>
+            <Button variant="primary" onClick={handleConfirmDelete} disabled={isDeleting}>
+              {isDeleting ? 'Siliniyor…' : 'Sil'}
+            </Button>
+          </>
+        }
+      >
+        <p style={{ color: 'var(--text-secondary)', lineHeight: 1.55 }}>
+          <strong style={{ color: 'var(--text-primary)' }}>{deleteTarget?.name}</strong> kalıcı olarak
+          silinecek — hem kasadan hem depolamadan. Bu işlem geri alınamaz.
+        </p>
       </Modal>
     </div>
   );

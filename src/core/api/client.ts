@@ -58,9 +58,11 @@ async function request<T>(
   options: RequestOptions = {},
 ): Promise<T> {
   const token = tokenStore.get();
+  // FormData → Content-Type'ı tarayıcı koyar (multipart boundary); stringify edilmez.
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
   const headers: Record<string, string> = {
     Accept: 'application/json',
-    ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+    ...(body !== undefined && !isForm ? { 'Content-Type': 'application/json' } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
@@ -70,7 +72,7 @@ async function request<T>(
     response = await fetch(buildUrl(path, options.params), {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: isForm ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined,
       signal: options.signal,
     });
   } catch (err) {
