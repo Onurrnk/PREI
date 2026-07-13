@@ -3,17 +3,24 @@
 // atomik yazım (OV-4). Tek transaction; B-8 idempotency: external_message_id
 // tekrarında sessizce no-op. Reklam atıfı varsa lead_attributions'a yazar (K-5).
 // =====================================================================
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { DatabaseService } from '../../database/database.service';
 import type { RequestContext } from '../../common/request-context';
 import type { WhatsAppEventDto } from './dto/whatsapp-event.dto';
+import type { LeadScoreEventDto } from './dto/lead-score-event.dto';
 
 export interface IngestResult {
   contact_id: string;
   lead_id: string;
   session_id: string;
   deduped: boolean;
+}
+
+export interface ScoreResult {
+  lead_id: string;
+  score_id: string;
+  score: number;
 }
 
 @Injectable()
@@ -64,6 +71,40 @@ export class AgentService {
 
       await this.writeEvent(c, ctx, 'lead', leadId, 'lead.whatsapp_message', { contactId, sessionId });
       return { contact_id: contactId, lead_id: leadId, session_id: sessionId, deduped: false };
+    });
+  }
+
+  /**
+   * n8n'in RAG akışı (communications geçmişi + knowledge_chunks) skoru
+   * hesapladıktan sonra buraya yazar. lead_scores'a append-only satır +
+   * leads.score önbelleği aynı transaction'da güncellenir.
+   */
+  async scoreLead(ctx: RequestContext, dto: LeadScoreEventDto): Promise<ScoreResult> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows: lead } = await c.query<{ id: string }>(
+        `SELECT id FROM leads WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`,
+        [dto.lead_id, ctx.tenantId],
+      );
+      if (lead.length === 0) throw new NotFoundException('Lead bulunamadı');
+
+      const { rows: scored } = await c.query<{ id: string }>(
+        `INSERT INTO lead_scores (tenant_id, lead_id, score, reasoning, signals, source, created_by)
+         VALUES ($1,$2,$3,$4,$5::jsonb,'n8n_ai',$6)
+         RETURNING id`,
+        [ctx.tenantId, dto.lead_id, dto.score, dto.reasoning ?? null,
+         JSON.stringify(dto.signals ?? {}), ctx.userId],
+      );
+
+      await c.query(
+        `UPDATE leads SET score = $2, updated_by = $3 WHERE id = $1`,
+        [dto.lead_id, dto.score, ctx.userId],
+      );
+
+      await this.writeEvent(c, ctx, 'lead', dto.lead_id, 'lead.scored', {
+        score: dto.score, scoreId: scored[0].id, source: 'n8n_ai',
+      });
+
+      return { lead_id: dto.lead_id, score_id: scored[0].id, score: dto.score };
     });
   }
 
