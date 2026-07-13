@@ -35,6 +35,23 @@ export interface LeadJoinedRow extends LeadRow {
   company: string | null;
 }
 
+export interface CommunicationRow {
+  id: string;
+  channel: string;
+  direction: string;
+  subject: string | null;
+  body: string | null;
+  sent_at: string | null;
+  handled_by_name: string | null;
+}
+
+// communications SELECT gövdesi — işleyen danışman adı users'tan.
+const COMM_SELECT = `
+  SELECT cm.id, cm.channel, cm.direction, cm.subject, cm.body, cm.sent_at,
+         u.full_name AS handled_by_name
+    FROM communications cm
+    LEFT JOIN users u ON u.id = cm.handled_by`;
+
 // leads + contact (ad) + organization (şirket) — presentation join'i.
 // RLS bağlamında çalışır; contacts/organizations aynı tenant politikasıyla korunur.
 const JOINED_SELECT = `
@@ -69,6 +86,18 @@ export class LeadsRepository {
         [id],
       );
       return rows[0] ?? null;
+    });
+  }
+
+  async listCommunications(ctx: RequestContext, leadId: string): Promise<CommunicationRow[]> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<CommunicationRow>(
+        `${COMM_SELECT}
+          WHERE cm.lead_id = $1
+          ORDER BY cm.sent_at DESC NULLS LAST, cm.created_at DESC LIMIT 200`,
+        [leadId],
+      );
+      return rows;
     });
   }
 

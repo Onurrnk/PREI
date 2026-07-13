@@ -34,6 +34,11 @@ export class LeadsController {
     return this.leads.findOne(ctx, id);
   }
 
+  @Get(':id/communications')
+  listCommunications(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.leads.listCommunications(ctx, id);
+  }
+
   @Post()
   create(@Ctx() ctx: RequestContext, @Body() dto: CreateLeadDto) {
     return this.leads.create(ctx, dto);

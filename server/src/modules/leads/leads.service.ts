@@ -3,6 +3,7 @@ import { LeadsRepository } from './leads.repository';
 import type { RequestContext } from '../../common/request-context';
 import type { CreateLeadDto, UpdateLeadDto } from './dto/lead.dto';
 import { toLeadResponse, type LeadResponse } from './dto/lead-response.dto';
+import { toCommunicationResponse, type LeadCommunicationResponse } from './dto/lead-communication.dto';
 
 @Injectable()
 export class LeadsService {
@@ -17,6 +18,11 @@ export class LeadsService {
     const lead = await this.repo.findById(ctx, id);
     if (!lead) throw new NotFoundException();
     return toLeadResponse(lead);
+  }
+
+  async listCommunications(ctx: RequestContext, id: string): Promise<LeadCommunicationResponse[]> {
+    const rows = await this.repo.listCommunications(ctx, id);
+    return rows.map(toCommunicationResponse);
   }
 
   async create(ctx: RequestContext, dto: CreateLeadDto): Promise<LeadResponse> {
