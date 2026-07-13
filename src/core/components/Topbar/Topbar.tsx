@@ -1,8 +1,9 @@
 import React from 'react';
-import { MagnifyingGlass, CalendarBlank, Moon, Sun, Globe, List } from '@phosphor-icons/react';
+import { CalendarBlank, Moon, Sun, Globe, List } from '@phosphor-icons/react';
 import { useTheme } from '../../theme/ThemeContext';
 import { useAuth } from '../../auth/AuthContext';
 import { NotificationCenter } from '../Notifications/NotificationCenter';
+import { GlobalSearch } from '../Search/GlobalSearch';
 import styles from './Topbar.module.css';
 
 interface TopbarProps {
@@ -21,15 +22,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuClick }) => {
       <button className={styles.menuButton} onClick={onMenuClick} aria-label="Menüyü aç">
         <List size={22} />
       </button>
-      <div className={styles.searchContainer}>
-        <MagnifyingGlass className={styles.searchIcon} size={20} />
-        <input 
-          type="text" 
-          placeholder="Global Search (Leads, Clients, Projects...)" 
-          className={styles.searchInput}
-        />
-        <div className={styles.searchShortcut}>Ctrl+K</div>
-      </div>
+      <GlobalSearch />
 
       <div className={styles.actions}>
         <button className={styles.actionButton} title="Calendar">
