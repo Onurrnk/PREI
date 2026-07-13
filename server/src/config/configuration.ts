@@ -10,6 +10,10 @@ export interface AppConfig {
     // NOBYPASSRLS bir role (ör. prei_app) işaret etmeli — service_role/postgres
     // DEĞİL. Servis katmanı ayrıca tenant_id ile scope'lar (belt & suspenders).
     url: string;
+    // Yalnız auth bootstrap (DatabaseService.raw()) için — tenant henüz
+    // bilinmediğinden RLS'i atlayan AMA yalnız users/user_roles/roles'a
+    // GRANT'lı dar bir role (prei_bootstrap, 002j) işaret etmeli.
+    bootstrapUrl: string;
     ssl: boolean;
   };
   supabase: {
@@ -38,6 +42,7 @@ export default (): AppConfig => ({
   frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:5173',
   database: {
     url: process.env.DATABASE_URL ?? '',
+    bootstrapUrl: process.env.DATABASE_BOOTSTRAP_URL ?? process.env.DATABASE_URL ?? '',
     ssl: (process.env.DATABASE_SSL ?? 'true') !== 'false',
   },
   supabase: {

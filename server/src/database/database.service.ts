@@ -15,6 +15,10 @@ import type { RequestContext } from '../common/request-context';
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(DatabaseService.name);
   private pool!: Pool;
+  // raw() için ayrı havuz — prei_app (NOBYPASSRLS) users/user_roles/roles'u
+  // GUC'siz okuyamaz (tenant henüz bilinmiyor); prei_bootstrap (002j) yalnız
+  // bu üç tabloyu okuyabilen dar bir BYPASSRLS rolü.
+  private bootstrapPool!: Pool;
 
   constructor(private readonly config: ConfigService<AppConfig, true>) {}
 
@@ -23,25 +27,35 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     if (!db.url) {
       this.logger.warn('DATABASE_URL boş — DB çağrıları başarısız olacak. .env ayarla.');
     }
+    const sslOpt = db.ssl ? { rejectUnauthorized: false } : undefined;
     this.pool = new Pool({
       connectionString: db.url,
-      ssl: db.ssl ? { rejectUnauthorized: false } : undefined,
+      ssl: sslOpt,
       max: 10,
       idleTimeoutMillis: 30_000,
     });
     this.pool.on('error', (err) => this.logger.error('pg pool hatası', err.stack));
+
+    this.bootstrapPool = new Pool({
+      connectionString: db.bootstrapUrl,
+      ssl: sslOpt,
+      max: 5,
+      idleTimeoutMillis: 30_000,
+    });
+    this.bootstrapPool.on('error', (err) => this.logger.error('pg bootstrap pool hatası', err.stack));
   }
 
   async onModuleDestroy(): Promise<void> {
     await this.pool?.end();
+    await this.bootstrapPool?.end();
   }
 
   /**
    * Bağlamsız (RLS-bypass gerektiren) sistem sorgusu — yalnız auth/bootstrap
-   * gibi tenant öncesi işler için. GUC set edilmez.
+   * gibi tenant öncesi işler için (prei_bootstrap üzerinden, GUC set edilmez).
    */
   async raw<T extends QueryResultRow>(text: string, params?: unknown[]): Promise<T[]> {
-    const res = await this.pool.query<T>(text, params as never[]);
+    const res = await this.bootstrapPool.query<T>(text, params as never[]);
     return res.rows;
   }
 
