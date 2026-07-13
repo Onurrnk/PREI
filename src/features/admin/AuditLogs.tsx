@@ -211,7 +211,7 @@ export const AuditLogs: React.FC = () => {
               <div className={styles.summaryGrid}>
                 <div className={styles.summaryKpiCard}>
                   <span className={styles.summaryKpiLabel}>Sales Volume</span>
-                  <span className={styles.summaryKpiValue} style={{color: 'var(--color-primary-blue)'}}>{selectedUser.kpis.salesVolume}</span>
+                  <span className={styles.summaryKpiValue} style={{color: 'var(--data-info)'}}>{selectedUser.kpis.salesVolume}</span>
                 </div>
                 <div className={styles.summaryKpiCard}>
                   <span className={styles.summaryKpiLabel}>Commission Earned</span>

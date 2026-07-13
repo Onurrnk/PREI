@@ -47,7 +47,7 @@
 }
 
 .statusBadge.draft { background-color: rgba(148, 163, 184, 0.1); color: var(--text-secondary); }
-.statusBadge.sent { background-color: rgba(59, 130, 246, 0.1); color: var(--color-primary-blue); }
+.statusBadge.sent { background-color: color-mix(in srgb, var(--data-info) 12%, transparent); color: var(--data-info); }
 .statusBadge.viewed { background-color: rgba(155, 91, 179, 0.1); color: var(--color-primary-purple); }
 .statusBadge.accepted { background-color: rgba(46, 139, 87, 0.1); color: var(--color-success); }
 .statusBadge.rejected { background-color: rgba(239, 68, 68, 0.1); color: var(--color-danger); }

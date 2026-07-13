@@ -67,7 +67,7 @@
   align-items: center;
   justify-content: center;
   background-color: var(--bg-app);
-  color: var(--color-primary-blue);
+  color: var(--data-info);
   border: 1px solid var(--border-color);
 }
 
@@ -179,7 +179,7 @@
 }
 
 .resourceText {
-  color: var(--color-primary-blue);
+  color: var(--data-info);
   font-weight: 500;
 }
 
@@ -207,7 +207,7 @@
   border: none;
   padding: 0;
   font-weight: 600;
-  color: var(--color-primary-blue);
+  color: var(--data-info);
   cursor: pointer;
   font-size: inherit;
   font-family: inherit;
@@ -377,8 +377,8 @@
 .pipeHot { border-top: 3px solid var(--color-danger); }
 .pipeHot .pipelineValue { color: var(--color-danger); }
 
-.pipeActive { border-top: 3px solid var(--color-primary-blue); }
-.pipeActive .pipelineValue { color: var(--color-primary-blue); }
+.pipeActive { border-top: 3px solid var(--data-info); }
+.pipeActive .pipelineValue { color: var(--data-info); }
 
 .pipeNegotiating { border-top: 3px solid var(--color-primary-purple); }
 .pipeNegotiating .pipelineValue { color: var(--color-primary-purple); }

@@ -147,8 +147,8 @@
 }
 
 .statusBadge.sent {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: var(--color-primary-blue);
+  background-color: color-mix(in srgb, var(--data-info) 12%, transparent);
+  color: var(--data-info);
 }
 
 .statusBadge.viewed {

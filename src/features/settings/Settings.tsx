@@ -37,12 +37,10 @@ export const Settings: React.FC = () => {
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px' }}>
                 <div style={{ position: 'relative' }}>
-                  <img 
-                    src="https://ui-avatars.com/api/?name=Jane+Agent&background=60a5fa&color=fff&size=100" 
-                    alt="User Avatar" 
-                    style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-color)' }}
-                  />
-                  <div style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: 'var(--color-primary-blue)', color: 'white', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid var(--bg-app)' }}>
+                  <div style={{ width: '80px', height: '80px', borderRadius: '50%', border: '2px solid var(--border-color)', backgroundColor: 'var(--brand-primary-soft)', color: 'var(--brand-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 600 }}>
+                    OK
+                  </div>
+                  <div style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: 'var(--brand-primary)', color: 'var(--on-brand)', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid var(--bg-app)' }}>
                     <Plus size={16} />
                   </div>
                 </div>
@@ -63,7 +61,7 @@ export const Settings: React.FC = () => {
                 </div>
                 <div className={styles.formGroup}>
                   <label>Email Address</label>
-                  <input type="email" className={styles.textInput} defaultValue="jane@produality.com" />
+                  <input type="email" className={styles.textInput} defaultValue="onur@produality.com" />
                 </div>
                 <div className={styles.formGroup}>
                   <label>Phone Number</label>
@@ -310,7 +308,7 @@ export const Settings: React.FC = () => {
                 <div className={styles.integrationCard}>
                   <div className={styles.integrationInfo}>
                     <div className={styles.integrationIcon}>
-                      <Globe size={24} color="var(--color-primary-blue)" />
+                      <Globe size={24} color="var(--data-info)" />
                     </div>
                     <div>
                       <div className={styles.integrationName}>PropertyFinder API</div>

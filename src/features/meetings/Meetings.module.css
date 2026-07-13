@@ -179,8 +179,8 @@
 }
 
 .dayNumberToday {
-  background-color: var(--color-primary-blue);
-  color: white;
+  background-color: var(--brand-primary);
+  color: var(--on-brand);
 }
 
 .eventPill {
@@ -265,7 +265,7 @@
 }
 
 .meetingCard:hover {
-  border-color: var(--color-primary-blue-light);
+  border-color: var(--brand-primary-soft);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
@@ -273,7 +273,7 @@
 .meetingTime {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--color-primary-blue);
+  color: var(--brand-primary);
   margin-bottom: 8px;
 }
 
