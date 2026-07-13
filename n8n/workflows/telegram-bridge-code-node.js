@@ -1,3 +1,11 @@
+// =====================================================================
+// Eylul Telegram Bridge — tek Code node, native AI Agent node DEĞİL.
+// Aynı gerekçe: bu n8n sürümünde native node şemalarını görsel geri
+// bildirim olmadan tahmin etmek risk taşıyor. Adım 5 (chat completion),
+// gerçek konuşma geçmişi + RAG bağlamıyla çalışan LLM'in ürettiği cevap
+// — burası "analiz" kısmı.
+// =====================================================================
+
 const AGENT_KEY = $env.AGENT_API_KEY;
 const API_BASE = $env.PREI_API_BASE;
 const OPENAI_KEY = $env.OPENAI_API_KEY;
@@ -74,6 +82,7 @@ async function telegramSend(chatId, text) {
   }
 }
 
+// ---- 1. Telegram update'i parse et (yalnız text mesajları işlenir) ----
 const update = $input.first().json.body ?? $input.first().json;
 const message = update.message;
 
@@ -87,6 +96,7 @@ const text = message.text;
 const name = [from.first_name, from.last_name].filter(Boolean).join(' ') || from.username || 'Telegram Kullanıcısı';
 const phone = String(from.id);
 
+// ---- 2. Ingest: contact+lead+session+inbound communication (atomik) ----
 const ingestResult = await agentFetch('/api/agent/whatsapp-event', {
   method: 'POST',
   body: {
@@ -103,9 +113,11 @@ if (ingestResult.deduped) {
   return [{ json: { status: 'deduped', ...ingestResult } }];
 }
 
+// ---- 3. Konuşma geçmişini çek (LLM'e çok-turlu bağlam vermek için) ----
 const history = await agentFetch(`/api/agent/leads/${ingestResult.lead_id}/communications`);
 const recent = history.slice(0, 20).reverse();
 
+// ---- 4. RAG: bu turun mesajını embed et, PREI bilgi bankasında ara ----
 const embeddingRes = await openaiFetch('/embeddings', {
   model: 'text-embedding-3-small',
   input: text.slice(0, 8000),
@@ -121,6 +133,7 @@ const knowledgeText = knowledgeChunks.length
   ? knowledgeChunks.map((k, i) => `[${i + 1}] ${k.content.slice(0, 600)}`).join('\n\n')
   : '(İlgili bilgi bankası içeriği bulunamadı — bu konuda dürüst ol, uydurma.)';
 
+// ---- 5. GERÇEK ANALİZ: Eylül persona + RAG bağlamı + geçmişle LLM cevabı ----
 const chatMessages = [
   { role: 'system', content: `${EYLUL_SYSTEM_PROMPT}\n\nİlgili bilgi bankası içeriği (bu turun sorusuyla ilgili):\n${knowledgeText}` },
   ...recent.map((m) => ({
@@ -138,6 +151,7 @@ const chatRes = await openaiFetch('/chat/completions', {
 
 const replyText = chatRes.choices[0].message.content.trim();
 
+// ---- 6. Cevabı Telegram'a gönder + outbound olarak logla ----
 await telegramSend(chatId, replyText);
 
 await agentFetch('/api/agent/outbound-message', {

@@ -1,3 +1,11 @@
+// =====================================================================
+// PREI Lead Scoring (RAG) — tek Code node, native AI Agent node DEĞİL.
+// Neden: bu n8n sürümünde (2.29.10) native node şemalarını görsel geri
+// bildirim olmadan tahmin etmek risk taşıyor; burada AKIŞ (embedding→RAG
+// search→chat completion→yaz) tamamen açık ve kontrol altında. Gerçek
+// analiz burada oluyor — adım 4/5, gerçek OpenAI çağrıları.
+// =====================================================================
+
 const AGENT_KEY = $env.AGENT_API_KEY;
 const API_BASE = $env.PREI_API_BASE;
 const OPENAI_KEY = $env.OPENAI_API_KEY;
@@ -78,15 +86,17 @@ Yalnızca şu JSON şemasıyla yanıt ver, başka hiçbir metin ekleme:
 {"score": <0-100 tam sayı>, "reasoning": "<Türkçe, 2-4 cümle, somut gerekçe>", "signals": {"budget_clarity": <0-1 arası sayı>, "urgency": <0-1 arası sayı>, "market_match": <0-1 arası sayı>, "engagement_depth": <0-1 arası sayı>}}`;
 }
 
+// ---- 1. Skorlanmaya aday lead'leri çek (son 24s'te skorlanmamış) ----
 const results = [];
-
 const leads = await agentFetch('/api/agent/leads');
 
 for (const lead of leads) {
   try {
+    // ---- 2. Lead'in kendi görüşme geçmişi ----
     const communications = await agentFetch(`/api/agent/leads/${lead.id}/communications`);
     const conversationText = buildConversationText(lead.contactName, communications);
 
+    // ---- 3. RAG: geçmişi embed et, PREI bilgi bankasında ara ----
     const embeddingRes = await openaiFetch('/embeddings', {
       model: 'text-embedding-3-small',
       input: conversationText.slice(0, 8000),
@@ -98,6 +108,7 @@ for (const lead of leads) {
       body: { embedding, matchCount: 5 },
     });
 
+    // ---- 4. GERÇEK ANALİZ: LLM, görüşme + RAG bağlamını değerlendirir ----
     const prompt = buildScoringPrompt(lead.contactName, conversationText, knowledgeChunks);
 
     const chatRes = await openaiFetch('/chat/completions', {
@@ -113,6 +124,7 @@ for (const lead of leads) {
     const parsed = JSON.parse(chatRes.choices[0].message.content);
     const score = Math.max(0, Math.min(100, Math.round(parsed.score)));
 
+    // ---- 5. Sonucu lead_scores'a yaz (append-only, F6 deseni) ----
     const written = await agentFetch('/api/agent/lead-score', {
       method: 'POST',
       body: {
