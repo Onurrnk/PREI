@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../../core/components/Card/Card';
 import type { LeadDTO, LeadStatus, LeadInterest, LeadPriority } from '../../core/types';
 import { leadsApi, contactsApi } from '../../core/api/resources';
@@ -80,6 +81,7 @@ const EMPTY_FORM: NewLeadForm = {
 };
 
 export const LeadsPipeline: React.FC = () => {
+  const navigate = useNavigate();
   const { data, loading, error, refetch } = useFetch<LeadDTO[]>(() => leadsApi.list(), []);
   const leads = data ?? [];
 
@@ -205,10 +207,21 @@ export const LeadsPipeline: React.FC = () => {
 
                 <div className={styles.columnBody}>
                   {stageLeads.map((lead) => (
-                    <Card key={lead.id} padding="md" className={styles.leadCard}>
+                    <Card
+                      key={lead.id}
+                      padding="md"
+                      className={styles.leadCard}
+                      onClick={() => navigate(`/leads/${lead.id}`)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/leads/${lead.id}`); }}
+                    >
                       <div className={styles.leadHeader}>
                         <span className={styles.leadName}>{lead.contactName || 'İsimsiz aday'}</span>
-                        <button className={styles.moreButton}><DotsThree size={18} weight="bold" /></button>
+                        <button
+                          className={styles.moreButton}
+                          onClick={(e) => e.stopPropagation()}
+                        ><DotsThree size={18} weight="bold" /></button>
                       </div>
                       <div className={styles.leadCompany}>{lead.company ?? '—'}</div>
                       <div className={styles.leadFooter}>
@@ -239,7 +252,11 @@ export const LeadsPipeline: React.FC = () => {
             </TableHead>
             <TableBody>
               {leads.map((lead) => (
-                <TableRow key={lead.id}>
+                <TableRow
+                  key={lead.id}
+                  onClick={() => navigate(`/leads/${lead.id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
                   <TableCell style={{ fontWeight: 600 }}>{lead.contactName || 'İsimsiz aday'}</TableCell>
                   <TableCell>{lead.company ?? '—'}</TableCell>
                   <TableCell>

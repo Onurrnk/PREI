@@ -17,6 +17,7 @@ import type {
   DeveloperDTO,
   MeetingDTO,
   KPIDTO,
+  LeadCommunicationDTO,
   LeadDTO,
   LoginResponse,
   MeResponse,
@@ -81,6 +82,7 @@ export const leadsApi = {
   get: (id: string) => api.get<LeadDTO>(`/api/leads/${id}`),
   create: (input: CreateLeadInput) => api.post<LeadDTO>('/api/leads', input),
   update: (id: string, input: UpdateLeadInput) => api.patch<LeadDTO>(`/api/leads/${id}`, input),
+  communications: (id: string) => api.get<LeadCommunicationDTO[]>(`/api/leads/${id}/communications`),
 };
 
 export const clientsApi = {

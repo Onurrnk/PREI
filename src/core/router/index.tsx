@@ -2,6 +2,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import App from '../../App';
 import { Dashboard } from '../../features/dashboard/Dashboard';
 import { LeadsPipeline } from '../../features/leads/LeadsPipeline';
+import { LeadProfile } from '../../features/leads/LeadProfile';
 import { ClientsList } from '../../features/clients/ClientsList';
 import { ClientProfile } from '../../features/clients/ClientProfile';
 import { DevelopersList } from '../../features/developers/DevelopersList';
@@ -42,6 +43,10 @@ const router = createBrowserRouter([
       {
         path: 'leads',
         element: <LeadsPipeline />,
+      },
+      {
+        path: 'leads/:id',
+        element: <LeadProfile />,
       },
       {
         path: 'clients',

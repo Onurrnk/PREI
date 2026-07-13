@@ -69,6 +69,17 @@ export interface LeadDTO {
   updatedAt: string;
 }
 
+// GET /api/leads/:id/communications sözleşmesi — backend LeadCommunicationResponse ile senkron.
+export interface LeadCommunicationDTO {
+  id: string;
+  channel: 'whatsapp' | 'email' | 'phone' | 'sms';
+  direction: 'inbound' | 'outbound';
+  subject: string | null;
+  body: string | null;
+  sentAt: string | null;
+  handledBy: string | null;
+}
+
 // GET/POST /api/contacts sözleşmesi — backend ContactResponse ile senkron (OV-8).
 export interface ContactDTO {
   id: string;

@@ -3,6 +3,7 @@ import type {
   ClientNoteDTO,
   ActivityDTO,
   KPIDTO,
+  LeadCommunicationDTO,
   LeadDTO,
   ClientDTO,
   ContactDTO,
@@ -21,6 +22,39 @@ import type {
 // Re-export domain types for backward compatibility. The canonical source
 // of truth now lives in src/core/types. New code should import from there.
 export type * from '../core/types';
+
+const mkLead = (o: Partial<LeadDTO> & Pick<LeadDTO, 'id' | 'contactName' | 'status'>): LeadDTO => ({
+  contactId: o.id, company: null, priority: 'medium', interestType: 'buy',
+  budgetMin: null, budgetMax: null, currency: 'EUR', targetMarketCode: null,
+  score: null, ownerId: null, notes: null, version: 1,
+  createdAt: '2026-06-01T00:00:00Z', updatedAt: '2026-06-15T00:00:00Z', ...o,
+});
+
+// Şekil, gerçek API sözleşmesi (LeadResponse) ile birebir — mock↔API kayması
+// derleme anında yakalanır (OV-8). Çok pazarlı gerçekçi set.
+const mockLeads: LeadDTO[] = [
+  mkLead({ id: '1', contactName: 'Stefan Brandt', company: 'Nordwind Capital', status: 'new', budgetMax: 1500000, currency: 'EUR', targetMarketCode: 'ES', interestType: 'invest', score: 30 }),
+  mkLead({ id: '2', contactName: 'Sarah Ahmed', company: 'Emirates Corp', status: 'contacted', budgetMax: 3200000, currency: 'AED', targetMarketCode: 'AE', interestType: 'buy', score: 48 }),
+  mkLead({ id: '3', contactName: 'Edward Langley', company: 'InvestUK', status: 'qualified', budgetMax: 850000, currency: 'GBP', targetMarketCode: 'GB', interestType: 'buy', score: 62 }),
+  mkLead({ id: '4', contactName: 'Elena Rossi', company: 'Rossi Group', status: 'nurturing', budgetMax: 4500000, currency: 'EUR', targetMarketCode: 'ES', interestType: 'invest', score: 74 }),
+  mkLead({ id: '5', contactName: 'Ahmet Yılmaz', company: 'Yılmaz Holding', status: 'converted', budgetMax: 2100000, currency: 'TRY', targetMarketCode: 'TR', interestType: 'buy', score: 88 }),
+];
+
+// leadId → geçmiş — yalnız 2 lead'de örnek veri var (gerçek DB'de communications
+// tablosu boş; agent ingest WhatsApp API onayı bekliyor — B-5). Diğer lead'lerde
+// boş durum kasıtlı: "veri yok" ile "veri var ama gösterilmiyor" farkı net olsun.
+const mockCommunicationsByLead: Record<string, LeadCommunicationDTO[]> = {
+  '2': [
+    { id: 'c1', channel: 'whatsapp', direction: 'inbound', subject: null, body: 'Merhaba, Dubai Marina bölgesinde 3+1 daire arıyorum, bütçem 3-3.5M AED civarı.', sentAt: '2026-06-20T09:14:00Z', handledBy: null },
+    { id: 'c2', channel: 'whatsapp', direction: 'outbound', subject: null, body: 'Merhaba Sarah, birkaç seçenek hazırlıyorum. Peşinat oranı ve teslim tarihi tercihiniz var mı?', sentAt: '2026-06-20T09:22:00Z', handledBy: 'Onur Nazım Karataş' },
+    { id: 'c3', channel: 'whatsapp', direction: 'inbound', subject: null, body: 'Peşinat %30 civarı olabilir, 2027 teslim tercih ederim.', sentAt: '2026-06-20T09:30:00Z', handledBy: null },
+    { id: 'c4', channel: 'phone', direction: 'outbound', subject: 'Tanışma görüşmesi', body: '15 dakikalık ön görüşme — Emirates Corp adına kurumsal yatırım, 2. mülk. Golden Visa hedefi teyit edildi.', sentAt: '2026-06-21T13:00:00Z', handledBy: 'Onur Nazım Karataş' },
+  ],
+  '4': [
+    { id: 'c5', channel: 'email', direction: 'inbound', subject: 'İspanya yatırım fırsatları', body: 'Merhaba, Rossi Group adına Costa del Sol bölgesinde çoklu ünite yatırımı değerlendiriyoruz.', sentAt: '2026-06-18T11:00:00Z', handledBy: null },
+    { id: 'c6', channel: 'email', direction: 'outbound', subject: 'Re: İspanya yatırım fırsatları', body: 'Merhaba Elena, ekte 3 proje özeti bulunuyor. Uygun olduğunuzda görüşme ayarlayalım.', sentAt: '2026-06-18T15:40:00Z', handledBy: 'Onur Nazım Karataş' },
+  ],
+};
 
 const mockProposals: ProposalDTO[] = [
   { id: 'prop1', title: 'Beachfront Residences - 3BR Pitch', clientName: 'Oliver Hartwell', projectName: 'Beachfront Residences', status: 'Sent', totalValue: 2800000, createdAt: '2026-06-15', viewCount: 0 },
@@ -222,21 +256,17 @@ export const handlers = [
   }),
 
   http.get('/api/leads', () => {
-    // Şekil, gerçek API sözleşmesi (LeadResponse) ile birebir — mock↔API kayması
-    // derleme anında yakalanır (OV-8). Çok pazarlı gerçekçi set.
-    const mk = (o: Partial<LeadDTO> & Pick<LeadDTO, 'id' | 'contactName' | 'status'>): LeadDTO => ({
-      contactId: o.id, company: null, priority: 'medium', interestType: 'buy',
-      budgetMin: null, budgetMax: null, currency: 'EUR', targetMarketCode: null,
-      score: null, ownerId: null, notes: null, version: 1,
-      createdAt: '2026-06-01T00:00:00Z', updatedAt: '2026-06-15T00:00:00Z', ...o,
-    });
-    return HttpResponse.json<LeadDTO[]>([
-      mk({ id: '1', contactName: 'Stefan Brandt', company: 'Nordwind Capital', status: 'new', budgetMax: 1500000, currency: 'EUR', targetMarketCode: 'ES', interestType: 'invest', score: 30 }),
-      mk({ id: '2', contactName: 'Sarah Ahmed', company: 'Emirates Corp', status: 'contacted', budgetMax: 3200000, currency: 'AED', targetMarketCode: 'AE', interestType: 'buy', score: 48 }),
-      mk({ id: '3', contactName: 'Edward Langley', company: 'InvestUK', status: 'qualified', budgetMax: 850000, currency: 'GBP', targetMarketCode: 'GB', interestType: 'buy', score: 62 }),
-      mk({ id: '4', contactName: 'Elena Rossi', company: 'Rossi Group', status: 'nurturing', budgetMax: 4500000, currency: 'EUR', targetMarketCode: 'ES', interestType: 'invest', score: 74 }),
-      mk({ id: '5', contactName: 'Ahmet Yılmaz', company: 'Yılmaz Holding', status: 'converted', budgetMax: 2100000, currency: 'TRY', targetMarketCode: 'TR', interestType: 'buy', score: 88 }),
-    ]);
+    return HttpResponse.json<LeadDTO[]>(mockLeads);
+  }),
+
+  http.get('/api/leads/:id', ({ params }) => {
+    const lead = mockLeads.find((l) => l.id === params.id);
+    if (!lead) return new HttpResponse(null, { status: 404 });
+    return HttpResponse.json<LeadDTO>(lead);
+  }),
+
+  http.get('/api/leads/:id/communications', ({ params }) => {
+    return HttpResponse.json<LeadCommunicationDTO[]>(mockCommunicationsByLead[params.id as string] ?? []);
   }),
 
   // FAZ 1 create akışı — mock demoda hata vermesin diye plausible yanıt döner
