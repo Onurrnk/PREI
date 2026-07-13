@@ -14,9 +14,17 @@ export class AttributionDto {
 }
 
 export class WhatsAppEventDto {
-  // Zorunlu: gönderenin telefonu (contact dedup anahtarı — normalized_phone)
+  // Zorunlu: gönderenin telefonu (contact dedup anahtarı — normalized_phone).
+  // Telegram testinde gerçek telefon yok — n8n chat_id'yi digits-only string
+  // olarak buraya geçirir (aynı dedup mekaniği, geçici test kimliği).
   @IsString() @MaxLength(32)
   phone!: string;
+
+  // whatsapp (varsayılan) | telegram — comm_channel enum (002h). Eylül'ün
+  // konuşma akışını WhatsApp/Meta onayı gelene kadar Telegram'da test etmek
+  // için eklendi; ingest'in geri kalanı (contact/lead/session/dedup) ortak.
+  @IsOptional() @IsIn(['whatsapp', 'telegram'])
+  channel?: 'whatsapp' | 'telegram';
 
   @IsOptional() @IsString() @MaxLength(120)
   name?: string;

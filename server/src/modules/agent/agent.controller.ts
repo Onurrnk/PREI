@@ -2,13 +2,15 @@
 // PREI | AgentController — POST /api/agent/whatsapp-event (OV-4)
 // AgentKeyGuard: yalnız X-Agent-Key ile; bağlam service_agent. n8n çağırır.
 // =====================================================================
-import { Body, Controller, Post, UseGuards, HttpCode } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards, HttpCode } from '@nestjs/common';
 import { AgentKeyGuard } from '../../auth/agent-key.guard';
 import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { AgentService } from './agent.service';
 import { WhatsAppEventDto } from './dto/whatsapp-event.dto';
 import { LeadScoreEventDto } from './dto/lead-score-event.dto';
+import { KnowledgeSearchDto } from './dto/knowledge-search.dto';
+import { OutboundMessageDto } from './dto/outbound-message.dto';
 
 @Controller('agent')
 @UseGuards(AgentKeyGuard)
@@ -25,5 +27,27 @@ export class AgentController {
   @HttpCode(200)
   scoreLead(@Ctx() ctx: RequestContext, @Body() dto: LeadScoreEventDto) {
     return this.agent.scoreLead(ctx, dto);
+  }
+
+  @Get('leads')
+  leadsNeedingScore(@Ctx() ctx: RequestContext) {
+    return this.agent.leadsNeedingScore(ctx);
+  }
+
+  @Get('leads/:id/communications')
+  leadCommunications(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.agent.leadCommunications(ctx, id);
+  }
+
+  @Post('knowledge/search')
+  @HttpCode(200)
+  searchKnowledge(@Ctx() ctx: RequestContext, @Body() dto: KnowledgeSearchDto) {
+    return this.agent.searchKnowledge(ctx, dto);
+  }
+
+  @Post('outbound-message')
+  @HttpCode(200)
+  recordOutboundMessage(@Ctx() ctx: RequestContext, @Body() dto: OutboundMessageDto) {
+    return this.agent.recordOutboundMessage(ctx, dto);
   }
 }
