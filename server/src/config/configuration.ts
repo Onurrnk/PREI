@@ -19,6 +19,9 @@ export interface AppConfig {
     anonKey: string;
     // Legacy HS256 shared secret (opsiyonel; verilirse hızlı lokal doğrulama).
     jwtSecret: string;
+    // service_role key — YALNIZ sunucu tarafı Storage yönetimi için (Vault).
+    // İstemciye asla sızmaz; n8n'e asla verilmez (OV-4).
+    serviceRoleKey: string;
     // Tek tenant operasyonu: varsayılan tenant slug (Onur onayına kadar).
     defaultTenantSlug: string;
   };
@@ -41,6 +44,7 @@ export default (): AppConfig => ({
     url: process.env.SUPABASE_URL ?? 'https://kkcvfvbjmohlplepadip.supabase.co',
     anonKey: process.env.SUPABASE_ANON_KEY ?? '',
     jwtSecret: process.env.SUPABASE_JWT_SECRET ?? '',
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
     defaultTenantSlug: process.env.DEFAULT_TENANT_SLUG ?? 'produality',
   },
   google: {

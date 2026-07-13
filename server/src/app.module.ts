@@ -18,6 +18,7 @@ import { ProposalsModule } from './modules/proposals/proposals.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { MeetingsModule } from './modules/meetings/meetings.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { DocumentsModule } from './modules/documents/documents.module';
 import { UsersModule } from './modules/users/users.module';
 import { AgentModule } from './modules/agent/agent.module';
 import { HealthModule } from './modules/health/health.module';
@@ -60,6 +61,7 @@ import { MeModule } from './modules/me/me.module';
     TasksModule,
     MeetingsModule,
     DashboardModule,
+    DocumentsModule,
     UsersModule,
     AgentModule,
     HealthModule,
