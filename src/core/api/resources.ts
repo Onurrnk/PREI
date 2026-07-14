@@ -27,6 +27,8 @@ import type {
   ProjectDTO,
   ProposalDTO,
   TaskDTO,
+  TeamMemberDTO,
+  UserDetailDTO,
   UpdateMeInput,
   UserDTO,
   VaultDocumentDTO,
@@ -160,4 +162,9 @@ export const dashboardApi = {
 export const financialsApi = {
   summary: (timeframe: FinancialsTimeframe) =>
     api.get<FinancialsSummaryDTO>('/api/financials/summary', { params: { timeframe } }),
+};
+
+export const adminApi = {
+  team: () => api.get<TeamMemberDTO[]>('/api/admin/team'),
+  userDetail: (id: string) => api.get<UserDetailDTO>(`/api/admin/team/${id}`),
 };

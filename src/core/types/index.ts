@@ -53,6 +53,36 @@ export interface FinancialsSummaryDTO {
   purposeSplit: FinancialsSplitItemDTO[];
 }
 
+// GET /api/admin/team, /api/admin/team/:id — ekip performans özeti (gerçek veri).
+export interface TeamMemberDTO {
+  id: string;
+  name: string;
+  role: string;
+  isActive: boolean;
+  lastActiveAt: string | null;
+  clientsRegistered: number;
+}
+export interface PipelineBucketDTO { key: string; count: number }
+export interface PipelineClientDTO {
+  id: string; bucket: string; name: string; interest: string | null;
+  date: string; reason: string | null;
+}
+export interface TransactionRowDTO {
+  id: string; property: string; client: string; amount: number; currency: string;
+  status: 'open' | 'won' | 'lost';
+}
+export interface TimelineEntryDTO { id: string; occurredAt: string; label: string; entityType: string }
+export interface UserDetailDTO {
+  id: string; name: string; role: string; isActive: boolean;
+  kpis: {
+    salesVolumeEur: number; commissionEur: number; activeDeals: number; conversionRatePct: number;
+  };
+  pipeline: PipelineBucketDTO[];
+  pipelineClients: PipelineClientDTO[];
+  transactions: TransactionRowDTO[];
+  timeline: TimelineEntryDTO[];
+}
+
 export interface KPIDTO {
   id: string;
   title: string;

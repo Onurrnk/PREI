@@ -1,117 +1,14 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
 import { ShieldWarning, MagnifyingGlass, UsersThree, X, Pulse, CurrencyDollar } from '@phosphor-icons/react';
 import { Button } from '../../core/components/Button/Button';
+import { useFetch } from '../../core/hooks/useFetch';
+import { adminApi } from '../../core/api/resources';
+import { fmtEUR } from '../../core/charts';
+import type { TeamMemberDTO, UserDetailDTO } from '../../core/types';
 import styles from './AuditLogs.module.css';
-
-// --- MOCK DATA FOR ACCOUNT SUMMARIES ---
-const mockAdminUsers = [
-  {
-    id: 'U-101',
-    name: 'Sarah Connor',
-    role: 'Senior Consultant',
-    status: 'Active',
-    lastActive: '2 mins ago',
-    clientsRegistered: 42,
-    kpis: {
-      salesVolume: '$12,450,000',
-      commission: '$373,500',
-      activeDeals: 8,
-      conversionRate: '18%'
-    },
-    pipeline: {
-      hotLeads: 2,
-      activeLeads: 1,
-      negotiating: 1,
-      frozen: 2,
-      lost: 1
-    },
-    pipelineClients: [
-      { id: 'pc1', status: 'hotLeads', name: 'Oliver Hartwell', property: 'Marina Vista', date: 'Today', reason: 'Ready with cash offer.' },
-      { id: 'pc2', status: 'hotLeads', name: 'Al Fayed', property: 'Downtown Views II', date: 'Yesterday', reason: 'Loved the penthouse viewing.' },
-      { id: 'pc3', status: 'activeLeads', name: 'Ayşe Demir', property: 'Emaar Beachfront', date: 'Monday', reason: 'Browsing options.' },
-      { id: 'pc4', status: 'negotiating', name: 'Hans Becker', property: 'Palm Jumeirah', date: 'Last Week', reason: 'Negotiating 5% discount.' },
-      { id: 'pc5', status: 'frozen', name: 'Faisal Al Rashid', property: 'City Walk', date: 'Jan 10', reason: 'Budget constraints, revisiting in 6 months.' },
-      { id: 'pc6', status: 'frozen', name: 'Isabella Moreno', property: 'Damac Hills', date: 'Feb 15', reason: 'Relocation delayed.' },
-      { id: 'pc7', status: 'lost', name: 'James Whitfield', property: 'JBR Penthouse', date: 'Mar 01', reason: 'Bought with a competitor agency.' }
-    ],
-    transactions: [
-      { id: 'tx1', property: 'Marina Vista 2BR', client: 'Oliver Hartwell', amount: '$1,200,000', status: 'Closed Won' },
-      { id: 'tx2', property: 'Emaar Beachfront', client: 'Ayşe Demir', amount: '$3,500,000', status: 'Pending' },
-      { id: 'tx3', property: 'Downtown Views II', client: 'Mr. Al Fayed', amount: '$850,000', status: 'Closed Won' }
-    ],
-    timeline: [
-      { id: 'tl1', time: 'Today, 10:45 AM', text: 'Registered a new client: Mr. Al Fayed.' },
-      { id: 'tl2', time: 'Yesterday, 14:20 PM', text: 'Downloaded Emaar Agency Agreement PDF.' },
-      { id: 'tl3', time: 'Monday, 09:00 AM', text: 'Closed deal for Marina Vista 2BR ($1.2M).' }
-    ]
-  },
-  {
-    id: 'U-102',
-    name: 'Michael Scott',
-    role: 'Sales Manager',
-    status: 'Active',
-    lastActive: '1 hour ago',
-    clientsRegistered: 120,
-    kpis: {
-      salesVolume: '$4,100,000',
-      commission: '$123,000',
-      activeDeals: 3,
-      conversionRate: '12%'
-    },
-    pipeline: {
-      hotLeads: 1,
-      activeLeads: 1,
-      negotiating: 0,
-      frozen: 1,
-      lost: 0
-    },
-    pipelineClients: [
-      { id: 'pc8', status: 'hotLeads', name: 'Dunder Mifflin', property: 'Office Space', date: 'Today', reason: 'Needs expansion immediately.' },
-      { id: 'pc9', status: 'activeLeads', name: 'Jim Halpert', property: 'Townhouse', date: 'Yesterday', reason: 'Checking family homes.' },
-      { id: 'pc10', status: 'frozen', name: 'Pam Beesly', property: 'Art Studio', date: 'Last Month', reason: 'Waiting for loan approval.' }
-    ],
-    transactions: [
-      { id: 'tx4', property: 'Palm Jumeirah Villa', client: 'Dunder Mifflin', amount: '$4,100,000', status: 'Closed Won' }
-    ],
-    timeline: [
-      { id: 'tl4', time: 'Yesterday, 16:00 PM', text: 'Exported Leads CSV for Q2 Pipeline.' },
-      { id: 'tl5', time: 'Last Week', text: 'Sent Weekly Performance Report to Team.' }
-    ]
-  },
-  {
-    id: 'U-103',
-    name: 'Leyla Kaya',
-    role: 'Junior Agent',
-    status: 'Inactive',
-    lastActive: '3 days ago',
-    clientsRegistered: 8,
-    kpis: {
-      salesVolume: '$0',
-      commission: '$0',
-      activeDeals: 1,
-      conversionRate: '0%'
-    },
-    pipeline: {
-      hotLeads: 0,
-      activeLeads: 0,
-      negotiating: 0,
-      frozen: 0,
-      lost: 1
-    },
-    pipelineClients: [
-      { id: 'pc11', status: 'lost', name: 'Thor Odinson', property: 'Asgard Villa', date: 'Dec 01, 2025', reason: 'Moved out of country.' }
-    ],
-    transactions: [
-      { id: 'tx5', property: 'City Walk 1BR', client: 'Thor Odinson', amount: '$600,000', status: 'Lost' }
-    ],
-    timeline: [
-      { id: 'tl6', time: 'Dec 01, 2025', text: 'Registered client Thor Odinson.' }
-    ]
-  }
-];
 
 const PIPELINE_LABEL_KEY: Record<string, string> = {
   hotLeads: 'admin.pipeline.hotLeads',
@@ -121,22 +18,50 @@ const PIPELINE_LABEL_KEY: Record<string, string> = {
   lost: 'admin.pipeline.lost',
 };
 
+const PIPELINE_CARD_CLASS: Record<string, string> = {
+  hotLeads: 'pipeHot',
+  activeLeads: 'pipeActive',
+  negotiating: 'pipeNegotiating',
+  frozen: 'pipeFrozen',
+  lost: 'pipeLost',
+};
+
 const TRANSACTION_STATUS_KEY: Record<string, string> = {
-  'Closed Won': 'admin.transactionStatus.closedWon',
-  Pending: 'admin.transactionStatus.pending',
-  Lost: 'admin.transactionStatus.lost',
+  won: 'admin.transactionStatus.closedWon',
+  open: 'admin.transactionStatus.pending',
+  lost: 'admin.transactionStatus.lost',
 };
 
 export const AuditLogs: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'tr' ? 'tr-TR' : 'en-GB';
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedUser, setSelectedUser] = useState<typeof mockAdminUsers[0] | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedPipelineCategory, setSelectedPipelineCategory] = useState<string | null>(null);
 
-  const filteredUsers = mockAdminUsers.filter(u =>
-    u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.role.toLowerCase().includes(searchQuery.toLowerCase())
+  const { data: team } = useFetch<TeamMemberDTO[]>(() => adminApi.team(), []);
+  const { data: detail } = useFetch<UserDetailDTO | null>(
+    () => (selectedUserId ? adminApi.userDetail(selectedUserId) : Promise.resolve(null)),
+    [selectedUserId],
   );
+
+  const filteredUsers = useMemo(
+    () => (team ?? []).filter((u) =>
+      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.role.toLowerCase().includes(searchQuery.toLowerCase())),
+    [team, searchQuery],
+  );
+
+  const formatDateTime = (iso: string | null) =>
+    iso ? new Intl.DateTimeFormat(dateLocale, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso)) : '—';
+
+  const formatCurrency = (amount: number, currency: string) =>
+    new Intl.NumberFormat(dateLocale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount);
+
+  const closeModal = () => {
+    setSelectedUserId(null);
+    setSelectedPipelineCategory(null);
+  };
 
   return (
     <div className={styles.container}>
@@ -181,17 +106,17 @@ export const AuditLogs: React.FC = () => {
                 {filteredUsers.map(user => (
                   <TableRow key={user.id}>
                     <TableCell>
-                      <button className={styles.nameLink} onClick={() => setSelectedUser(user)}>
+                      <button className={styles.nameLink} onClick={() => setSelectedUserId(user.id)}>
                         {user.name}
                       </button>
                     </TableCell>
                     <TableCell>{user.role}</TableCell>
                     <TableCell>
-                      <span className={user.status === 'Active' ? styles.statusSuccess : styles.statusWarning}>
-                        {user.status === 'Active' ? t('admin.status.active') : t('admin.status.inactive')}
+                      <span className={user.isActive ? styles.statusSuccess : styles.statusWarning}>
+                        {user.isActive ? t('admin.status.active') : t('admin.status.inactive')}
                       </span>
                     </TableCell>
-                    <TableCell className={styles.monoText}>{user.lastActive}</TableCell>
+                    <TableCell className={styles.monoText}>{formatDateTime(user.lastActiveAt)}</TableCell>
                     <TableCell>{user.clientsRegistered}</TableCell>
                   </TableRow>
                 ))}
@@ -202,44 +127,38 @@ export const AuditLogs: React.FC = () => {
       </Card>
 
       {/* User Account Summary Modal */}
-      {selectedUser && (
-        <div className={styles.modalOverlay} onClick={() => {
-          setSelectedUser(null);
-          setSelectedPipelineCategory(null);
-        }}>
+      {selectedUserId && detail && (
+        <div className={styles.modalOverlay} onClick={closeModal}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <div className={styles.modalTitle}>
                 <UsersThree size={24} color="var(--color-primary-purple)" />
-                {t('admin.accountSummary', { name: selectedUser.name })}
+                {t('admin.accountSummary', { name: detail.name })}
               </div>
-              <button className={styles.closeButton} onClick={() => {
-                setSelectedUser(null);
-                setSelectedPipelineCategory(null);
-              }}>
+              <button className={styles.closeButton} onClick={closeModal}>
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className={styles.modalBody}>
-              
+
               {/* KPIs Section */}
               <div className={styles.summaryGrid}>
                 <div className={styles.summaryKpiCard}>
                   <span className={styles.summaryKpiLabel}>{t('admin.kpi.salesVolume')}</span>
-                  <span className={styles.summaryKpiValue} style={{color: 'var(--data-info)'}}>{selectedUser.kpis.salesVolume}</span>
+                  <span className={styles.summaryKpiValue} style={{color: 'var(--data-info)'}}>{fmtEUR(detail.kpis.salesVolumeEur)}</span>
                 </div>
                 <div className={styles.summaryKpiCard}>
                   <span className={styles.summaryKpiLabel}>{t('admin.kpi.commission')}</span>
-                  <span className={styles.summaryKpiValue} style={{color: 'var(--color-success)'}}>{selectedUser.kpis.commission}</span>
+                  <span className={styles.summaryKpiValue} style={{color: 'var(--color-success)'}}>{fmtEUR(detail.kpis.commissionEur)}</span>
                 </div>
                 <div className={styles.summaryKpiCard}>
                   <span className={styles.summaryKpiLabel}>{t('admin.kpi.activeDeals')}</span>
-                  <span className={styles.summaryKpiValue} style={{color: 'var(--color-primary-purple)'}}>{selectedUser.kpis.activeDeals}</span>
+                  <span className={styles.summaryKpiValue} style={{color: 'var(--color-primary-purple)'}}>{detail.kpis.activeDeals}</span>
                 </div>
                 <div className={styles.summaryKpiCard}>
                   <span className={styles.summaryKpiLabel}>{t('admin.kpi.conversionRate')}</span>
-                  <span className={styles.summaryKpiValue} style={{color: 'var(--color-secondary-orange)'}}>{selectedUser.kpis.conversionRate}</span>
+                  <span className={styles.summaryKpiValue} style={{color: 'var(--color-secondary-orange)'}}>{detail.kpis.conversionRatePct.toFixed(1)}%</span>
                 </div>
               </div>
 
@@ -247,41 +166,16 @@ export const AuditLogs: React.FC = () => {
               <div>
                 <h3 className={styles.sectionTitle}><UsersThree size={20}/> {t('admin.pipelineBreakdown')}</h3>
                 <div className={styles.pipelineGrid}>
-                  <div
-                    className={`${styles.pipelineCard} ${styles.pipeHot} ${selectedPipelineCategory === 'hotLeads' ? styles.activePipelineCard : ''}`}
-                    onClick={() => setSelectedPipelineCategory(selectedPipelineCategory === 'hotLeads' ? null : 'hotLeads')}
-                  >
-                    <span className={styles.pipelineValue}>{selectedUser.pipeline.hotLeads}</span>
-                    <span className={styles.pipelineLabel}>{t('admin.pipeline.hotLeads')}</span>
-                  </div>
-                  <div
-                    className={`${styles.pipelineCard} ${styles.pipeActive} ${selectedPipelineCategory === 'activeLeads' ? styles.activePipelineCard : ''}`}
-                    onClick={() => setSelectedPipelineCategory(selectedPipelineCategory === 'activeLeads' ? null : 'activeLeads')}
-                  >
-                    <span className={styles.pipelineValue}>{selectedUser.pipeline.activeLeads}</span>
-                    <span className={styles.pipelineLabel}>{t('admin.pipeline.active')}</span>
-                  </div>
-                  <div
-                    className={`${styles.pipelineCard} ${styles.pipeNegotiating} ${selectedPipelineCategory === 'negotiating' ? styles.activePipelineCard : ''}`}
-                    onClick={() => setSelectedPipelineCategory(selectedPipelineCategory === 'negotiating' ? null : 'negotiating')}
-                  >
-                    <span className={styles.pipelineValue}>{selectedUser.pipeline.negotiating}</span>
-                    <span className={styles.pipelineLabel}>{t('admin.pipeline.negotiating')}</span>
-                  </div>
-                  <div
-                    className={`${styles.pipelineCard} ${styles.pipeFrozen} ${selectedPipelineCategory === 'frozen' ? styles.activePipelineCard : ''}`}
-                    onClick={() => setSelectedPipelineCategory(selectedPipelineCategory === 'frozen' ? null : 'frozen')}
-                  >
-                    <span className={styles.pipelineValue}>{selectedUser.pipeline.frozen}</span>
-                    <span className={styles.pipelineLabel}>{t('admin.pipeline.frozen')}</span>
-                  </div>
-                  <div
-                    className={`${styles.pipelineCard} ${styles.pipeLost} ${selectedPipelineCategory === 'lost' ? styles.activePipelineCard : ''}`}
-                    onClick={() => setSelectedPipelineCategory(selectedPipelineCategory === 'lost' ? null : 'lost')}
-                  >
-                    <span className={styles.pipelineValue}>{selectedUser.pipeline.lost}</span>
-                    <span className={styles.pipelineLabel}>{t('admin.pipeline.lost')}</span>
-                  </div>
+                  {detail.pipeline.map((bucket) => (
+                    <div
+                      key={bucket.key}
+                      className={`${styles.pipelineCard} ${styles[PIPELINE_CARD_CLASS[bucket.key]]} ${selectedPipelineCategory === bucket.key ? styles.activePipelineCard : ''}`}
+                      onClick={() => setSelectedPipelineCategory(selectedPipelineCategory === bucket.key ? null : bucket.key)}
+                    >
+                      <span className={styles.pipelineValue}>{bucket.count}</span>
+                      <span className={styles.pipelineLabel}>{t(PIPELINE_LABEL_KEY[bucket.key])}</span>
+                    </div>
+                  ))}
                 </div>
 
                 {selectedPipelineCategory && (
@@ -302,15 +196,15 @@ export const AuditLogs: React.FC = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {selectedUser.pipelineClients.filter(c => c.status === selectedPipelineCategory).map(client => (
+                        {detail.pipelineClients.filter(c => c.bucket === selectedPipelineCategory).map(client => (
                           <TableRow key={client.id}>
                             <TableCell style={{fontWeight: 600}}>{client.name}</TableCell>
-                            <TableCell>{client.property}</TableCell>
-                            <TableCell>{client.date}</TableCell>
-                            <TableCell style={{color: 'var(--text-secondary)'}}>{client.reason}</TableCell>
+                            <TableCell>{client.interest ?? '—'}</TableCell>
+                            <TableCell>{formatDateTime(client.date)}</TableCell>
+                            <TableCell style={{color: 'var(--text-secondary)'}}>{client.reason ?? '—'}</TableCell>
                           </TableRow>
                         ))}
-                        {selectedUser.pipelineClients.filter(c => c.status === selectedPipelineCategory).length === 0 && (
+                        {detail.pipelineClients.filter(c => c.bucket === selectedPipelineCategory).length === 0 && (
                           <TableRow>
                             <TableCell colSpan={4} style={{textAlign:'center', color:'var(--text-muted)'}}>{t('admin.noClientsInCategory')}</TableCell>
                           </TableRow>
@@ -335,22 +229,22 @@ export const AuditLogs: React.FC = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {selectedUser.transactions.map(tx => (
+                      {detail.transactions.map(tx => (
                         <TableRow key={tx.id}>
                           <TableCell style={{fontWeight: 500}}>{tx.property}</TableCell>
                           <TableCell>{tx.client}</TableCell>
-                          <TableCell>{tx.amount}</TableCell>
+                          <TableCell>{formatCurrency(tx.amount, tx.currency)}</TableCell>
                           <TableCell>
                             <span className={
-                              tx.status === 'Closed Won' ? styles.statusSuccess :
-                              tx.status === 'Lost' ? styles.statusFailed : styles.statusWarning
+                              tx.status === 'won' ? styles.statusSuccess :
+                              tx.status === 'lost' ? styles.statusFailed : styles.statusWarning
                             }>
                               {t(TRANSACTION_STATUS_KEY[tx.status])}
                             </span>
                           </TableCell>
                         </TableRow>
                       ))}
-                      {selectedUser.transactions.length === 0 && (
+                      {detail.transactions.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={4} style={{textAlign:'center', color:'var(--text-muted)'}}>{t('admin.noTransactions')}</TableCell>
                         </TableRow>
@@ -364,13 +258,13 @@ export const AuditLogs: React.FC = () => {
               <div>
                 <h3 className={styles.sectionTitle}><Pulse size={20}/> {t('admin.activityLog')}</h3>
                 <div className={styles.timelineContainer}>
-                  {selectedUser.timeline.map(tl => (
+                  {detail.timeline.map(tl => (
                     <div key={tl.id} className={styles.timelineItem}>
-                      <span className={styles.timelineTime}>{tl.time}</span>
-                      <span className={styles.timelineText}>{tl.text}</span>
+                      <span className={styles.timelineTime}>{formatDateTime(tl.occurredAt)}</span>
+                      <span className={styles.timelineText}>{tl.label}</span>
                     </div>
                   ))}
-                  {selectedUser.timeline.length === 0 && (
+                  {detail.timeline.length === 0 && (
                     <span style={{color:'var(--text-muted)'}}>{t('admin.noRecentActivity')}</span>
                   )}
                 </div>

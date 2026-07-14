@@ -12,6 +12,8 @@ import type {
   DashboardSummaryDTO,
   FinancialsSummaryDTO,
   MeetingDTO,
+  TeamMemberDTO,
+  UserDetailDTO,
   ProjectDTO,
   DeveloperDTO,
   ProposalDTO,
@@ -426,6 +428,37 @@ export const handlers = [
         { code: 'golden_visa', name: 'Golden Visa', valueEur: 3_675_000 },
         { code: 'investment', name: 'Investment', valueEur: 2_222_192.51 },
         { code: 'holiday_home', name: 'Holiday Home', valueEur: 1_350_000 },
+      ],
+    });
+  }),
+
+  http.get('/api/admin/team', () => {
+    return HttpResponse.json<TeamMemberDTO[]>([
+      { id: 'u1', name: 'Onur N. Karataş', role: 'super_admin', isActive: true, lastActiveAt: new Date().toISOString(), clientsRegistered: 9 },
+      { id: 'u2', name: 'Selin Yıldız', role: 'consultant', isActive: true, lastActiveAt: null, clientsRegistered: 0 },
+      { id: 'u3', name: 'Marco Bianchi', role: 'consultant', isActive: true, lastActiveAt: null, clientsRegistered: 0 },
+    ]);
+  }),
+
+  http.get('/api/admin/team/:id', ({ params }) => {
+    return HttpResponse.json<UserDetailDTO>({
+      id: String(params.id), name: 'Onur N. Karataş', role: 'super_admin', isActive: true,
+      kpis: { salesVolumeEur: 7_247_192.51, commissionEur: 217_088.5, activeDeals: 0, conversionRatePct: 66.7 },
+      pipeline: [
+        { key: 'hotLeads', count: 2 }, { key: 'activeLeads', count: 3 },
+        { key: 'negotiating', count: 1 }, { key: 'frozen', count: 1 }, { key: 'lost', count: 1 },
+      ],
+      pipelineClients: [
+        { id: 'pc1', bucket: 'hotLeads', name: 'Edward Langley', interest: null, date: new Date().toISOString(), reason: 'London buy-to-let.' },
+        { id: 'pc2', bucket: 'negotiating', name: 'Elena Rossi', interest: null, date: new Date().toISOString(), reason: 'Marbella lux; 3 ay.' },
+      ],
+      transactions: [
+        { id: 'tx1', property: 'Bosphorus Terraces', client: 'Ahmet Yılmaz', amount: 2_100_000, currency: 'TRY', status: 'won' },
+        { id: 'tx2', property: 'Marbella Sky Villas', client: 'Elena Rossi', amount: 3_200_000, currency: 'EUR', status: 'won' },
+      ],
+      timeline: [
+        { id: 'tl1', occurredAt: new Date().toISOString(), label: 'Yeni kişi kaydetti', entityType: 'contact' },
+        { id: 'tl2', occurredAt: new Date().toISOString(), label: 'Görev güncelledi', entityType: 'task' },
       ],
     });
   }),
