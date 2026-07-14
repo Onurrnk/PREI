@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { DeveloperDTO } from '../../core/types';
 import { developersApi } from '../../core/api/resources';
@@ -11,6 +12,7 @@ import { EmailClient } from '../clients/components/EmailClient';
 import styles from './DeveloperProfile.module.css';
 
 export const DeveloperProfile: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data, loading } = useFetch<DeveloperDTO[]>(() => developersApi.list(), [id]);
@@ -23,11 +25,11 @@ export const DeveloperProfile: React.FC = () => {
   };
 
   if (loading) {
-    return <div className={styles.loading}>Loading Developer Profile...</div>;
+    return <div className={styles.loading}>{t('developers.loadingProfile')}</div>;
   }
 
   if (!developer) {
-    return <div className={styles.error}>Developer not found</div>;
+    return <div className={styles.error}>{t('developers.notFound')}</div>;
   }
 
   const formatCurrency = (value: number, currency = 'EUR') => {
@@ -49,13 +51,13 @@ export const DeveloperProfile: React.FC = () => {
                 {developer.partnershipStatus}
               </span>
             </div>
-            <p className={styles.subtitle}>Headquarters: {developer.headquarters} &bull; Commission Rate: {developer.commissionRate}</p>
+            <p className={styles.subtitle}>{t('developers.headquartersLine', { headquarters: developer.headquarters, rate: developer.commissionRate })}</p>
           </div>
         </div>
         <div className={styles.headerActions}>
-          <Button variant="outline" onClick={() => handleActionClick('Visit Website')}><Globe size={16} /> Website</Button>
-          <Button variant="outline" onClick={() => handleActionClick('Schedule Meeting')}><CalendarBlank size={16} /> Meeting</Button>
-          <Button variant="primary" onClick={() => handleActionClick('Edit Developer Profile')}>Edit Profile</Button>
+          <Button variant="outline" onClick={() => handleActionClick('Visit Website')}><Globe size={16} /> {t('developers.website')}</Button>
+          <Button variant="outline" onClick={() => handleActionClick('Schedule Meeting')}><CalendarBlank size={16} /> {t('developers.meeting')}</Button>
+          <Button variant="primary" onClick={() => handleActionClick('Edit Developer Profile')}>{t('developers.editProfile')}</Button>
         </div>
       </div>
 
@@ -63,11 +65,11 @@ export const DeveloperProfile: React.FC = () => {
         <div className={styles.sidebar}>
           <Card>
             <CardHeader>
-              <h3 className={styles.cardTitle}>Key Contact Person</h3>
+              <h3 className={styles.cardTitle}>{t('developers.keyContactPerson')}</h3>
             </CardHeader>
             <CardBody>
               <div className={styles.detailRow}>
-                <span className={styles.detailLabel}>Name</span>
+                <span className={styles.detailLabel}>{t('developers.name')}</span>
                 <span className={styles.detailValue} style={{ fontWeight: 600 }}>{developer.keyContactName}</span>
               </div>
               <div className={styles.detailRow}>
@@ -83,18 +85,18 @@ export const DeveloperProfile: React.FC = () => {
 
           <Card>
             <CardHeader>
-              <h3 className={styles.cardTitle}>Partnership Stats</h3>
+              <h3 className={styles.cardTitle}>{t('developers.partnershipStats')}</h3>
             </CardHeader>
             <CardBody>
               <div className={styles.kpiGrid}>
                 <div className={styles.kpiBox}>
                   <Buildings size={16} className={styles.kpiIcon} />
-                  <span className={styles.kpiLabel}>Active Projects</span>
+                  <span className={styles.kpiLabel}>{t('developers.activeProjects')}</span>
                   <span className={styles.kpiValue}>{developer.activeProjects}</span>
                 </div>
                 <div className={styles.kpiBox}>
                   <Buildings size={16} className={styles.kpiIcon} style={{ color: 'var(--color-success)' }} />
-                  <span className={styles.kpiLabel}>Completed</span>
+                  <span className={styles.kpiLabel}>{t('developers.completed')}</span>
                   <span className={styles.kpiValue}>{developer.totalCompletedProjects}</span>
                 </div>
               </div>
@@ -103,12 +105,12 @@ export const DeveloperProfile: React.FC = () => {
 
           <Card className={styles.quickActions}>
             <CardHeader>
-              <h3 className={styles.cardTitle}>Quick Actions</h3>
+              <h3 className={styles.cardTitle}>{t('developers.quickActions')}</h3>
             </CardHeader>
             <CardBody>
-              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Request Inventory Update')}><EnvelopeSimple size={16} /> Request Inventory</Button>
-              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Log Call with Developer')}><Phone size={16} /> Log Call</Button>
-              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Review Commission Agreement')}><FileText size={16} /> Review Contracts</Button>
+              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Request Inventory Update')}><EnvelopeSimple size={16} /> {t('developers.requestInventory')}</Button>
+              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Log Call with Developer')}><Phone size={16} /> {t('developers.logCall')}</Button>
+              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Review Commission Agreement')}><FileText size={16} /> {t('developers.reviewContracts')}</Button>
             </CardBody>
           </Card>
         </div>
@@ -116,8 +118,8 @@ export const DeveloperProfile: React.FC = () => {
         <div className={styles.main}>
           <Card className={styles.projectsContainer}>
             <CardHeader className={styles.projectsHeader}>
-              <h3 className={styles.cardTitle}>Active Projects Portfolio</h3>
-              <Button variant="primary" size="sm" onClick={() => navigate('/projects/add')}><Plus size={14} style={{ marginRight: 6 }} /> Add Project</Button>
+              <h3 className={styles.cardTitle}>{t('developers.activePortfolio')}</h3>
+              <Button variant="primary" size="sm" onClick={() => navigate('/projects/add')}><Plus size={14} style={{ marginRight: 6 }} /> {t('developers.addProject')}</Button>
             </CardHeader>
             <CardBody className={styles.projectsBody}>
               {developer.projects && developer.projects.length > 0 ? (
@@ -133,24 +135,24 @@ export const DeveloperProfile: React.FC = () => {
                       <div className={styles.projectLocation}>
                         <MapPin size={12} className={styles.mutedIcon} /> {project.location}
                       </div>
-                      
+
                       <div className={styles.projectMetrics}>
                         <div className={styles.metric}>
-                          <span className={styles.metricLabel}>Starting Price</span>
+                          <span className={styles.metricLabel}>{t('developers.startingPrice')}</span>
                           <span className={styles.metricValue}>{formatCurrency(project.startingPrice, project.currency)}</span>
                         </div>
                         <div className={styles.metric}>
-                          <span className={styles.metricLabel}>Available</span>
+                          <span className={styles.metricLabel}>{t('developers.available')}</span>
                           <span className={styles.metricValue}>{project.availableUnits} / {project.totalUnits}</span>
                         </div>
                         <div className={styles.metric}>
-                          <span className={styles.metricLabel}>Completion</span>
+                          <span className={styles.metricLabel}>{t('developers.completion')}</span>
                           <span className={styles.metricValue}>{project.completionDate}</span>
                         </div>
                       </div>
 
                       <div className={styles.projectManager}>
-                        <div className={styles.managerHeader}>Project Manager</div>
+                        <div className={styles.managerHeader}>{t('developers.projectManager')}</div>
                         <div className={styles.managerName}>{project.projectManagerName}</div>
                         <div className={styles.managerContact}>
                           <span><EnvelopeSimple size={10} /> {project.projectManagerEmail}</span>
@@ -163,8 +165,8 @@ export const DeveloperProfile: React.FC = () => {
               ) : (
                 <div className={styles.emptyState}>
                   <Buildings size={48} className={styles.emptyIcon} />
-                  <p>No active projects linked to this developer.</p>
-                  <Button variant="outline" onClick={() => handleActionClick('Sync Projects from ERP')}>Sync Projects</Button>
+                  <p>{t('developers.emptyProjects')}</p>
+                  <Button variant="outline" onClick={() => handleActionClick('Sync Projects from ERP')}>{t('developers.syncProjects')}</Button>
                 </div>
               )}
             </CardBody>
