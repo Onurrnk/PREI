@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
 import { TrendUp, TrendDown, ChatCircle, WhatsappLogo, InstagramLogo } from '@phosphor-icons/react';
@@ -11,19 +12,19 @@ import styles from './Marketing.module.css';
 // ---------------------------------------------------------------------
 
 const kpis = [
-  { id: 'spend', label: 'Ad Spend (30d)', value: '€9.4K', delta: 12.6, spark: [6.2, 6.8, 6.5, 7.1, 7.4, 7.2, 7.9, 8.3, 8.1, 8.8, 9.1, 9.4] },
-  { id: 'cpl', label: 'Avg. CPL', value: '€98.40', delta: -8.2, spark: [128, 121, 124, 116, 112, 115, 108, 104, 107, 101, 99, 98.4], invert: true },
-  { id: 'qualified', label: 'Conv. → Qualified', value: '22.2%', delta: 3.4, spark: [16, 17, 16.5, 18, 17.8, 19, 19.5, 20.2, 20.8, 21.4, 21.9, 22.2] },
-  { id: 'roas', label: 'ROAS (komisyon)', value: '4.1x', delta: 6.8, spark: [2.9, 3.1, 3.0, 3.3, 3.4, 3.3, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1] },
+  { id: 'spend', labelKey: 'marketing.kpi.adSpend', value: '€9.4K', delta: 12.6, spark: [6.2, 6.8, 6.5, 7.1, 7.4, 7.2, 7.9, 8.3, 8.1, 8.8, 9.1, 9.4] },
+  { id: 'cpl', labelKey: 'marketing.kpi.avgCpl', value: '€98.40', delta: -8.2, spark: [128, 121, 124, 116, 112, 115, 108, 104, 107, 101, 99, 98.4], invert: true },
+  { id: 'qualified', labelKey: 'marketing.kpi.convQualified', value: '22.2%', delta: 3.4, spark: [16, 17, 16.5, 18, 17.8, 19, 19.5, 20.2, 20.8, 21.4, 21.9, 22.2] },
+  { id: 'roas', labelKey: 'marketing.kpi.roasCommission', value: '4.1x', delta: 6.8, spark: [2.9, 3.1, 3.0, 3.3, 3.4, 3.3, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1] },
 ];
 
-const funnel = [
-  { label: 'Impressions', value: 412_400 },
-  { label: 'CTWA Clicks', value: 3_840 },
-  { label: 'Conversations', value: 962 },
-  { label: 'Qualified (75+)', value: 214 },
-  { label: 'Meetings', value: 58 },
-  { label: 'Closed Won', value: 11 },
+const buildFunnel = (t: (key: string) => string) => [
+  { label: t('marketing.funnel.impressions'), value: 412_400 },
+  { label: t('marketing.funnel.ctwaClicks'), value: 3_840 },
+  { label: t('marketing.funnel.conversations'), value: 962 },
+  { label: t('marketing.funnel.qualified'), value: 214 },
+  { label: t('marketing.funnel.meetings'), value: 58 },
+  { label: t('marketing.funnel.closedWon'), value: 11 },
 ];
 
 const weeklySpendCpl = [
@@ -92,14 +93,17 @@ const scoreClass = (score: number): string =>
   score >= 75 ? 'scoreHigh' : score >= 50 ? 'scoreMid' : 'scoreLow';
 
 export const Marketing: React.FC = () => {
+  const { t } = useTranslation();
+  const funnel = buildFunnel(t);
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>Marketing Intelligence</h1>
-          <p className={styles.subtitle}>Ad spend, attribution and conversation analytics across all markets.</p>
+          <h1 className={styles.title}>{t('marketing.title')}</h1>
+          <p className={styles.subtitle}>{t('marketing.subtitle')}</p>
         </div>
-        <span className={styles.headerMeta}>Meta Ads · last 30 days</span>
+        <span className={styles.headerMeta}>{t('marketing.headerMeta')}</span>
       </div>
 
       {/* KPI şeridi */}
@@ -109,7 +113,7 @@ export const Marketing: React.FC = () => {
           return (
             <Card key={kpi.id} padding="md">
               <div className={styles.kpiCard}>
-                <span className={styles.kpiLabel}>{kpi.label}</span>
+                <span className={styles.kpiLabel}>{t(kpi.labelKey)}</span>
                 <div className={styles.kpiValueRow}>
                   <span className={styles.kpiValue}>{kpi.value}</span>
                   <span className={`${styles.kpiDelta} ${positive ? styles.deltaUp : styles.deltaDown}`}>
@@ -130,21 +134,21 @@ export const Marketing: React.FC = () => {
       <div className={styles.mainGrid}>
         <Card padding="md">
           <div className={styles.cardTitleRow}>
-            <h2 className={styles.cardTitle}>Acquisition Funnel</h2>
-            <span className={styles.cardMeta}>ad → close</span>
+            <h2 className={styles.cardTitle}>{t('marketing.funnel.title')}</h2>
+            <span className={styles.cardMeta}>{t('marketing.funnel.meta')}</span>
           </div>
           <FunnelSteps steps={funnel} />
         </Card>
 
         <Card padding="md">
           <div className={styles.cardTitleRow}>
-            <h2 className={styles.cardTitle}>Spend vs CPL</h2>
-            <span className={styles.cardMeta}>weekly</span>
+            <h2 className={styles.cardTitle}>{t('marketing.spendVsCpl.title')}</h2>
+            <span className={styles.cardMeta}>{t('marketing.spendVsCpl.meta')}</span>
           </div>
           <ComboSpend
             data={weeklySpendCpl}
-            barName="Spend"
-            lineName="CPL"
+            barName={t('marketing.spendVsCpl.barName')}
+            lineName={t('marketing.spendVsCpl.lineName')}
             formatBar={fmtEUR}
             formatLine={(v) => `€${v}`}
             height={264}
@@ -156,23 +160,23 @@ export const Marketing: React.FC = () => {
       <Card padding="none">
         <CardHeader>
           <div className={styles.cardTitleRow}>
-            <h2 className={styles.cardTitle}>Campaign Performance</h2>
-            <span className={styles.cardMeta}>6 campaigns · 4 markets</span>
+            <h2 className={styles.cardTitle}>{t('marketing.campaignPerformance')}</h2>
+            <span className={styles.cardMeta}>{t('marketing.campaignCount', { count: campaigns.length, markets: 4 })}</span>
           </div>
         </CardHeader>
         <CardBody padding="none">
           <Table>
             <TableHead>
               <TableRow>
-                <TableHeader>Campaign</TableHeader>
-                <TableHeader>Market</TableHeader>
-                <TableHeader>Status</TableHeader>
-                <TableHeader align="right">Spend</TableHeader>
-                <TableHeader align="right">Leads</TableHeader>
-                <TableHeader align="right">Qualified</TableHeader>
-                <TableHeader align="right">CPL</TableHeader>
-                <TableHeader align="right">Closed</TableHeader>
-                <TableHeader align="right">ROAS</TableHeader>
+                <TableHeader>{t('marketing.table.campaign')}</TableHeader>
+                <TableHeader>{t('marketing.table.market')}</TableHeader>
+                <TableHeader>{t('marketing.table.status')}</TableHeader>
+                <TableHeader align="right">{t('marketing.table.spend')}</TableHeader>
+                <TableHeader align="right">{t('marketing.table.leads')}</TableHeader>
+                <TableHeader align="right">{t('marketing.table.qualified')}</TableHeader>
+                <TableHeader align="right">{t('marketing.table.cpl')}</TableHeader>
+                <TableHeader align="right">{t('marketing.table.closed')}</TableHeader>
+                <TableHeader align="right">{t('marketing.table.roas')}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -182,7 +186,7 @@ export const Marketing: React.FC = () => {
                   <TableCell><span className={styles.marketChip}>{c.market}</span></TableCell>
                   <TableCell>
                     <span className={`${styles.statusChip} ${c.status === 'Active' ? styles.statusActive : ''}`}>
-                      {c.status}
+                      {c.status === 'Active' ? t('marketing.status.active') : t('marketing.status.paused')}
                     </span>
                   </TableCell>
                   <TableCell align="right"><span className={styles.numCell}>{fmtEUR(c.spend)}</span></TableCell>
@@ -206,12 +210,12 @@ export const Marketing: React.FC = () => {
       <div className={styles.bottomGrid}>
         <Card padding="md">
           <div className={styles.cardTitleRow}>
-            <h2 className={styles.cardTitle}>Spend by Market</h2>
+            <h2 className={styles.cardTitle}>{t('marketing.spendByMarket')}</h2>
           </div>
           <DonutMetric
             data={spendByMarket}
             centerValue="€9.4K"
-            centerLabel="30 days"
+            centerLabel={t('marketing.last30Days')}
             formatValue={fmtEUR}
             height={176}
           />
@@ -221,9 +225,9 @@ export const Marketing: React.FC = () => {
           <CardHeader>
             <div className={styles.cardTitleRow}>
               <h2 className={styles.cardTitle}>
-                <ChatCircle size={16} className={styles.titleIcon} /> Live Conversations
+                <ChatCircle size={16} className={styles.titleIcon} /> {t('marketing.liveConversations')}
               </h2>
-              <span className={styles.cardMeta}>Eylül · AI qualifier</span>
+              <span className={styles.cardMeta}>{t('marketing.aiQualifier')}</span>
             </div>
           </CardHeader>
           <CardBody padding="none">
