@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import type { ProposalDTO } from '../../core/types';
 import { proposalsApi } from '../../core/api/resources';
@@ -11,6 +12,7 @@ import styles from './ProposalsList.module.css';
 import { ProposalView } from './ProposalView';
 
 export const ProposalsList: React.FC = () => {
+  const { t } = useTranslation();
   const { data, loading } = useFetch<ProposalDTO[]>(() => proposalsApi.list(), []);
   const proposals = data ?? [];
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
@@ -18,7 +20,7 @@ export const ProposalsList: React.FC = () => {
 
   // proposals loaded via useFetch above
 
-  if (loading) return <div className={styles.loading}>Loading Proposals...</div>;
+  if (loading) return <div className={styles.loading}>{t('proposals.loading')}</div>;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
@@ -28,29 +30,29 @@ export const ProposalsList: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>Proposal Center</h1>
-          <p className={styles.subtitle}>Generate and track custom property pitches and financial offers</p>
+          <h1 className={styles.title}>{t('proposals.title')}</h1>
+          <p className={styles.subtitle}>{t('proposals.subtitle')}</p>
         </div>
         <div className={styles.headerActions}>
           <div className={styles.searchBar}>
             <MagnifyingGlass size={16} className={styles.searchIcon} />
-            <input type="text" placeholder="Search proposals..." className={styles.searchInput} />
+            <input type="text" placeholder={t('proposals.searchPlaceholder')} className={styles.searchInput} />
           </div>
-          <Button variant="primary" onClick={() => navigate('/proposals/new')}><Plus size={16} /> Create Proposal</Button>
+          <Button variant="primary" onClick={() => navigate('/proposals/new')}><Plus size={16} /> {t('proposals.createProposal')}</Button>
         </div>
       </div>
 
       <div className={styles.statsRow}>
         <div className={styles.statCard}>
-          <div className={styles.statLabel}>Draft</div>
+          <div className={styles.statLabel}>{t('proposals.stats.draft')}</div>
           <div className={styles.statValue}>{proposals.filter(p => p.status === 'Draft').length}</div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statLabel}>Sent / Viewed</div>
+          <div className={styles.statLabel}>{t('proposals.stats.sentViewed')}</div>
           <div className={styles.statValue}>{proposals.filter(p => p.status === 'Sent' || p.status === 'Viewed').length}</div>
         </div>
         <div className={styles.statCard}>
-          <div className={styles.statLabel}>Accepted</div>
+          <div className={styles.statLabel}>{t('proposals.stats.accepted')}</div>
           <div className={`${styles.statValue} ${styles.textSuccess}`}>{proposals.filter(p => p.status === 'Accepted').length}</div>
         </div>
       </div>
@@ -59,12 +61,12 @@ export const ProposalsList: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeader>Proposal Name</TableHeader>
-              <TableHeader>Client</TableHeader>
-              <TableHeader>Project</TableHeader>
-              <TableHeader>Total Value</TableHeader>
-              <TableHeader>Status</TableHeader>
-              <TableHeader>Analytics</TableHeader>
+              <TableHeader>{t('proposals.table.proposalName')}</TableHeader>
+              <TableHeader>{t('proposals.table.client')}</TableHeader>
+              <TableHeader>{t('proposals.table.project')}</TableHeader>
+              <TableHeader>{t('proposals.table.totalValue')}</TableHeader>
+              <TableHeader>{t('proposals.table.status')}</TableHeader>
+              <TableHeader>{t('proposals.table.analytics')}</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -89,8 +91,8 @@ export const ProposalsList: React.FC = () => {
                 </TableCell>
                 <TableCell>
                   <div className={styles.analyticsCell}>
-                    <Eye size={14} className={styles.iconMuted} /> 
-                    <span>{prop.viewCount} views</span>
+                    <Eye size={14} className={styles.iconMuted} />
+                    <span>{t('proposals.viewsCount', { count: prop.viewCount })}</span>
                   </div>
                 </TableCell>
               </TableRow>
