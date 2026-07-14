@@ -10,3 +10,9 @@ regexes = [
   # kkcvfvbjmohlplepadip projesinin anon JWT'si (role=anon doğrulandı 2026-07-10)
   '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.eyJpc3MiOiJzdXBhYmFzZSI[A-Za-z0-9_.-]+''',
 ]
+paths = [
+  # ProDuality logo — base64 gömülü PNG (gizli değil, marka görseli). E-posta
+  # şablonunun CID inline-image kaynağı; sır değil, yüksek entropili base64
+  # satırları false-positive tetikleyebilir.
+  '''server/src/modules/gmail/logo-asset\.ts''',
+]

@@ -15,6 +15,7 @@ import {
   toMessageDTO,
 } from './gmail.mapper';
 import { buildClientEmailHtml, buildClientEmailText } from './email-template';
+import { PRODUALITY_LOGO_BASE64, PRODUALITY_LOGO_CONTENT_ID } from './logo-asset';
 import type {
   SendEmailDTO,
   ThreadDetailDTO,
@@ -130,9 +131,13 @@ export class GmailService {
     return { id: res.data.id ?? '', threadId: res.data.threadId ?? '' };
   }
 
-  /** Build a base64url-encoded RFC822 multipart/alternative message. */
+  /** Build a base64url-encoded RFC822 message: multipart/related wrapping
+   *  a multipart/alternative (text+html) part plus the inline logo image
+   *  (referenced from the HTML template via `cid:`), so the real
+   *  ProDuality wordmark renders without depending on a public image URL. */
   private buildRawMessage(dto: SendEmailDTO, sender: SenderProfile): string {
-    const boundary = `prei_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const altBoundary = `prei_alt_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const relBoundary = `prei_rel_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const bodyParagraphs = dto.body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
     const recipientName = dto.recipientName?.trim() || dto.to.split('@')[0];
 
@@ -153,29 +158,44 @@ export class GmailService {
       `From: ${sender.name} <${sender.email}>`,
       `Subject: ${this.encodeSubject(dto.subject)}`,
       'MIME-Version: 1.0',
-      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      `Content-Type: multipart/related; boundary="${relBoundary}"`,
     ];
     if (dto.inReplyTo) {
       headers.push(`In-Reply-To: ${dto.inReplyTo}`);
       headers.push(`References: ${dto.inReplyTo}`);
     }
 
+    const logoBase64Lines = PRODUALITY_LOGO_BASE64.match(/.{1,76}/g) ?? [];
+
     const message = [
       headers.join('\r\n'),
       '',
-      `--${boundary}`,
+      `--${relBoundary}`,
+      `Content-Type: multipart/alternative; boundary="${altBoundary}"`,
+      '',
+      `--${altBoundary}`,
       'Content-Type: text/plain; charset="UTF-8"',
       'Content-Transfer-Encoding: 7bit',
       '',
       textPart,
       '',
-      `--${boundary}`,
+      `--${altBoundary}`,
       'Content-Type: text/html; charset="UTF-8"',
       'Content-Transfer-Encoding: 7bit',
       '',
       htmlPart,
       '',
-      `--${boundary}--`,
+      `--${altBoundary}--`,
+      '',
+      `--${relBoundary}`,
+      'Content-Type: image/png',
+      'Content-Transfer-Encoding: base64',
+      `Content-ID: <${PRODUALITY_LOGO_CONTENT_ID}>`,
+      'Content-Disposition: inline; filename="logo.png"',
+      '',
+      logoBase64Lines.join('\r\n'),
+      '',
+      `--${relBoundary}--`,
     ].join('\r\n');
 
     return Buffer.from(message, 'utf-8').toString('base64url');

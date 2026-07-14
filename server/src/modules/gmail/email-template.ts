@@ -1,11 +1,14 @@
 // =====================================================================
-// PREI | Client-facing e-mail template ("Private Banking Terminal" kimliği)
+// PREI | Client-facing e-mail template
 // Table-based, inline-styled HTML — Outlook/Gmail/Apple Mail uyumlu.
-// Görsel logo yerine metin wordmark kullanılır: e-posta istemcilerinin
-// çoğu görselleri varsayılan engeller, marka adı böylece her zaman görünür.
-// Renk/tipografi PREI_Design_System_v1.md light tema token'larından
-// (dark-mode e-posta istemci desteği tutarsız olduğundan light temel alındı).
+// Görsel dil, ProDuality'nin kağıt üzerindeki resmi belgelerinden
+// (danışmanlık sözleşmesi vb.) esinlenir: krem zemin, ince gri/mor
+// çizgiler, serif başlıklar + italik vurgular, küçük harf aralıklı
+// (tracked small-caps) etiketler. Gerçek logo (PRODUALITY_LOGO_BASE64,
+// bkz. logo-asset.ts) e-postaya CID inline-image olarak gömülür —
+// public bir URL'ye bağımlı değildir, tüm istemcilerde güvenilir çalışır.
 // =====================================================================
+import { PRODUALITY_LOGO_CONTENT_ID } from './logo-asset';
 
 export interface ClientEmailParams {
   recipientName: string;
@@ -24,18 +27,16 @@ export interface ClientEmailParams {
 const COLORS = {
   bgApp: '#F4F3F1',
   bgSurface: '#FDFCFB',
-  headerBg: '#0B0C0E',
   textPrimary: '#1B1A18',
   textSecondary: '#5C5A55',
   textMuted: '#8E8C86',
   border: '#E7E5E1',
-  brand: '#9B5BB3',
-  brandDim: '#8A4DA1',
+  brand: '#94529F',
+  brandDim: '#7C4285',
   onBrand: '#FFFFFF',
 };
 
-const FONT_SANS = "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
-const FONT_MONO = "'Geist Mono', 'SFMono-Regular', Consolas, 'Courier New', monospace";
+const FONT_SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
 
 function escapeHtml(s: string): string {
   return s
@@ -45,12 +46,9 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
-const initials = (name: string): string =>
-  name.trim().split(/\s+/).map((p) => p[0]).slice(0, 2).join('').toUpperCase();
-
 export function buildClientEmailHtml(p: ClientEmailParams): string {
   const paragraphs = p.bodyParagraphs
-    .map((para) => `<p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:${COLORS.textPrimary};font-family:${FONT_SANS};">${escapeHtml(para)}</p>`)
+    .map((para) => `<p style="margin:0 0 16px 0;font-size:15px;line-height:1.65;color:${COLORS.textPrimary};font-family:${FONT_SANS};">${escapeHtml(para)}</p>`)
     .join('\n');
 
   const cta = p.ctaLabel && p.ctaUrl ? `
@@ -66,7 +64,7 @@ export function buildClientEmailHtml(p: ClientEmailParams): string {
       </td>
     </tr>` : '';
 
-  const consultantMeta = [p.consultantTitle, p.consultantPhone].filter(Boolean).join(' &bull; ');
+  const consultantMeta = p.consultantTitle;
 
   return `<!doctype html>
 <html lang="tr">
@@ -86,30 +84,30 @@ export function buildClientEmailHtml(p: ClientEmailParams): string {
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(p.preheader ?? '')}</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${COLORS.bgApp};">
     <tr>
-      <td align="center" style="padding:32px 16px;">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;">
+      <td align="center" style="padding:40px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background-color:${COLORS.bgSurface};border:1px solid ${COLORS.border};border-radius:4px;">
 
-          <!-- Header: koyu terminal şeridi + metin wordmark -->
+          <!-- Header: krem zemin, gerçek logo (CID inline image), altında ince çizgi -->
           <tr>
-            <td style="background-color:${COLORS.headerBg};border-radius:12px 12px 0 0;padding:28px 32px;">
+            <td align="center" style="padding:36px 32px 24px 32px;">
+              <img src="cid:${PRODUALITY_LOGO_CONTENT_ID}" width="200" height="60" alt="ProDuality — Property and Investment" style="display:block;width:200px;height:60px;border:0;outline:none;">
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td>
-                    <span style="font-family:${FONT_SANS};font-size:20px;font-weight:600;color:#ECEAE6;letter-spacing:-0.01em;">Pro<span style="color:${COLORS.brand};">Duality</span></span>
-                    <div style="font-family:${FONT_MONO};font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:#605F5B;margin-top:4px;">Gayrimenkul Danışmanlığı</div>
-                  </td>
-                </tr>
+                <tr><td style="border-top:1px solid ${COLORS.border};font-size:0;line-height:0;">&nbsp;</td></tr>
               </table>
             </td>
           </tr>
 
           <!-- Body -->
           <tr>
-            <td style="background-color:${COLORS.bgSurface};border-left:1px solid ${COLORS.border};border-right:1px solid ${COLORS.border};padding:32px;">
+            <td style="padding:32px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="padding-bottom:20px;">
-                    <span style="font-family:${FONT_SANS};font-size:15px;color:${COLORS.textPrimary};">Sayın ${escapeHtml(p.recipientName)},</span>
+                  <td style="padding-bottom:18px;">
+                    <span style="font-family:${FONT_SANS};font-size:16px;font-weight:600;color:${COLORS.textPrimary};">Sayın ${escapeHtml(p.recipientName)},</span>
                   </td>
                 </tr>
                 <tr>
@@ -122,18 +120,28 @@ export function buildClientEmailHtml(p: ClientEmailParams): string {
             </td>
           </tr>
 
+          <!-- Divider: çizgi + baklava motifi (sözleşme kapağındaki ayraçtan esinle) -->
+          <tr>
+            <td style="padding:0 32px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="border-top:1px solid ${COLORS.border};font-size:0;line-height:0;">&nbsp;</td>
+                  <td width="28" align="center" style="font-size:13px;line-height:1;color:${COLORS.brand};padding:0 6px;">&#9671;</td>
+                  <td style="border-top:1px solid ${COLORS.border};font-size:0;line-height:0;">&nbsp;</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
           <!-- Signature -->
           <tr>
-            <td style="background-color:${COLORS.bgSurface};border-left:1px solid ${COLORS.border};border-right:1px solid ${COLORS.border};border-bottom:1px solid ${COLORS.border};padding:0 32px 32px 32px;">
+            <td style="padding:24px 32px 8px 32px;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td style="width:44px;height:44px;border-radius:9999px;background-color:rgba(155,91,179,0.14);text-align:center;vertical-align:middle;font-family:${FONT_MONO};font-size:14px;font-weight:600;color:${COLORS.brand};">
-                    ${escapeHtml(initials(p.consultantName))}
-                  </td>
-                  <td style="padding-left:12px;">
+                  <td>
                     <div style="font-family:${FONT_SANS};font-size:14px;font-weight:600;color:${COLORS.textPrimary};">${escapeHtml(p.consultantName)}</div>
-                    ${consultantMeta ? `<div style="font-family:${FONT_SANS};font-size:12px;color:${COLORS.textSecondary};margin-top:2px;">${consultantMeta}</div>` : ''}
-                    <div style="font-family:${FONT_MONO};font-size:12px;color:${COLORS.brand};margin-top:2px;">${escapeHtml(p.consultantEmail)}</div>
+                    ${consultantMeta ? `<div style="font-family:${FONT_SANS};font-size:12px;color:${COLORS.textSecondary};margin-top:3px;">${consultantMeta}</div>` : ''}
+                    <div style="font-family:${FONT_SANS};font-size:12px;color:${COLORS.brand};margin-top:3px;">${escapeHtml(p.consultantEmail)}</div>
                   </td>
                 </tr>
               </table>
@@ -142,12 +150,12 @@ export function buildClientEmailHtml(p: ClientEmailParams): string {
 
           <!-- Footer -->
           <tr>
-            <td style="padding:24px 32px 0 32px;" align="center">
+            <td style="padding:20px 32px 32px 32px;" align="center">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td align="center" style="border-top:1px solid ${COLORS.border};padding-top:20px;">
-                    <div style="font-family:${FONT_SANS};font-size:12px;color:${COLORS.textMuted};line-height:1.6;">
-                      ProDuality Real Estate &bull; Türkiye, BAE, İspanya, İngiltere<br>
+                  <td align="center" style="border-top:1px solid ${COLORS.border};padding-top:18px;">
+                    <div style="font-family:${FONT_SANS};font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${COLORS.textMuted};line-height:1.8;">
+                      ProDuality Property &amp; Investment &bull; T&uuml;rkiye, BAE, İspanya, İngiltere<br>
                       <a href="mailto:info@produality.com" style="color:${COLORS.textMuted};text-decoration:underline;">info@produality.com</a> &bull; +90 507 857 69 05 &bull;
                       <a href="https://produality.com" style="color:${COLORS.textMuted};text-decoration:underline;">produality.com</a>
                     </div>
@@ -176,14 +184,13 @@ export function buildClientEmailText(p: ClientEmailParams): string {
   if (p.ctaLabel && p.ctaUrl) {
     lines.push(`${p.ctaLabel}: ${p.ctaUrl}`, '');
   }
+  lines.push('--', p.consultantName);
+  if (p.consultantTitle) lines.push(p.consultantTitle);
   lines.push(
-    '--',
-    p.consultantName,
-    [p.consultantTitle, p.consultantPhone].filter(Boolean).join(' | '),
     p.consultantEmail,
     '',
-    'ProDuality Real Estate',
+    'ProDuality Property & Investment',
     'info@produality.com | +90 507 857 69 05 | produality.com',
   );
-  return lines.filter((l) => l !== undefined).join('\n');
+  return lines.join('\n');
 }
