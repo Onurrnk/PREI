@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import type { ProjectDTO } from '../../core/types';
 import { projectsApi } from '../../core/api/resources';
@@ -9,6 +10,7 @@ import { Plus, MagnifyingGlass, Buildings } from '@phosphor-icons/react';
 import styles from './ProjectsList.module.css';
 
 export const ProjectsList: React.FC = () => {
+  const { t } = useTranslation();
   const { data, loading } = useFetch<ProjectDTO[]>(() => projectsApi.list(), []);
   const projects = data ?? [];
   const [searchQuery, setSearchQuery] = useState('');
@@ -16,7 +18,7 @@ export const ProjectsList: React.FC = () => {
 
   // projects loaded via useFetch above
 
-  if (loading) return <div className={styles.loading}>Loading Projects...</div>;
+  if (loading) return <div className={styles.loading}>{t('projects.loading')}</div>;
 
   const formatCurrency = (value: number, currency: string) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'EUR', maximumFractionDigits: 0 }).format(value);
@@ -26,21 +28,21 @@ export const ProjectsList: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>Projects Intelligence</h1>
-          <p className={styles.subtitle}>Global database of off-plan and ready properties</p>
+          <h1 className={styles.title}>{t('projects.title')}</h1>
+          <p className={styles.subtitle}>{t('projects.subtitle')}</p>
         </div>
         <div className={styles.headerActions}>
           <div className={styles.searchBar}>
             <MagnifyingGlass size={16} className={styles.searchIcon} />
-            <input 
-              type="text" 
-              placeholder="Search projects..." 
+            <input
+              type="text"
+              placeholder={t('projects.searchPlaceholder')}
               className={styles.searchInput}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button variant="primary" onClick={() => navigate('/projects/add')}><Plus size={16} /> Add Project</Button>
+          <Button variant="primary" onClick={() => navigate('/projects/add')}><Plus size={16} /> {t('projects.addProject')}</Button>
         </div>
       </div>
 
@@ -48,18 +50,18 @@ export const ProjectsList: React.FC = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeader>Project</TableHeader>
-              <TableHeader>Developer</TableHeader>
-              <TableHeader>Location</TableHeader>
-              <TableHeader>Status</TableHeader>
-              <TableHeader>Price (From)</TableHeader>
-              <TableHeader>Available / Total</TableHeader>
+              <TableHeader>{t('projects.table.project')}</TableHeader>
+              <TableHeader>{t('projects.table.developer')}</TableHeader>
+              <TableHeader>{t('projects.table.location')}</TableHeader>
+              <TableHeader>{t('projects.table.status')}</TableHeader>
+              <TableHeader>{t('projects.table.priceFrom')}</TableHeader>
+              <TableHeader>{t('projects.table.availableTotal')}</TableHeader>
             </TableRow>
           </TableHead>
           <TableBody>
-            {projects.filter(proj => 
-              proj.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-              proj.developerName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+            {projects.filter(proj =>
+              proj.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              proj.developerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
               proj.location.toLowerCase().includes(searchQuery.toLowerCase())
             ).map(proj => (
               <TableRow key={proj.id} className={styles.clickableRow} onClick={() => navigate(`/projects/${proj.id}`)}>

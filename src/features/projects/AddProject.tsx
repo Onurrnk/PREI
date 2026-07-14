@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
@@ -9,6 +10,7 @@ import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import styles from './AddProject.module.css';
 
 export const AddProject: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
@@ -55,6 +57,8 @@ export const AddProject: React.FC = () => {
     navigate('/projects');
   };
 
+  const stepHeading = t(`projects.add.stepHeadings.${currentStep}`);
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -63,16 +67,16 @@ export const AddProject: React.FC = () => {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className={styles.title}>Add New Project</h1>
-            <p className={styles.subtitle}>Enter detailed intelligence and media for the new property project.</p>
+            <h1 className={styles.title}>{t('projects.add.title')}</h1>
+            <p className={styles.subtitle}>{t('projects.add.subtitle')}</p>
           </div>
         </div>
         <div className={styles.headerActions}>
-          <Button variant="outline" onClick={() => navigate(-1)}>Cancel</Button>
+          <Button variant="outline" onClick={() => navigate(-1)}>{t('projects.add.cancel')}</Button>
           {/* DS §5.4: sayfada tek primary — sihirbazın asıl CTA'sı alttaki Next/Complete */}
           <Button variant="secondary" onClick={handleSave} disabled={isSaving}>
             <CheckCircle size={16} style={{ marginRight: 6 }} />
-            {isSaving ? 'Saving…' : 'Save Draft'}
+            {isSaving ? t('projects.add.saving') : t('projects.add.saveDraft')}
           </Button>
         </div>
       </div>
@@ -84,29 +88,29 @@ export const AddProject: React.FC = () => {
               <div className={`${styles.stepItem} ${currentStep >= 1 ? styles.stepActive : ''}`} onClick={() => setCurrentStep(1)}>
                 <div className={styles.stepCircle}>1</div>
                 <div className={styles.stepInfo}>
-                  <div className={styles.stepTitle}>General Information</div>
-                  <div className={styles.stepDesc}>Basic details and location</div>
+                  <div className={styles.stepTitle}>{t('projects.add.steps.general.title')}</div>
+                  <div className={styles.stepDesc}>{t('projects.add.steps.general.desc')}</div>
                 </div>
               </div>
               <div className={`${styles.stepItem} ${currentStep >= 2 ? styles.stepActive : ''}`} onClick={() => setCurrentStep(2)}>
                 <div className={styles.stepCircle}>2</div>
                 <div className={styles.stepInfo}>
-                  <div className={styles.stepTitle}>Financials & Planning</div>
-                  <div className={styles.stepDesc}>Pricing, units, payment plan</div>
+                  <div className={styles.stepTitle}>{t('projects.add.steps.financial.title')}</div>
+                  <div className={styles.stepDesc}>{t('projects.add.steps.financial.desc')}</div>
                 </div>
               </div>
               <div className={`${styles.stepItem} ${currentStep >= 3 ? styles.stepActive : ''}`} onClick={() => setCurrentStep(3)}>
                 <div className={styles.stepCircle}>3</div>
                 <div className={styles.stepInfo}>
-                  <div className={styles.stepTitle}>Media & Documents</div>
-                  <div className={styles.stepDesc}>Photos, floor plans, brochures</div>
+                  <div className={styles.stepTitle}>{t('projects.add.steps.media.title')}</div>
+                  <div className={styles.stepDesc}>{t('projects.add.steps.media.desc')}</div>
                 </div>
               </div>
               <div className={`${styles.stepItem} ${currentStep >= 4 ? styles.stepActive : ''}`} onClick={() => setCurrentStep(4)}>
                 <div className={styles.stepCircle}>4</div>
                 <div className={styles.stepInfo}>
-                  <div className={styles.stepTitle}>Amenities & Features</div>
-                  <div className={styles.stepDesc}>Key selling points</div>
+                  <div className={styles.stepTitle}>{t('projects.add.steps.amenities.title')}</div>
+                  <div className={styles.stepDesc}>{t('projects.add.steps.amenities.desc')}</div>
                 </div>
               </div>
             </CardBody>
@@ -116,30 +120,25 @@ export const AddProject: React.FC = () => {
         <div className={styles.main}>
           <Card>
             <CardHeader>
-              <h3 className={styles.cardTitle}>
-                {currentStep === 1 && "General Information"}
-                {currentStep === 2 && "Financials & Payment Plan"}
-                {currentStep === 3 && "Media & Documents Upload"}
-                {currentStep === 4 && "Amenities & Features"}
-              </h3>
+              <h3 className={styles.cardTitle}>{stepHeading}</h3>
             </CardHeader>
             <CardBody>
-              
+
               {/* STEP 1: General Info */}
               {currentStep === 1 && (
                 <div className={styles.formGrid}>
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
-                    <label>Project Name</label>
-                    <input type="text" className={styles.textInput} placeholder="e.g. Beachfront Residences" />
+                    <label>{t('projects.add.projectName')}</label>
+                    <input type="text" className={styles.textInput} placeholder={t('projects.add.projectNamePh')} />
                   </div>
-                  
+
                   <div className={styles.formGroup}>
-                    <label>Developer</label>
+                    <label>{t('projects.add.developer')}</label>
                     <SelectMenu
-                      aria-label="Developer"
+                      aria-label={t('projects.add.developer')}
                       value={developer}
                       onChange={setDeveloper}
-                      placeholder="Select Developer…"
+                      placeholder={t('projects.add.developerPh')}
                       options={[
                         { value: 'emaar', label: 'Emaar Properties' },
                         { value: 'damac', label: 'DAMAC Properties' },
@@ -149,27 +148,27 @@ export const AddProject: React.FC = () => {
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label>Status</label>
+                    <label>{t('projects.add.status')}</label>
                     <SelectMenu
-                      aria-label="Status"
+                      aria-label={t('projects.add.status')}
                       value={projectStatus}
                       onChange={setProjectStatus}
                       options={[
-                        { value: 'off-plan', label: 'Off-plan' },
-                        { value: 'under-construction', label: 'Under Construction' },
-                        { value: 'completed', label: 'Completed' },
+                        { value: 'off-plan', label: t('projects.add.statusOptions.offPlan') },
+                        { value: 'under-construction', label: t('projects.add.statusOptions.underConstruction') },
+                        { value: 'completed', label: t('projects.add.statusOptions.completed') },
                       ]}
                     />
                   </div>
 
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
-                    <label>Location / Area</label>
-                    <input type="text" className={styles.textInput} placeholder="e.g. Dubai Marina" />
+                    <label>{t('projects.add.location')}</label>
+                    <input type="text" className={styles.textInput} placeholder={t('projects.add.locationPh')} />
                   </div>
 
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
-                    <label>Project Description</label>
-                    <textarea className={styles.textArea} placeholder="Enter an enticing description for marketing..." rows={4}></textarea>
+                    <label>{t('projects.add.description')}</label>
+                    <textarea className={styles.textArea} placeholder={t('projects.add.descriptionPh')} rows={4}></textarea>
                   </div>
                 </div>
               )}
@@ -178,40 +177,40 @@ export const AddProject: React.FC = () => {
               {currentStep === 2 && (
                 <div className={styles.formGrid}>
                   <div className={styles.formGroup}>
-                    <label>Starting Price (USD)</label>
-                    <input type="number" className={styles.textInput} placeholder="e.g. 2500000" />
+                    <label>{t('projects.add.startingPrice')}</label>
+                    <input type="number" className={styles.textInput} placeholder={t('projects.add.startingPricePh')} />
                   </div>
                   <div className={styles.formGroup}>
-                    <label>Expected Handover Date</label>
-                    <input type="text" className={styles.textInput} placeholder="e.g. Q4 2027" />
+                    <label>{t('projects.add.handoverDate')}</label>
+                    <input type="text" className={styles.textInput} placeholder={t('projects.add.handoverDatePh')} />
                   </div>
                   <div className={styles.formGroup}>
-                    <label>Total Units</label>
-                    <input type="number" className={styles.textInput} placeholder="e.g. 350" />
+                    <label>{t('projects.add.totalUnits')}</label>
+                    <input type="number" className={styles.textInput} placeholder={t('projects.add.totalUnitsPh')} />
                   </div>
                   <div className={styles.formGroup}>
-                    <label>Available Units</label>
-                    <input type="number" className={styles.textInput} placeholder="e.g. 42" />
+                    <label>{t('projects.add.availableUnits')}</label>
+                    <input type="number" className={styles.textInput} placeholder={t('projects.add.availableUnitsPh')} />
                   </div>
 
                   <div className={styles.sectionDivider} style={{ gridColumn: 'span 2' }}>
-                    <h4>Payment Plan Builder</h4>
-                    <p>Define the payment milestones for this project.</p>
+                    <h4>{t('projects.add.paymentPlanBuilder')}</h4>
+                    <p>{t('projects.add.paymentPlanBuilderDesc')}</p>
                   </div>
 
                   <div className={styles.paymentPlanBuilder} style={{ gridColumn: 'span 2' }}>
                     {paymentPlans.map((_, idx) => (
                       <div key={idx} className={styles.paymentRowForm}>
-                        <input type="text" className={styles.textInput} placeholder="Milestone (e.g. Down Payment)" />
+                        <input type="text" className={styles.textInput} placeholder={t('projects.add.milestonePh')} />
                         <input type="number" className={styles.textInput} placeholder="%" style={{ width: '100px' }} />
-                        <input type="text" className={styles.textInput} placeholder="Date/Condition" />
+                        <input type="text" className={styles.textInput} placeholder={t('projects.add.datePh')} />
                         <button className={styles.iconBtnDanger} onClick={() => handleRemovePaymentPlan(idx)}>
                           <X size={16} />
                         </button>
                       </div>
                     ))}
                     <Button variant="outline" onClick={handleAddPaymentPlan} style={{ alignSelf: 'flex-start', marginTop: '8px' }}>
-                      <Plus size={16} /> Add Milestone
+                      <Plus size={16} /> {t('projects.add.addMilestone')}
                     </Button>
                   </div>
                 </div>
@@ -221,32 +220,32 @@ export const AddProject: React.FC = () => {
               {currentStep === 3 && (
                 <div className={styles.formGrid}>
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
-                    <label>High-Resolution Photos (Gallery)</label>
+                    <label>{t('projects.add.galleryLabel')}</label>
                     <UploadZone
                       kind="image"
                       accept="image/jpeg,image/png,image/webp"
-                      prompt="Drag and drop exterior, interior, and amenity images here"
-                      hint="JPG, PNG, WebP (Max 10MB per file)"
+                      prompt={t('projects.add.galleryPrompt')}
+                      hint={t('projects.add.galleryHint')}
                     />
                   </div>
 
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
-                    <label>Video Tour (Property Walkthrough)</label>
+                    <label>{t('projects.add.videoLabel')}</label>
                     <UploadZone
                       kind="video"
                       accept="video/mp4,video/quicktime,video/webm"
-                      prompt="Drag and drop the property tour video here"
-                      hint="MP4, MOV, WebM (Max 500MB per file)"
+                      prompt={t('projects.add.videoPrompt')}
+                      hint={t('projects.add.videoHint')}
                     />
                   </div>
 
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
-                    <label>Documents (Brochures, Floor Plans, Payment Terms)</label>
+                    <label>{t('projects.add.documentsLabel')}</label>
                     <UploadZone
                       kind="document"
                       accept=".pdf,.xls,.xlsx,application/pdf"
-                      prompt="Drag and drop PDF documents here"
-                      hint="PDF, Excel (Max 50MB per file)"
+                      prompt={t('projects.add.documentsPrompt')}
+                      hint={t('projects.add.documentsHint')}
                     />
                   </div>
                 </div>
@@ -256,11 +255,11 @@ export const AddProject: React.FC = () => {
               {currentStep === 4 && (
                 <div className={styles.formGrid}>
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
-                    <label>Add Project Amenities</label>
-                    <input 
-                      type="text" 
-                      className={styles.textInput} 
-                      placeholder="Type amenity and press Enter (e.g. Infinity Pool, Smart Home...)" 
+                    <label>{t('projects.add.addAmenities')}</label>
+                    <input
+                      type="text"
+                      className={styles.textInput}
+                      placeholder={t('projects.add.addAmenitiesPh')}
                       value={newAmenity}
                       onChange={(e) => setNewAmenity(e.target.value)}
                       onKeyDown={handleAddAmenity}
@@ -284,44 +283,44 @@ export const AddProject: React.FC = () => {
           </Card>
 
           <div className={styles.navigationFooter}>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
               disabled={currentStep === 1}
             >
-              Previous Step
+              {t('projects.add.previousStep')}
             </Button>
             {currentStep < totalSteps ? (
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={() => setCurrentStep(prev => Math.min(totalSteps, prev + 1))}
               >
-                Next Step
+                {t('projects.add.nextStep')}
               </Button>
             ) : (
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={handleSave}
               >
-                Complete & Save Project
+                {t('projects.add.completeSave')}
               </Button>
             )}
           </div>
         </div>
       </div>
-      <Modal 
-        isOpen={showSuccessModal} 
+      <Modal
+        isOpen={showSuccessModal}
         onClose={handleModalClose}
-        title="Project Created Successfully"
+        title={t('projects.add.successTitle')}
         footer={
-          <Button variant="primary" onClick={handleModalClose}>Go to Projects List</Button>
+          <Button variant="primary" onClick={handleModalClose}>{t('projects.add.goToList')}</Button>
         }
       >
         <div style={{ textAlign: 'center', padding: '20px 0' }}>
           <CheckCircle size={48} color="var(--color-success)" style={{ marginBottom: '16px' }} />
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-            The new property project has been saved successfully.<br/>
-            It is now available in the intelligence database and can be included in proposals.
+            {t('projects.add.successBody')}<br/>
+            {t('projects.add.successBody2')}
           </p>
         </div>
       </Modal>

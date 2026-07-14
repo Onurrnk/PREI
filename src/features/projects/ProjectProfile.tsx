@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { ProjectDTO } from '../../core/types';
 import { projectsApi } from '../../core/api/resources';
@@ -11,6 +12,7 @@ import { ArrowLeft, MapPin, Buildings, CalendarBlank, CurrencyDollar, CheckCircl
 import styles from './ProjectProfile.module.css';
 
 export const ProjectProfile: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data, loading } = useFetch<ProjectDTO[]>(() => projectsApi.list(), [id]);
@@ -25,11 +27,11 @@ export const ProjectProfile: React.FC = () => {
   };
 
   if (loading) {
-    return <div className={styles.loading}>Loading Project Intelligence...</div>;
+    return <div className={styles.loading}>{t('projects.loadingProfile')}</div>;
   }
 
   if (!project) {
-    return <div className={styles.error}>Project not found</div>;
+    return <div className={styles.error}>{t('projects.notFound')}</div>;
   }
 
   const formatCurrency = (value: number) => {
@@ -60,14 +62,14 @@ export const ProjectProfile: React.FC = () => {
               </span>
             </div>
             <p className={styles.subtitle}>
-              <Buildings size={14} className={styles.inlineIcon} /> By {project.developerName} &bull; 
+              <Buildings size={14} className={styles.inlineIcon} /> {t('projects.by', { developer: project.developerName })} &bull;
               <MapPin size={14} className={styles.inlineIcon} style={{ marginLeft: '8px' }} /> {project.location}
             </p>
           </div>
         </div>
         <div className={styles.headerActions}>
-          <Button variant="outline" onClick={() => handleActionClick('Download Full Media Kit')}><FileText size={16} /> Media Kit</Button>
-          <Button variant="primary" onClick={() => handleActionClick('Reserve Unit')}>Reserve Unit</Button>
+          <Button variant="outline" onClick={() => handleActionClick('Download Full Media Kit')}><FileText size={16} /> {t('projects.mediaKit')}</Button>
+          <Button variant="primary" onClick={() => handleActionClick('Reserve Unit')}>{t('projects.reserveUnit')}</Button>
         </div>
       </div>
 
@@ -81,8 +83,8 @@ export const ProjectProfile: React.FC = () => {
             {project.images.length > 1 && (
               <div className={styles.galleryThumbnails}>
                 {project.images.map((img, idx) => (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     className={`${styles.thumbnail} ${selectedImage === idx ? styles.activeThumb : ''}`}
                     onClick={() => setSelectedImage(idx)}
                   >
@@ -95,27 +97,27 @@ export const ProjectProfile: React.FC = () => {
 
           <div className={styles.infoGrid}>
             <Card>
-              <CardHeader><h3 className={styles.cardTitle}>Project Overview</h3></CardHeader>
+              <CardHeader><h3 className={styles.cardTitle}>{t('projects.overview')}</h3></CardHeader>
               <CardBody>
                 <p className={styles.description}>{project.description}</p>
                 <div className={styles.statsGrid}>
                   <div className={styles.statBox}>
                     <CurrencyDollar size={16} className={styles.statIcon} />
-                    <span className={styles.statLabel}>Starting Price</span>
+                    <span className={styles.statLabel}>{t('projects.startingPrice')}</span>
                     <span className={styles.statValue}>{formatCurrency(project.startingPrice)}</span>
                   </div>
                   <div className={styles.statBox}>
                     <Buildings size={16} className={styles.statIcon} />
-                    <span className={styles.statLabel}>Availability</span>
-                    <span className={styles.statValue}>{project.availableUnits} / {project.totalUnits} Units</span>
+                    <span className={styles.statLabel}>{t('projects.availability')}</span>
+                    <span className={styles.statValue}>{t('projects.unitsCount', { available: project.availableUnits, total: project.totalUnits })}</span>
                     <div className={styles.availabilityTrack} role="img" aria-label={`${soldPct}% sold`}>
                       <div className={styles.availabilityFill} style={{ width: `${soldPct}%` }} />
                     </div>
-                    <span className={styles.availabilityNote}>{soldPct}% sold</span>
+                    <span className={styles.availabilityNote}>{t('projects.soldPct', { pct: soldPct })}</span>
                   </div>
                   <div className={styles.statBox}>
                     <CalendarBlank size={16} className={styles.statIcon} />
-                    <span className={styles.statLabel}>Handover</span>
+                    <span className={styles.statLabel}>{t('projects.handover')}</span>
                     <span className={styles.statValue}>{project.completionDate}</span>
                   </div>
                 </div>
@@ -123,7 +125,7 @@ export const ProjectProfile: React.FC = () => {
             </Card>
 
             <Card>
-              <CardHeader><h3 className={styles.cardTitle}>Amenities</h3></CardHeader>
+              <CardHeader><h3 className={styles.cardTitle}>{t('projects.amenitiesTitle')}</h3></CardHeader>
               <CardBody>
                 <ul className={styles.amenitiesList}>
                   {project.amenities.map((amenity, i) => (
@@ -136,7 +138,7 @@ export const ProjectProfile: React.FC = () => {
 
           <div className={styles.infoGrid}>
             <Card>
-              <CardHeader><h3 className={styles.cardTitle}>Payment Plan</h3></CardHeader>
+              <CardHeader><h3 className={styles.cardTitle}>{t('projects.paymentPlanTitle')}</h3></CardHeader>
               <CardBody>
                 <div className={styles.paymentPlan}>
                   <div className={styles.planBar} role="img" aria-label="Payment plan distribution">
@@ -166,11 +168,11 @@ export const ProjectProfile: React.FC = () => {
             </Card>
 
             <Card>
-              <CardHeader><h3 className={styles.cardTitle}>Presentations & Documents</h3></CardHeader>
+              <CardHeader><h3 className={styles.cardTitle}>{t('projects.documentsTitle')}</h3></CardHeader>
               <CardBody>
                 <div className={styles.docsList}>
                   {project.documents.map(doc => (
-                    <div key={doc.id} className={styles.docCard} onClick={() => handleActionClick(`View Document: ${doc.title}`)}>
+                    <div key={doc.id} className={styles.docCard} onClick={() => handleActionClick(t('projects.viewDocument', { title: doc.title }))}>
                       <div className={styles.docIcon} data-type={doc.type}>{docIcon(doc.type)}</div>
                       <div className={styles.docInfo}>
                         <span className={styles.docTitle}>{doc.title}</span>
@@ -178,8 +180,8 @@ export const ProjectProfile: React.FC = () => {
                       </div>
                       <button
                         className={styles.docAction}
-                        aria-label={`Download ${doc.title}`}
-                        onClick={(e) => { e.stopPropagation(); handleActionClick(`Download: ${doc.title}`); }}
+                        aria-label={t('projects.downloadAria', { title: doc.title })}
+                        onClick={(e) => { e.stopPropagation(); handleActionClick(t('projects.download', { title: doc.title })); }}
                       >
                         <DownloadSimple size={16} />
                       </button>
@@ -195,18 +197,18 @@ export const ProjectProfile: React.FC = () => {
         <div className={styles.rightSidebar}>
           <Card className={styles.composerCard}>
             <CardHeader className={styles.composerHeader}>
-              <h3 className={styles.cardTitle}>Send Project Info</h3>
-              <span className={styles.integrationBadge}>Gmail Connected</span>
+              <h3 className={styles.cardTitle}>{t('projects.sendInfo')}</h3>
+              <span className={styles.integrationBadge}>{t('projects.gmailConnected')}</span>
             </CardHeader>
             <CardBody className={styles.composerBody}>
               <div className={styles.composerForm}>
                 <div className={styles.formGroup}>
-                  <label>To (Client)</label>
+                  <label>{t('projects.toClient')}</label>
                   <SelectMenu
-                    aria-label="To (Client)"
+                    aria-label={t('projects.toClient')}
                     value={shareClient}
                     onChange={setShareClient}
-                    placeholder="Select a client…"
+                    placeholder={t('projects.selectClientPh')}
                     options={[
                       { value: 'c1', label: 'Oliver Hartwell (CL-10024)' },
                       { value: 'c2', label: 'Sarah Ahmed (CL-10025)' },
@@ -214,19 +216,19 @@ export const ProjectProfile: React.FC = () => {
                     ]}
                   />
                 </div>
-                
+
                 <div className={styles.formGroup}>
-                  <label>Subject</label>
-                  <input type="text" className={styles.textInput} defaultValue={`Exclusive Opportunity: ${project.name} by ${project.developerName}`} />
+                  <label>{t('projects.subject')}</label>
+                  <input type="text" className={styles.textInput} defaultValue={t('projects.emailSubject', { project: project.name, developer: project.developerName })} />
                 </div>
 
                 <div className={styles.formGroup}>
-                  <label>Message</label>
-                  <textarea className={styles.textArea} defaultValue={`Dear Client,\n\nI wanted to share this exclusive off-plan opportunity with you.\n\nProject: ${project.name}\nLocation: ${project.location}\nStarting from: ${formatCurrency(project.startingPrice)}\n\nPlease find the attached brochure and floor plans.\n\nBest regards,\nYour Consultant`}></textarea>
+                  <label>{t('projects.message')}</label>
+                  <textarea className={styles.textArea} defaultValue={t('projects.emailBody', { project: project.name, location: project.location, price: formatCurrency(project.startingPrice) })}></textarea>
                 </div>
 
                 <div className={styles.attachmentsSection}>
-                  <div className={styles.attachmentLabel}>Included Attachments:</div>
+                  <div className={styles.attachmentLabel}>{t('projects.includedAttachments')}</div>
                   {project.documents.map(doc => (
                     <div key={doc.id} className={styles.attachmentPill}>
                       <Paperclip size={12} /> {doc.title}.pdf
@@ -239,8 +241,8 @@ export const ProjectProfile: React.FC = () => {
               </div>
 
               <div className={styles.composerFooter}>
-                <Button variant="outline" onClick={() => handleActionClick('Preview Email')}>Preview</Button>
-                <Button variant="primary" onClick={() => handleActionClick('Send Email to Client')}><PaperPlaneTilt size={16} style={{ marginRight: '8px' }} /> Send Email</Button>
+                <Button variant="outline" onClick={() => handleActionClick('Preview Email')}>{t('projects.preview')}</Button>
+                <Button variant="primary" onClick={() => handleActionClick('Send Email to Client')}><PaperPlaneTilt size={16} style={{ marginRight: '8px' }} /> {t('projects.sendEmail')}</Button>
               </div>
             </CardBody>
           </Card>
