@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
 import { ShieldWarning, MagnifyingGlass, UsersThree, X, Pulse, CurrencyDollar } from '@phosphor-icons/react';
@@ -112,13 +113,28 @@ const mockAdminUsers = [
   }
 ];
 
+const PIPELINE_LABEL_KEY: Record<string, string> = {
+  hotLeads: 'admin.pipeline.hotLeads',
+  activeLeads: 'admin.pipeline.active',
+  negotiating: 'admin.pipeline.negotiating',
+  frozen: 'admin.pipeline.frozen',
+  lost: 'admin.pipeline.lost',
+};
+
+const TRANSACTION_STATUS_KEY: Record<string, string> = {
+  'Closed Won': 'admin.transactionStatus.closedWon',
+  Pending: 'admin.transactionStatus.pending',
+  Lost: 'admin.transactionStatus.lost',
+};
+
 export const AuditLogs: React.FC = () => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<typeof mockAdminUsers[0] | null>(null);
   const [selectedPipelineCategory, setSelectedPipelineCategory] = useState<string | null>(null);
 
-  const filteredUsers = mockAdminUsers.filter(u => 
-    u.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredUsers = mockAdminUsers.filter(u =>
+    u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     u.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -128,8 +144,8 @@ export const AuditLogs: React.FC = () => {
         <div className={styles.titleArea}>
           <ShieldWarning size={28} className={styles.headerIcon} />
           <div>
-            <h1 className={styles.title}>User Management & Performance</h1>
-            <p className={styles.subtitle}>Track user accounts, business performance, and operational activities.</p>
+            <h1 className={styles.title}>{t('admin.title')}</h1>
+            <p className={styles.subtitle}>{t('admin.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -139,9 +155,9 @@ export const AuditLogs: React.FC = () => {
           <div className={styles.filters}>
             <div className={styles.searchBar}>
               <MagnifyingGlass size={16} className={styles.searchIcon} />
-              <input 
-                type="text" 
-                placeholder="Search by name or role..." 
+              <input
+                type="text"
+                placeholder={t('admin.searchPlaceholder')}
                 className={styles.searchInput}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
@@ -154,11 +170,11 @@ export const AuditLogs: React.FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableHeader>User Name</TableHeader>
-                  <TableHeader>Role</TableHeader>
-                  <TableHeader>Status</TableHeader>
-                  <TableHeader>Last Active</TableHeader>
-                  <TableHeader>Total Clients</TableHeader>
+                  <TableHeader>{t('admin.table.userName')}</TableHeader>
+                  <TableHeader>{t('admin.table.role')}</TableHeader>
+                  <TableHeader>{t('admin.table.status')}</TableHeader>
+                  <TableHeader>{t('admin.table.lastActive')}</TableHeader>
+                  <TableHeader>{t('admin.table.totalClients')}</TableHeader>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -172,7 +188,7 @@ export const AuditLogs: React.FC = () => {
                     <TableCell>{user.role}</TableCell>
                     <TableCell>
                       <span className={user.status === 'Active' ? styles.statusSuccess : styles.statusWarning}>
-                        {user.status}
+                        {user.status === 'Active' ? t('admin.status.active') : t('admin.status.inactive')}
                       </span>
                     </TableCell>
                     <TableCell className={styles.monoText}>{user.lastActive}</TableCell>
@@ -195,7 +211,7 @@ export const AuditLogs: React.FC = () => {
             <div className={styles.modalHeader}>
               <div className={styles.modalTitle}>
                 <UsersThree size={24} color="var(--color-primary-purple)" />
-                {selectedUser.name} - Account Summary
+                {t('admin.accountSummary', { name: selectedUser.name })}
               </div>
               <button className={styles.closeButton} onClick={() => {
                 setSelectedUser(null);
@@ -210,61 +226,61 @@ export const AuditLogs: React.FC = () => {
               {/* KPIs Section */}
               <div className={styles.summaryGrid}>
                 <div className={styles.summaryKpiCard}>
-                  <span className={styles.summaryKpiLabel}>Sales Volume</span>
+                  <span className={styles.summaryKpiLabel}>{t('admin.kpi.salesVolume')}</span>
                   <span className={styles.summaryKpiValue} style={{color: 'var(--data-info)'}}>{selectedUser.kpis.salesVolume}</span>
                 </div>
                 <div className={styles.summaryKpiCard}>
-                  <span className={styles.summaryKpiLabel}>Commission Earned</span>
+                  <span className={styles.summaryKpiLabel}>{t('admin.kpi.commission')}</span>
                   <span className={styles.summaryKpiValue} style={{color: 'var(--color-success)'}}>{selectedUser.kpis.commission}</span>
                 </div>
                 <div className={styles.summaryKpiCard}>
-                  <span className={styles.summaryKpiLabel}>Active Deals</span>
+                  <span className={styles.summaryKpiLabel}>{t('admin.kpi.activeDeals')}</span>
                   <span className={styles.summaryKpiValue} style={{color: 'var(--color-primary-purple)'}}>{selectedUser.kpis.activeDeals}</span>
                 </div>
                 <div className={styles.summaryKpiCard}>
-                  <span className={styles.summaryKpiLabel}>Conversion Rate</span>
+                  <span className={styles.summaryKpiLabel}>{t('admin.kpi.conversionRate')}</span>
                   <span className={styles.summaryKpiValue} style={{color: 'var(--color-secondary-orange)'}}>{selectedUser.kpis.conversionRate}</span>
                 </div>
               </div>
 
               {/* Lead Pipeline Breakdown */}
               <div>
-                <h3 className={styles.sectionTitle}><UsersThree size={20}/> Lead Pipeline Breakdown</h3>
+                <h3 className={styles.sectionTitle}><UsersThree size={20}/> {t('admin.pipelineBreakdown')}</h3>
                 <div className={styles.pipelineGrid}>
-                  <div 
+                  <div
                     className={`${styles.pipelineCard} ${styles.pipeHot} ${selectedPipelineCategory === 'hotLeads' ? styles.activePipelineCard : ''}`}
                     onClick={() => setSelectedPipelineCategory(selectedPipelineCategory === 'hotLeads' ? null : 'hotLeads')}
                   >
                     <span className={styles.pipelineValue}>{selectedUser.pipeline.hotLeads}</span>
-                    <span className={styles.pipelineLabel}>Hot Leads</span>
+                    <span className={styles.pipelineLabel}>{t('admin.pipeline.hotLeads')}</span>
                   </div>
-                  <div 
+                  <div
                     className={`${styles.pipelineCard} ${styles.pipeActive} ${selectedPipelineCategory === 'activeLeads' ? styles.activePipelineCard : ''}`}
                     onClick={() => setSelectedPipelineCategory(selectedPipelineCategory === 'activeLeads' ? null : 'activeLeads')}
                   >
                     <span className={styles.pipelineValue}>{selectedUser.pipeline.activeLeads}</span>
-                    <span className={styles.pipelineLabel}>Active</span>
+                    <span className={styles.pipelineLabel}>{t('admin.pipeline.active')}</span>
                   </div>
-                  <div 
+                  <div
                     className={`${styles.pipelineCard} ${styles.pipeNegotiating} ${selectedPipelineCategory === 'negotiating' ? styles.activePipelineCard : ''}`}
                     onClick={() => setSelectedPipelineCategory(selectedPipelineCategory === 'negotiating' ? null : 'negotiating')}
                   >
                     <span className={styles.pipelineValue}>{selectedUser.pipeline.negotiating}</span>
-                    <span className={styles.pipelineLabel}>Negotiating</span>
+                    <span className={styles.pipelineLabel}>{t('admin.pipeline.negotiating')}</span>
                   </div>
-                  <div 
+                  <div
                     className={`${styles.pipelineCard} ${styles.pipeFrozen} ${selectedPipelineCategory === 'frozen' ? styles.activePipelineCard : ''}`}
                     onClick={() => setSelectedPipelineCategory(selectedPipelineCategory === 'frozen' ? null : 'frozen')}
                   >
                     <span className={styles.pipelineValue}>{selectedUser.pipeline.frozen}</span>
-                    <span className={styles.pipelineLabel}>Frozen</span>
+                    <span className={styles.pipelineLabel}>{t('admin.pipeline.frozen')}</span>
                   </div>
-                  <div 
+                  <div
                     className={`${styles.pipelineCard} ${styles.pipeLost} ${selectedPipelineCategory === 'lost' ? styles.activePipelineCard : ''}`}
                     onClick={() => setSelectedPipelineCategory(selectedPipelineCategory === 'lost' ? null : 'lost')}
                   >
                     <span className={styles.pipelineValue}>{selectedUser.pipeline.lost}</span>
-                    <span className={styles.pipelineLabel}>Lost</span>
+                    <span className={styles.pipelineLabel}>{t('admin.pipeline.lost')}</span>
                   </div>
                 </div>
 
@@ -272,17 +288,17 @@ export const AuditLogs: React.FC = () => {
                   <div className={styles.drillDownContainer}>
                     <div className={styles.drillDownHeader}>
                       <span className={styles.drillDownTitle}>
-                        Details for: {selectedPipelineCategory.replace('Leads', ' Leads').toUpperCase()}
+                        {t('admin.detailsFor', { category: t(PIPELINE_LABEL_KEY[selectedPipelineCategory]).toUpperCase() })}
                       </span>
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedPipelineCategory(null)}>Close</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedPipelineCategory(null)}>{t('admin.close')}</Button>
                     </div>
                     <Table>
                       <TableHead>
                         <TableRow>
-                          <TableHeader>Client Name</TableHeader>
-                          <TableHeader>Property / Interest</TableHeader>
-                          <TableHeader>Date</TableHeader>
-                          <TableHeader>Reason / Notes</TableHeader>
+                          <TableHeader>{t('admin.pipelineTable.clientName')}</TableHeader>
+                          <TableHeader>{t('admin.pipelineTable.propertyInterest')}</TableHeader>
+                          <TableHeader>{t('admin.pipelineTable.date')}</TableHeader>
+                          <TableHeader>{t('admin.pipelineTable.reasonNotes')}</TableHeader>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -296,7 +312,7 @@ export const AuditLogs: React.FC = () => {
                         ))}
                         {selectedUser.pipelineClients.filter(c => c.status === selectedPipelineCategory).length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={4} style={{textAlign:'center', color:'var(--text-muted)'}}>No clients found in this category.</TableCell>
+                            <TableCell colSpan={4} style={{textAlign:'center', color:'var(--text-muted)'}}>{t('admin.noClientsInCategory')}</TableCell>
                           </TableRow>
                         )}
                       </TableBody>
@@ -307,15 +323,15 @@ export const AuditLogs: React.FC = () => {
 
               {/* Transactions Section */}
               <div>
-                <h3 className={styles.sectionTitle}><CurrencyDollar size={20}/> Transactions & Deals</h3>
+                <h3 className={styles.sectionTitle}><CurrencyDollar size={20}/> {t('admin.transactionsDeals')}</h3>
                 <Card>
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableHeader>Property / Project</TableHeader>
-                        <TableHeader>Client</TableHeader>
-                        <TableHeader>Amount</TableHeader>
-                        <TableHeader>Status</TableHeader>
+                        <TableHeader>{t('admin.transactionsTable.propertyProject')}</TableHeader>
+                        <TableHeader>{t('admin.transactionsTable.client')}</TableHeader>
+                        <TableHeader>{t('admin.transactionsTable.amount')}</TableHeader>
+                        <TableHeader>{t('admin.transactionsTable.status')}</TableHeader>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -329,14 +345,14 @@ export const AuditLogs: React.FC = () => {
                               tx.status === 'Closed Won' ? styles.statusSuccess :
                               tx.status === 'Lost' ? styles.statusFailed : styles.statusWarning
                             }>
-                              {tx.status}
+                              {t(TRANSACTION_STATUS_KEY[tx.status])}
                             </span>
                           </TableCell>
                         </TableRow>
                       ))}
                       {selectedUser.transactions.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={4} style={{textAlign:'center', color:'var(--text-muted)'}}>No transactions found.</TableCell>
+                          <TableCell colSpan={4} style={{textAlign:'center', color:'var(--text-muted)'}}>{t('admin.noTransactions')}</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
@@ -346,7 +362,7 @@ export const AuditLogs: React.FC = () => {
 
               {/* Operational Activity Timeline */}
               <div>
-                <h3 className={styles.sectionTitle}><Pulse size={20}/> Activity & Operations Log</h3>
+                <h3 className={styles.sectionTitle}><Pulse size={20}/> {t('admin.activityLog')}</h3>
                 <div className={styles.timelineContainer}>
                   {selectedUser.timeline.map(tl => (
                     <div key={tl.id} className={styles.timelineItem}>
@@ -355,7 +371,7 @@ export const AuditLogs: React.FC = () => {
                     </div>
                   ))}
                   {selectedUser.timeline.length === 0 && (
-                    <span style={{color:'var(--text-muted)'}}>No recent activity.</span>
+                    <span style={{color:'var(--text-muted)'}}>{t('admin.noRecentActivity')}</span>
                   )}
                 </div>
               </div>
