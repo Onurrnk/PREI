@@ -3,12 +3,22 @@
 // Wraps Google's OAuth2 client: builds the consent URL, exchanges the
 // authorization code for tokens, persists them per user, and returns an
 // authorized client (auto-refreshing) for the Gmail module to use.
+//
+// `state` carries the PREI userId across the redirect to Google and back.
+// Since Google's callback has no session/JWT, state is HMAC-signed with a
+// short TTL (DEBT-GMAIL-002 fully closed: previously state was the raw
+// userId, so anyone who completed their OWN consent flow could hand-craft
+// a callback request with state=<victim-userId> and link their Gmail
+// account to someone else's PREI account).
 // =====================================================================
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { google, Auth } from 'googleapis';
 import type { AppConfig } from '../../config/configuration';
 import { TokenStore } from './token.store';
+
+const STATE_TTL_MS = 10 * 60 * 1000; // consent flow should complete within 10 minutes
 
 @Injectable()
 export class GoogleOAuthService {
@@ -22,7 +32,38 @@ export class GoogleOAuthService {
     return new google.auth.OAuth2(g.clientId, g.clientSecret, g.redirectUri);
   }
 
-  /** Build the Google consent screen URL. `state` carries the PREI userId. */
+  /** Server-only secret for signing state — jwtSecret if configured, else clientSecret. */
+  private stateSecret(): string {
+    const supabase = this.config.get('supabase', { infer: true });
+    const google = this.config.get('google', { infer: true });
+    return supabase.jwtSecret || google.clientSecret;
+  }
+
+  private signState(userId: string): string {
+    const payload = `${userId}.${Date.now() + STATE_TTL_MS}`;
+    const sig = createHmac('sha256', this.stateSecret()).update(payload).digest('base64url');
+    return `${Buffer.from(payload).toString('base64url')}.${sig}`;
+  }
+
+  /** Verify + decode a signed state; throws if tampered, malformed, or expired. */
+  private verifyState(state: string): string {
+    const [payloadB64, sig] = state.split('.');
+    if (!payloadB64 || !sig) throw new UnauthorizedException('Invalid OAuth state.');
+    const payload = Buffer.from(payloadB64, 'base64url').toString('utf8');
+    const expectedSig = createHmac('sha256', this.stateSecret()).update(payload).digest('base64url');
+    const a = Buffer.from(sig);
+    const b = Buffer.from(expectedSig);
+    if (a.length !== b.length || !timingSafeEqual(a, b)) {
+      throw new UnauthorizedException('Invalid OAuth state.');
+    }
+    const [userId, expiryStr] = payload.split('.');
+    if (!userId || Date.now() > Number(expiryStr)) {
+      throw new UnauthorizedException('OAuth state expired — please retry.');
+    }
+    return userId;
+  }
+
+  /** Build the Google consent screen URL for the authenticated caller. */
   getAuthUrl(userId: string): string {
     const g = this.config.get('google', { infer: true });
     const client = this.createClient();
@@ -30,13 +71,14 @@ export class GoogleOAuthService {
       access_type: 'offline', // request a refresh token
       prompt: 'consent', // ensure refresh token is returned on re-consent
       scope: g.scopes,
-      state: userId,
+      state: this.signState(userId),
       include_granted_scopes: true,
     });
   }
 
-  /** Exchange the auth code for tokens and persist them for the user. */
-  async handleCallback(code: string, userId: string): Promise<{ email: string | null }> {
+  /** Exchange the auth code for tokens and persist them for the signed-state user. */
+  async handleCallback(code: string, state: string): Promise<{ email: string | null }> {
+    const userId = this.verifyState(state);
     const client = this.createClient();
     const { tokens } = await client.getToken(code);
 

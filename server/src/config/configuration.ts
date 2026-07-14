@@ -35,6 +35,9 @@ export interface AppConfig {
     redirectUri: string;
     scopes: string[];
   };
+  // AES-256-GCM key (32 raw bytes, hex-encoded = 64 chars) for encrypting
+  // OAuth tokens at rest in users.metadata (DEBT-GMAIL-001).
+  tokenEncryptionKey: string;
 }
 
 export default (): AppConfig => ({
@@ -64,4 +67,5 @@ export default (): AppConfig => ({
       'openid',
     ],
   },
+  tokenEncryptionKey: process.env.TOKEN_ENCRYPTION_KEY ?? '',
 });

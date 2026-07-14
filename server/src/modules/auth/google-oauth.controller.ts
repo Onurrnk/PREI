@@ -1,14 +1,18 @@
 // =====================================================================
 // PREI | Google OAuth controller (thin)
-// NOTE: `userId` here is a placeholder. In production it MUST be derived
-// from the authenticated PREI session (JWT), never trusted from the
-// client. Wire this to your auth guard and replace the `userId` query
-// param with the principal from the request. Tracked as DEBT-GMAIL-002.
+// url/status/disconnect require a valid PREI session (JwtAuthGuard) and
+// always act on the authenticated caller's own ctx.userId — never a
+// client-supplied id (DEBT-GMAIL-002, fully closed). `callback` is the one
+// route Google itself hits with no session; it trusts the HMAC-signed
+// `state` produced by `url` instead (see GoogleOAuthService.verifyState).
 // =====================================================================
-import { Controller, Get, Post, Query, Res, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Query, Res, BadRequestException, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import type { AppConfig } from '../../config/configuration';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { Ctx } from '../../auth/context.decorator';
+import type { RequestContext } from '../../common/request-context';
 import { GoogleOAuthService } from './google-oauth.service';
 
 @Controller('auth/google')
@@ -20,13 +24,14 @@ export class GoogleOAuthController {
 
   /** Frontend calls this, then opens the returned URL to start consent. */
   @Get('url')
-  getUrl(@Query('userId') userId: string): { url: string } {
-    if (!userId) throw new BadRequestException('userId is required');
-    return { url: this.oauth.getAuthUrl(userId) };
+  @UseGuards(JwtAuthGuard)
+  getUrl(@Ctx() ctx: RequestContext): { url: string } {
+    return { url: this.oauth.getAuthUrl(ctx.userId!) };
   }
 
   /** Google redirects here after consent. We persist tokens, then bounce
-   *  the user back to the frontend. */
+   *  the user back to the frontend. No PREI session exists on this request —
+   *  the signed `state` (minted by `url` above) is the only trust anchor. */
   @Get('callback')
   async callback(
     @Query('code') code: string,
@@ -47,15 +52,15 @@ export class GoogleOAuthController {
   }
 
   @Get('status')
-  status(@Query('userId') userId: string): Promise<{ connected: boolean; email: string | null }> {
-    if (!userId) throw new BadRequestException('userId is required');
-    return this.oauth.getConnection(userId);
+  @UseGuards(JwtAuthGuard)
+  status(@Ctx() ctx: RequestContext): Promise<{ connected: boolean; email: string | null }> {
+    return this.oauth.getConnection(ctx.userId!);
   }
 
   @Post('disconnect')
-  async disconnect(@Query('userId') userId: string): Promise<{ ok: true }> {
-    if (!userId) throw new BadRequestException('userId is required');
-    await this.oauth.disconnect(userId);
+  @UseGuards(JwtAuthGuard)
+  async disconnect(@Ctx() ctx: RequestContext): Promise<{ ok: true }> {
+    await this.oauth.disconnect(ctx.userId!);
     return { ok: true };
   }
 }
