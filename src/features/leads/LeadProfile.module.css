@@ -296,6 +296,7 @@
 .kind_email { color: var(--data-info); }
 .kind_phone { color: var(--brand-primary); }
 .kind_sms { color: var(--data-warning); }
+.kind_telegram { color: var(--data-info); }
 
 .timelineContent {
   flex: 1;

@@ -72,7 +72,7 @@ export interface LeadDTO {
 // GET /api/leads/:id/communications sözleşmesi — backend LeadCommunicationResponse ile senkron.
 export interface LeadCommunicationDTO {
   id: string;
-  channel: 'whatsapp' | 'email' | 'phone' | 'sms';
+  channel: 'whatsapp' | 'email' | 'phone' | 'sms' | 'telegram';
   direction: 'inbound' | 'outbound';
   subject: string | null;
   body: string | null;
