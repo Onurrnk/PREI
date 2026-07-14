@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardBody } from '../../core/components/Card/Card';
 import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from '../../core/components/Table/Table';
 import { Button } from '../../core/components/Button/Button';
@@ -11,43 +12,53 @@ import { useFetch } from '../../core/hooks/useFetch';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import styles from './Contracts.module.css';
 
+const STATUS_KEY: Record<string, string> = {
+  Active: 'active',
+  Draft: 'draft',
+  Expired: 'expired',
+  Expiring: 'expiring',
+  Terminated: 'terminated',
+};
+
 export const ContractsList: React.FC = () => {
+  const { t } = useTranslation();
   const { data, loading, error } = useFetch<ContractDTO[]>(() => contractsApi.list(), []);
   const contracts = data ?? [];
   const [selectedContract, setSelectedContract] = useState<ContractDTO | null>(null);
   const toast = useToast();
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Active': return <span className={`${styles.statusBadge} ${styles.statusActive}`}>Active</span>;
-      case 'Expiring': return <span className={`${styles.statusBadge} ${styles.statusExpiring}`}>Expiring Soon</span>;
-      case 'Expired': return <span className={`${styles.statusBadge} ${styles.statusExpired}`}>Expired</span>;
-      default: return <span className={styles.statusBadge}>{status}</span>;
-    }
+    const key = STATUS_KEY[status];
+    const label = key ? t(`contracts.status.${key}`) : status;
+    const cls = status === 'Active' ? styles.statusActive
+      : status === 'Expiring' ? styles.statusExpiring
+      : status === 'Expired' ? styles.statusExpired
+      : '';
+    return <span className={`${styles.statusBadge} ${cls}`}>{label}</span>;
   };
 
   const handleDownload = (docName: string) => {
-    toast.info(`${docName} indiriliyor…`);
+    toast.info(t('contracts.downloading', { name: docName }));
   };
 
   return (
     <div className={styles.pageContainer}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>Developer Contracts</h1>
-          <p className={styles.subtitle}>Manage agency agreements and commission structures.</p>
+          <h1 className={styles.title}>{t('contracts.title')}</h1>
+          <p className={styles.subtitle}>{t('contracts.subtitle')}</p>
         </div>
       </div>
 
       {loading ? (
         <TableSkeleton rows={5} />
       ) : error ? (
-        <div className={styles.errorState}>Sözleşmeler yüklenemedi: {error}</div>
+        <div className={styles.errorState}>{t('contracts.loadFailed', { error })}</div>
       ) : contracts.length === 0 ? (
         <div className={styles.emptyState}>
           <Scroll size={40} weight="thin" />
-          <h3>Henüz sözleşme yok</h3>
-          <p>Geliştirici acente anlaşmaları eklendiğinde burada görünecek.</p>
+          <h3>{t('contracts.emptyTitle')}</h3>
+          <p>{t('contracts.emptyBody')}</p>
         </div>
       ) : (
         <Card>
@@ -55,12 +66,12 @@ export const ContractsList: React.FC = () => {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableHeader>Developer</TableHeader>
-                  <TableHeader>Associated Project</TableHeader>
-                  <TableHeader>Status</TableHeader>
-                  <TableHeader>Commission</TableHeader>
-                  <TableHeader>Expiry Date</TableHeader>
-                  <TableHeader>Actions</TableHeader>
+                  <TableHeader>{t('contracts.table.developer')}</TableHeader>
+                  <TableHeader>{t('contracts.table.associatedProject')}</TableHeader>
+                  <TableHeader>{t('contracts.table.status')}</TableHeader>
+                  <TableHeader>{t('contracts.table.commission')}</TableHeader>
+                  <TableHeader>{t('contracts.table.expiryDate')}</TableHeader>
+                  <TableHeader>{t('contracts.table.actions')}</TableHeader>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -73,7 +84,7 @@ export const ContractsList: React.FC = () => {
                     <TableCell><span className={styles.numCell}>{contract.expiryDate ?? '—'}</span></TableCell>
                     <TableCell>
                       <Button variant="ghost" size="sm" onClick={() => setSelectedContract(contract)}>
-                        View Details
+                        {t('contracts.viewDetails')}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -88,45 +99,45 @@ export const ContractsList: React.FC = () => {
       <Modal
         isOpen={selectedContract !== null}
         onClose={() => setSelectedContract(null)}
-        title={selectedContract ? `${selectedContract.developer} Agreement` : ''}
+        title={selectedContract ? t('contracts.agreementTitle', { developer: selectedContract.developer }) : ''}
         size="lg"
       >
         {selectedContract && (
           <div className={styles.modalStack}>
             <div className={styles.detailGrid}>
               <div className={styles.detailItem}>
-                <span className={styles.detailLabel}><Buildings size={12} /> Legal Entity</span>
+                <span className={styles.detailLabel}><Buildings size={12} /> {t('contracts.detail.legalEntity')}</span>
                 <span className={styles.detailValue}>{selectedContract.legalEntity || '—'}</span>
               </div>
               <div className={styles.detailItem}>
-                <span className={styles.detailLabel}><ShieldCheck size={12} /> Status</span>
+                <span className={styles.detailLabel}><ShieldCheck size={12} /> {t('contracts.detail.status')}</span>
                 <span className={styles.detailValue}>{getStatusBadge(selectedContract.status)}</span>
               </div>
               <div className={styles.detailItem}>
-                <span className={styles.detailLabel}><CalendarBlank size={12} /> Valid From</span>
+                <span className={styles.detailLabel}><CalendarBlank size={12} /> {t('contracts.detail.validFrom')}</span>
                 <span className={`${styles.detailValue} ${styles.numCell}`}>{selectedContract.startDate ?? '—'}</span>
               </div>
               <div className={styles.detailItem}>
-                <span className={styles.detailLabel}><CalendarBlank size={12} /> Valid To (Expiry)</span>
+                <span className={styles.detailLabel}><CalendarBlank size={12} /> {t('contracts.detail.validTo')}</span>
                 <span className={`${styles.detailValue} ${styles.numCell}`}>{selectedContract.expiryDate ?? '—'}</span>
               </div>
               <div className={styles.detailItem}>
-                <span className={styles.detailLabel}><Percent size={12} /> Commission Rate</span>
+                <span className={styles.detailLabel}><Percent size={12} /> {t('contracts.detail.commissionRate')}</span>
                 <span className={`${styles.detailValue} ${styles.numCell}`}>{selectedContract.commission || '—'}</span>
               </div>
               <div className={styles.detailItem}>
-                <span className={styles.detailLabel}>Payment Terms</span>
+                <span className={styles.detailLabel}>{t('contracts.detail.paymentTerms')}</span>
                 <span className={styles.detailValue}>{selectedContract.paymentTerms || '—'}</span>
               </div>
             </div>
 
             <div>
               <h3 className={styles.sectionTitle}>
-                <FileText size={18} /> Attached PDF Documents
+                <FileText size={18} /> {t('contracts.attachedDocuments')}
               </h3>
               <div className={styles.documentsList}>
                 {selectedContract.documents.length === 0 && (
-                  <span style={{ color: 'var(--text-muted)' }}>Ekli doküman yok.</span>
+                  <span style={{ color: 'var(--text-muted)' }}>{t('contracts.noDocuments')}</span>
                 )}
                 {selectedContract.documents.map(doc => (
                   <div key={doc.id} className={styles.documentItem}>
@@ -140,7 +151,7 @@ export const ContractsList: React.FC = () => {
                       </div>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => handleDownload(doc.name)}>
-                      <DownloadSimple size={16} /> Download
+                      <DownloadSimple size={16} /> {t('contracts.download')}
                     </Button>
                   </div>
                 ))}
