@@ -10,6 +10,7 @@ import type {
   ContactDTO,
   ContractDTO,
   DashboardSummaryDTO,
+  FinancialsSummaryDTO,
   MeetingDTO,
   ProjectDTO,
   DeveloperDTO,
@@ -378,6 +379,53 @@ export const handlers = [
         { code: 'TR', name: 'Türkiye', valueEur: 1_540_000 },
         { code: 'ES', name: 'Spain', valueEur: 780_000 },
         { code: 'GB', name: 'United Kingdom', valueEur: 540_000 },
+      ],
+    });
+  }),
+
+  http.get('/api/financials/summary', () => {
+    return HttpResponse.json<FinancialsSummaryDTO>({
+      kpis: {
+        totalRevenueEur: 7_247_192.51, totalRevenueDeltaPct: null,
+        totalSales: 6, totalSalesDeltaPct: null,
+        conversionRatePct: 54.5, conversionRateDeltaPct: null,
+        avgDealSizeEur: 1_207_865.42, avgDealSizeDeltaPct: null,
+        commissionEarnedEur: 217_088.5, commissionEarnedDeltaPct: null,
+      },
+      targets: {
+        monthlyLeads: { actual: 11, target: 25 },
+        monthlySales: { actual: 2, target: 3 },
+        monthlyRevenueEur: { actual: 3_254_545.45, target: 2_000_000 },
+        yearlyRevenueEur: { actual: 7_247_192.51, target: 20_000_000 },
+      },
+      monthlyRevenue: [
+        { month: '2026-02', valueEur: 1_050_000 },
+        { month: '2026-03', valueEur: 475_000 },
+        { month: '2026-04', valueEur: 1_117_647.06 },
+        { month: '2026-05', valueEur: 1_350_000 },
+        { month: '2026-07', valueEur: 3_254_545.45 },
+      ],
+      salesByMarket: [
+        { code: 'ES', name: 'Spain', valueEur: 4_550_000 },
+        { code: 'AE', name: 'Dubai (UAE)', valueEur: 1_525_000 },
+        { code: 'GB', name: 'United Kingdom', valueEur: 1_117_647.06 },
+        { code: 'TR', name: 'Türkiye', valueEur: 54_545.45 },
+      ],
+      salesByProject: [
+        { name: 'Marbella Sky Villas', valueEur: 4_550_000 },
+        { name: 'Thames Riverside', valueEur: 1_117_647.06 },
+        { name: 'Downtown Heights', valueEur: 1_050_000 },
+        { name: 'Safa Two', valueEur: 475_000 },
+        { name: 'Bosphorus Terraces', valueEur: 54_545.45 },
+      ],
+      saleTypeSplit: [
+        { code: 'resale', name: 'Resale', valueEur: 5_667_647.06 },
+        { code: 'off_plan', name: 'Off-plan', valueEur: 1_579_545.45 },
+      ],
+      purposeSplit: [
+        { code: 'golden_visa', name: 'Golden Visa', valueEur: 3_675_000 },
+        { code: 'investment', name: 'Investment', valueEur: 2_222_192.51 },
+        { code: 'holiday_home', name: 'Holiday Home', valueEur: 1_350_000 },
       ],
     });
   }),

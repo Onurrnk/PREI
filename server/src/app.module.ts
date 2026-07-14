@@ -19,6 +19,7 @@ import { ProposalsModule } from './modules/proposals/proposals.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { MeetingsModule } from './modules/meetings/meetings.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { FinancialsModule } from './modules/financials/financials.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { UsersModule } from './modules/users/users.module';
 import { AgentModule } from './modules/agent/agent.module';
@@ -62,6 +63,7 @@ import { MeModule } from './modules/me/me.module';
     TasksModule,
     MeetingsModule,
     DashboardModule,
+    FinancialsModule,
     DocumentsModule,
     UsersModule,
     AgentModule,

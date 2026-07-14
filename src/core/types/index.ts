@@ -26,6 +26,33 @@ export interface DashboardSummaryDTO {
   marketSplit: MarketSplitItemDTO[];
 }
 
+// GET /api/financials/summary?timeframe=Q1|Q2|YTD|1Y — gerçek aggregate (EUR).
+// Kaynak: deals(status='won') = ciro; financials(type='commission',status='paid') = komisyon.
+export type FinancialsTimeframe = 'Q1' | 'Q2' | 'YTD' | '1Y';
+export interface FinancialsSplitItemDTO { code: string; name: string; valueEur: number }
+export interface FinancialsProjectItemDTO { name: string; valueEur: number }
+export interface FinancialsMonthlyItemDTO { month: string; valueEur: number }
+export interface FinancialsSummaryDTO {
+  kpis: {
+    totalRevenueEur: number; totalRevenueDeltaPct: number | null;
+    totalSales: number; totalSalesDeltaPct: number | null;
+    conversionRatePct: number; conversionRateDeltaPct: number | null;
+    avgDealSizeEur: number; avgDealSizeDeltaPct: number | null;
+    commissionEarnedEur: number; commissionEarnedDeltaPct: number | null;
+  };
+  targets: {
+    monthlyLeads: { actual: number; target: number };
+    monthlySales: { actual: number; target: number };
+    monthlyRevenueEur: { actual: number; target: number };
+    yearlyRevenueEur: { actual: number; target: number };
+  };
+  monthlyRevenue: FinancialsMonthlyItemDTO[];
+  salesByMarket: FinancialsSplitItemDTO[];
+  salesByProject: FinancialsProjectItemDTO[];
+  saleTypeSplit: FinancialsSplitItemDTO[];
+  purposeSplit: FinancialsSplitItemDTO[];
+}
+
 export interface KPIDTO {
   id: string;
   title: string;

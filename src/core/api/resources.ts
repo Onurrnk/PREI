@@ -15,6 +15,8 @@ import type {
   ContractDTO,
   DashboardSummaryDTO,
   DeveloperDTO,
+  FinancialsSummaryDTO,
+  FinancialsTimeframe,
   MeetingDTO,
   KPIDTO,
   LeadCommunicationDTO,
@@ -153,4 +155,9 @@ export const dashboardApi = {
   summary: () => api.get<DashboardSummaryDTO>('/api/dashboard/summary'),
   kpis: () => api.get<KPIDTO[]>('/api/kpi/dashboard'),
   globalActivities: () => api.get<ActivityDTO[]>('/api/activities/global'),
+};
+
+export const financialsApi = {
+  summary: (timeframe: FinancialsTimeframe) =>
+    api.get<FinancialsSummaryDTO>('/api/financials/summary', { params: { timeframe } }),
 };

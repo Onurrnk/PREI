@@ -1,75 +1,59 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { FunnelSimple, DownloadSimple, TrendUp, TrendDown } from '@phosphor-icons/react';
-import { TrendArea, DonutMetric, HBarCompare, fmtCompact } from '../../core/charts';
+import { TrendArea, DonutMetric, HBarCompare, fmtEUR } from '../../core/charts';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
+import { useFetch } from '../../core/hooks/useFetch';
+import { financialsApi } from '../../core/api/resources';
+import type { FinancialsSummaryDTO, FinancialsTimeframe } from '../../core/types';
 import styles from './Financials.module.css';
 
-const fmtUSD = (v: number): string => `$${fmtCompact(v)}`;
-
-// ---------------------------------------------------------------------
-// Mock veri — Faz 1'de gerçek API'ye bağlanacak (para birimi B-7'de EUR
-// bazına normalize edilecek). Sayılar temsilidir.
-// ---------------------------------------------------------------------
-
-const kpis = [
-  { id: 'revenue', labelKey: 'financials.kpi.totalRevenue', value: '$24.5M', delta: 12.5 },
-  { id: 'sales', labelKey: 'financials.kpi.totalSales', value: '18', delta: 8.3 },
-  { id: 'conversion', labelKey: 'financials.kpi.conversionRate', value: '8.9%', delta: 1.2 },
-  { id: 'dealSize', labelKey: 'financials.kpi.avgDealSize', value: '$1.36M', delta: -2.1 },
-  { id: 'commission', labelKey: 'financials.kpi.commissionEarned', value: '$735K', delta: 15.2 },
-];
-
-// Pazarlar (K-6): TR, UAE, ES, UK aktif; TH ve DE yolda
-const salesByMarket = [
-  { name: 'Dubai (UAE)', value: 9_800_000 },
-  { name: 'Türkiye', value: 7_400_000 },
-  { name: 'Spain', value: 4_300_000 },
-  { name: 'United Kingdom', value: 3_000_000 },
-];
-
-const salesByProject = [
-  { name: 'Palm Beach Towers · DXB', value: 2_500_000 },
-  { name: 'Nişantaşı Koru · IST', value: 1_800_000 },
-  { name: 'Marina Vista · DXB', value: 1_200_000 },
-  { name: 'La Zagaleta Villas · MRB', value: 950_000 },
-  { name: 'Nine Elms Residences · LDN', value: 700_000 },
-];
-
-const propertyTypeSplit = [
-  { name: 'Off-plan', value: 6_500_000 },
-  { name: 'Resale', value: 3_500_000 },
-];
-
-const purposeSplit = [
-  { name: 'Investment', value: 4_000_000 },
-  { name: 'Golden Visa', value: 2_500_000 },
-  { name: 'Holiday Home', value: 1_500_000 },
-  { name: 'CBI', value: 1_000_000 },
-  { name: 'Lifestyle', value: 1_000_000 },
-];
-
-const targets = [
-  { id: 'leads', titleKey: 'financials.targets.monthlyLeads', actual: 45, target: 50, fmt: (v: number) => `${v}` },
-  { id: 'units', titleKey: 'financials.targets.monthlySales', actual: 4, target: 5, fmt: (v: number) => `${v}` },
-  { id: 'monthlyRev', titleKey: 'financials.targets.monthlyRevenue', actual: 6_500_000, target: 10_000_000, fmt: fmtUSD },
-  { id: 'yearlyRev', titleKey: 'financials.targets.yearlyRevenue', actual: 24_500_000, target: 50_000_000, fmt: fmtUSD },
-];
-
 export const FinancialsDashboard: React.FC = () => {
-  const { t } = useTranslation();
-  const [timeframe, setTimeframe] = useState('YTD');
+  const { t, i18n } = useTranslation();
+  const [timeframe, setTimeframe] = useState<FinancialsTimeframe>('YTD');
+  const { data } = useFetch<FinancialsSummaryDTO>(() => financialsApi.summary(timeframe), [timeframe]);
 
-  const monthlyRevenue = [
-    { label: t('financials.months.jan'), value: 1_200_000 },
-    { label: t('financials.months.feb'), value: 1_900_000 },
-    { label: t('financials.months.mar'), value: 1_500_000 },
-    { label: t('financials.months.apr'), value: 2_200_000 },
-    { label: t('financials.months.may'), value: 2_800_000 },
-    { label: t('financials.months.jun'), value: 2_450_000 },
-  ];
+  const dateLocale = i18n.language === 'tr' ? 'tr-TR' : 'en-GB';
+
+  const kpis = useMemo(() => {
+    const k = data?.kpis;
+    return [
+      { id: 'revenue', labelKey: 'financials.kpi.totalRevenue', value: k ? fmtEUR(k.totalRevenueEur) : '—', delta: k?.totalRevenueDeltaPct ?? null },
+      { id: 'sales', labelKey: 'financials.kpi.totalSales', value: k ? String(k.totalSales) : '—', delta: k?.totalSalesDeltaPct ?? null },
+      { id: 'conversion', labelKey: 'financials.kpi.conversionRate', value: k ? `${k.conversionRatePct.toFixed(1)}%` : '—', delta: k?.conversionRateDeltaPct ?? null },
+      { id: 'dealSize', labelKey: 'financials.kpi.avgDealSize', value: k ? fmtEUR(k.avgDealSizeEur) : '—', delta: k?.avgDealSizeDeltaPct ?? null },
+      { id: 'commission', labelKey: 'financials.kpi.commissionEarned', value: k ? fmtEUR(k.commissionEarnedEur) : '—', delta: k?.commissionEarnedDeltaPct ?? null },
+    ];
+  }, [data]);
+
+  const targets = useMemo(() => {
+    const tg = data?.targets;
+    if (!tg) return [];
+    return [
+      { id: 'leads', titleKey: 'financials.targets.monthlyLeads', actual: tg.monthlyLeads.actual, target: tg.monthlyLeads.target, fmt: (v: number) => `${v}` },
+      { id: 'units', titleKey: 'financials.targets.monthlySales', actual: tg.monthlySales.actual, target: tg.monthlySales.target, fmt: (v: number) => `${v}` },
+      { id: 'monthlyRev', titleKey: 'financials.targets.monthlyRevenue', actual: tg.monthlyRevenueEur.actual, target: tg.monthlyRevenueEur.target, fmt: fmtEUR },
+      { id: 'yearlyRev', titleKey: 'financials.targets.yearlyRevenue', actual: tg.yearlyRevenueEur.actual, target: tg.yearlyRevenueEur.target, fmt: fmtEUR },
+    ];
+  }, [data]);
+
+  const monthlyRevenue = useMemo(
+    () => (data?.monthlyRevenue ?? []).map((m) => {
+      const d = new Date(`${m.month}-01T00:00:00Z`);
+      const label = new Intl.DateTimeFormat(dateLocale, { month: 'short', timeZone: 'UTC' }).format(d);
+      return { label, value: m.valueEur };
+    }),
+    [data, dateLocale],
+  );
+
+  const salesByMarket = useMemo(() => (data?.salesByMarket ?? []).map((m) => ({ name: m.name, value: m.valueEur })), [data]);
+  const marketTotal = useMemo(() => salesByMarket.reduce((s, m) => s + m.value, 0), [salesByMarket]);
+  const salesByProject = useMemo(() => (data?.salesByProject ?? []).map((p) => ({ name: p.name, value: p.valueEur })), [data]);
+  const saleTypeSplit = useMemo(() => (data?.saleTypeSplit ?? []).map((s) => ({ name: s.name, value: s.valueEur })), [data]);
+  const saleTypeTotal = useMemo(() => saleTypeSplit.reduce((s, m) => s + m.value, 0), [saleTypeSplit]);
+  const purposeSplit = useMemo(() => (data?.purposeSplit ?? []).map((p) => ({ name: p.name, value: p.valueEur })), [data]);
 
   return (
     <div className={styles.container}>
@@ -83,7 +67,7 @@ export const FinancialsDashboard: React.FC = () => {
             <SelectMenu
               aria-label="Timeframe"
               value={timeframe}
-              onChange={setTimeframe}
+              onChange={(v) => setTimeframe(v as FinancialsTimeframe)}
               options={[
                 { value: 'Q1', label: t('financials.timeframe.q1') },
                 { value: 'Q2', label: t('financials.timeframe.q2') },
@@ -105,10 +89,12 @@ export const FinancialsDashboard: React.FC = () => {
               <span className={styles.kpiLabel}>{t(kpi.labelKey)}</span>
               <span className={styles.kpiValue}>{kpi.value}</span>
               <div className={styles.kpiFooter}>
-                <span className={`${styles.kpiDelta} ${kpi.delta >= 0 ? styles.deltaUp : styles.deltaDown}`}>
-                  {kpi.delta >= 0 ? <TrendUp size={13} /> : <TrendDown size={13} />}
-                  {Math.abs(kpi.delta).toFixed(1)}%
-                </span>
+                {kpi.delta !== null && (
+                  <span className={`${styles.kpiDelta} ${kpi.delta >= 0 ? styles.deltaUp : styles.deltaDown}`}>
+                    {kpi.delta >= 0 ? <TrendUp size={13} /> : <TrendDown size={13} />}
+                    {Math.abs(kpi.delta).toFixed(1)}%
+                  </span>
+                )}
                 <span className={styles.kpiMeta}>{t('financials.vsLastPeriod')}</span>
               </div>
             </div>
@@ -119,7 +105,7 @@ export const FinancialsDashboard: React.FC = () => {
       {/* Hedefler — ince çizgi göstergesi; kalın dolgu track yasak (§6.2) */}
       <div className={styles.targetsGrid}>
         {targets.map((tg) => {
-          const pct = Math.min((tg.actual / tg.target) * 100, 100);
+          const pct = tg.target > 0 ? Math.min((tg.actual / tg.target) * 100, 100) : 0;
           return (
             <Card key={tg.id} padding="md">
               <div className={styles.targetCard}>
@@ -145,7 +131,7 @@ export const FinancialsDashboard: React.FC = () => {
           <h2 className={styles.cardTitle}>{t('financials.revenueTrend')}</h2>
           <span className={styles.cardMeta}>{timeframe}</span>
         </div>
-        <TrendArea data={monthlyRevenue} formatValue={fmtUSD} name={t('financials.revenue')} height={280} />
+        <TrendArea data={monthlyRevenue} formatValue={fmtEUR} name={t('financials.revenue')} height={280} />
       </Card>
 
       {/* Dağılımlar — donut + yatay bar karışımı (tek tip tekrar yok) */}
@@ -156,9 +142,9 @@ export const FinancialsDashboard: React.FC = () => {
           </div>
           <DonutMetric
             data={salesByMarket}
-            centerValue="$24.5M"
+            centerValue={fmtEUR(marketTotal)}
             centerLabel={t('financials.total')}
-            formatValue={fmtUSD}
+            formatValue={fmtEUR}
             height={180}
           />
         </Card>
@@ -167,7 +153,7 @@ export const FinancialsDashboard: React.FC = () => {
           <div className={styles.cardTitleRow}>
             <h2 className={styles.cardTitle}>{t('financials.salesByProject')}</h2>
           </div>
-          <HBarCompare data={salesByProject} formatValue={fmtUSD} labelWidth={128} />
+          <HBarCompare data={salesByProject} formatValue={fmtEUR} labelWidth={128} />
         </Card>
 
         <Card padding="md">
@@ -175,10 +161,10 @@ export const FinancialsDashboard: React.FC = () => {
             <h2 className={styles.cardTitle}>{t('financials.offPlanVsResale')}</h2>
           </div>
           <DonutMetric
-            data={propertyTypeSplit}
-            centerValue="$10M"
+            data={saleTypeSplit}
+            centerValue={fmtEUR(saleTypeTotal)}
             centerLabel={t('financials.ytd')}
-            formatValue={fmtUSD}
+            formatValue={fmtEUR}
             height={180}
           />
         </Card>
@@ -187,7 +173,7 @@ export const FinancialsDashboard: React.FC = () => {
           <div className={styles.cardTitleRow}>
             <h2 className={styles.cardTitle}>{t('financials.salesByPurpose')}</h2>
           </div>
-          <HBarCompare data={purposeSplit} formatValue={fmtUSD} labelWidth={128} />
+          <HBarCompare data={purposeSplit} formatValue={fmtEUR} labelWidth={128} />
         </Card>
       </div>
     </div>
