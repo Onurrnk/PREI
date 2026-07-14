@@ -20,7 +20,7 @@ const KIND_ICON = {
   project: <Buildings size={14} />,
 } as const;
 
-const KIND_LABEL = { lead: 'Leads', client: 'Clients', project: 'Projects' } as const;
+const KIND_LABEL_KEY = { lead: 'search.groups.lead', client: 'search.groups.client', project: 'search.groups.project' } as const;
 
 /**
  * Ctrl+K global arama — leads/clients/projects üstünde canlı filtre.
@@ -125,7 +125,7 @@ export const GlobalSearch: React.FC = () => {
         placeholder={t('search.placeholder')}
         className={styles.input}
         value={query}
-        aria-label="Global search"
+        aria-label={t('search.placeholder')}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); void ensurePool(); }}
         onFocus={() => { if (query.trim().length >= 2) setOpen(true); }}
         onKeyDown={onKeyDown}
@@ -133,7 +133,7 @@ export const GlobalSearch: React.FC = () => {
       <div className={styles.shortcut}>Ctrl+K</div>
 
       {open && query.trim().length >= 2 && (
-        <div className={styles.dropdown} role="listbox" aria-label="Search results">
+        <div className={styles.dropdown} role="listbox" aria-label={t('search.placeholder')}>
           {loading && !pool && <div className={styles.empty}>{t('search.searching')}</div>}
           {pool && results.length === 0 && (
             <div className={styles.empty}>{t('search.noResults', { query: query.trim() })}</div>
@@ -143,7 +143,7 @@ export const GlobalSearch: React.FC = () => {
             lastKind = hit.kind;
             return (
               <React.Fragment key={`${hit.kind}-${hit.id}`}>
-                {showHeader && <div className={styles.groupHeader}>{KIND_LABEL[hit.kind]}</div>}
+                {showHeader && <div className={styles.groupHeader}>{t(KIND_LABEL_KEY[hit.kind])}</div>}
                 <button
                   type="button"
                   role="option"

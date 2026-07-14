@@ -278,8 +278,26 @@ export interface MeResponse {
   id: string;
   email: string;
   name: string;
+  phone: string | null;
   role: Role;
   tenantId: string;
+  jobTitle: string | null;
+  aboutMe: string | null;
+  theme: 'light' | 'dark' | 'system';
+  locale: string | null;
+  timezone: string;
+  notificationPrefs: Record<string, boolean>;
+}
+
+export interface UpdateMeInput {
+  fullName?: string;
+  jobTitle?: string;
+  phone?: string;
+  aboutMe?: string;
+  theme?: 'light' | 'dark' | 'system';
+  locale?: 'en' | 'tr';
+  timezone?: string;
+  notificationPrefs?: Record<string, boolean>;
 }
 
 export interface TaskDTO {

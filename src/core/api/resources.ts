@@ -25,6 +25,7 @@ import type {
   ProjectDTO,
   ProposalDTO,
   TaskDTO,
+  UpdateMeInput,
   UserDTO,
   VaultDocumentDTO,
 } from '../types';
@@ -36,6 +37,11 @@ export const authApi = {
   me: () => api.get<UserDTO>('/api/auth/me'),
   // Gerçek auth modu: backend GET /api/me → profil + rol
   realMe: () => api.get<MeResponse>('/api/me'),
+};
+
+export const meApi = {
+  get: () => api.get<MeResponse>('/api/me'),
+  update: (input: UpdateMeInput) => api.patch<MeResponse>('/api/me', input),
 };
 
 export interface CreateLeadInput {

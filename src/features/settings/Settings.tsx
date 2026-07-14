@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { User, GearSix as SettingsIcon, Palette, Plug, UsersThree, FloppyDisk, ChatCircle, Globe, Buildings, CheckCircle, Plus, EnvelopeSimple, CalendarBlank, PaperPlaneTilt } from '@phosphor-icons/react';
@@ -6,26 +6,129 @@ import { Modal } from '../../core/components/Modal/Modal';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { useTranslation } from 'react-i18next';
+import { useFetch } from '../../core/hooks/useFetch';
+import { meApi } from '../../core/api/resources';
+import type { MeResponse } from '../../core/types';
+import { useAuth } from '../../core/auth/AuthContext';
+import { useTheme } from '../../core/theme/ThemeContext';
+import { supabase } from '../../core/auth/supabaseClient';
+import { ApiError } from '../../core/api/client';
 import styles from './Settings.module.css';
 
 type Tab = 'profile' | 'preferences' | 'branding' | 'team' | 'integrations';
 
+const REAL_AUTH = import.meta.env.VITE_USE_REAL_API === 'true';
+
 export const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
-  const [prefTheme, setPrefTheme] = useState('dark');
   const { t, i18n } = useTranslation();
-  const [prefLanguage, setPrefLanguage] = useState(i18n.language);
-  const [prefTimezone, setPrefTimezone] = useState('dubai');
-  const [isSaving, setIsSaving] = useState(false);
-  const [showSaveModal, setShowSaveModal] = useState(false);
+  const { user } = useAuth();
+  const { theme: appliedTheme, setTheme: applyTheme } = useTheme();
   const toast = useToast();
 
-  const handleSave = () => {
+  const { data: me } = useFetch<MeResponse>(() => meApi.get(), []);
+
+  // Profil sekmesi — /api/me'den yüklenip düzenlenen alanlar
+  const [fullName, setFullName] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+  const [phone, setPhone] = useState('');
+  const [aboutMe, setAboutMe] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [twoFactor, setTwoFactor] = useState(true);
+
+  // Tercihler sekmesi
+  const [prefTheme, setPrefTheme] = useState<'light' | 'dark' | 'system'>('dark');
+  const [prefLanguage, setPrefLanguage] = useState(i18n.language);
+  const [prefTimezone, setPrefTimezone] = useState('dubai');
+  const [notifNewLead, setNotifNewLead] = useState(true);
+  const [notifTaskDue, setNotifTaskDue] = useState(true);
+  const [notifWeeklyReport, setNotifWeeklyReport] = useState(true);
+  const [notifSmsHotLeads, setNotifSmsHotLeads] = useState(false);
+
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+
+  // /api/me yüklenince form alanlarını doldur (gerçek kayıtlı değerler).
+  useEffect(() => {
+    if (!me) return;
+    setFullName(me.name);
+    setJobTitle(me.jobTitle ?? '');
+    setPhone(me.phone ?? '');
+    setAboutMe(me.aboutMe ?? '');
+    setPrefTheme((me.theme as 'light' | 'dark' | 'system') ?? 'dark');
+    setPrefTimezone(me.timezone ?? 'dubai');
+    setNotifNewLead(me.notificationPrefs.newLead ?? true);
+    setNotifTaskDue(me.notificationPrefs.taskDue ?? true);
+    setNotifWeeklyReport(me.notificationPrefs.weeklyReport ?? true);
+    setNotifSmsHotLeads(me.notificationPrefs.smsHotLeads ?? false);
+  }, [me]);
+
+  const handleSave = async () => {
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      if (activeTab === 'profile') {
+        await meApi.update({
+          fullName: fullName.trim(),
+          jobTitle: jobTitle.trim(),
+          phone: phone.trim(),
+          aboutMe: aboutMe.trim(),
+        });
+
+        if (newPassword.trim()) {
+          if (!REAL_AUTH) {
+            toast.info(t('settings.notImplementedTab'));
+          } else if (!user?.email) {
+            toast.error(t('settings.security.currentPasswordWrong'));
+          } else if (!currentPassword.trim()) {
+            setIsSaving(false);
+            toast.error(t('settings.security.currentPasswordRequired'));
+            return;
+          } else {
+            const { error: reauthError } = await supabase.auth.signInWithPassword({
+              email: user.email,
+              password: currentPassword,
+            });
+            if (reauthError) {
+              setIsSaving(false);
+              toast.error(t('settings.security.currentPasswordWrong'));
+              return;
+            }
+            const { error: pwError } = await supabase.auth.updateUser({ password: newPassword });
+            if (pwError) throw pwError;
+            toast.success(t('settings.security.passwordUpdated'));
+          }
+          setCurrentPassword('');
+          setNewPassword('');
+        }
+      } else if (activeTab === 'preferences') {
+        await meApi.update({
+          theme: prefTheme,
+          locale: prefLanguage as 'en' | 'tr',
+          timezone: prefTimezone,
+          notificationPrefs: {
+            newLead: notifNewLead,
+            taskDue: notifTaskDue,
+            weeklyReport: notifWeeklyReport,
+            smsHotLeads: notifSmsHotLeads,
+          },
+        });
+        const resolved: 'light' | 'dark' = prefTheme === 'system'
+          ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          : prefTheme;
+        if (resolved !== appliedTheme) applyTheme(resolved);
+      } else {
+        setIsSaving(false);
+        toast.info(t('settings.notImplementedTab'));
+        return;
+      }
       setIsSaving(false);
       setShowSaveModal(true);
-    }, 1000);
+    } catch (err) {
+      setIsSaving(false);
+      const message = err instanceof ApiError || err instanceof Error ? err.message : String(err);
+      toast.error(t('settings.saveFailed', { error: message }));
+    }
   };
 
   const renderContent = () => {
@@ -36,7 +139,7 @@ export const Settings: React.FC = () => {
             <div>
               <h3 className={styles.sectionTitle}>{t('settings.profile.heading')}</h3>
               <p className={styles.sectionSubtitle}>{t('settings.profile.subtitle')}</p>
-              
+
               <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px' }}>
                 <div style={{ position: 'relative' }}>
                   <div style={{ width: '80px', height: '80px', borderRadius: '50%', border: '2px solid var(--border-color)', backgroundColor: 'var(--brand-primary-soft)', color: 'var(--brand-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 600 }}>
@@ -55,52 +158,53 @@ export const Settings: React.FC = () => {
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
                   <label>{t('settings.profile.fullName')}</label>
-                  <input type="text" className={styles.textInput} defaultValue="Onur Nazım Karataş" />
+                  <input type="text" className={styles.textInput} value={fullName} onChange={(e) => setFullName(e.target.value)} />
                 </div>
                 <div className={styles.formGroup}>
                   <label>{t('settings.profile.jobTitle')}</label>
-                  <input type="text" className={styles.textInput} defaultValue="Senior Investment Advisor" />
+                  <input type="text" className={styles.textInput} value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} />
                 </div>
                 <div className={styles.formGroup}>
                   <label>{t('settings.profile.emailAddress')}</label>
-                  <input type="email" className={styles.textInput} defaultValue="onur@produality.com" />
+                  <input type="email" className={styles.textInput} value={me?.email ?? ''} disabled title={t('settings.profile.emailLocked')} />
                 </div>
                 <div className={styles.formGroup}>
                   <label>{t('common.phone')}</label>
-                  <input type="tel" className={styles.textInput} defaultValue="+971 50 123 4567" />
+                  <input type="tel" className={styles.textInput} value={phone} onChange={(e) => setPhone(e.target.value)} />
                 </div>
               </div>
-              
+
               <div className={styles.formGroup} style={{ marginTop: '16px' }}>
                 <label>{t('settings.profile.aboutMe')}</label>
-                <textarea 
-                  className={styles.textInput} 
-                  rows={4} 
+                <textarea
+                  className={styles.textInput}
+                  rows={4}
                   placeholder={t('settings.profile.aboutMePlaceholder')}
-                  defaultValue="Senior luxury property consultant with over 8 years of experience in the Dubai market, specializing in off-plan investments and waterfront properties."
+                  value={aboutMe}
+                  onChange={(e) => setAboutMe(e.target.value)}
                   style={{ resize: 'vertical' }}
                 />
               </div>
             </div>
-            
+
             <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: 'var(--spacing-md) 0' }} />
-            
+
             <div>
               <h3 className={styles.sectionTitle}>{t('settings.security.heading')}</h3>
               <p className={styles.sectionSubtitle}>{t('settings.security.subtitle')}</p>
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
                   <label>{t('settings.security.currentPassword')}</label>
-                  <input type="password" className={styles.textInput} placeholder="••••••••" />
+                  <input type="password" className={styles.textInput} placeholder="••••••••" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} autoComplete="current-password" />
                 </div>
                 <div className={styles.formGroup}>
                   <label>{t('settings.security.newPassword')}</label>
-                  <input type="password" className={styles.textInput} placeholder={t('settings.security.newPasswordPlaceholder')} />
+                  <input type="password" className={styles.textInput} placeholder={t('settings.security.newPasswordPlaceholder')} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" />
                 </div>
               </div>
               <div style={{ marginTop: '16px' }}>
                 <label className={styles.checkboxLabel}>
-                  <input type="checkbox" defaultChecked />
+                  <input type="checkbox" checked={twoFactor} onChange={(e) => setTwoFactor(e.target.checked)} />
                   {t('settings.security.twoFactor')}
                 </label>
               </div>
@@ -120,7 +224,7 @@ export const Settings: React.FC = () => {
                   <SelectMenu
                     aria-label={t('settings.prefs.theme')}
                     value={prefTheme}
-                    onChange={setPrefTheme}
+                    onChange={(v) => setPrefTheme(v as 'light' | 'dark' | 'system')}
                     options={[
                       { value: 'light', label: t('settings.prefs.themeLight') },
                       { value: 'dark', label: t('settings.prefs.themeDark') },
@@ -171,19 +275,19 @@ export const Settings: React.FC = () => {
               <p className={styles.sectionSubtitle}>{t('settings.notif.subtitle')}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <label className={styles.checkboxLabel}>
-                  <input type="checkbox" defaultChecked />
+                  <input type="checkbox" checked={notifNewLead} onChange={(e) => setNotifNewLead(e.target.checked)} />
                   {t('settings.notif.newLead')}
                 </label>
                 <label className={styles.checkboxLabel}>
-                  <input type="checkbox" defaultChecked />
+                  <input type="checkbox" checked={notifTaskDue} onChange={(e) => setNotifTaskDue(e.target.checked)} />
                   {t('settings.notif.taskDue')}
                 </label>
                 <label className={styles.checkboxLabel}>
-                  <input type="checkbox" defaultChecked />
+                  <input type="checkbox" checked={notifWeeklyReport} onChange={(e) => setNotifWeeklyReport(e.target.checked)} />
                   {t('settings.notif.weeklyReport')}
                 </label>
                 <label className={styles.checkboxLabel}>
-                  <input type="checkbox" />
+                  <input type="checkbox" checked={notifSmsHotLeads} onChange={(e) => setNotifSmsHotLeads(e.target.checked)} />
                   {t('settings.notif.smsHotLeads')}
                 </label>
               </div>
@@ -237,7 +341,7 @@ export const Settings: React.FC = () => {
                 <Button variant="primary" onClick={() => toast.info('Üye ekleme modülü yakında gelecek')}><Plus size={16} /> {t('settings.team.addMember')}</Button>
               </div>
               <p className={styles.sectionSubtitle}>{t('settings.team.subtitle')}</p>
-              
+
               <div className={styles.teamList}>
                 <div className={styles.teamMember}>
                   <div className={styles.memberInfo}>
@@ -249,10 +353,10 @@ export const Settings: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <span className={`${styles.badge} ${styles.badgeAdmin}`}>{t('settings.team.roleAdmin')}</span>
-                    <Button variant="outline">Edit</Button>
+                    <Button variant="outline">{t('common.edit')}</Button>
                   </div>
                 </div>
-                
+
                 <div className={styles.teamMember}>
                   <div className={styles.memberInfo}>
                     <div className={styles.memberAvatar} style={{ backgroundColor: 'color-mix(in srgb, var(--data-positive) 12%, transparent)', color: 'var(--data-positive)' }}>MA</div>
@@ -263,7 +367,7 @@ export const Settings: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <span className={`${styles.badge} ${styles.badgeManager}`}>{t('settings.team.roleManager')}</span>
-                    <Button variant="outline">Edit</Button>
+                    <Button variant="outline">{t('common.edit')}</Button>
                   </div>
                 </div>
 
@@ -277,7 +381,7 @@ export const Settings: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                     <span className={`${styles.badge} ${styles.badgeAgent}`}>{t('settings.team.roleAgent')}</span>
-                    <Button variant="outline">Edit</Button>
+                    <Button variant="outline">{t('common.edit')}</Button>
                   </div>
                 </div>
               </div>
@@ -308,7 +412,7 @@ export const Settings: React.FC = () => {
             <div>
               <h3 className={styles.sectionTitle}>{t('settings.integrations.heading')}</h3>
               <p className={styles.sectionSubtitle}>{t('settings.integrations.subtitle')}</p>
-              
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div className={styles.integrationCard}>
                   <div className={styles.integrationInfo}>
@@ -404,31 +508,31 @@ export const Settings: React.FC = () => {
 
       <div className={styles.layout}>
         <div className={styles.sidebar}>
-          <button 
+          <button
             className={`${styles.navItem} ${activeTab === 'profile' ? styles.navItemActive : ''}`}
             onClick={() => setActiveTab('profile')}
           >
             <User size={18} /> {t('settings.tabs.profile')}
           </button>
-          <button 
+          <button
             className={`${styles.navItem} ${activeTab === 'preferences' ? styles.navItemActive : ''}`}
             onClick={() => setActiveTab('preferences')}
           >
             <SettingsIcon size={18} /> {t('settings.tabs.preferences')}
           </button>
-          <button 
+          <button
             className={`${styles.navItem} ${activeTab === 'branding' ? styles.navItemActive : ''}`}
             onClick={() => setActiveTab('branding')}
           >
             <Palette size={18} /> {t('settings.tabs.branding')}
           </button>
-          <button 
+          <button
             className={`${styles.navItem} ${activeTab === 'team' ? styles.navItemActive : ''}`}
             onClick={() => setActiveTab('team')}
           >
             <UsersThree size={18} /> {t('settings.tabs.team')}
           </button>
-          <button 
+          <button
             className={`${styles.navItem} ${activeTab === 'integrations' ? styles.navItemActive : ''}`}
             onClick={() => setActiveTab('integrations')}
           >
@@ -439,10 +543,10 @@ export const Settings: React.FC = () => {
         <Card>
           <CardBody>
             {renderContent()}
-            
+
             <div className={styles.saveAction}>
-              <Button variant="primary" onClick={handleSave} disabled={isSaving}>
-                <FloppyDisk size={16} style={{ marginRight: '8px' }} /> 
+              <Button variant="primary" onClick={() => void handleSave()} disabled={isSaving}>
+                <FloppyDisk size={16} style={{ marginRight: '8px' }} />
                 {isSaving ? t('settings.savingChanges') : t('common.saveChanges')}
               </Button>
             </div>
@@ -450,8 +554,8 @@ export const Settings: React.FC = () => {
         </Card>
       </div>
 
-      <Modal 
-        isOpen={showSaveModal} 
+      <Modal
+        isOpen={showSaveModal}
         onClose={() => setShowSaveModal(false)}
         title={t('settings.savedTitle')}
         footer={<Button variant="primary" onClick={() => setShowSaveModal(false)}>{t('common.close')}</Button>}

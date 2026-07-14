@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CloudArrowUp, FilmStrip, FileText, Image as ImageIcon, File as FileIcon, X } from '@phosphor-icons/react';
 import styles from './UploadZone.module.css';
 
@@ -45,6 +46,7 @@ const formatSize = (bytes: number) => {
 export const UploadZone: React.FC<UploadZoneProps> = ({
   kind = 'any', accept, prompt, hint, multiple = true, onFilesChange,
 }) => {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -89,9 +91,9 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
         }}
       >
         <span className={styles.zoneIcon}>{kindIcon(kind, 32)}</span>
-        <p className={styles.prompt}>{isDragging ? 'Drop to add files' : prompt}</p>
+        <p className={styles.prompt}>{isDragging ? t('common.upload.dropFiles') : prompt}</p>
         <span className={styles.hint}>{hint}</span>
-        <span className={styles.browse}>Browse Files</span>
+        <span className={styles.browse}>{t('common.upload.browseFiles')}</span>
         <input
           ref={inputRef}
           type="file"
@@ -112,7 +114,7 @@ export const UploadZone: React.FC<UploadZoneProps> = ({
               <button
                 type="button"
                 className={styles.remove}
-                aria-label={`Remove ${f.name}`}
+                aria-label={t('common.upload.remove', { name: f.name })}
                 onClick={() => removeAt(i)}
               >
                 <X size={14} />
