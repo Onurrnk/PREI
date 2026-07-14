@@ -10,6 +10,7 @@ import { Modal } from '../../core/components/Modal/Modal';
 import { UploadZone } from '../../core/components/Form/UploadZone';
 import { Folder, FileText, Image as ImageIcon, FileXls, CloudArrowUp, MagnifyingGlass, DotsThreeVertical, DownloadSimple, Trash, FolderOpen } from '@phosphor-icons/react';
 import styles from './DocumentVault.module.css';
+import { useTranslation } from 'react-i18next';
 
 const FOLDERS = ['Root', 'Client KYC', 'Contracts', 'Marketing', 'Developer Agreements'];
 
@@ -18,6 +19,7 @@ export interface DocumentVaultProps {
 }
 
 export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
+  const { t } = useTranslation();
   const { data, loading, refetch } = useFetch<VaultDocumentDTO[]>(() => documentsApi.list(), [clientId]);
   const documents = clientId
     ? (data ?? []).filter(d => d.relatedId === clientId || d.folder === 'Client KYC')
@@ -66,7 +68,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
       for (const file of pendingFiles) {
         await documentsApi.upload(file, currentFolder);
       }
-      toast.success(`${pendingFiles.length} dosya ${currentFolder === 'Root' ? 'Root' : currentFolder} klasörüne yüklendi`);
+      toast.success(t('documents.uploadedToast', { count: pendingFiles.length, folder: currentFolder }));
       setShowUploadModal(false);
       setPendingFiles([]);
       refetch();
@@ -91,7 +93,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
     setIsDeleting(true);
     try {
       await documentsApi.remove(deleteTarget.id);
-      toast.success('Dosya silindi.');
+      toast.success(t('documents.deletedToast'));
       setDeleteTarget(null);
       refetch();
     } catch (err) {
@@ -105,15 +107,15 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>Document Management Center</h1>
-          <p className={styles.subtitle}>Securely store, organize, and share your real estate documents.</p>
+          <h1 className={styles.title}>{t('documents.title')}</h1>
+          <p className={styles.subtitle}>{t('documents.subtitle')}</p>
         </div>
         <div className={styles.headerActions}>
           <div className={styles.searchBar}>
             <MagnifyingGlass size={16} className={styles.searchIcon} />
             <input 
               type="text" 
-              placeholder="Search documents..." 
+              placeholder={t('documents.searchPlaceholder')} 
               className={styles.searchInput}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -121,7 +123,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
           </div>
           <Button variant="primary" onClick={handleUploadClick}>
             <CloudArrowUp size={16} style={{marginRight: 8}} /> 
-            Upload File
+            {t('documents.upload')}
           </Button>
         </div>
       </div>
@@ -130,7 +132,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
         {/* Folder Sidebar */}
         <div className={styles.sidebar}>
           <Card className={styles.foldersCard}>
-            <CardHeader><h3 className={styles.cardTitle}>Vault Folders</h3></CardHeader>
+            <CardHeader><h3 className={styles.cardTitle}>{t('documents.folders')}</h3></CardHeader>
             <CardBody className={styles.folderList}>
               {FOLDERS.map(folder => (
                 <div 
@@ -139,7 +141,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
                   onClick={() => { setCurrentFolder(folder); setSearchQuery(''); }}
                 >
                   {currentFolder === folder ? <FolderOpen size={18} /> : <Folder size={18} />}
-                  <span>{folder === 'Root' ? 'All Files (Root)' : folder}</span>
+                  <span>{folder === 'Root' ? t('documents.allFilesRoot') : folder}</span>
                   <span className={styles.folderCount}>
                     {documents.filter(d => d.folder === folder).length}
                   </span>
@@ -151,7 +153,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
           <Card className={styles.storageCard}>
             <CardBody>
               <div className={styles.storageHeader}>
-                <strong>Storage Usage</strong>
+                <strong>{t('documents.storageUsed')}</strong>
                 {/* Gerçek toplam — vault'taki dosyaların boyutundan; sahte kota yok */}
                 <span>
                   {(() => {
@@ -159,7 +161,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
                     return totalMB >= 1024
                       ? `${(totalMB / 1024).toFixed(1)} GB`
                       : `${totalMB.toFixed(1)} MB`;
-                  })()} · {documents.length} dosya
+                  })()} · {t('documents.fileCount', { count: documents.length })}
                 </span>
               </div>
             </CardBody>
@@ -169,15 +171,15 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
         {/* File Grid */}
         <div className={styles.mainArea}>
           <div className={styles.mainAreaHeader}>
-            <h2 className={styles.currentFolderName}>{currentFolder === 'Root' ? 'All Files' : currentFolder}</h2>
-            <span className={styles.fileCountText}>{filteredDocs.length} files</span>
+            <h2 className={styles.currentFolderName}>{currentFolder === 'Root' ? t('documents.allFiles') : currentFolder}</h2>
+            <span className={styles.fileCountText}>{t('documents.fileCount', { count: filteredDocs.length })}</span>
           </div>
 
           {filteredDocs.length === 0 ? (
             <div className={styles.emptyState}>
               <FolderOpen size={48} className={styles.emptyIcon} />
-              <p>This folder is empty.</p>
-              <Button variant="outline" onClick={handleUploadClick}>Upload your first file here</Button>
+              <p>{t('documents.emptyFolder')}</p>
+              <Button variant="outline" onClick={handleUploadClick}>{t('documents.uploadFirst')}</Button>
             </div>
           ) : (
             <div className={styles.fileGrid}>
@@ -192,10 +194,10 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
                     <p className={styles.fileMeta}>{doc.sizeMB} MB • {doc.uploadedAt}</p>
                   </div>
                   <div className={styles.fileCardFooter}>
-                    <button className={styles.actionBtn} title="Download" onClick={() => handleDownload(doc)}>
+                    <button className={styles.actionBtn} title={t('documents.download')} onClick={() => handleDownload(doc)}>
                       <DownloadSimple size={14} />
                     </button>
-                    <button className={styles.actionBtn} title="Delete" onClick={() => setDeleteTarget(doc)}>
+                    <button className={styles.actionBtn} title={t('common.delete')} onClick={() => setDeleteTarget(doc)}>
                       <Trash size={14} />
                     </button>
                   </div>
@@ -209,12 +211,12 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
       <Modal
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
-        title={`Upload to ${currentFolder}`}
+        title={t('documents.uploadTo', { folder: currentFolder })}
         footer={
           <>
-            <Button variant="outline" onClick={() => setShowUploadModal(false)} disabled={isUploading}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowUploadModal(false)} disabled={isUploading}>{t('common.cancel')}</Button>
             <Button variant="primary" onClick={handleUpload} disabled={isUploading || pendingFiles.length === 0}>
-              {isUploading ? 'Uploading…' : `Upload ${pendingFiles.length > 0 ? `(${pendingFiles.length}) ` : ''}Files`}
+              {isUploading ? t('documents.uploading') : t('documents.uploadN', { count: pendingFiles.length })}
             </Button>
           </>
         }
@@ -222,8 +224,8 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
         <UploadZone
           kind="document"
           accept=".pdf,.doc,.docx,.xls,.xlsx,image/jpeg,image/png"
-          prompt="Drag and drop your files here"
-          hint="PDF, DOCX, XLSX, PNG, JPG (Max 50MB per file)"
+          prompt={t('documents.dropPrompt')}
+          hint={t('documents.dropHint')}
           multiple
           onFilesChange={setPendingFiles}
         />
@@ -232,20 +234,19 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
       <Modal
         isOpen={deleteTarget !== null}
         onClose={() => setDeleteTarget(null)}
-        title="Dosyayı Sil"
+        title={t('documents.deleteTitle')}
         size="sm"
         footer={
           <>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>Vazgeç</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>{t('common.cancel')}</Button>
             <Button variant="primary" onClick={handleConfirmDelete} disabled={isDeleting}>
-              {isDeleting ? 'Siliniyor…' : 'Sil'}
+              {isDeleting ? t('documents.deleting') : t('common.delete')}
             </Button>
           </>
         }
       >
         <p style={{ color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-          <strong style={{ color: 'var(--text-primary)' }}>{deleteTarget?.name}</strong> kalıcı olarak
-          silinecek — hem kasadan hem depolamadan. Bu işlem geri alınamaz.
+          <strong style={{ color: 'var(--text-primary)' }}>{deleteTarget?.name}</strong> {' '}{t('documents.deleteBody')}
         </p>
       </Modal>
     </div>

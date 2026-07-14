@@ -4,12 +4,14 @@ import { useAuth } from '../../core/auth/AuthContext';
 import { Button } from '../../core/components/Button/Button';
 import { ShieldCheck } from '@phosphor-icons/react';
 import styles from './Login.module.css';
+import { useTranslation } from 'react-i18next';
 
 interface LocationState {
   from?: { pathname: string };
 }
 
 export const Login: React.FC = () => {
+  const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,7 +30,7 @@ export const Login: React.FC = () => {
       await login(email, password);
       navigate(redirectTo, { replace: true });
     } catch {
-      setError('Giriş başarısız. E-posta veya şifre hatalı.');
+      setError(t('login.invalid'));
     } finally {
       setSubmitting(false);
     }
@@ -41,12 +43,12 @@ export const Login: React.FC = () => {
           <ShieldCheck size={28} />
           <h1 className={styles.title}>PREI <span className={styles.sub}>Smart Suites</span></h1>
         </div>
-        <p className={styles.subtitle}>Kurumsal CRM'e giriş yapın</p>
+        <p className={styles.subtitle}>{t('login.subtitle')}</p>
 
         {error && <div className={styles.error}>{error}</div>}
 
         <label className={styles.label}>
-          E-posta
+          {t('login.emailLabel')}
           <input
             type="email"
             className={styles.input}
@@ -59,7 +61,7 @@ export const Login: React.FC = () => {
         </label>
 
         <label className={styles.label}>
-          Şifre
+          {t('login.passwordLabel')}
           <input
             type="password"
             className={styles.input}
@@ -72,7 +74,7 @@ export const Login: React.FC = () => {
         </label>
 
         <Button variant="primary" type="submit" disabled={submitting}>
-          {submitting ? 'Giriş yapılıyor…' : 'Giriş Yap'}
+          {submitting ? t('login.signingIn') : t('login.signIn')}
         </Button>
 
         {import.meta.env.VITE_USE_REAL_API !== 'true' && (

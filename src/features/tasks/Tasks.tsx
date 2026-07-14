@@ -3,8 +3,11 @@ import { Shield, Clock, CalendarBlank, CheckCircle, Circle } from '@phosphor-ico
 import type { UserDTO, TaskDTO } from '../../core/types';
 import { usersApi, tasksApi } from '../../core/api/resources';
 import styles from './Tasks.module.css';
+import { useTranslation } from 'react-i18next';
 
 export const Tasks: React.FC = () => {
+  const { t, i18n } = useTranslation();
+  const statusKey = (st: string) => st === 'In Progress' ? 'inProgress' : st.toLowerCase();
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [users, setUsers] = useState<UserDTO[]>([]);
   const [tasks, setTasks] = useState<TaskDTO[]>([]);
@@ -68,20 +71,20 @@ export const Tasks: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Tasks & Meetings</h1>
+        <h1 className={styles.title}>{t('tasks.title')}</h1>
         <div className={styles.headerActions}>
           <button 
             className={`${styles.adminToggle} ${isAdminMode ? styles.active : ''}`}
             onClick={() => setIsAdminMode(!isAdminMode)}
           >
             <Shield size={16} />
-            {isAdminMode ? 'Admin Mode On' : 'Admin Mode Off'}
+            {isAdminMode ? t('tasks.adminOn') : t('tasks.adminOff')}
           </button>
         </div>
       </header>
@@ -89,7 +92,7 @@ export const Tasks: React.FC = () => {
       <div className={styles.mainLayout}>
         {isAdminMode && (
           <aside className={styles.userSelector}>
-            <h3>Team Members</h3>
+            <h3>{t('tasks.teamMembers')}</h3>
             {users.map(user => (
               <div 
                 key={user.id} 
@@ -108,20 +111,20 @@ export const Tasks: React.FC = () => {
 
         <div className={styles.taskBoard}>
           {isLoading ? (
-            <div className={styles.loading}>Loading tasks...</div>
+            <div className={styles.loading}>{t('common.loading')}</div>
           ) : (
             <>
               {(['Pending', 'In Progress', 'Completed'] as const).map(status => (
                 <div key={status} className={styles.taskColumn}>
                   <div className={styles.columnHeader}>
-                    <h3>{status}</h3>
+                    <h3>{t(`tasks.${statusKey(status)}`)}</h3>
                     <span className={styles.taskCount}>{groupedTasks[status].length}</span>
                   </div>
                   
                   {groupedTasks[status].length === 0 ? (
                     <div className={styles.emptyState}>
                       <CheckCircle size={32} />
-                      <p>No {status.toLowerCase()} tasks</p>
+                      <p>{t('tasks.emptyColumn', { status: t(`tasks.${statusKey(status)}`) })}</p>
                     </div>
                   ) : (
                     groupedTasks[status].map(task => (
@@ -150,7 +153,7 @@ export const Tasks: React.FC = () => {
                             <button 
                               className={`${styles.actionBtn} ${task.status === 'Completed' ? styles.complete : ''}`}
                               onClick={() => handleToggleComplete(task)}
-                              title={task.status === 'Completed' ? 'Mark as Pending' : 'Mark as Completed'}
+                              title={task.status === 'Completed' ? t('tasks.markPending') : t('tasks.markCompleted')}
                             >
                               {task.status === 'Completed' ? <CheckCircle size={18} /> : <Circle size={18} />}
                             </button>
