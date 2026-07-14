@@ -64,4 +64,9 @@ export class SendEmailDTO {
   @IsOptional()
   @IsString()
   inReplyTo?: string;
+
+  /** Alıcının görünen adı — verilmezse e-postanın @ öncesi kısmı kullanılır. */
+  @IsOptional()
+  @IsString()
+  recipientName?: string;
 }
