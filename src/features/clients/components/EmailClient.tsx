@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MagnifyingGlass, Paperclip, PaperPlaneTilt, ArrowBendUpLeft, Trash, DotsThreeVertical, EnvelopeSimple } from '@phosphor-icons/react';
 import { Card, CardHeader, CardBody } from '../../../core/components/Card/Card';
 import { Button } from '../../../core/components/Button/Button';
@@ -64,6 +65,7 @@ const buildThreads = (clientName: string): EmailThread[] => [
 ];
 
 export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> = ({ clientEmail, clientName }) => {
+  const { t } = useTranslation();
   const [threads, setThreads] = useState<EmailThread[]>(() => buildThreads(clientName));
   const [selectedId, setSelectedId] = useState<string>('1');
   const [reply, setReply] = useState('');
@@ -78,7 +80,7 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
 
   const handleSend = () => {
     if (!reply.trim()) return;
-    toast.success('E-posta gönderildi');
+    toast.success(t('clients.email.emailSent'));
     setReply('');
   };
 
@@ -88,13 +90,13 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
         <div className={styles.headerTop}>
           <div className={styles.integrationBadge}>
             <img src="https://cdn.simpleicons.org/gmail/EA4335" alt="Gmail" className={styles.googleIcon} />
-            <span>Gmail Connected</span>
+            <span>{t('clients.email.gmailConnected')}</span>
           </div>
-          <span className={styles.threadCount}>{threads.length} threads</span>
+          <span className={styles.threadCount}>{t('clients.email.threadCount', { count: threads.length })}</span>
         </div>
         <div className={styles.searchBar}>
           <MagnifyingGlass size={14} className={styles.searchIcon} />
-          <input type="text" placeholder={`Search emails with ${clientEmail}...`} className={styles.searchInput} />
+          <input type="text" placeholder={t('clients.email.searchPlaceholder', { email: clientEmail })} className={styles.searchInput} />
         </div>
       </CardHeader>
 
@@ -109,7 +111,7 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
               <div className={styles.threadHeader}>
                 <span className={styles.threadSender}>
                   {thread.unread && <span className={styles.unreadDot} aria-label="unread" />}
-                  {thread.fromClient ? clientName : 'Me'}
+                  {thread.fromClient ? clientName : t('clients.email.me')}
                 </span>
                 <span className={styles.threadDate}>{thread.date}</span>
               </div>
@@ -140,9 +142,9 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
                   </div>
                 </div>
                 <div className={styles.messageActions}>
-                  <button className={styles.iconBtn} title="Reply"><ArrowBendUpLeft size={16} /></button>
-                  <button className={styles.iconBtn} title="Delete"><Trash size={16} /></button>
-                  <button className={styles.iconBtn} title="More"><DotsThreeVertical size={16} /></button>
+                  <button className={styles.iconBtn} title={t('clients.email.reply')}><ArrowBendUpLeft size={16} /></button>
+                  <button className={styles.iconBtn} title={t('clients.email.delete')}><Trash size={16} /></button>
+                  <button className={styles.iconBtn} title={t('clients.email.more')}><DotsThreeVertical size={16} /></button>
                 </div>
               </div>
               <div className={styles.messageBody}>
@@ -154,14 +156,14 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
               <div className={styles.replyBox}>
                 <textarea
                   className={styles.replyInput}
-                  placeholder="Type your reply here..."
+                  placeholder={t('clients.email.replyPlaceholder')}
                   value={reply}
                   onChange={(e) => setReply(e.target.value)}
                 />
                 <div className={styles.replyActions}>
-                  <button className={styles.attachBtn} title="Attach file"><Paperclip size={16} /></button>
+                  <button className={styles.attachBtn} title={t('clients.email.attach')}><Paperclip size={16} /></button>
                   <Button variant="primary" onClick={handleSend}>
-                    <PaperPlaneTilt size={14} /> Send
+                    <PaperPlaneTilt size={14} /> {t('clients.email.send')}
                   </Button>
                 </div>
               </div>
@@ -169,7 +171,7 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
           ) : (
             <div className={styles.messageEmpty}>
               <EnvelopeSimple size={28} weight="duotone" />
-              <p>Select a thread to read.</p>
+              <p>{t('clients.email.selectThread')}</p>
             </div>
           )}
         </div>

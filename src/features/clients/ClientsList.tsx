@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ClientDTO } from '../../core/types';
 import { clientsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
@@ -13,7 +14,10 @@ import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import styles from './Clients.module.css';
 
+type ModalKind = 'addClient' | 'export' | 'filter' | 'rowActions' | null;
+
 export const ClientsList: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const { data, loading } = useFetch<ClientDTO[]>(() => clientsApi.list(), []);
   const clients = data ?? [];
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,75 +29,12 @@ export const ClientsList: React.FC = () => {
   // clients loaded via useFetch above
 
   const [showModal, setShowModal] = useState(false);
-  const [modalTitle, setModalTitle] = useState('');
-  const [modalContent, setModalContent] = useState<React.ReactNode>(null);
+  const [modalKind, setModalKind] = useState<ModalKind>(null);
+  const [rowActionsFor, setRowActionsFor] = useState('');
 
-  const handleActionClick = (actionName: string) => {
-    setModalTitle(actionName);
-    if (actionName === 'Add New Client') {
-      setModalContent(
-        <div className={styles.formStack}>
-          <FormRow>
-            <Field label="Full Name">
-              <Input type="text" placeholder="e.g. Beatriz Almeida" />
-            </Field>
-            <Field label="Nationality">
-              <Input type="text" placeholder="e.g. Portuguese" />
-            </Field>
-          </FormRow>
-
-          <FormRow>
-            <Field label="Email Address">
-              <Input type="email" placeholder="beatriz.almeida@atlanticocapital.pt" />
-            </Field>
-            <Field label="Phone Number">
-              <Input type="tel" placeholder="+351 912 384 706" />
-            </Field>
-          </FormRow>
-
-          <FormRow>
-            <Field label="Client Type">
-              <SelectMenu
-                aria-label="Client Type"
-                value={newClientType}
-                onChange={setNewClientType}
-                options={[
-                  { value: 'investor', label: 'Investor' },
-                  { value: 'end-user', label: 'End-User' },
-                  { value: 'corporate', label: 'Corporate' },
-                ]}
-              />
-            </Field>
-            <Field label="Lead Source">
-              <SelectMenu
-                aria-label="Lead Source"
-                value={newClientSource}
-                onChange={setNewClientSource}
-                options={[
-                  { value: 'website', label: 'Website' },
-                  { value: 'referral', label: 'Referral' },
-                  { value: 'event', label: 'Event / Exhibition' },
-                  { value: 'campaign', label: 'Marketing Campaign' },
-                ]}
-              />
-            </Field>
-          </FormRow>
-
-          <Field label="Preferred Regions">
-            <Input type="text" placeholder="e.g. Downtown Dubai, Palm Jumeirah" />
-          </Field>
-        </div>
-      );
-    } else if (actionName.includes('Export')) {
-      setModalContent(
-        <div className={styles.exportState}>
-          <CheckCircle size={40} weight="duotone" className={styles.exportIcon} />
-          <p>Data export has started and will be downloaded shortly.</p>
-        </div>
-      );
-    } else {
-      setModalContent(<p className={styles.mutedText}>This feature is under development.</p>);
-    }
+  const handleActionClick = (kind: ModalKind, rowClientName?: string) => {
+    setModalKind(kind);
+    if (rowClientName) setRowActionsFor(rowClientName);
     setShowModal(true);
   };
 
@@ -105,32 +46,39 @@ export const ClientsList: React.FC = () => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value);
   };
 
+  const dateLocale = i18n.language === 'tr' ? 'tr-TR' : 'en-GB';
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+    return new Intl.DateTimeFormat(dateLocale, { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
   };
+
+  const modalTitle = modalKind === 'addClient' ? t('clients.addClient')
+    : modalKind === 'export' ? t('clients.export')
+    : modalKind === 'filter' ? t('clients.filter')
+    : modalKind === 'rowActions' ? rowActionsFor
+    : '';
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>Client Directory</h1>
-          <p className={styles.subtitle}>Enterprise CRM and relationship management</p>
+          <h1 className={styles.title}>{t('clients.title')}</h1>
+          <p className={styles.subtitle}>{t('clients.subtitle')}</p>
         </div>
         <div className={styles.headerActions}>
           <div className={styles.searchBar}>
             <MagnifyingGlass size={16} className={styles.searchIcon} />
-            <input 
-              type="text" 
-              placeholder="Search clients, IDs, or emails..." 
+            <input
+              type="text"
+              placeholder={t('clients.searchPlaceholder')}
               className={styles.searchInput}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button variant="outline" onClick={() => handleActionClick('Filter Clients')}><FunnelSimple size={16} /> Filter</Button>
-          <Button variant="outline" onClick={() => handleActionClick('Export Data (CSV/Excel)')}><DownloadSimple size={16} /> Export</Button>
-          <Button variant="primary" onClick={() => handleActionClick('Add New Client')}><Plus size={16} /> Add Client</Button>
+          <Button variant="outline" onClick={() => handleActionClick('filter')}><FunnelSimple size={16} /> {t('clients.filter')}</Button>
+          <Button variant="outline" onClick={() => handleActionClick('export')}><DownloadSimple size={16} /> {t('clients.export')}</Button>
+          <Button variant="primary" onClick={() => handleActionClick('addClient')}><Plus size={16} /> {t('clients.addClient')}</Button>
         </div>
       </div>
 
@@ -139,29 +87,29 @@ export const ClientsList: React.FC = () => {
           <Table style={{ minWidth: '1600px' }}>
             <TableHead>
               <TableRow>
-                <TableHeader>Client ID</TableHeader>
-                <TableHeader>Client Name</TableHeader>
-                <TableHeader>Type</TableHeader>
-                <TableHeader>Nationality</TableHeader>
-                <TableHeader>Contact Info</TableHeader>
-                <TableHeader>Total Investment</TableHeader>
-                <TableHeader>Properties</TableHeader>
-                <TableHeader>Preferred Regions</TableHeader>
-                <TableHeader>Profile</TableHeader>
-                <TableHeader>Assigned To</TableHeader>
-                <TableHeader>Last Contact</TableHeader>
-                <TableHeader>Status</TableHeader>
-                <TableHeader align="right">Actions</TableHeader>
+                <TableHeader>{t('clients.table.clientId')}</TableHeader>
+                <TableHeader>{t('clients.table.clientName')}</TableHeader>
+                <TableHeader>{t('clients.table.type')}</TableHeader>
+                <TableHeader>{t('clients.table.nationality')}</TableHeader>
+                <TableHeader>{t('clients.table.contactInfo')}</TableHeader>
+                <TableHeader>{t('clients.table.totalInvestment')}</TableHeader>
+                <TableHeader>{t('clients.table.properties')}</TableHeader>
+                <TableHeader>{t('clients.table.preferredRegions')}</TableHeader>
+                <TableHeader>{t('clients.table.profile')}</TableHeader>
+                <TableHeader>{t('clients.table.assignedTo')}</TableHeader>
+                <TableHeader>{t('clients.table.lastContact')}</TableHeader>
+                <TableHeader>{t('clients.table.status')}</TableHeader>
+                <TableHeader align="right">{t('clients.table.actions')}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
-              {clients.filter(client => 
-                client.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                client.email.toLowerCase().includes(searchQuery.toLowerCase()) || 
+              {clients.filter(client =>
+                client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                client.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 client.clientId.toLowerCase().includes(searchQuery.toLowerCase())
               ).map(client => (
-                <TableRow 
-                  key={client.id} 
+                <TableRow
+                  key={client.id}
                   className={styles.clickableRow}
                   onClick={() => navigate(`/clients/${client.id}`)}
                 >
@@ -200,11 +148,11 @@ export const ClientsList: React.FC = () => {
                     </span>
                   </TableCell>
                   <TableCell align="right">
-                    <button 
-                      className={styles.moreButton} 
+                    <button
+                      className={styles.moreButton}
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleActionClick(`Row Actions for ${client.name}`);
+                        handleActionClick('rowActions', client.name);
                       }}
                     >
                       <DotsThree size={18} weight="bold" />
@@ -217,26 +165,87 @@ export const ClientsList: React.FC = () => {
         </div>
       </div>
 
-      <Modal 
-        isOpen={showModal} 
+      <Modal
+        isOpen={showModal}
         onClose={() => setShowModal(false)}
         title={modalTitle}
-        size={modalTitle === 'Add New Client' ? 'lg' : 'md'}
+        size={modalKind === 'addClient' ? 'lg' : 'md'}
         footer={
           <>
-            <Button variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowModal(false)}>{t('clients.cancel')}</Button>
             <Button variant="primary" onClick={() => {
-              if (modalTitle === 'Add New Client') {
-                toast.success("Müşteri kaydedildi");
+              if (modalKind === 'addClient') {
+                toast.success(t('clients.clientSaved'));
               }
               setShowModal(false);
             }}>
-              {modalTitle === 'Add New Client' ? 'Save Client' : 'Close'}
+              {modalKind === 'addClient' ? t('clients.saveClient') : t('clients.close')}
             </Button>
           </>
         }
       >
-        {modalContent}
+        {modalKind === 'addClient' && (
+          <div className={styles.formStack}>
+            <FormRow>
+              <Field label={t('clients.form.fullName')}>
+                <Input type="text" placeholder={t('clients.form.fullNamePh')} />
+              </Field>
+              <Field label={t('clients.form.nationality')}>
+                <Input type="text" placeholder={t('clients.form.nationalityPh')} />
+              </Field>
+            </FormRow>
+
+            <FormRow>
+              <Field label={t('clients.form.email')}>
+                <Input type="email" placeholder="beatriz.almeida@atlanticocapital.pt" />
+              </Field>
+              <Field label={t('clients.form.phone')}>
+                <Input type="tel" placeholder="+351 912 384 706" />
+              </Field>
+            </FormRow>
+
+            <FormRow>
+              <Field label={t('clients.form.clientType')}>
+                <SelectMenu
+                  aria-label={t('clients.form.clientType')}
+                  value={newClientType}
+                  onChange={setNewClientType}
+                  options={[
+                    { value: 'investor', label: t('clients.form.types.investor') },
+                    { value: 'end-user', label: t('clients.form.types.endUser') },
+                    { value: 'corporate', label: t('clients.form.types.corporate') },
+                  ]}
+                />
+              </Field>
+              <Field label={t('clients.form.leadSource')}>
+                <SelectMenu
+                  aria-label={t('clients.form.leadSource')}
+                  value={newClientSource}
+                  onChange={setNewClientSource}
+                  options={[
+                    { value: 'website', label: t('clients.form.sources.website') },
+                    { value: 'referral', label: t('clients.form.sources.referral') },
+                    { value: 'event', label: t('clients.form.sources.event') },
+                    { value: 'campaign', label: t('clients.form.sources.campaign') },
+                  ]}
+                />
+              </Field>
+            </FormRow>
+
+            <Field label={t('clients.form.preferredRegions')}>
+              <Input type="text" placeholder={t('clients.form.preferredRegionsPh')} />
+            </Field>
+          </div>
+        )}
+        {modalKind === 'export' && (
+          <div className={styles.exportState}>
+            <CheckCircle size={40} weight="duotone" className={styles.exportIcon} />
+            <p>{t('clients.exportStarted')}</p>
+          </div>
+        )}
+        {(modalKind === 'filter' || modalKind === 'rowActions') && (
+          <p className={styles.mutedText}>{t('clients.underDevelopment')}</p>
+        )}
       </Modal>
     </div>
   );
