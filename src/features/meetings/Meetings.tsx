@@ -9,17 +9,20 @@ import { meetingsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import styles from './Meetings.module.css';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../core/i18n/config';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 const fmtTime = (iso: string | null): string =>
   iso ? new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
 const fmtDateLong = (iso: string | null): string =>
-  iso ? new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+  iso ? new Date(iso).toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
 
 interface DayCell { inMonth: boolean; day?: number; iso?: string; isToday?: boolean; events: MeetingDTO[] }
 
 export const Meetings: React.FC = () => {
+  const { t } = useTranslation();
   const { data, loading, error } = useFetch<MeetingDTO[]>(() => meetingsApi.list(), []);
   const meetings = useMemo(() => data ?? [], [data]);
 
@@ -72,7 +75,7 @@ export const Meetings: React.FC = () => {
       .slice(0, 6);
   }, [meetings]);
 
-  const monthTitle = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const monthTitle = viewDate.toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', { month: 'long', year: 'numeric' });
   const shiftMonth = (delta: number) => setViewDate(new Date(viewYear, viewMonth + delta, 1));
 
   const pillClass = (kind: string) =>
@@ -90,26 +93,26 @@ export const Meetings: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>Meetings & Calendar</h1>
-          <p className={styles.subtitle}>Manage your schedule, viewings, and client appointments</p>
+          <h1 className={styles.title}>{t('meetings.title')}</h1>
+          <p className={styles.subtitle}>{t('meetings.subtitle')}</p>
         </div>
         <div className={styles.headerActions}>
           <div className={styles.syncBadge}>
             <CalendarIcon size={16} />
-            Google Calendar (coming soon)
+            Google Calendar ({t('common.comingSoon')})
           </div>
           <Button variant="outline" onClick={handleSync} disabled={isSyncing}>
             <ArrowsClockwise size={16} className={isSyncing ? 'spin' : ''} />
-            {isSyncing ? 'Syncing...' : 'Sync Now'}
+            {isSyncing ? t('meetings.syncing') : t('meetings.syncNow')}
           </Button>
           <Button variant="primary" onClick={() => setShowAddModal(true)}>
-            <Plus size={16} /> New Appointment
+            <Plus size={16} /> {t('meetings.newAppointment')}
           </Button>
         </div>
       </div>
 
       {error ? (
-        <div className={styles.errorState}>Toplantılar yüklenemedi: {error}</div>
+        <div className={styles.errorState}>{t('meetings.loadError')}: {error}</div>
       ) : (
       <div className={styles.layout}>
         {/* Ana Takvim */}
@@ -121,7 +124,7 @@ export const Meetings: React.FC = () => {
               <button className={styles.navBtn} onClick={() => shiftMonth(1)}><CaretRight size={20} /></button>
             </div>
             <div className={styles.viewToggles}>
-              <button className={`${styles.viewBtn} ${styles.viewBtnActive}`}>Month</button>
+              <button className={`${styles.viewBtn} ${styles.viewBtnActive}`}>{t('meetings.month')}</button>
             </div>
           </div>
 
@@ -153,17 +156,17 @@ export const Meetings: React.FC = () => {
               </div>
             ))}
           </div>
-          {loading && <div className={styles.calendarLoading}>Takvim yükleniyor…</div>}
+          {loading && <div className={styles.calendarLoading}>{t('common.loading')}</div>}
         </Card>
 
         {/* Sidebar: Yaklaşan */}
         <Card className={styles.sidebarList}>
           <div className={styles.sidebarHeader}>
-            <h3 className={styles.sidebarTitle}>Upcoming Appointments</h3>
+            <h3 className={styles.sidebarTitle}>{t('meetings.upcomingAppointments')}</h3>
           </div>
           <div className={styles.sidebarContent}>
             {!loading && upcoming.length === 0 && (
-              <div style={{ padding: 'var(--sp-4)', color: 'var(--text-muted)' }}>Yaklaşan toplantı yok.</div>
+              <div style={{ padding: 'var(--sp-4)', color: 'var(--text-muted)' }}>{t('dashboard.noMeetings')}</div>
             )}
             {upcoming.map((m) => (
               <div key={m.id} className={styles.dateSection}>
@@ -196,12 +199,12 @@ export const Meetings: React.FC = () => {
         <Modal
           isOpen={showDetailsModal}
           onClose={() => setShowDetailsModal(false)}
-          title="Meeting Details"
+          title={t('meetings.details')}
           size="md"
           footer={
             <>
-              <Button variant="outline" onClick={() => setShowDetailsModal(false)}>Close</Button>
-              <Button variant="primary" onClick={() => toast.info('Toplantı düzenleme sonraki adımda bağlanacak.')}>Edit Meeting</Button>
+              <Button variant="outline" onClick={() => setShowDetailsModal(false)}>{t('common.close')}</Button>
+              <Button variant="primary" onClick={() => toast.info(t('meetings.editSoon'))}>{t('meetings.edit')}</Button>
             </>
           }
         >
@@ -218,13 +221,13 @@ export const Meetings: React.FC = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', background: 'var(--bg-surface-hover)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
               <div>
-                <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Client</span>
+                <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('meetings.client')}</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontWeight: 500 }}>
                   <User size={14} /> {selectedMeeting.client || 'N/A'}
                 </span>
               </div>
               <div>
-                <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Location / Platform</span>
+                <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('meetings.locationPlatform')}</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontWeight: 500 }}>
                   {selectedMeeting.platform === 'Zoom' ? <VideoCamera size={14} /> : <MapPin size={14} />}
                   {selectedMeeting.location || selectedMeeting.platform || 'N/A'}
@@ -234,16 +237,16 @@ export const Meetings: React.FC = () => {
 
             <div>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600, marginBottom: '8px' }}>
-                <FileText size={16} /> Notes
+                <FileText size={16} /> {t('meetings.notes')}
               </span>
               <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5', padding: '12px', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)' }}>
-                {selectedMeeting.notes || 'No notes provided for this meeting.'}
+                {selectedMeeting.notes || t('meetings.noNotes')}
               </p>
             </div>
 
             {selectedMeeting.platform === 'Zoom' && (
-              <Button variant="primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => toast.info('Zoom toplantısına katılınıyor…')}>
-                <VideoCamera size={16} /> Join Zoom Meeting
+              <Button variant="primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => toast.info(t('meetings.joiningZoom'))}>
+                <VideoCamera size={16} /> {t('meetings.joinZoom')}
               </Button>
             )}
           </div>
@@ -254,45 +257,45 @@ export const Meetings: React.FC = () => {
       <Modal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title="Schedule New Appointment"
+        title={t('meetings.scheduleNew')}
         size="md"
         footer={
           <>
-            <Button variant="outline" onClick={() => setShowAddModal(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowAddModal(false)}>{t('common.cancel')}</Button>
             <Button variant="primary" onClick={() => {
-              toast.info('Randevu oluşturma sonraki adımda (tasks create) bağlanacak.');
+              toast.info(t('meetings.createSoon'));
               setShowAddModal(false);
-            }}>Schedule Appointment</Button>
+            }}>{t('meetings.schedule')}</Button>
           </>
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className={styles.formGroup}>
-            <label>Meeting Title / Purpose</label>
-            <input type="text" className={styles.textInput} placeholder="e.g. Property Viewing - Marina Vista" />
+            <label>{t('meetings.titlePurpose')}</label>
+            <input type="text" className={styles.textInput} placeholder={t('meetings.titlePlaceholder')} />
           </div>
           <div className={styles.formGrid}>
             <div className={styles.formGroup}>
-              <label>Meeting Type</label>
+              <label>{t('meetings.type')}</label>
               <SelectMenu
-                aria-label="Meeting Type"
+                aria-label={t('meetings.type')}
                 value={newMeetingType}
                 onChange={setNewMeetingType}
                 options={[
-                  { value: 'meeting', label: 'Consultation' },
-                  { value: 'viewing', label: 'Property Viewing' },
-                  { value: 'signing', label: 'Contract Signing' },
+                  { value: 'meeting', label: t('meetings.typeConsultation') },
+                  { value: 'viewing', label: t('meetings.typeViewing') },
+                  { value: 'signing', label: t('meetings.typeSigning') },
                 ]}
               />
             </div>
             <div className={styles.formGroup}>
-              <label>Platform</label>
+              <label>{t('meetings.platform')}</label>
               <SelectMenu
-                aria-label="Platform"
+                aria-label={t('meetings.platform')}
                 value={newMeetingPlatform}
                 onChange={setNewMeetingPlatform}
                 options={[
-                  { value: 'In-person', label: 'In-person' },
+                  { value: 'In-person', label: t('meetings.inPerson') },
                   { value: 'Zoom', label: 'Zoom' },
                 ]}
               />
@@ -300,17 +303,17 @@ export const Meetings: React.FC = () => {
           </div>
           <div className={styles.formGrid}>
             <div className={styles.formGroup}>
-              <label>Date</label>
+              <label>{t('common.date')}</label>
               <input type="date" className={styles.textInput} />
             </div>
             <div className={styles.formGroup}>
-              <label>Time</label>
+              <label>{t('meetings.time')}</label>
               <input type="time" className={styles.textInput} />
             </div>
           </div>
           <div className={styles.formGroup}>
-            <label>Location / Link</label>
-            <input type="text" className={styles.textInput} placeholder="Link or exact address" />
+            <label>{t('meetings.locationLink')}</label>
+            <input type="text" className={styles.textInput} placeholder={t('meetings.locationPlaceholder')} />
           </div>
         </div>
       </Modal>
