@@ -5,6 +5,7 @@ import { User, GearSix as SettingsIcon, Palette, Plug, UsersThree, FloppyDisk, C
 import { Modal } from '../../core/components/Modal/Modal';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { useToast } from '../../core/components/Toast/ToastProvider';
+import { useTranslation } from 'react-i18next';
 import styles from './Settings.module.css';
 
 type Tab = 'profile' | 'preferences' | 'branding' | 'team' | 'integrations';
@@ -12,7 +13,8 @@ type Tab = 'profile' | 'preferences' | 'branding' | 'team' | 'integrations';
 export const Settings: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('profile');
   const [prefTheme, setPrefTheme] = useState('dark');
-  const [prefLanguage, setPrefLanguage] = useState('en');
+  const { i18n } = useTranslation();
+  const [prefLanguage, setPrefLanguage] = useState(i18n.language);
   const [prefTimezone, setPrefTimezone] = useState('dubai');
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
@@ -131,7 +133,10 @@ export const Settings: React.FC = () => {
                   <SelectMenu
                     aria-label="System Language"
                     value={prefLanguage}
-                    onChange={setPrefLanguage}
+                    onChange={(v) => {
+                      setPrefLanguage(v);
+                      void i18n.changeLanguage(v); // kalıcı: config.ts languageChanged -> localStorage
+                    }}
                     options={[
                       { value: 'en', label: 'English' },
                       { value: 'tr', label: 'Turkish (Türkçe)' },

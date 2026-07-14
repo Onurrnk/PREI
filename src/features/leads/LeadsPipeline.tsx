@@ -14,22 +14,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
+import { useTranslation } from 'react-i18next';
 
 // Kanban kolonları = backend lead_status enum (7 değer). Dondurulmuş 9-aşamalı
 // tasarım Faz 1'de DB'nin tek doğruluk kaynağına hizalandı.
-const PIPELINE_STAGES: { value: LeadStatus; label: string }[] = [
-  { value: 'new', label: 'New' },
-  { value: 'contacted', label: 'Contacted' },
-  { value: 'qualified', label: 'Qualified' },
-  { value: 'nurturing', label: 'Nurturing' },
-  { value: 'converted', label: 'Converted' },
-  { value: 'unqualified', label: 'Unqualified' },
-  { value: 'lost', label: 'Lost' },
+const PIPELINE_STAGES: LeadStatus[] = [
+  'new', 'contacted', 'qualified', 'nurturing', 'converted', 'unqualified', 'lost',
 ];
-
-const STATUS_LABEL: Record<LeadStatus, string> = Object.fromEntries(
-  PIPELINE_STAGES.map((s) => [s.value, s.label]),
-) as Record<LeadStatus, string>;
 
 type ViewMode = 'kanban' | 'list';
 
@@ -81,6 +72,7 @@ const EMPTY_FORM: NewLeadForm = {
 };
 
 export const LeadsPipeline: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { data, loading, error, refetch } = useFetch<LeadDTO[]>(() => leadsApi.list(), []);
   const leads = data ?? [];
@@ -152,53 +144,53 @@ export const LeadsPipeline: React.FC = () => {
   }
 
   if (error) {
-    return <div className={styles.errorState}>Adaylar yüklenemedi: {error}</div>;
+    return <div className={styles.errorState}>{t('leads.loadError')}: {error}</div>;
   }
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>Leads Pipeline</h1>
-          <p className={styles.subtitle}>Manage your property investment opportunities</p>
+          <h1 className={styles.title}>{t('leads.title')}</h1>
+          <p className={styles.subtitle}>{t('leads.subtitle')}</p>
         </div>
         <div className={styles.headerActions}>
           <div className={styles.viewToggle}>
             <button
               className={`${styles.toggleBtn} ${viewMode === 'kanban' ? styles.active : ''}`}
               onClick={() => setViewMode('kanban')}
-              title="Kanban View"
+              title={t('leads.kanbanView')}
             >
               <SquaresFour size={18} />
             </button>
             <button
               className={`${styles.toggleBtn} ${viewMode === 'list' ? styles.active : ''}`}
               onClick={() => setViewMode('list')}
-              title="List View"
+              title={t('leads.listView')}
             >
               <ListBullets size={18} />
             </button>
           </div>
-          <Button variant="primary" onClick={() => setShowAddModal(true)}><Plus size={16} /> New Lead</Button>
+          <Button variant="primary" onClick={() => setShowAddModal(true)}><Plus size={16} /> {t('leads.newLead')}</Button>
         </div>
       </div>
 
       {leads.length === 0 ? (
         <div className={styles.emptyState}>
           <UsersThree size={40} weight="thin" />
-          <h3>Henüz aday yok</h3>
-          <p>Yeni bir aday ekleyin ya da WhatsApp/reklam kanallarından gelen ilk temaslar burada görünecek.</p>
+          <h3>{t('leads.emptyTitle')}</h3>
+          <p>{t('leads.emptyBody')}</p>
         </div>
       ) : viewMode === 'kanban' ? (
         <div className={styles.board}>
           {PIPELINE_STAGES.map((stage) => {
-            const stageLeads = leads.filter((l) => l.status === stage.value);
+            const stageLeads = leads.filter((l) => l.status === stage);
             const stageValue = stageLeads.reduce((sum, l) => sum + (l.budgetMax ?? l.budgetMin ?? 0), 0);
 
             return (
-              <div key={stage.value} className={styles.column}>
+              <div key={stage} className={styles.column}>
                 <div className={styles.columnHeader}>
-                  <h3 className={styles.columnTitle}>{stage.label}</h3>
+                  <h3 className={styles.columnTitle}>{t(`leads.status.${stage}`)}</h3>
                   <div className={styles.columnMeta}>
                     <span className={styles.leadCount}>{stageLeads.length}</span>
                     <span className={styles.stageValue}>{formatMoney(stageValue, stageLeads[0]?.currency ?? 'EUR')}</span>
@@ -217,7 +209,7 @@ export const LeadsPipeline: React.FC = () => {
                       onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/leads/${lead.id}`); }}
                     >
                       <div className={styles.leadHeader}>
-                        <span className={styles.leadName}>{lead.contactName || 'İsimsiz aday'}</span>
+                        <span className={styles.leadName}>{lead.contactName || t('leads.unnamed')}</span>
                         <button
                           className={styles.moreButton}
                           onClick={(e) => e.stopPropagation()}
@@ -227,7 +219,7 @@ export const LeadsPipeline: React.FC = () => {
                       <div className={styles.leadFooter}>
                         <span className={styles.leadValue}>{leadBudget(lead)}</span>
                         <span className={`${styles.riskBadge} ${styles[scoreBand(lead.score)]}`}>
-                          Skor: {lead.score ?? '—'}
+                          {t('leads.score')}: {lead.score ?? '—'}
                         </span>
                       </div>
                     </Card>
@@ -242,12 +234,12 @@ export const LeadsPipeline: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableHeader>Name</TableHeader>
-                <TableHeader>Company</TableHeader>
-                <TableHeader>Status</TableHeader>
-                <TableHeader>Budget</TableHeader>
-                <TableHeader>Interest</TableHeader>
-                <TableHeader align="right">Score</TableHeader>
+                <TableHeader>{t('common.name')}</TableHeader>
+                <TableHeader>{t('leads.company')}</TableHeader>
+                <TableHeader>{t('common.status')}</TableHeader>
+                <TableHeader>{t('leads.budget')}</TableHeader>
+                <TableHeader>{t('leads.interest')}</TableHeader>
+                <TableHeader align="right">{t('leads.score')}</TableHeader>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -257,13 +249,13 @@ export const LeadsPipeline: React.FC = () => {
                   onClick={() => navigate(`/leads/${lead.id}`)}
                   style={{ cursor: 'pointer' }}
                 >
-                  <TableCell style={{ fontWeight: 600 }}>{lead.contactName || 'İsimsiz aday'}</TableCell>
+                  <TableCell style={{ fontWeight: 600 }}>{lead.contactName || t('leads.unnamed')}</TableCell>
                   <TableCell>{lead.company ?? '—'}</TableCell>
                   <TableCell>
-                    <span className={styles.statusBadge}>{STATUS_LABEL[lead.status]}</span>
+                    <span className={styles.statusBadge}>{t(`leads.status.${lead.status}`)}</span>
                   </TableCell>
                   <TableCell><span className={styles.numCell}>{leadBudget(lead)}</span></TableCell>
-                  <TableCell>{lead.interestType}</TableCell>
+                  <TableCell>{t(`leads.interestType.${lead.interestType}`)}</TableCell>
                   <TableCell align="right">
                     <span className={`${styles.riskBadge} ${styles[scoreBand(lead.score)]}`}>
                       {lead.score ?? '—'}
@@ -279,37 +271,37 @@ export const LeadsPipeline: React.FC = () => {
       <Modal
         isOpen={showAddModal}
         onClose={closeModal}
-        title="Add New Lead"
+        title={t('leads.form.title')}
         size="md"
         footer={
           <>
-            <Button variant="outline" onClick={closeModal} disabled={saving}>Cancel</Button>
+            <Button variant="outline" onClick={closeModal} disabled={saving}>{t('common.cancel')}</Button>
             <Button variant="primary" onClick={handleCreate} disabled={saving}>
-              {saving ? 'Kaydediliyor…' : 'Save Lead'}
+              {saving ? t('common.saving') : t('leads.form.create')}
             </Button>
           </>
         }
       >
         <div className={styles.formStack}>
           <FormRow>
-            <Field label="Full Name">
+            <Field label={t('leads.form.fullName')}>
               <Input type="text" placeholder="e.g. Arda Yılmazer"
                 value={form.fullName} onChange={(e) => setField('fullName', e.target.value)} />
             </Field>
-            <Field label="Email Address">
+            <Field label={t('common.email')}>
               <Input type="email" placeholder="arda@bosphorusholding.com"
                 value={form.email} onChange={(e) => setField('email', e.target.value)} />
             </Field>
           </FormRow>
 
           <FormRow>
-            <Field label="Phone Number">
+            <Field label={t('common.phone')}>
               <Input type="tel" placeholder="+971 50 217 4863"
                 value={form.phone} onChange={(e) => setField('phone', e.target.value)} />
             </Field>
-            <Field label="Target Market">
+            <Field label={t('leads.form.targetMarket')}>
               <SelectMenu
-                aria-label="Target Market"
+                aria-label={t('leads.form.targetMarket')}
                 value={form.market}
                 onChange={(v) => setField('market', v)}
                 options={MARKETS.map((m) => ({ value: m.code, label: `${m.label} (${m.currency})` }))}
@@ -318,41 +310,41 @@ export const LeadsPipeline: React.FC = () => {
           </FormRow>
 
           <FormRow>
-            <Field label="Interest">
+            <Field label={t('leads.interest')}>
               <SelectMenu
-                aria-label="Interest"
+                aria-label={t('leads.interest')}
                 value={form.interest}
                 onChange={(v) => setField('interest', v as LeadInterest)}
                 options={[
-                  { value: 'buy', label: 'Buy' },
-                  { value: 'rent', label: 'Rent' },
-                  { value: 'invest', label: 'Invest' },
-                  { value: 'sell', label: 'Sell' },
+                  { value: 'buy', label: t('leads.interestType.buy') },
+                  { value: 'rent', label: t('leads.interestType.rent') },
+                  { value: 'invest', label: t('leads.interestType.invest') },
+                  { value: 'sell', label: t('leads.interestType.sell') },
                 ]}
               />
             </Field>
-            <Field label="Priority">
+            <Field label={t('leads.priority')}>
               <SelectMenu
-                aria-label="Priority"
+                aria-label={t('leads.priority')}
                 value={form.priority}
                 onChange={(v) => setField('priority', v as LeadPriority)}
                 options={[
-                  { value: 'urgent', label: 'Urgent' },
-                  { value: 'high', label: 'High' },
-                  { value: 'medium', label: 'Medium' },
-                  { value: 'low', label: 'Low' },
+                  { value: 'urgent', label: t('leads.priorityLevel.urgent') },
+                  { value: 'high', label: t('leads.priorityLevel.high') },
+                  { value: 'medium', label: t('leads.priorityLevel.medium') },
+                  { value: 'low', label: t('leads.priorityLevel.low') },
                 ]}
               />
             </Field>
           </FormRow>
 
-          <Field label={`Estimated Value (${MARKETS.find((m) => m.code === form.market)?.currency ?? 'EUR'})`}>
+          <Field label={`${t('leads.form.estimatedValue')} (${MARKETS.find((m) => m.code === form.market)?.currency ?? 'EUR'})`}>
             <Input type="number" placeholder="e.g. 1500000"
               value={form.value} onChange={(e) => setField('value', e.target.value)} />
           </Field>
 
-          <Field label="Notes">
-            <Textarea placeholder="Initial contact details or special requirements..." rows={3}
+          <Field label={t('leads.form.notes')}>
+            <Textarea placeholder={t('leads.form.notesPlaceholder')} rows={3}
               value={form.notes} onChange={(e) => setField('notes', e.target.value)} />
           </Field>
         </div>

@@ -18,31 +18,32 @@ import {
   SignOut,
 } from '@phosphor-icons/react';
 import styles from './Sidebar.module.css';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/AuthContext';
 import { can, type Permission } from '../../auth/permissions';
 
 interface NavItem {
   path: string;
-  label: string;
+  labelKey: string; // i18n anahtarı (nav.*)
   icon: React.ComponentType<{ size?: number; className?: string }>;
   permission: Permission;
 }
 
 const navItems: NavItem[] = [
-  { path: '/', label: 'Dashboard', icon: SquaresFour, permission: 'dashboard' },
-  { path: '/leads', label: 'Leads', icon: Funnel, permission: 'leads' },
-  { path: '/clients', label: 'Clients', icon: UsersThree, permission: 'clients' },
-  { path: '/developers', label: 'Developers', icon: Buildings, permission: 'developers' },
-  { path: '/projects', label: 'Projects Intelligence', icon: Briefcase, permission: 'projects' },
-  { path: '/proposals', label: 'Proposal Center', icon: PenNib, permission: 'proposals' },
-  { path: '/documents', label: 'Document Vault', icon: Vault, permission: 'documents' },
-  { path: '/meetings', label: 'Meetings', icon: CalendarBlank, permission: 'meetings' },
-  { path: '/tasks', label: 'Tasks', icon: CheckSquare, permission: 'tasks' },
-  { path: '/contracts', label: 'Contracts', icon: FileText, permission: 'contracts' },
-  { path: '/financials', label: 'Financials', icon: ChartLineUp, permission: 'financials' },
-  { path: '/marketing', label: 'Marketing', icon: Megaphone, permission: 'marketing' },
-  { path: '/admin', label: 'Admin & Audit', icon: ShieldCheck, permission: 'admin' },
-  { path: '/settings', label: 'Settings', icon: GearSix, permission: 'settings' },
+  { path: '/', labelKey: 'nav.dashboard', icon: SquaresFour, permission: 'dashboard' },
+  { path: '/leads', labelKey: 'nav.leads', icon: Funnel, permission: 'leads' },
+  { path: '/clients', labelKey: 'nav.clients', icon: UsersThree, permission: 'clients' },
+  { path: '/developers', labelKey: 'nav.developers', icon: Buildings, permission: 'developers' },
+  { path: '/projects', labelKey: 'nav.projects', icon: Briefcase, permission: 'projects' },
+  { path: '/proposals', labelKey: 'nav.proposals', icon: PenNib, permission: 'proposals' },
+  { path: '/documents', labelKey: 'nav.documents', icon: Vault, permission: 'documents' },
+  { path: '/meetings', labelKey: 'nav.meetings', icon: CalendarBlank, permission: 'meetings' },
+  { path: '/tasks', labelKey: 'nav.tasks', icon: CheckSquare, permission: 'tasks' },
+  { path: '/contracts', labelKey: 'nav.contracts', icon: FileText, permission: 'contracts' },
+  { path: '/financials', labelKey: 'nav.financials', icon: ChartLineUp, permission: 'financials' },
+  { path: '/marketing', labelKey: 'nav.marketing', icon: Megaphone, permission: 'marketing' },
+  { path: '/admin', labelKey: 'nav.admin', icon: ShieldCheck, permission: 'admin' },
+  { path: '/settings', labelKey: 'nav.settings', icon: GearSix, permission: 'settings' },
 ];
 
 interface SidebarProps {
@@ -54,6 +55,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // RBAC: only show modules the current role is permitted to see.
   const visibleItems = navItems.filter((item) => can(user?.role, item.permission));
@@ -84,7 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose }) => {
                   className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
                 >
                   <Icon className={styles.icon} size={20} />
-                  <span className={styles.label}>{item.label}</span>
+                  <span className={styles.label}>{t(item.labelKey)}</span>
                 </NavLink>
               </li>
             );
@@ -93,9 +95,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose }) => {
       </nav>
       <div className={styles.footer}>
         {user && (
-          <button className={styles.logoutBtn} onClick={handleLogout} title="Çıkış Yap">
+          <button className={styles.logoutBtn} onClick={handleLogout} title={t('nav.logout')}>
             <SignOut size={18} />
-            <span>Çıkış Yap</span>
+            <span>{t('nav.logout')}</span>
           </button>
         )}
         <div className={styles.poweredBy}>Powered by ProDuality</div>

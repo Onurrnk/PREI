@@ -15,6 +15,7 @@ import {
   Checks,
 } from '@phosphor-icons/react';
 import styles from './NotificationCenter.module.css';
+import { useTranslation } from 'react-i18next';
 
 type NotificationKind = 'lead' | 'payment' | 'contract' | 'ad' | 'meeting';
 
@@ -53,6 +54,7 @@ const KIND_CLASS: Record<NotificationKind, string> = {
 };
 
 export const NotificationCenter: React.FC = () => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Notification[]>(initialNotifications);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -97,7 +99,7 @@ export const NotificationCenter: React.FC = () => {
       {open && (
         <div className={styles.panel} role="dialog" aria-label="Notifications">
           <div className={styles.panelHeader}>
-            <span className={styles.panelTitle}>Notifications</span>
+            <span className={styles.panelTitle}>{t('notifications.title')}</span>
             {unreadCount > 0 && (
               <button className={styles.markAll} onClick={markAllRead}>
                 <Checks size={14} /> Mark all read
@@ -108,7 +110,7 @@ export const NotificationCenter: React.FC = () => {
           {items.length === 0 ? (
             <div className={styles.empty}>
               <BellSlash size={28} weight="duotone" />
-              <p>You're all caught up.</p>
+              <p>{t('notifications.empty')}</p>
             </div>
           ) : (
             <div className={styles.list}>

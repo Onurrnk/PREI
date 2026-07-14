@@ -14,6 +14,7 @@ import { TrendArea, Sparkline, DonutMetric, HBarCompare, fmtEUR } from '../../co
 import type { DashboardSummaryDTO, MeetingDTO, TaskDTO } from '../../core/types';
 import { dashboardApi, meetingsApi, tasksApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
+import { useTranslation } from 'react-i18next';
 import styles from './Dashboard.module.css';
 
 // ---------------------------------------------------------------------
@@ -53,16 +54,18 @@ const PRIORITY_RANK: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'tr' ? 'tr-TR' : 'en-GB';
   const { data: summary } = useFetch<DashboardSummaryDTO>(() => dashboardApi.summary(), []);
   const { data: meetingsData } = useFetch<MeetingDTO[]>(() => meetingsApi.list(), []);
   const { data: tasksData } = useFetch<TaskDTO[]>(() => tasksApi.list(), []);
 
   const kpis = useMemo(() => [
-    { id: 'pipeline', label: 'Pipeline Value', value: summary ? fmtEUR(summary.pipelineValueEur) : '—', delta: 8.4, spark: SPARK.pipeline },
-    { id: 'leads', label: 'Active Leads', value: summary ? String(summary.activeLeads) : '—', delta: 12.0, spark: SPARK.leads },
-    { id: 'meetings', label: 'Meetings This Week', value: summary ? String(summary.meetingsThisWeek) : '—', delta: -14.3, spark: SPARK.meetings },
-    { id: 'closed', label: 'Closed Won', value: summary ? fmtEUR(summary.closedWonEur) : '—', delta: 6.1, spark: SPARK.closed },
-  ], [summary]);
+    { id: 'pipeline', label: t('dashboard.kpi.pipelineValue'), value: summary ? fmtEUR(summary.pipelineValueEur) : '—', delta: 8.4, spark: SPARK.pipeline },
+    { id: 'leads', label: t('dashboard.kpi.activeLeads'), value: summary ? String(summary.activeLeads) : '—', delta: 12.0, spark: SPARK.leads },
+    { id: 'meetings', label: t('dashboard.kpi.meetingsWeek'), value: summary ? String(summary.meetingsThisWeek) : '—', delta: -14.3, spark: SPARK.meetings },
+    { id: 'closed', label: t('dashboard.kpi.closedWon'), value: summary ? fmtEUR(summary.closedWonEur) : '—', delta: 6.1, spark: SPARK.closed },
+  ], [summary, t]);
 
   const marketSplit = useMemo(
     () => (summary?.marketSplit ?? []).map((m) => ({ name: m.name, value: m.valueEur })),
@@ -91,10 +94,10 @@ export const Dashboard: React.FC = () => {
     <div className={styles.dashboard}>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>Command Center</h1>
-          <p className={styles.subtitle}>Pipeline, schedule and portfolio at a glance.</p>
+          <h1 className={styles.title}>{t('dashboard.title')}</h1>
+          <p className={styles.subtitle}>{t('dashboard.subtitle')}</p>
         </div>
-        <span className={styles.headerDate}>{new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+        <span className={styles.headerDate}>{new Date().toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
       </div>
 
       {/* KPI şeridi — başlık değerleri gerçek; spark/delta temsili */}
@@ -122,26 +125,26 @@ export const Dashboard: React.FC = () => {
       <div className={styles.mainGrid}>
         <Card padding="md">
           <div className={styles.cardTitleRow}>
-            <h2 className={styles.cardTitle}>Pipeline Momentum</h2>
-            <span className={styles.cardMeta}>last 12 weeks</span>
+            <h2 className={styles.cardTitle}>{t('dashboard.pipelineMomentum')}</h2>
+            <span className={styles.cardMeta}>{t('dashboard.last12Weeks')}</span>
           </div>
           <TrendArea data={pipelineTrend} formatValue={fmtEUR} name="Pipeline" height={280} />
         </Card>
 
         <Card padding="md">
           <div className={styles.cardTitleRow}>
-            <h2 className={styles.cardTitle}>Portfolio by Market</h2>
+            <h2 className={styles.cardTitle}>{t('dashboard.portfolioByMarket')}</h2>
           </div>
           {marketSplit.length > 0 ? (
             <DonutMetric
               data={marketSplit}
               centerValue={fmtEUR(marketTotal)}
-              centerLabel="Total"
+              centerLabel={t('common.total')}
               formatValue={fmtEUR}
               height={192}
             />
           ) : (
-            <div className={styles.emptyChart}>Aktif pipeline verisi yok.</div>
+            <div className={styles.emptyChart}>{t('dashboard.noPipelineData')}</div>
           )}
         </Card>
       </div>
@@ -151,9 +154,9 @@ export const Dashboard: React.FC = () => {
         <Card padding="md">
           <div className={styles.cardTitleRow}>
             <h2 className={styles.cardTitle}>
-              <ChartBar size={16} className={styles.titleIcon} /> Lead Sources
+              <ChartBar size={16} className={styles.titleIcon} /> {t('dashboard.leadSources')}
             </h2>
-            <span className={styles.cardMeta}>30 days</span>
+            <span className={styles.cardMeta}>{t('dashboard.days30')}</span>
           </div>
           <HBarCompare data={leadSources} />
         </Card>
@@ -162,13 +165,13 @@ export const Dashboard: React.FC = () => {
           <CardHeader>
             <div className={styles.cardTitleRow}>
               <h2 className={styles.cardTitle}>
-                <CalendarBlank size={16} className={styles.titleIcon} /> Schedule
+                <CalendarBlank size={16} className={styles.titleIcon} /> {t('dashboard.schedule')}
               </h2>
             </div>
           </CardHeader>
           <CardBody padding="none">
             <div className={styles.listWidget}>
-              {schedule.length === 0 && <div className={styles.listEmpty}>Yaklaşan toplantı yok.</div>}
+              {schedule.length === 0 && <div className={styles.listEmpty}>{t('dashboard.noMeetings')}</div>}
               {schedule.map((m) => (
                 <button key={m.id} className={styles.listItem} onClick={() => navigate('/meetings')}>
                   <span className={styles.itemIcon}>
@@ -189,13 +192,13 @@ export const Dashboard: React.FC = () => {
           <CardHeader>
             <div className={styles.cardTitleRow}>
               <h2 className={styles.cardTitle}>
-                <CheckSquare size={16} className={styles.titleIcon} /> Priority Tasks
+                <CheckSquare size={16} className={styles.titleIcon} /> {t('dashboard.priorityTasks')}
               </h2>
             </div>
           </CardHeader>
           <CardBody padding="none">
             <div className={styles.listWidget}>
-              {priorityTasks.length === 0 && <div className={styles.listEmpty}>Bekleyen görev yok.</div>}
+              {priorityTasks.length === 0 && <div className={styles.listEmpty}>{t('dashboard.noTasks')}</div>}
               {priorityTasks.map((t) => (
                 <button key={t.id} className={styles.listItem} onClick={() => navigate('/tasks')}>
                   <span className={styles.itemContent}>

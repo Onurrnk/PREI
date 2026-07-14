@@ -4,6 +4,7 @@ import { MagnifyingGlass, Funnel, UsersThree, Buildings } from '@phosphor-icons/
 import { leadsApi, clientsApi, projectsApi } from '../../api/resources';
 import type { LeadDTO, ClientDTO, ProjectDTO } from '../../types';
 import styles from './GlobalSearch.module.css';
+import { useTranslation } from 'react-i18next';
 
 interface Hit {
   kind: 'lead' | 'client' | 'project';
@@ -27,6 +28,7 @@ const KIND_LABEL = { lead: 'Leads', client: 'Clients', project: 'Projects' } as 
  */
 export const GlobalSearch: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
@@ -120,7 +122,7 @@ export const GlobalSearch: React.FC = () => {
       <input
         ref={inputRef}
         type="text"
-        placeholder="Global Search (Leads, Clients, Projects...)"
+        placeholder={t('search.placeholder')}
         className={styles.input}
         value={query}
         aria-label="Global search"
@@ -132,9 +134,9 @@ export const GlobalSearch: React.FC = () => {
 
       {open && query.trim().length >= 2 && (
         <div className={styles.dropdown} role="listbox" aria-label="Search results">
-          {loading && !pool && <div className={styles.empty}>Searching…</div>}
+          {loading && !pool && <div className={styles.empty}>{t('search.searching')}</div>}
           {pool && results.length === 0 && (
-            <div className={styles.empty}>No results for “{query.trim()}”</div>
+            <div className={styles.empty}>{t('search.noResults', { query: query.trim() })}</div>
           )}
           {results.map((hit, i) => {
             const showHeader = hit.kind !== lastKind;
