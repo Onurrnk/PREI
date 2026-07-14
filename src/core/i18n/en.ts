@@ -808,6 +808,14 @@ export const en = {
         active: 'Active',
         inactive: 'Inactive',
       },
+      roles: {
+        super_admin: 'Super Admin',
+        manager: 'Manager',
+        finance_manager: 'Finance Manager',
+        marketing_manager: 'Marketing Manager',
+        consultant: 'Consultant',
+        service_agent: 'Service Agent',
+      },
       accountSummary: '{{name}} - Account Summary',
       close: 'Close',
       kpi: {

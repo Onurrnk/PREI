@@ -32,6 +32,15 @@ const TRANSACTION_STATUS_KEY: Record<string, string> = {
   lost: 'admin.transactionStatus.lost',
 };
 
+const ROLE_LABEL_KEY: Record<string, string> = {
+  super_admin: 'admin.roles.super_admin',
+  manager: 'admin.roles.manager',
+  finance_manager: 'admin.roles.finance_manager',
+  marketing_manager: 'admin.roles.marketing_manager',
+  consultant: 'admin.roles.consultant',
+  service_agent: 'admin.roles.service_agent',
+};
+
 export const AuditLogs: React.FC = () => {
   const { t, i18n } = useTranslation();
   const dateLocale = i18n.language === 'tr' ? 'tr-TR' : 'en-GB';
@@ -110,7 +119,7 @@ export const AuditLogs: React.FC = () => {
                         {user.name}
                       </button>
                     </TableCell>
-                    <TableCell>{user.role}</TableCell>
+                    <TableCell>{t(ROLE_LABEL_KEY[user.role] ?? user.role)}</TableCell>
                     <TableCell>
                       <span className={user.isActive ? styles.statusSuccess : styles.statusWarning}>
                         {user.isActive ? t('admin.status.active') : t('admin.status.inactive')}

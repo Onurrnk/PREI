@@ -807,6 +807,14 @@ export const tr = {
         active: 'Aktif',
         inactive: 'Pasif',
       },
+      roles: {
+        super_admin: 'Süper Yönetici',
+        manager: 'Yönetici',
+        finance_manager: 'Finans Yöneticisi',
+        marketing_manager: 'Pazarlama Yöneticisi',
+        consultant: 'Danışman',
+        service_agent: 'Servis Ajanı',
+      },
       accountSummary: '{{name}} - Hesap Özeti',
       close: 'Kapat',
       kpi: {
