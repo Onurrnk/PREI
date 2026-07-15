@@ -1,8 +1,8 @@
 // =====================================================================
-// PREI | DevelopersController — /api/developers (organizations, salt-okuma).
+// PREI | DevelopersController — /api/developers (organizations, list/detail/create/update).
 // =====================================================================
 import {
-  Controller, Get, Param, ParseUUIDPipe, Query,
+  Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query,
   DefaultValuePipe, ParseIntPipe, UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -11,6 +11,7 @@ import { RequirePermission } from '../../common/require-permission.decorator';
 import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { DevelopersService } from './developers.service';
+import { CreateDeveloperDto, UpdateDeveloperDto } from './dto/create-developer.dto';
 
 @Controller('developers')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -30,5 +31,19 @@ export class DevelopersController {
   @Get(':id')
   findOne(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
     return this.developers.findOne(ctx, id);
+  }
+
+  @Post()
+  create(@Ctx() ctx: RequestContext, @Body() dto: CreateDeveloperDto) {
+    return this.developers.create(ctx, dto);
+  }
+
+  @Patch(':id')
+  update(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateDeveloperDto,
+  ) {
+    return this.developers.update(ctx, id, dto);
   }
 }

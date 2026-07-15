@@ -1,27 +1,79 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { DeveloperDTO } from '../../core/types';
+import type { CreateDeveloperInput, DeveloperDTO } from '../../core/types';
 import { developersApi } from '../../core/api/resources';
+import { ApiError } from '../../core/api/client';
 import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
+import { Modal } from '../../core/components/Modal/Modal';
+import { Field, Input, FormRow } from '../../core/components/Form/Form';
+import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, Globe, Buildings, MapPin, FileText, Plus } from '@phosphor-icons/react';
 import { EmailClient } from '../clients/components/EmailClient';
 import styles from './DeveloperProfile.module.css';
+
+const toForm = (d: DeveloperDTO): CreateDeveloperInput => ({
+  name: d.name, tier: d.tier, headquarters: d.headquarters, partnershipStatus: d.partnershipStatus,
+  commissionRate: d.commissionRate, keyContactName: d.keyContactName, keyContactEmail: d.keyContactEmail,
+  keyContactPhone: d.keyContactPhone, website: d.website,
+});
 
 export const DeveloperProfile: React.FC = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data, loading } = useFetch<DeveloperDTO[]>(() => developersApi.list(), [id]);
+  const { data, loading, refetch } = useFetch<DeveloperDTO[]>(() => developersApi.list(), [id]);
   const developer = (data ?? []).find(d => d.id === id) ?? null;
 
   const toast = useToast();
 
   const handleActionClick = (actionName: string) => {
     toast.info(actionName);
+  };
+
+  const handleVisitWebsite = () => {
+    if (!developer?.website) {
+      toast.error(t('developers.websiteMissing'));
+      return;
+    }
+    const url = developer.website.startsWith('http') ? developer.website : `https://${developer.website}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState<CreateDeveloperInput | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const openEdit = () => {
+    if (!developer) return;
+    setEditForm(toForm(developer));
+    setShowEditModal(true);
+  };
+
+  const setEditField = <K extends keyof CreateDeveloperInput>(key: K, value: CreateDeveloperInput[K]) =>
+    setEditForm((f) => (f ? { ...f, [key]: value } : f));
+
+  const handleSaveEdit = async () => {
+    if (!developer || !editForm) return;
+    const name = editForm.name.trim();
+    if (!name) {
+      toast.error(t('developers.form.nameRequired'));
+      return;
+    }
+    setSaving(true);
+    try {
+      await developersApi.update(developer.id, { ...editForm, name });
+      setShowEditModal(false);
+      refetch();
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : t('developers.form.updateError');
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (loading) {
@@ -55,9 +107,9 @@ export const DeveloperProfile: React.FC = () => {
           </div>
         </div>
         <div className={styles.headerActions}>
-          <Button variant="outline" onClick={() => handleActionClick('Visit Website')}><Globe size={16} /> {t('developers.website')}</Button>
+          <Button variant="outline" onClick={handleVisitWebsite}><Globe size={16} /> {t('developers.website')}</Button>
           <Button variant="outline" onClick={() => handleActionClick('Schedule Meeting')}><CalendarBlank size={16} /> {t('developers.meeting')}</Button>
-          <Button variant="primary" onClick={() => handleActionClick('Edit Developer Profile')}>{t('developers.editProfile')}</Button>
+          <Button variant="primary" onClick={openEdit}>{t('developers.editProfile')}</Button>
         </div>
       </div>
 
@@ -178,6 +230,83 @@ export const DeveloperProfile: React.FC = () => {
           <EmailClient clientEmail={developer.keyContactEmail} clientName={developer.keyContactName} />
         </div>
       </div>
+
+      {editForm && (
+        <Modal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          title={t('developers.form.editTitle')}
+          size="md"
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setShowEditModal(false)} disabled={saving}>{t('common.cancel')}</Button>
+              <Button variant="primary" onClick={handleSaveEdit} disabled={saving}>
+                {saving ? t('common.saving') : t('developers.form.save')}
+              </Button>
+            </>
+          }
+        >
+          <div className={styles.formStack}>
+            <FormRow>
+              <Field label={t('developers.form.name')}>
+                <Input type="text" value={editForm.name} onChange={(e) => setEditField('name', e.target.value)} />
+              </Field>
+              <Field label={t('developers.form.tier')}>
+                <SelectMenu
+                  aria-label={t('developers.form.tier')}
+                  value={editForm.tier ?? 'Boutique'}
+                  onChange={(v) => setEditField('tier', v as DeveloperDTO['tier'])}
+                  options={[
+                    { value: 'Tier 1', label: 'Tier 1' },
+                    { value: 'Tier 2', label: 'Tier 2' },
+                    { value: 'Boutique', label: 'Boutique' },
+                  ]}
+                />
+              </Field>
+            </FormRow>
+
+            <FormRow>
+              <Field label={t('developers.form.headquarters')}>
+                <Input type="text" value={editForm.headquarters} onChange={(e) => setEditField('headquarters', e.target.value)} />
+              </Field>
+              <Field label={t('developers.form.partnershipStatus')}>
+                <SelectMenu
+                  aria-label={t('developers.form.partnershipStatus')}
+                  value={editForm.partnershipStatus ?? 'Active'}
+                  onChange={(v) => setEditField('partnershipStatus', v as DeveloperDTO['partnershipStatus'])}
+                  options={[
+                    { value: 'Active', label: 'Active' },
+                    { value: 'Negotiating', label: 'Negotiating' },
+                    { value: 'Inactive', label: 'Inactive' },
+                  ]}
+                />
+              </Field>
+            </FormRow>
+
+            <FormRow>
+              <Field label={t('developers.form.commissionRate')}>
+                <Input type="text" value={editForm.commissionRate} onChange={(e) => setEditField('commissionRate', e.target.value)} />
+              </Field>
+              <Field label={t('developers.form.website')}>
+                <Input type="text" value={editForm.website} onChange={(e) => setEditField('website', e.target.value)} />
+              </Field>
+            </FormRow>
+
+            <FormRow>
+              <Field label={t('developers.form.keyContactName')}>
+                <Input type="text" value={editForm.keyContactName} onChange={(e) => setEditField('keyContactName', e.target.value)} />
+              </Field>
+              <Field label={t('developers.form.keyContactEmail')}>
+                <Input type="email" value={editForm.keyContactEmail} onChange={(e) => setEditField('keyContactEmail', e.target.value)} />
+              </Field>
+            </FormRow>
+
+            <Field label={t('developers.form.keyContactPhone')}>
+              <Input type="tel" value={editForm.keyContactPhone} onChange={(e) => setEditField('keyContactPhone', e.target.value)} />
+            </Field>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

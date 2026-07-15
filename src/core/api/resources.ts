@@ -9,16 +9,20 @@ import { api } from './client';
 import type {
   ActivityDTO,
   AuditLogDTO,
+  BrandingSettingsDTO,
   ClientDTO,
   ClientNoteDTO,
   ClientTimelineEntryDTO,
   ContactDTO,
   ContractDTO,
+  CreateDeveloperInput,
+  CreateMeetingInput,
   CreateProjectInput,
   CreateProposalInput,
   CreateTaskInput,
   DashboardSummaryDTO,
   DeveloperDTO,
+  UpdateDeveloperInput,
   FinancialsSummaryDTO,
   GoogleOAuthStatus,
   FinancialsTimeframe,
@@ -37,6 +41,7 @@ import type {
   ThreadDetailDTO,
   ThreadSummaryDTO,
   UserDetailDTO,
+  UpdateBrandingInput,
   UpdateMeInput,
   UserDTO,
   VaultDocumentDTO,
@@ -122,6 +127,8 @@ export const clientsApi = {
 
 export const developersApi = {
   list: () => api.get<DeveloperDTO[]>('/api/developers'),
+  create: (input: CreateDeveloperInput) => api.post<DeveloperDTO>('/api/developers', input),
+  update: (id: string, input: UpdateDeveloperInput) => api.patch<DeveloperDTO>(`/api/developers/${id}`, input),
 };
 
 export const projectsApi = {
@@ -141,6 +148,7 @@ export const contractsApi = {
 
 export const meetingsApi = {
   list: () => api.get<MeetingDTO[]>('/api/meetings'),
+  create: (input: CreateMeetingInput) => api.post<MeetingDTO>('/api/meetings', input),
 };
 
 export const documentsApi = {
@@ -193,4 +201,6 @@ export const financialsApi = {
 export const adminApi = {
   team: () => api.get<TeamMemberDTO[]>('/api/admin/team'),
   userDetail: (id: string) => api.get<UserDetailDTO>(`/api/admin/team/${id}`),
+  branding: () => api.get<BrandingSettingsDTO>('/api/admin/branding'),
+  updateBranding: (input: UpdateBrandingInput) => api.patch<BrandingSettingsDTO>('/api/admin/branding', input),
 };

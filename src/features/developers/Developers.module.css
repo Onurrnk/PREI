@@ -205,3 +205,9 @@
   background-color: var(--bg-surface-active);
   color: var(--text-primary);
 }
+
+.formStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}

@@ -5,6 +5,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 import type { RequestContext } from '../../common/request-context';
+import type { CreateMeetingDto } from './dto/create-meeting.dto';
 
 interface MeetingRow {
   id: string;
@@ -59,5 +60,41 @@ export class MeetingsService {
         kind: str(m.meeting_kind) || 'meeting',
       };
     });
+  }
+
+  async create(ctx: RequestContext, dto: CreateMeetingDto): Promise<MeetingResponse> {
+    const metadata = {
+      duration: dto.durationLabel ?? '',
+      location: dto.location ?? '',
+      platform: dto.platform ?? 'In-person',
+      meeting_kind: dto.kind ?? 'meeting',
+    };
+    const row = await this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<MeetingRow>(
+        `INSERT INTO tasks (tenant_id, assignee_id, title, description, due_date, task_type, status, related_name, metadata, created_by, updated_by)
+         VALUES ($1,$2,$3,$4,$5,'meeting','pending',$6,$7,$2,$2)
+         RETURNING id, title, description, due_date, related_name, metadata`,
+        [ctx.tenantId, ctx.userId, dto.title.trim(), dto.notes?.trim() || null, dto.date, dto.client?.trim() || null, JSON.stringify(metadata)],
+      );
+      const meeting = rows[0];
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'meeting.created','task',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, meeting.id, JSON.stringify({ title: dto.title }), ctx.correlationId],
+      );
+      return meeting;
+    });
+    const m = (row.metadata ?? {}) as Record<string, unknown>;
+    return {
+      id: row.id,
+      title: row.title,
+      date: row.due_date ?? null,
+      durationLabel: str(m.duration),
+      client: row.related_name ?? '',
+      location: str(m.location),
+      platform: str(m.platform),
+      notes: row.description ?? '',
+      kind: str(m.meeting_kind) || 'meeting',
+    };
   }
 }

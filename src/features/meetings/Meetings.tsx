@@ -6,6 +6,7 @@ import { useToast } from '../../core/components/Toast/ToastProvider';
 import { CalendarBlank as CalendarIcon, CaretLeft, CaretRight, Plus, MapPin, User, VideoCamera, ArrowsClockwise, Clock, FileText } from '@phosphor-icons/react';
 import type { MeetingDTO } from '../../core/types';
 import { meetingsApi } from '../../core/api/resources';
+import { ApiError } from '../../core/api/client';
 import { useFetch } from '../../core/hooks/useFetch';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import styles from './Meetings.module.css';
@@ -23,17 +24,56 @@ interface DayCell { inMonth: boolean; day?: number; iso?: string; isToday?: bool
 
 export const Meetings: React.FC = () => {
   const { t } = useTranslation();
-  const { data, loading, error } = useFetch<MeetingDTO[]>(() => meetingsApi.list(), []);
+  const { data, loading, error, refetch } = useFetch<MeetingDTO[]>(() => meetingsApi.list(), []);
   const meetings = useMemo(() => data ?? [], [data]);
 
   const [viewDate, setViewDate] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [showAddModal, setShowAddModal] = useState(false);
+  const [newMeetingTitle, setNewMeetingTitle] = useState('');
   const [newMeetingType, setNewMeetingType] = useState('meeting');
   const [newMeetingPlatform, setNewMeetingPlatform] = useState('In-person');
+  const [newMeetingDate, setNewMeetingDate] = useState('');
+  const [newMeetingTime, setNewMeetingTime] = useState('');
+  const [newMeetingLocation, setNewMeetingLocation] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingDTO | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const toast = useToast();
+
+  const closeAddModal = () => {
+    setShowAddModal(false);
+    setNewMeetingTitle(''); setNewMeetingType('meeting'); setNewMeetingPlatform('In-person');
+    setNewMeetingDate(''); setNewMeetingTime(''); setNewMeetingLocation('');
+  };
+
+  const handleCreateMeeting = async () => {
+    if (!newMeetingTitle.trim()) {
+      toast.error(t('meetings.titleRequired'));
+      return;
+    }
+    if (!newMeetingDate || !newMeetingTime) {
+      toast.error(t('meetings.dateRequired'));
+      return;
+    }
+    setIsCreating(true);
+    try {
+      await meetingsApi.create({
+        title: newMeetingTitle.trim(),
+        date: new Date(`${newMeetingDate}T${newMeetingTime}`).toISOString(),
+        location: newMeetingLocation.trim() || undefined,
+        platform: newMeetingPlatform as 'In-person' | 'Zoom',
+        kind: newMeetingType as 'meeting' | 'viewing' | 'signing',
+      });
+      closeAddModal();
+      refetch();
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : t('meetings.createError');
+      toast.error(msg);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const viewYear = viewDate.getFullYear();
   const viewMonth = viewDate.getMonth();
@@ -253,26 +293,31 @@ export const Meetings: React.FC = () => {
         </Modal>
       )}
 
-      {/* Yeni Randevu Modalı (create sonraki adımda bağlanacak) */}
+      {/* Yeni Randevu Modalı */}
       <Modal
         isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        onClose={closeAddModal}
         title={t('meetings.scheduleNew')}
         size="md"
         footer={
           <>
-            <Button variant="outline" onClick={() => setShowAddModal(false)}>{t('common.cancel')}</Button>
-            <Button variant="primary" onClick={() => {
-              toast.info(t('meetings.createSoon'));
-              setShowAddModal(false);
-            }}>{t('meetings.schedule')}</Button>
+            <Button variant="outline" onClick={closeAddModal} disabled={isCreating}>{t('common.cancel')}</Button>
+            <Button variant="primary" onClick={handleCreateMeeting} disabled={isCreating}>
+              {isCreating ? t('common.saving') : t('meetings.schedule')}
+            </Button>
           </>
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className={styles.formGroup}>
             <label>{t('meetings.titlePurpose')}</label>
-            <input type="text" className={styles.textInput} placeholder={t('meetings.titlePlaceholder')} />
+            <input
+              type="text"
+              className={styles.textInput}
+              placeholder={t('meetings.titlePlaceholder')}
+              value={newMeetingTitle}
+              onChange={(e) => setNewMeetingTitle(e.target.value)}
+            />
           </div>
           <div className={styles.formGrid}>
             <div className={styles.formGroup}>
@@ -304,16 +349,32 @@ export const Meetings: React.FC = () => {
           <div className={styles.formGrid}>
             <div className={styles.formGroup}>
               <label>{t('common.date')}</label>
-              <input type="date" className={styles.textInput} />
+              <input
+                type="date"
+                className={styles.textInput}
+                value={newMeetingDate}
+                onChange={(e) => setNewMeetingDate(e.target.value)}
+              />
             </div>
             <div className={styles.formGroup}>
               <label>{t('meetings.time')}</label>
-              <input type="time" className={styles.textInput} />
+              <input
+                type="time"
+                className={styles.textInput}
+                value={newMeetingTime}
+                onChange={(e) => setNewMeetingTime(e.target.value)}
+              />
             </div>
           </div>
           <div className={styles.formGroup}>
             <label>{t('meetings.locationLink')}</label>
-            <input type="text" className={styles.textInput} placeholder={t('meetings.locationPlaceholder')} />
+            <input
+              type="text"
+              className={styles.textInput}
+              placeholder={t('meetings.locationPlaceholder')}
+              value={newMeetingLocation}
+              onChange={(e) => setNewMeetingLocation(e.target.value)}
+            />
           </div>
         </div>
       </Modal>

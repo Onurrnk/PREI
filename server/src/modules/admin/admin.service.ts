@@ -6,6 +6,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 import type { RequestContext } from '../../common/request-context';
+import type { UpdateBrandingDto } from './dto/update-branding.dto';
 
 const ACTION_LABEL: Record<string, string> = {
   'lead.created': 'Yeni aday oluşturdu',
@@ -63,6 +64,25 @@ export interface UserDetail {
   pipelineClients: PipelineClient[];
   transactions: TransactionRow[];
   timeline: TimelineEntry[];
+}
+
+export interface BrandingSettings {
+  companyName: string;
+  websiteUrl: string;
+  primaryColor: string;
+  offPlanCommissionPct: number;
+  secondaryCommissionPct: number;
+}
+
+function toBranding(row: { name: string; metadata: Record<string, unknown> | null }): BrandingSettings {
+  const m = row.metadata ?? {};
+  return {
+    companyName: row.name,
+    websiteUrl: typeof m.website_url === 'string' ? m.website_url : '',
+    primaryColor: typeof m.primary_color === 'string' ? m.primary_color : '#9B5BB3',
+    offPlanCommissionPct: typeof m.off_plan_commission_pct === 'number' ? m.off_plan_commission_pct : 50,
+    secondaryCommissionPct: typeof m.secondary_commission_pct === 'number' ? m.secondary_commission_pct : 60,
+  };
 }
 
 @Injectable()
@@ -190,6 +210,41 @@ export class AdminService {
         },
         pipeline, pipelineClients, transactions, timeline,
       };
+    });
+  }
+
+  async getBranding(ctx: RequestContext): Promise<BrandingSettings> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ name: string; metadata: Record<string, unknown> | null }>(
+        `SELECT name, metadata FROM tenants WHERE id = $1`,
+        [ctx.tenantId],
+      );
+      return toBranding(rows[0]);
+    });
+  }
+
+  async updateBranding(ctx: RequestContext, dto: UpdateBrandingDto): Promise<BrandingSettings> {
+    const metadataPatch: Record<string, unknown> = {};
+    if (dto.websiteUrl !== undefined) metadataPatch.website_url = dto.websiteUrl;
+    if (dto.primaryColor !== undefined) metadataPatch.primary_color = dto.primaryColor;
+    if (dto.offPlanCommissionPct !== undefined) metadataPatch.off_plan_commission_pct = dto.offPlanCommissionPct;
+    if (dto.secondaryCommissionPct !== undefined) metadataPatch.secondary_commission_pct = dto.secondaryCommissionPct;
+
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ name: string; metadata: Record<string, unknown> | null }>(
+        `UPDATE tenants SET
+           name     = COALESCE($2, name),
+           metadata = metadata || $3::jsonb
+         WHERE id = $1
+         RETURNING name, metadata`,
+        [ctx.tenantId, dto.companyName ?? null, JSON.stringify(metadataPatch)],
+      );
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'branding.updated','tenant',$1,$3,$4)`,
+        [ctx.tenantId, ctx.userId, JSON.stringify(metadataPatch), ctx.correlationId],
+      );
+      return toBranding(rows[0]);
     });
   }
 }

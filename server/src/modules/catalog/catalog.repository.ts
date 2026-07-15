@@ -122,6 +122,60 @@ export class CatalogRepository {
     });
   }
 
+  async createDeveloper(
+    ctx: RequestContext,
+    input: { name: string; phone: string | null; email: string | null; metadata: Record<string, unknown> },
+  ): Promise<DeveloperRow> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `INSERT INTO organizations (tenant_id, name, org_type, phone, email, metadata, created_by, updated_by)
+         VALUES ($1,$2,'developer',$3,$4,$5,$6,$6)
+         RETURNING id`,
+        [ctx.tenantId, input.name, input.phone, input.email, JSON.stringify(input.metadata), ctx.userId],
+      );
+      const id = rows[0].id;
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'developer.created','organization',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, id, JSON.stringify({ name: input.name }), ctx.correlationId],
+      );
+      const { rows: full } = await c.query<DeveloperRow>(
+        `SELECT id, name, phone, email, metadata, updated_at FROM organizations WHERE id = $1`,
+        [id],
+      );
+      return full[0];
+    });
+  }
+
+  async updateDeveloper(
+    ctx: RequestContext,
+    id: string,
+    input: { name: string | null; phone: string | null; email: string | null; metadataPatch: Record<string, unknown> },
+  ): Promise<DeveloperRow | null> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<DeveloperRow>(
+        `UPDATE organizations SET
+           name     = COALESCE($2, name),
+           phone    = COALESCE($3, phone),
+           email    = COALESCE($4, email),
+           metadata = metadata || $5::jsonb,
+           updated_by = $6
+         WHERE id = $1 AND deleted_at IS NULL AND org_type = 'developer'
+         RETURNING id, name, phone, email, metadata, updated_at`,
+        [id, input.name, input.phone, input.email, JSON.stringify(input.metadataPatch), ctx.userId],
+      );
+      const dev = rows[0] ?? null;
+      if (dev) {
+        await c.query(
+          `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+           VALUES ($1,$2,'developer.updated','organization',$3,$4,$5)`,
+          [ctx.tenantId, ctx.userId, id, JSON.stringify(input.metadataPatch), ctx.correlationId],
+        );
+      }
+      return dev;
+    });
+  }
+
   /** Verilen geliştirici kimlikleri için tüm projeler — N+1 önler; JS'te gruplanır. */
   async projectsForDevelopers(ctx: RequestContext, devIds: string[]): Promise<ProjectRow[]> {
     if (devIds.length === 0) return [];

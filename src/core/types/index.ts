@@ -53,6 +53,17 @@ export interface FinancialsSummaryDTO {
   purposeSplit: FinancialsSplitItemDTO[];
 }
 
+// GET/PATCH /api/admin/branding — tenant-seviyesi marka/komisyon ayarları.
+export interface BrandingSettingsDTO {
+  companyName: string;
+  websiteUrl: string;
+  primaryColor: string;
+  offPlanCommissionPct: number;
+  secondaryCommissionPct: number;
+}
+
+export type UpdateBrandingInput = Partial<BrandingSettingsDTO>;
+
 // GET /api/admin/team, /api/admin/team/:id — ekip performans özeti (gerçek veri).
 export interface TeamMemberDTO {
   id: string;
@@ -273,6 +284,20 @@ export interface DeveloperDTO {
   projects: ProjectDTO[];
 }
 
+export interface CreateDeveloperInput {
+  name: string;
+  tier?: DeveloperDTO['tier'];
+  headquarters?: string;
+  partnershipStatus?: DeveloperDTO['partnershipStatus'];
+  commissionRate?: string;
+  keyContactName?: string;
+  keyContactEmail?: string;
+  keyContactPhone?: string;
+  website?: string;
+}
+
+export type UpdateDeveloperInput = Partial<CreateDeveloperInput>;
+
 export interface ProposalDTO {
   id: string;
   title: string;
@@ -325,6 +350,17 @@ export interface MeetingDTO {
   platform: string;
   notes: string;
   kind: string;           // viewing | signing | meeting
+}
+
+export interface CreateMeetingInput {
+  title: string;
+  date: string;           // ISO
+  durationLabel?: string;
+  client?: string;
+  location?: string;
+  platform?: 'In-person' | 'Zoom';
+  notes?: string;
+  kind?: 'meeting' | 'viewing' | 'signing';
 }
 
 export interface VaultDocumentDTO {

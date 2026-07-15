@@ -70,3 +70,28 @@ describe('Settings — Gmail entegrasyonu (Google OAuth)', () => {
     expect(within(card).getByRole('button', { name: 'Connect' })).toBeInTheDocument();
   });
 });
+
+describe('Settings — Branding (gerçek GET/PATCH /api/admin/branding)', () => {
+  it('şirket adı değiştirilip kaydedilince gerçek PATCH çağrılır ve kalıcı olur', async () => {
+    renderSettings();
+    fireEvent.click(await screen.findByRole('button', { name: 'Branding' }));
+
+    const nameInput = await screen.findByDisplayValue('ProDuality Real Estate');
+    fireEvent.change(nameInput, { target: { value: 'ProDuality International' } });
+    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+
+    await waitFor(() => expect(screen.getByText('Settings Saved')).toBeInTheDocument());
+  });
+});
+
+describe('Settings — Team (gerçek GET /api/admin/team)', () => {
+  it('hardcoded değil, gerçek ekip listesini gösterir', async () => {
+    renderSettings();
+    fireEvent.click(await screen.findByRole('button', { name: 'Team & Roles' }));
+
+    expect(await screen.findByText(/Onur N\. Karataş/)).toBeInTheDocument();
+    expect(screen.getByText('Selin Yıldız')).toBeInTheDocument();
+    expect(screen.getByText('Marco Bianchi')).toBeInTheDocument();
+    expect(screen.queryByText('Mert Aydınlar')).not.toBeInTheDocument();
+  });
+});

@@ -352,3 +352,9 @@
 .emptyIcon {
   color: var(--border-color);
 }
+
+.formStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}

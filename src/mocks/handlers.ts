@@ -3,6 +3,8 @@ import type {
   ClientNoteDTO,
   ClientTimelineEntryDTO,
   ActivityDTO,
+  BrandingSettingsDTO,
+  UpdateBrandingInput,
   GoogleOAuthStatus,
   KPIDTO,
   LeadCommunicationDTO,
@@ -11,6 +13,8 @@ import type {
   ClientDTO,
   ContactDTO,
   ContractDTO,
+  CreateDeveloperInput,
+  CreateMeetingInput,
   CreateProjectInput,
   CreateProposalInput,
   CreateTaskInput,
@@ -23,6 +27,7 @@ import type {
   ProjectDTO,
   DeveloperDTO,
   ProposalDTO,
+  UpdateDeveloperInput,
   UpdateMeInput,
   VaultDocumentDTO,
   AuditLogDTO,
@@ -280,9 +285,51 @@ const mockClients: ClientDTO[] = [
       },
     ];
 
+// Bu ayın günlerine yerleşen toplantılar (takvim mock modda da dolu görünsün).
+const mockMeetingsNow = new Date();
+const mockMeetingDay = (d: number, h: number, m = 0) =>
+  new Date(mockMeetingsNow.getFullYear(), mockMeetingsNow.getMonth(), d, h, m).toISOString();
+let mockMeetings: MeetingDTO[] = [
+  { id: 'm1', title: 'Viewing: Marina Vista', date: mockMeetingDay(12, 10), durationLabel: '1h', client: 'Oliver Hartwell', location: 'Marina Vista Tower B', platform: 'In-person', notes: '3BR deniz manzaralı birimlerle ilgileniyor.', kind: 'viewing' },
+  { id: 'm2', title: 'Consultation: T. Weber', date: mockMeetingDay(12, 14), durationLabel: '45m', client: 'Tobias Weber', location: 'Zoom', platform: 'Zoom', notes: 'Off-plan yatırım ilk görüşme.', kind: 'meeting' },
+  { id: 'm3', title: 'Contract Signing', date: mockMeetingDay(15, 11, 30), durationLabel: '1h', client: 'Carmen Ortega', location: 'Emaar Sales Center', platform: 'In-person', notes: 'Tüm SPA dokümanları hazır olsun.', kind: 'signing' },
+  { id: 'm4', title: 'Zoom: Project Pitch', date: mockMeetingDay(22, 16), durationLabel: '1h', client: 'Tobias Weber', location: 'Zoom', platform: 'Zoom', notes: 'Safa Two projesi sunumu.', kind: 'meeting' },
+];
+
+let mockBranding: BrandingSettingsDTO = {
+  companyName: 'ProDuality Real Estate',
+  websiteUrl: 'https://produality.com',
+  primaryColor: '#9B5BB3',
+  offPlanCommissionPct: 50,
+  secondaryCommissionPct: 60,
+};
+
 const mockDeveloperNames: Record<string, string> = {
   '1': 'Emaar Properties', '2': 'DAMAC Properties', '3': 'Nakheel', '4': 'Ellington Properties', '5': 'Sobha Realty',
 };
+
+let mockDevelopers: Omit<DeveloperDTO, 'projects'>[] = [
+  {
+    id: '1', name: 'Emaar Properties', tier: 'Tier 1', headquarters: 'Dubai', activeProjects: 45, totalCompletedProjects: 120, partnershipStatus: 'Active', commissionRate: '5%',
+    keyContactName: 'Ahmed Al Ali', keyContactEmail: 'ahmed@emaar.ae', keyContactPhone: '+971 50 123 4567', website: 'www.emaar.com',
+  },
+  {
+    id: '2', name: 'DAMAC Properties', tier: 'Tier 1', headquarters: 'Dubai', activeProjects: 32, totalCompletedProjects: 85, partnershipStatus: 'Active', commissionRate: '6%',
+    keyContactName: 'Sara Khan', keyContactEmail: 'skhan@damac.ae', keyContactPhone: '+971 52 234 5678', website: 'www.damacproperties.com',
+  },
+  {
+    id: '3', name: 'Nakheel', tier: 'Tier 1', headquarters: 'Dubai', activeProjects: 18, totalCompletedProjects: 95, partnershipStatus: 'Negotiating', commissionRate: '4.5%',
+    keyContactName: 'Omar Saeed', keyContactEmail: 'omar.s@nakheel.ae', keyContactPhone: '+971 50 888 9900', website: 'www.nakheel.com',
+  },
+  {
+    id: '4', name: 'Ellington Properties', tier: 'Boutique', headquarters: 'Dubai', activeProjects: 12, totalCompletedProjects: 25, partnershipStatus: 'Active', commissionRate: '7%',
+    keyContactName: 'David Miller', keyContactEmail: 'david@ellington.ae', keyContactPhone: '+971 58 555 4444', website: 'www.ellingtonproperties.ae',
+  },
+  {
+    id: '5', name: 'Sobha Realty', tier: 'Tier 2', headquarters: 'Dubai', activeProjects: 22, totalCompletedProjects: 40, partnershipStatus: 'Active', commissionRate: '5.5%',
+    keyContactName: 'Ravi Menon', keyContactEmail: 'rmenon@sobha.ae', keyContactPhone: '+971 50 777 6655', website: 'www.sobharealty.com',
+  },
+];
 
 let mockProjects: ProjectDTO[] = [
   {
@@ -679,6 +726,16 @@ export const handlers = [
     });
   }),
 
+  http.get('/api/admin/branding', () => {
+    return HttpResponse.json<BrandingSettingsDTO>(mockBranding);
+  }),
+
+  http.patch('/api/admin/branding', async ({ request }) => {
+    const patch = (await request.json()) as UpdateBrandingInput;
+    mockBranding = { ...mockBranding, ...patch };
+    return HttpResponse.json<BrandingSettingsDTO>(mockBranding);
+  }),
+
   http.get('/api/admin/team', () => {
     return HttpResponse.json<TeamMemberDTO[]>([
       { id: 'u1', name: 'Onur N. Karataş', role: 'super_admin', isActive: true, lastActiveAt: new Date().toISOString(), clientsRegistered: 9 },
@@ -711,15 +768,24 @@ export const handlers = [
   }),
 
   http.get('/api/meetings', () => {
-    // Bu ayın günlerine yerleşen toplantılar (takvim mock modda da dolu görünsün).
-    const now = new Date();
-    const day = (d: number, h: number, m = 0) => new Date(now.getFullYear(), now.getMonth(), d, h, m).toISOString();
-    return HttpResponse.json<MeetingDTO[]>([
-      { id: 'm1', title: 'Viewing: Marina Vista', date: day(12, 10), durationLabel: '1h', client: 'Oliver Hartwell', location: 'Marina Vista Tower B', platform: 'In-person', notes: '3BR deniz manzaralı birimlerle ilgileniyor.', kind: 'viewing' },
-      { id: 'm2', title: 'Consultation: T. Weber', date: day(12, 14), durationLabel: '45m', client: 'Tobias Weber', location: 'Zoom', platform: 'Zoom', notes: 'Off-plan yatırım ilk görüşme.', kind: 'meeting' },
-      { id: 'm3', title: 'Contract Signing', date: day(15, 11, 30), durationLabel: '1h', client: 'Carmen Ortega', location: 'Emaar Sales Center', platform: 'In-person', notes: 'Tüm SPA dokümanları hazır olsun.', kind: 'signing' },
-      { id: 'm4', title: 'Zoom: Project Pitch', date: day(22, 16), durationLabel: '1h', client: 'Tobias Weber', location: 'Zoom', platform: 'Zoom', notes: 'Safa Two projesi sunumu.', kind: 'meeting' },
-    ]);
+    return HttpResponse.json<MeetingDTO[]>(mockMeetings);
+  }),
+
+  http.post('/api/meetings', async ({ request }) => {
+    const input = (await request.json()) as CreateMeetingInput;
+    const newMeeting: MeetingDTO = {
+      id: `m${Date.now()}`,
+      title: input.title,
+      date: input.date,
+      durationLabel: input.durationLabel ?? '',
+      client: input.client ?? '',
+      location: input.location ?? '',
+      platform: input.platform ?? 'In-person',
+      notes: input.notes ?? '',
+      kind: input.kind ?? 'meeting',
+    };
+    mockMeetings = [...mockMeetings, newMeeting];
+    return HttpResponse.json<MeetingDTO>(newMeeting, { status: 201 });
   }),
 
   // Mock müşteri listesi module-level: PATCH oturum içinde kalıcıdır.
@@ -760,103 +826,41 @@ export const handlers = [
 
 
   http.get('/api/developers', () => {
-    return HttpResponse.json<DeveloperDTO[]>([
-      {
-        id: '1', name: 'Emaar Properties', tier: 'Tier 1', headquarters: 'Dubai', activeProjects: 45, totalCompletedProjects: 120, partnershipStatus: 'Active', commissionRate: '5%',
-        keyContactName: 'Ahmed Al Ali', keyContactEmail: 'ahmed@emaar.ae', keyContactPhone: '+971 50 123 4567', website: 'www.emaar.com',
-        projects: [
-          {
-            id: 'p1', developerId: '1', developerName: 'Emaar Properties', name: 'Beachfront Residences', location: 'Dubai Marina', status: 'Off-plan',
-            totalUnits: 350, availableUnits: 42, startingPrice: 2500000, currency: 'AED', completionDate: 'Q4 2027',
-            projectManagerName: 'Tariq Mansour', projectManagerEmail: 'tariq.m@emaar.ae', projectManagerPhone: '+971 55 987 6543',
-            description: 'Ultra-luxury waterfront apartments featuring panoramic views of the Arabian Gulf and Dubai Marina skyline. Exclusive private beach access and premium lifestyle amenities.',
-            images: ['/images/exterior.png', '/images/interior.png', '/images/amenities.png'],
-            amenities: ['Private Beach Access', 'Infinity Pool', 'State-of-the-art Gym', 'Valet Parking', 'Concierge Service'],
-            paymentPlan: [
-              { milestone: 'Down Payment', percentage: 20, date: 'On Booking' },
-              { milestone: 'During Construction', percentage: 40, date: 'Across 2 Years' },
-              { milestone: 'On Handover', percentage: 40, date: 'Q4 2027' }
-            ],
-            documents: [
-              { id: 'd1', title: 'Project Brochure', type: 'PDF', size: '12 MB' },
-              { id: 'd2', title: 'Floor Plans (2BR & 3BR)', type: 'PDF', size: '8.5 MB' },
-              { id: 'd3', title: 'Current Availability List', type: 'Spreadsheet', size: '1.2 MB' }
-            ]
-          },
-          {
-            id: 'p2', developerId: '1', developerName: 'Emaar Properties', name: 'Downtown Heights', location: 'Downtown Dubai', status: 'Under Construction',
-            totalUnits: 200, availableUnits: 15, startingPrice: 4200000, currency: 'AED', completionDate: 'Q2 2026',
-            projectManagerName: 'Leila Hassan', projectManagerEmail: 'leila.h@emaar.ae', projectManagerPhone: '+971 50 456 7890',
-            description: 'Premium penthouses and apartments steps away from the Burj Khalifa and Dubai Mall. Unrivaled urban luxury.',
-            images: ['/images/interior.png', '/images/exterior.png'],
-            amenities: ['Burj Khalifa Views', 'Rooftop Lounge', 'Spa', 'Smart Home Integration'],
-            paymentPlan: [
-              { milestone: 'Down Payment', percentage: 10, date: 'On Booking' },
-              { milestone: 'During Construction', percentage: 50, date: 'Monthly' },
-              { milestone: 'On Handover', percentage: 40, date: 'Q2 2026' }
-            ],
-            documents: [
-              { id: 'd4', title: 'Executive Presentation', type: 'PDF', size: '15 MB' }
-            ]
-          }
-        ]
-      },
-      {
-        id: '2', name: 'DAMAC Properties', tier: 'Tier 1', headquarters: 'Dubai', activeProjects: 32, totalCompletedProjects: 85, partnershipStatus: 'Active', commissionRate: '6%',
-        keyContactName: 'Sara Khan', keyContactEmail: 'skhan@damac.ae', keyContactPhone: '+971 52 234 5678', website: 'www.damacproperties.com',
-        projects: [
-          {
-            id: 'p3', developerId: '2', developerName: 'DAMAC Properties', name: 'DAMAC Hills Villas', location: 'DAMAC Hills', status: 'Under Construction',
-            totalUnits: 150, availableUnits: 30, startingPrice: 3800000, currency: 'AED', completionDate: 'Q1 2026',
-            projectManagerName: 'Faisal Qureshi', projectManagerEmail: 'faisal.q@damac.ae', projectManagerPhone: '+971 56 111 2233',
-            description: 'Exclusive golf course villas with Trump International Golf Club access. Luxury family living in a gated community.',
-            images: ['/images/exterior.png', '/images/amenities.png'],
-            amenities: ['Golf Course Access', 'Private Pool', 'Gated Community', 'Tennis Courts'],
-            paymentPlan: [
-              { milestone: 'Down Payment', percentage: 20, date: 'On Booking' },
-              { milestone: 'During Construction', percentage: 40, date: 'Construction Linked' },
-              { milestone: 'On Handover', percentage: 40, date: 'Q1 2026' }
-            ],
-            documents: [
-              { id: 'd5', title: 'Villa Layouts', type: 'PDF', size: '10 MB' }
-            ]
-          }
-        ]
-      },
-      {
-        id: '3', name: 'Nakheel', tier: 'Tier 1', headquarters: 'Dubai', activeProjects: 18, totalCompletedProjects: 95, partnershipStatus: 'Negotiating', commissionRate: '4.5%',
-        keyContactName: 'Omar Saeed', keyContactEmail: 'omar.s@nakheel.ae', keyContactPhone: '+971 50 888 9900', website: 'www.nakheel.com',
-        projects: []
-      },
-      {
-        id: '4', name: 'Ellington Properties', tier: 'Boutique', headquarters: 'Dubai', activeProjects: 12, totalCompletedProjects: 25, partnershipStatus: 'Active', commissionRate: '7%',
-        keyContactName: 'David Miller', keyContactEmail: 'david@ellington.ae', keyContactPhone: '+971 58 555 4444', website: 'www.ellingtonproperties.ae',
-        projects: [
-          {
-            id: 'p4', developerId: '4', developerName: 'Ellington Properties', name: 'Belmont Residences', location: 'JVT', status: 'Off-plan',
-            totalUnits: 85, availableUnits: 12, startingPrice: 1200000, currency: 'AED', completionDate: 'Q3 2026',
-            projectManagerName: 'Elena Rostova', projectManagerEmail: 'elena.r@ellington.ae', projectManagerPhone: '+971 55 444 3322',
-            description: 'Boutique apartments designed with a focus on art and aesthetics. Prime location with excellent ROI potential.',
-            images: ['/images/interior.png'],
-            amenities: ['Resort-style Pool', 'Library', 'Fitness Studio', 'BBQ Area'],
-            paymentPlan: [
-              { milestone: 'Down Payment', percentage: 20, date: 'On Booking' },
-              { milestone: 'During Construction', percentage: 30, date: 'Construction Linked' },
-              { milestone: 'On Handover', percentage: 50, date: 'Q3 2026' }
-            ],
-            documents: [
-              { id: 'd6', title: 'Investment Case Study', type: 'PDF', size: '5 MB' },
-              { id: 'd7', title: 'Factsheet', type: 'PDF', size: '2 MB' }
-            ]
-          }
-        ]
-      },
-      {
-        id: '5', name: 'Sobha Realty', tier: 'Tier 2', headquarters: 'Dubai', activeProjects: 22, totalCompletedProjects: 40, partnershipStatus: 'Active', commissionRate: '5.5%',
-        keyContactName: 'Ravi Menon', keyContactEmail: 'rmenon@sobha.ae', keyContactPhone: '+971 50 777 6655', website: 'www.sobharealty.com',
-        projects: []
-      },
-    ]);
+    return HttpResponse.json<DeveloperDTO[]>(
+      mockDevelopers.map((d) => ({ ...d, projects: mockProjects.filter((p) => p.developerId === d.id) })),
+    );
+  }),
+
+  http.post('/api/developers', async ({ request }) => {
+    const input = (await request.json()) as CreateDeveloperInput;
+    const newDev: Omit<DeveloperDTO, 'projects'> = {
+      id: `dev${Date.now()}`,
+      name: input.name,
+      tier: input.tier ?? 'Boutique',
+      headquarters: input.headquarters ?? '',
+      activeProjects: 0,
+      totalCompletedProjects: 0,
+      partnershipStatus: input.partnershipStatus ?? 'Active',
+      commissionRate: input.commissionRate ?? '',
+      keyContactName: input.keyContactName ?? '',
+      keyContactEmail: input.keyContactEmail ?? '',
+      keyContactPhone: input.keyContactPhone ?? '',
+      website: input.website ?? '',
+    };
+    mockDevelopers = [...mockDevelopers, newDev];
+    return HttpResponse.json<DeveloperDTO>({ ...newDev, projects: [] }, { status: 201 });
+  }),
+
+  http.patch('/api/developers/:id', async ({ params, request }) => {
+    const idx = mockDevelopers.findIndex((d) => d.id === params.id);
+    if (idx === -1) return new HttpResponse(null, { status: 404 });
+    const patch = (await request.json()) as Partial<UpdateDeveloperInput>;
+    mockDevelopers[idx] = { ...mockDevelopers[idx], ...patch };
+    const updated = mockDevelopers[idx];
+    return HttpResponse.json<DeveloperDTO>({
+      ...updated,
+      projects: mockProjects.filter((p) => p.developerId === updated.id),
+    });
   }),
 
   http.get('/api/projects', () => {

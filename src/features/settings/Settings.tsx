@@ -8,8 +8,8 @@ import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../../core/hooks/useFetch';
-import { meApi, googleAuthApi } from '../../core/api/resources';
-import type { MeResponse, GoogleOAuthStatus } from '../../core/types';
+import { meApi, googleAuthApi, adminApi } from '../../core/api/resources';
+import type { MeResponse, GoogleOAuthStatus, BrandingSettingsDTO, TeamMemberDTO } from '../../core/types';
 import { useAuth } from '../../core/auth/AuthContext';
 import { useTheme } from '../../core/theme/ThemeContext';
 import { supabase } from '../../core/auth/supabaseClient';
@@ -28,6 +28,8 @@ export const Settings: React.FC = () => {
   const toast = useToast();
 
   const { data: me } = useFetch<MeResponse>(() => meApi.get(), []);
+  const { data: branding, refetch: refetchBranding } = useFetch<BrandingSettingsDTO>(() => adminApi.branding(), []);
+  const { data: team, loading: teamLoading } = useFetch<TeamMemberDTO[]>(() => adminApi.team(), []);
 
   // Gmail entegrasyonu (Google OAuth) — Integrations sekmesi
   const [searchParams, setSearchParams] = useSearchParams();
@@ -98,9 +100,17 @@ export const Settings: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
 
+  // Branding sekmesi — /api/admin/branding'den yüklenip düzenlenen alanlar
+  const [companyName, setCompanyName] = useState('');
+  const [websiteUrl, setWebsiteUrl] = useState('');
+  const [primaryColor, setPrimaryColor] = useState('#9B5BB3');
+  const [offPlanCommission, setOffPlanCommission] = useState('50');
+  const [secondaryCommission, setSecondaryCommission] = useState('60');
+
   // /api/me yüklenince form alanlarını doldur (gerçek kayıtlı değerler).
   useEffect(() => {
     if (!me) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sunucudan gelen veriyle düzenlenebilir form state'ini bir kez dolduruyor
     setFullName(me.name);
     setJobTitle(me.jobTitle ?? '');
     setPhone(me.phone ?? '');
@@ -112,6 +122,17 @@ export const Settings: React.FC = () => {
     setNotifWeeklyReport(me.notificationPrefs.weeklyReport ?? true);
     setNotifSmsHotLeads(me.notificationPrefs.smsHotLeads ?? false);
   }, [me]);
+
+  // /api/admin/branding yüklenince form alanlarını doldur.
+  useEffect(() => {
+    if (!branding) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sunucudan gelen veriyle düzenlenebilir form state'ini bir kez dolduruyor
+    setCompanyName(branding.companyName);
+    setWebsiteUrl(branding.websiteUrl);
+    setPrimaryColor(branding.primaryColor);
+    setOffPlanCommission(String(branding.offPlanCommissionPct));
+    setSecondaryCommission(String(branding.secondaryCommissionPct));
+  }, [branding]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -166,6 +187,19 @@ export const Settings: React.FC = () => {
           ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
           : prefTheme;
         if (resolved !== appliedTheme) applyTheme(resolved);
+      } else if (activeTab === 'branding') {
+        await adminApi.updateBranding({
+          companyName: companyName.trim(),
+          websiteUrl: websiteUrl.trim(),
+          primaryColor,
+        });
+        refetchBranding();
+      } else if (activeTab === 'team') {
+        await adminApi.updateBranding({
+          offPlanCommissionPct: Number(offPlanCommission) || 0,
+          secondaryCommissionPct: Number(secondaryCommission) || 0,
+        });
+        refetchBranding();
       } else {
         setIsSaving(false);
         toast.info(t('settings.notImplementedTab'));
@@ -353,11 +387,11 @@ export const Settings: React.FC = () => {
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
                   <label>{t('settings.branding.companyName')}</label>
-                  <input type="text" className={styles.textInput} defaultValue="ProDuality Real Estate" />
+                  <input type="text" className={styles.textInput} value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
                 </div>
                 <div className={styles.formGroup}>
                   <label>{t('settings.branding.websiteUrl')}</label>
-                  <input type="text" className={styles.textInput} defaultValue="https://produality.com" />
+                  <input type="text" className={styles.textInput} value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} />
                 </div>
               </div>
               <div style={{ marginTop: '24px' }}>
@@ -366,15 +400,15 @@ export const Settings: React.FC = () => {
                   <div style={{ width: '80px', height: '80px', borderRadius: '8px', backgroundColor: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border-color)' }}>
                     <Buildings size={32} color="var(--text-muted)" />
                   </div>
-                  <Button variant="outline">{t('settings.branding.uploadLogo')}</Button>
+                  <Button variant="outline" onClick={() => toast.info(t('settings.branding.logoUploadSoon'))}>{t('settings.branding.uploadLogo')}</Button>
                   <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{t('settings.branding.logoHint')}</span>
                 </div>
               </div>
               <div style={{ marginTop: '24px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>{t('settings.branding.primaryColor')}</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <input type="color" defaultValue="#9B5BB3" style={{ width: '40px', height: '40px', padding: '0', border: 'none', borderRadius: 'var(--radius-control)', cursor: 'pointer' }} />
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>#9B5BB3 ({t('settings.branding.colorHint')})</span>
+                  <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} style={{ width: '40px', height: '40px', padding: '0', border: 'none', borderRadius: 'var(--radius-control)', cursor: 'pointer' }} />
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-primary)' }}>{primaryColor} ({t('settings.branding.colorHint')})</span>
                 </div>
               </div>
             </div>
@@ -392,47 +426,31 @@ export const Settings: React.FC = () => {
               <p className={styles.sectionSubtitle}>{t('settings.team.subtitle')}</p>
 
               <div className={styles.teamList}>
-                <div className={styles.teamMember}>
-                  <div className={styles.memberInfo}>
-                    <div className={styles.memberAvatar}>OK</div>
-                    <div>
-                      <div className={styles.memberName}>{t('settings.team.you', { name: 'Onur Nazım Karataş' })}</div>
-                      <div className={styles.memberRole}>onur@produality.com</div>
+                {teamLoading && <div style={{ color: 'var(--text-muted)' }}>{t('common.loading')}</div>}
+                {!teamLoading && (team ?? []).map((member) => {
+                  const initials = member.name.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+                  const isAdmin = member.role === 'super_admin';
+                  const isManager = member.role === 'manager';
+                  const badgeClass = isAdmin ? styles.badgeAdmin : isManager ? styles.badgeManager : styles.badgeAgent;
+                  const roleLabel = isAdmin ? t('settings.team.roleAdmin') : isManager ? t('settings.team.roleManager') : t('settings.team.roleAgent');
+                  return (
+                    <div className={styles.teamMember} key={member.id}>
+                      <div className={styles.memberInfo}>
+                        <div className={styles.memberAvatar}>{initials}</div>
+                        <div>
+                          <div className={styles.memberName}>
+                            {member.id === user?.id ? t('settings.team.you', { name: member.name }) : member.name}
+                          </div>
+                          <div className={styles.memberRole}>{t('settings.team.clientsRegistered', { count: member.clientsRegistered })}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <span className={`${styles.badge} ${badgeClass}`}>{roleLabel}</span>
+                        <Button variant="outline" onClick={() => toast.info(t('settings.team.editMemberSoon'))}>{t('common.edit')}</Button>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <span className={`${styles.badge} ${styles.badgeAdmin}`}>{t('settings.team.roleAdmin')}</span>
-                    <Button variant="outline">{t('common.edit')}</Button>
-                  </div>
-                </div>
-
-                <div className={styles.teamMember}>
-                  <div className={styles.memberInfo}>
-                    <div className={styles.memberAvatar} style={{ backgroundColor: 'color-mix(in srgb, var(--data-positive) 12%, transparent)', color: 'var(--data-positive)' }}>MA</div>
-                    <div>
-                      <div className={styles.memberName}>Mert Aydınlar</div>
-                      <div className={styles.memberRole}>mert@produality.com</div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <span className={`${styles.badge} ${styles.badgeManager}`}>{t('settings.team.roleManager')}</span>
-                    <Button variant="outline">{t('common.edit')}</Button>
-                  </div>
-                </div>
-
-                <div className={styles.teamMember}>
-                  <div className={styles.memberInfo}>
-                    <div className={styles.memberAvatar} style={{ backgroundColor: 'color-mix(in srgb, var(--data-warning) 12%, transparent)', color: 'var(--data-warning)' }}>ER</div>
-                    <div>
-                      <div className={styles.memberName}>Elena Rodriguez</div>
-                      <div className={styles.memberRole}>elena@produality.com</div>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <span className={`${styles.badge} ${styles.badgeAgent}`}>{t('settings.team.roleAgent')}</span>
-                    <Button variant="outline">{t('common.edit')}</Button>
-                  </div>
-                </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -444,11 +462,11 @@ export const Settings: React.FC = () => {
               <div className={styles.formGrid}>
                 <div className={styles.formGroup}>
                   <label>{t('settings.team.offPlanCommission')}</label>
-                  <input type="number" className={styles.textInput} defaultValue="50" />
+                  <input type="number" className={styles.textInput} value={offPlanCommission} onChange={(e) => setOffPlanCommission(e.target.value)} />
                 </div>
                 <div className={styles.formGroup}>
                   <label>{t('settings.team.secondaryCommission')}</label>
-                  <input type="number" className={styles.textInput} defaultValue="60" />
+                  <input type="number" className={styles.textInput} value={secondaryCommission} onChange={(e) => setSecondaryCommission(e.target.value)} />
                 </div>
               </div>
             </div>
@@ -473,7 +491,7 @@ export const Settings: React.FC = () => {
                       <div className={styles.integrationDesc}>{t('settings.integrations.propertyFinderDesc')}</div>
                     </div>
                   </div>
-                  <Button variant="outline">{t('settings.integrations.configure')}</Button>
+                  <Button variant="outline" onClick={() => toast.info(t('settings.integrations.comingSoon'))}>{t('settings.integrations.configure')}</Button>
                 </div>
 
                 <div className={styles.integrationCard}>
@@ -486,7 +504,7 @@ export const Settings: React.FC = () => {
                       <div className={styles.integrationDesc}>{t('settings.integrations.bayutDesc')}</div>
                     </div>
                   </div>
-                  <Button variant="outline">{t('settings.integrations.configure')}</Button>
+                  <Button variant="outline" onClick={() => toast.info(t('settings.integrations.comingSoon'))}>{t('settings.integrations.configure')}</Button>
                 </div>
 
                 <div className={styles.integrationCard}>
@@ -497,10 +515,9 @@ export const Settings: React.FC = () => {
                     <div>
                       <div className={styles.integrationName}>WhatsApp Business</div>
                       <div className={styles.integrationDesc}>{t('settings.integrations.whatsappDesc')}</div>
-                      <div style={{ marginTop: '8px', fontSize: '0.75rem', color: 'var(--data-positive)', fontWeight: 500 }}>{t('settings.integrations.connectedNumber', { number: '+971 50 *** **67' })}</div>
                     </div>
                   </div>
-                  <Button variant="outline">{t('settings.integrations.manage')}</Button>
+                  <Button variant="outline" onClick={() => toast.info(t('settings.integrations.comingSoon'))}>{t('settings.integrations.manage')}</Button>
                 </div>
 
                 <div className={styles.integrationCard}>
@@ -513,7 +530,7 @@ export const Settings: React.FC = () => {
                       <div className={styles.integrationDesc}>{t('settings.integrations.gcalDesc')}</div>
                     </div>
                   </div>
-                  <Button variant="outline">{t('settings.integrations.connect')}</Button>
+                  <Button variant="outline" onClick={() => toast.info(t('settings.integrations.comingSoon'))}>{t('settings.integrations.connect')}</Button>
                 </div>
 
                 <div className={styles.integrationCard}>
@@ -552,7 +569,7 @@ export const Settings: React.FC = () => {
                       <div className={styles.integrationDesc}>{t('settings.integrations.telegramDesc')}</div>
                     </div>
                   </div>
-                  <Button variant="outline">{t('settings.integrations.connect')}</Button>
+                  <Button variant="outline" onClick={() => toast.info(t('settings.integrations.comingSoon'))}>{t('settings.integrations.connect')}</Button>
                 </div>
               </div>
             </div>
