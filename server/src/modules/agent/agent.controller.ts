@@ -2,7 +2,10 @@
 // PREI | AgentController — POST /api/agent/whatsapp-event (OV-4)
 // AgentKeyGuard: yalnız X-Agent-Key ile; bağlam service_agent. n8n çağırır.
 // =====================================================================
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards, HttpCode } from '@nestjs/common';
+import {
+  Body, Controller, Get, Param, ParseUUIDPipe, Post, Query,
+  DefaultValuePipe, ParseIntPipe, UseGuards, HttpCode,
+} from '@nestjs/common';
 import { AgentKeyGuard } from '../../auth/agent-key.guard';
 import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
@@ -56,5 +59,24 @@ export class AgentController {
   @HttpCode(200)
   updateLeadProfile(@Ctx() ctx: RequestContext, @Body() dto: LeadProfileDto) {
     return this.agent.updateLeadProfile(ctx, dto);
+  }
+
+  @Get('proposals/stale')
+  proposalsNeedingFollowUp(
+    @Ctx() ctx: RequestContext,
+    @Query('days', new DefaultValuePipe(5), ParseIntPipe) days: number,
+  ) {
+    return this.agent.proposalsNeedingFollowUp(ctx, days);
+  }
+
+  @Post('proposals/:id/follow-up-sent')
+  @HttpCode(200)
+  markProposalFollowUpSent(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.agent.markProposalFollowUpSent(ctx, id);
+  }
+
+  @Get('clients/active')
+  activeClientEmails(@Ctx() ctx: RequestContext) {
+    return this.agent.activeClientEmails(ctx);
   }
 }

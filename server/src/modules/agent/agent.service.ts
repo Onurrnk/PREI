@@ -42,6 +42,21 @@ export interface KnowledgeChunk {
   similarity: number;
 }
 
+export interface StaleProposal {
+  id: string;
+  contactName: string;
+  contactEmail: string;
+  projectName: string | null;
+  sentAt: string;
+  daysSinceSent: number;
+}
+
+export interface ActiveClientEmail {
+  id: string;
+  name: string;
+  email: string;
+}
+
 @Injectable()
 export class AgentService {
   constructor(private readonly db: DatabaseService) {}
@@ -333,6 +348,93 @@ export class AgentService {
       const { rows } = await c.query<{ id: string; content: string; metadata: Record<string, unknown>; similarity: number }>(
         `SELECT id, content, metadata, similarity FROM match_documents($1::vector, $2, '{}'::jsonb)`,
         [vectorLiteral, dto.matchCount ?? 5],
+      );
+      return rows;
+    });
+  }
+
+  /**
+   * n8n'in proposal takip akışı için: N günden eski, hâlâ sent/viewed
+   * durumunda, gönderimden sonra müşteriden yanıt (inbound communication)
+   * gelmemiş ve daha önce takip maili atılmamış (metadata.follow_up_sent_at
+   * boş) teklifler. İdempotency: markProposalFollowUpSent çağrılana kadar
+   * aynı teklif tekrar tekrar dönmez.
+   */
+  async proposalsNeedingFollowUp(ctx: RequestContext, minDays: number): Promise<StaleProposal[]> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{
+        id: string; contact_name: string; contact_email: string;
+        project_name: string | null; sent_at: string; days_since_sent: number;
+      }>(
+        `SELECT p.id,
+                trim(ct.first_name || ' ' || COALESCE(ct.last_name, '')) AS contact_name,
+                ct.email AS contact_email,
+                pr.title AS project_name,
+                p.sent_at,
+                EXTRACT(DAY FROM now() - p.sent_at)::int AS days_since_sent
+           FROM proposals p
+           JOIN contacts ct ON ct.id = p.contact_id
+           LEFT JOIN properties pr ON pr.id = p.property_id
+          WHERE p.tenant_id = $1
+            AND p.deleted_at IS NULL
+            AND p.status IN ('sent', 'viewed')
+            AND p.sent_at IS NOT NULL
+            AND p.sent_at <= now() - ($2 || ' days')::interval
+            AND ct.email IS NOT NULL
+            AND (p.metadata ->> 'follow_up_sent_at') IS NULL
+            AND NOT EXISTS (
+              SELECT 1 FROM communications cm
+               WHERE cm.contact_id = p.contact_id AND cm.direction = 'inbound' AND cm.sent_at > p.sent_at
+            )
+          ORDER BY p.sent_at ASC
+          LIMIT 100`,
+        [ctx.tenantId, minDays],
+      );
+      return rows.map((r) => ({
+        id: r.id,
+        contactName: r.contact_name,
+        contactEmail: r.contact_email,
+        projectName: r.project_name,
+        sentAt: r.sent_at,
+        daysSinceSent: r.days_since_sent,
+      }));
+    });
+  }
+
+  /** Takip maili gönderildikten sonra n8n bunu çağırır — tekrar gönderimi önler. */
+  async markProposalFollowUpSent(ctx: RequestContext, proposalId: string): Promise<{ id: string }> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `UPDATE proposals SET
+            metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{follow_up_sent_at}', to_jsonb(now()::text)),
+            updated_by = $3
+          WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL
+          RETURNING id`,
+        [proposalId, ctx.tenantId, ctx.userId],
+      );
+      if (rows.length === 0) throw new NotFoundException('Proposal bulunamadı');
+      await this.writeEvent(c, ctx, 'proposal', proposalId, 'proposal.follow_up_sent', {});
+      return { id: rows[0].id };
+    });
+  }
+
+  /**
+   * n8n'in haftalık istihbarat raporu dağıtımı için: aktif müşterilerin
+   * (relationship_status metadata anahtarı yoksa varsayılan 'Active' —
+   * ClientResponse mapper'ıyla aynı semantik) e-postaları.
+   */
+  async activeClientEmails(ctx: RequestContext): Promise<ActiveClientEmail[]> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string; name: string; email: string }>(
+        `SELECT c.id, trim(c.first_name || ' ' || COALESCE(c.last_name, '')) AS name, c.email
+           FROM contacts c
+          WHERE c.tenant_id = $1
+            AND c.deleted_at IS NULL
+            AND c.merged_into_id IS NULL
+            AND COALESCE(c.metadata ->> 'relationship_status', 'Active') = 'Active'
+            AND c.email IS NOT NULL
+          ORDER BY c.updated_at DESC LIMIT 500`,
+        [ctx.tenantId],
       );
       return rows;
     });
