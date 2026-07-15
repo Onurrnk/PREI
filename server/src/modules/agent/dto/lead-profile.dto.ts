@@ -3,7 +3,7 @@
 // profili. Tüm alanlar opsiyonel: extraction yalnız emin olduğu alanları
 // gönderir; boş/verilmeyen alan mevcut kaydı EZMEZ (yalnız doldurur).
 // =====================================================================
-import { IsEmail, IsIn, IsInt, IsNumber, IsObject, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
+import { IsEmail, IsIn, IsNumber, IsObject, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
 
 export class LeadProfileDto {
   @IsUUID()

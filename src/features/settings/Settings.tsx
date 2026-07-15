@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { User, GearSix as SettingsIcon, Palette, Plug, UsersThree, FloppyDisk, ChatCircle, Globe, Buildings, CheckCircle, Plus, EnvelopeSimple, CalendarBlank, PaperPlaneTilt } from '@phosphor-icons/react';
@@ -7,8 +8,8 @@ import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../../core/hooks/useFetch';
-import { meApi } from '../../core/api/resources';
-import type { MeResponse } from '../../core/types';
+import { meApi, googleAuthApi } from '../../core/api/resources';
+import type { MeResponse, GoogleOAuthStatus } from '../../core/types';
 import { useAuth } from '../../core/auth/AuthContext';
 import { useTheme } from '../../core/theme/ThemeContext';
 import { supabase } from '../../core/auth/supabaseClient';
@@ -27,6 +28,54 @@ export const Settings: React.FC = () => {
   const toast = useToast();
 
   const { data: me } = useFetch<MeResponse>(() => meApi.get(), []);
+
+  // Gmail entegrasyonu (Google OAuth) — Integrations sekmesi
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { data: gmailStatus, refetch: refetchGmailStatus } = useFetch<GoogleOAuthStatus>(() => googleAuthApi.status(), []);
+  const [gmailConnecting, setGmailConnecting] = useState(false);
+  const [gmailDisconnecting, setGmailDisconnecting] = useState(false);
+
+  // Google callback'i /settings?gmail=connected|error ile geri döner —
+  // sayfa açılışında bir kere işlenir, sonra param temizlenir.
+  useEffect(() => {
+    const gmailParam = searchParams.get('gmail');
+    if (!gmailParam) return;
+    if (gmailParam === 'connected') {
+      toast.success(t('settings.integrations.gmailConnected'));
+      refetchGmailStatus();
+    } else if (gmailParam === 'error') {
+      toast.error(t('settings.integrations.gmailConnectFailed'));
+    }
+    setSearchParams((prev) => {
+      prev.delete('gmail');
+      return prev;
+    }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleGmailConnect = async () => {
+    setGmailConnecting(true);
+    try {
+      const { url } = await googleAuthApi.url();
+      window.location.href = url;
+    } catch (err) {
+      setGmailConnecting(false);
+      toast.error(err instanceof Error ? err.message : t('settings.integrations.gmailConnectFailed'));
+    }
+  };
+
+  const handleGmailDisconnect = async () => {
+    setGmailDisconnecting(true);
+    try {
+      await googleAuthApi.disconnect();
+      toast.success(t('settings.integrations.gmailDisconnected'));
+      refetchGmailStatus();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('settings.integrations.gmailConnectFailed'));
+    } finally {
+      setGmailDisconnecting(false);
+    }
+  };
 
   // Profil sekmesi — /api/me'den yüklenip düzenlenen alanlar
   const [fullName, setFullName] = useState('');
@@ -475,9 +524,22 @@ export const Settings: React.FC = () => {
                     <div>
                       <div className={styles.integrationName}>Gmail Integration</div>
                       <div className={styles.integrationDesc}>{t('settings.integrations.gmailDesc')}</div>
+                      {gmailStatus?.connected && (
+                        <div style={{ marginTop: '8px', fontSize: '0.75rem', color: 'var(--data-positive)', fontWeight: 500 }}>
+                          {t('settings.integrations.connectedAs', { email: gmailStatus.email })}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <Button variant="outline">{t('settings.integrations.connect')}</Button>
+                  {gmailStatus?.connected ? (
+                    <Button variant="outline" onClick={() => void handleGmailDisconnect()} disabled={gmailDisconnecting}>
+                      {t('settings.integrations.disconnect')}
+                    </Button>
+                  ) : (
+                    <Button variant="outline" onClick={() => void handleGmailConnect()} disabled={gmailConnecting}>
+                      {gmailConnecting ? t('settings.integrations.connecting') : t('settings.integrations.connect')}
+                    </Button>
+                  )}
                 </div>
 
                 <div className={styles.integrationCard}>

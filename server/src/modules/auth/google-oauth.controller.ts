@@ -6,7 +6,7 @@
 // route Google itself hits with no session; it trusts the HMAC-signed
 // `state` produced by `url` instead (see GoogleOAuthService.verifyState).
 // =====================================================================
-import { Controller, Get, Post, Query, Res, BadRequestException, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import type { AppConfig } from '../../config/configuration';

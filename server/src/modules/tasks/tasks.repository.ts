@@ -46,6 +46,28 @@ export class TasksRepository {
     });
   }
 
+  async create(
+    ctx: RequestContext,
+    input: { title: string; description: string | null; dueDate: string | null; priority: string; assigneeId: string },
+  ): Promise<TaskRow> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<TaskRow>(
+        `INSERT INTO tasks (tenant_id, assignee_id, title, description, due_date, priority, status, task_type, created_by, updated_by)
+         VALUES ($1,$2,$3,$4,$5,$6,'pending','task',$7,$7)
+         RETURNING id, title, description, due_date, priority, status, task_type,
+                   assignee_id, related_type, related_id, related_name`,
+        [ctx.tenantId, input.assigneeId, input.title, input.description, input.dueDate, input.priority, ctx.userId],
+      );
+      const task = rows[0];
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'task.created','task',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, task.id, JSON.stringify({ title: input.title }), ctx.correlationId],
+      );
+      return task;
+    });
+  }
+
   async update(
     ctx: RequestContext, id: string, status?: string, priority?: string,
   ): Promise<TaskRow | null> {

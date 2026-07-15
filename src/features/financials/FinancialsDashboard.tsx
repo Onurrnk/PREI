@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { FunnelSimple, DownloadSimple, TrendUp, TrendDown } from '@phosphor-icons/react';
+import { DownloadSimple, TrendUp, TrendDown } from '@phosphor-icons/react';
 import { TrendArea, DonutMetric, HBarCompare, fmtEUR } from '../../core/charts';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { useFetch } from '../../core/hooks/useFetch';
@@ -55,6 +55,55 @@ export const FinancialsDashboard: React.FC = () => {
   const saleTypeTotal = useMemo(() => saleTypeSplit.reduce((s, m) => s + m.value, 0), [saleTypeSplit]);
   const purposeSplit = useMemo(() => (data?.purposeSplit ?? []).map((p) => ({ name: p.name, value: p.valueEur })), [data]);
 
+  // CSV dışa aktarım — sayfada zaten yüklü olan veriden üretilir, ek uç
+  // gerekmez. Hücre kaçışı: tırnak/virgül/satır sonu içeren alan çift
+  // tırnağa alınır (RFC 4180).
+  const csvCell = (v: string | number): string => {
+    const s = String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const csvRow = (cells: Array<string | number>): string => cells.map(csvCell).join(',');
+
+  const handleExport = () => {
+    if (!data) return;
+    const lines: string[] = [];
+    lines.push(csvRow([t('financials.title'), timeframe]));
+    lines.push('');
+    lines.push(csvRow(['KPI', 'Value', 'Delta %']));
+    kpis.forEach((k) => lines.push(csvRow([t(k.labelKey), k.value, k.delta !== null ? k.delta.toFixed(1) : ''])));
+    lines.push('');
+    lines.push(csvRow([t('financials.revenueTrend')]));
+    lines.push(csvRow(['Month', 'EUR']));
+    monthlyRevenue.forEach((m) => lines.push(csvRow([m.label, m.value])));
+    lines.push('');
+    lines.push(csvRow([t('financials.salesByMarket')]));
+    lines.push(csvRow(['Market', 'EUR']));
+    salesByMarket.forEach((m) => lines.push(csvRow([m.name, m.value])));
+    lines.push('');
+    lines.push(csvRow([t('financials.salesByProject')]));
+    lines.push(csvRow(['Project', 'EUR']));
+    salesByProject.forEach((p) => lines.push(csvRow([p.name, p.value])));
+    lines.push('');
+    lines.push(csvRow([t('financials.offPlanVsResale')]));
+    lines.push(csvRow(['Type', 'EUR']));
+    saleTypeSplit.forEach((s) => lines.push(csvRow([s.name, s.value])));
+    lines.push('');
+    lines.push(csvRow([t('financials.salesByPurpose')]));
+    lines.push(csvRow(['Purpose', 'EUR']));
+    purposeSplit.forEach((p) => lines.push(csvRow([p.name, p.value])));
+
+    const csv = '﻿' + lines.join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `prei-financials-${timeframe.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -76,8 +125,9 @@ export const FinancialsDashboard: React.FC = () => {
               ]}
             />
           </div>
-          <Button variant="outline"><FunnelSimple size={16} /> {t('financials.filters')}</Button>
-          <Button variant="outline"><DownloadSimple size={16} /> {t('financials.exportReport')}</Button>
+          <Button variant="outline" onClick={handleExport} disabled={!data}>
+            <DownloadSimple size={16} /> {t('financials.exportReport')}
+          </Button>
         </div>
       </div>
 

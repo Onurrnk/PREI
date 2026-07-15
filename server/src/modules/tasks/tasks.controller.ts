@@ -3,7 +3,7 @@
 // 'tasks' izni; ownership RLS ile scope'lanır (super_admin hepsini görür).
 // =====================================================================
 import {
-  Body, Controller, Get, Param, ParseUUIDPipe, Put, Query, UseGuards,
+  Body, Controller, Get, Param, ParseUUIDPipe, Post, Put, Query, UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RbacGuard } from '../../common/rbac.guard';
@@ -12,6 +12,7 @@ import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { TasksService } from './tasks.service';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { CreateTaskDto } from './dto/create-task.dto';
 
 @Controller('tasks')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -22,6 +23,11 @@ export class TasksController {
   @Get()
   list(@Ctx() ctx: RequestContext, @Query('assigneeId') assigneeId?: string) {
     return this.tasks.list(ctx, assigneeId);
+  }
+
+  @Post()
+  create(@Ctx() ctx: RequestContext, @Body() dto: CreateTaskDto) {
+    return this.tasks.create(ctx, dto);
   }
 
   @Put(':id')

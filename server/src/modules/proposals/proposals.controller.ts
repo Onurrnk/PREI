@@ -1,8 +1,8 @@
 // =====================================================================
-// PREI | ProposalsController — /api/proposals (salt-okuma). 'proposals' izni.
+// PREI | ProposalsController — /api/proposals (list/detail/create). 'proposals' izni.
 // =====================================================================
 import {
-  Controller, Get, Param, ParseUUIDPipe, Query,
+  Body, Controller, Get, Param, ParseUUIDPipe, Post, Query,
   DefaultValuePipe, ParseIntPipe, UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -11,6 +11,7 @@ import { RequirePermission } from '../../common/require-permission.decorator';
 import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { ProposalsService } from './proposals.service';
+import { CreateProposalDto } from './dto/create-proposal.dto';
 
 @Controller('proposals')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -30,5 +31,10 @@ export class ProposalsController {
   @Get(':id')
   findOne(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
     return this.proposals.findOne(ctx, id);
+  }
+
+  @Post()
+  create(@Ctx() ctx: RequestContext, @Body() dto: CreateProposalDto) {
+    return this.proposals.create(ctx, dto);
   }
 }

@@ -63,6 +63,40 @@ export class CatalogRepository {
     });
   }
 
+  async createProject(
+    ctx: RequestContext,
+    input: {
+      title: string;
+      developerId: string | null;
+      city: string | null;
+      district: string | null;
+      description: string | null;
+      price: number | null;
+      currency: string;
+      metadata: Record<string, unknown>;
+    },
+  ): Promise<ProjectRow> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `INSERT INTO properties (tenant_id, developer_id, title, property_type, city, district, price, currency, description, metadata, created_by, updated_by)
+         VALUES ($1,$2,$3,'apartment',$4,$5,$6,$7,$8,$9,$10,$10)
+         RETURNING id`,
+        [
+          ctx.tenantId, input.developerId, input.title, input.city, input.district,
+          input.price, input.currency, input.description, JSON.stringify(input.metadata), ctx.userId,
+        ],
+      );
+      const id = rows[0].id;
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'project.created','property',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, id, JSON.stringify({ title: input.title }), ctx.correlationId],
+      );
+      const { rows: full } = await c.query<ProjectRow>(`${PROJECT_SELECT} WHERE p.id = $1`, [id]);
+      return full[0];
+    });
+  }
+
   async listDevelopers(ctx: RequestContext, limit = 100, offset = 0): Promise<DeveloperRow[]> {
     return this.db.withContext(ctx, async (c) => {
       const { rows } = await c.query<DeveloperRow>(

@@ -3,29 +3,121 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { ArrowLeft, CheckCircle, User, Buildings, Calculator, Image as ImageIcon, PenNib, PaperPlaneTilt, DownloadSimple } from '@phosphor-icons/react';
+import { ArrowLeft, CheckCircle, Buildings, Calculator, Image as ImageIcon, PenNib, PaperPlaneTilt, DownloadSimple, User } from '@phosphor-icons/react';
 import { Modal } from '../../core/components/Modal/Modal';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
+import { clientsApi, projectsApi, proposalsApi } from '../../core/api/resources';
+import { ApiError } from '../../core/api/client';
+import { useFetch } from '../../core/hooks/useFetch';
+import { useToast } from '../../core/components/Toast/ToastProvider';
+import type { ClientDTO, ProjectDTO } from '../../core/types';
 import styles from './CreateProposal.module.css';
+
+interface PaymentPlanRow {
+  milestone: string;
+  percentage: string;
+  date: string;
+}
+
+const DEFAULT_PAYMENT_PLAN: PaymentPlanRow[] = [
+  { milestone: 'Down Payment', percentage: '20', date: 'On Booking' },
+  { milestone: 'During Construction', percentage: '40', date: 'Across 2 Years' },
+  { milestone: 'On Handover', percentage: '40', date: 'Handover' },
+];
 
 export const CreateProposal: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const toast = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
 
+  const { data: clientsData, loading: clientsLoading } = useFetch<ClientDTO[]>(() => clientsApi.list(), []);
+  const { data: projectsData, loading: projectsLoading } = useFetch<ProjectDTO[]>(() => projectsApi.list(), []);
+  const clients = clientsData ?? [];
+  const projects = projectsData ?? [];
+
   const [selectedClient, setSelectedClient] = useState('');
   const [selectedProject, setSelectedProject] = useState('');
+  const [title, setTitle] = useState('');
+
+  const [basePrice, setBasePrice] = useState('');
+  const [discountPercent, setDiscountPercent] = useState('0');
+  const [paymentPlan, setPaymentPlan] = useState<PaymentPlanRow[]>(DEFAULT_PAYMENT_PLAN);
+
+  const [includeBrochurePdf, setIncludeBrochurePdf] = useState(true);
+  const [includeFloorPlans, setIncludeFloorPlans] = useState(true);
+  const [includeRoiSheet, setIncludeRoiSheet] = useState(false);
+  const [selectedPhotos, setSelectedPhotos] = useState<string[]>([]);
 
   const [isSending, setIsSending] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  const handleSaveAndSend = () => {
+  const selectedClientObj = clients.find((c) => c.id === selectedClient);
+  const selectedProjectObj = projects.find((p) => p.id === selectedProject);
+  const currency = selectedProjectObj?.currency ?? 'EUR';
+
+  const handleProjectChange = (projectId: string) => {
+    setSelectedProject(projectId);
+    const proj = projects.find((p) => p.id === projectId);
+    if (!proj) return;
+    if (!title.trim()) setTitle(t('proposals.create.titleTemplate', { project: proj.name }));
+    if (!basePrice) setBasePrice(String(proj.startingPrice));
+    setPaymentPlan(proj.paymentPlan.map((pp) => ({
+      milestone: pp.milestone, percentage: String(pp.percentage), date: pp.date,
+    })));
+    setSelectedPhotos(proj.images);
+  };
+
+  const updatePaymentRow = (idx: number, patch: Partial<PaymentPlanRow>) => {
+    setPaymentPlan((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
+  };
+
+  const togglePhoto = (url: string) => {
+    setSelectedPhotos((cur) => (cur.includes(url) ? cur.filter((u) => u !== url) : [...cur, url]));
+  };
+
+  const basePriceNum = Number(basePrice) || 0;
+  const discountNum = Number(discountPercent) || 0;
+  const totalValue = Math.round(basePriceNum * (1 - discountNum / 100));
+
+  const attachmentLabels = [
+    includeBrochurePdf ? t('proposals.create.brochurePdf') : null,
+    includeFloorPlans ? t('proposals.create.floorPlansPdf') : null,
+    includeRoiSheet ? t('proposals.create.roiSheet') : null,
+  ].filter((v): v is string => Boolean(v));
+
+  const handleSaveAndSend = async () => {
+    if (!selectedClient || !selectedProject || !title.trim()) {
+      toast.error(t('proposals.create.missingFields'));
+      setCurrentStep(1);
+      return;
+    }
     setIsSending(true);
-    setTimeout(() => {
-      setIsSending(false);
+    try {
+      await proposalsApi.create({
+        title: title.trim(),
+        contactId: selectedClient,
+        propertyId: selectedProject,
+        totalValue,
+        currency,
+        metadata: {
+          basePrice: basePriceNum,
+          discountPercent: discountNum,
+          paymentPlan,
+          includeBrochurePdf,
+          includeFloorPlans,
+          includeRoiSheet,
+          selectedPhotos,
+        },
+      });
       setShowSuccessModal(true);
-    }, 1500);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : t('proposals.create.sendError');
+      toast.error(msg);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleCloseModal = () => {
@@ -33,8 +125,13 @@ export const CreateProposal: React.FC = () => {
     navigate('/proposals');
   };
 
+  const handleDownloadPdf = () => {
+    toast.info(t('proposals.create.pdfComingSoon'));
+  };
+
   const dateLocale = i18n.language === 'tr' ? 'tr-TR' : 'en-GB';
   const stepHeading = t(`proposals.create.stepHeadings.${currentStep}`);
+  const coverImage = selectedPhotos[0] ?? selectedProjectObj?.images[0] ?? '/images/exterior.png';
 
   return (
     <div className={styles.container}>
@@ -109,12 +206,9 @@ export const CreateProposal: React.FC = () => {
                       aria-label={t('proposals.create.selectClient')}
                       value={selectedClient}
                       onChange={setSelectedClient}
+                      disabled={clientsLoading}
                       placeholder={t('proposals.create.selectClientPh')}
-                      options={[
-                        { value: 'c1', label: 'Oliver Hartwell (VIP)' },
-                        { value: 'c2', label: 'Sarah Ahmed' },
-                        { value: 'c3', label: 'Mohammed Al Fayed' },
-                      ]}
+                      options={clients.map((c) => ({ value: c.id, label: c.type === 'VIP' ? `${c.name} (VIP)` : c.name }))}
                     />
                   </div>
 
@@ -123,19 +217,22 @@ export const CreateProposal: React.FC = () => {
                     <SelectMenu
                       aria-label={t('proposals.create.selectProject')}
                       value={selectedProject}
-                      onChange={setSelectedProject}
+                      onChange={handleProjectChange}
+                      disabled={projectsLoading}
                       placeholder={t('proposals.create.selectProjectPh')}
-                      options={[
-                        { value: 'p1', label: 'Beachfront Residences (Emaar)' },
-                        { value: 'p2', label: 'Downtown Heights (Emaar)' },
-                        { value: 'p3', label: 'DAMAC Hills Villas' },
-                      ]}
+                      options={projects.map((p) => ({ value: p.id, label: `${p.name} (${p.developerName})` }))}
                     />
                   </div>
 
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
                     <label>{t('proposals.create.proposalTitle')}</label>
-                    <input type="text" className={styles.textInput} defaultValue="Exclusive Investment Opportunity: Beachfront Residences" />
+                    <input
+                      type="text"
+                      className={styles.textInput}
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder={t('proposals.create.proposalTitle')}
+                    />
                   </div>
                 </div>
               )}
@@ -145,11 +242,21 @@ export const CreateProposal: React.FC = () => {
                 <div className={styles.formGrid}>
                   <div className={styles.formGroup}>
                     <label>{t('proposals.create.basePrice')}</label>
-                    <input type="number" className={styles.textInput} defaultValue={2500000} />
+                    <input
+                      type="number"
+                      className={styles.textInput}
+                      value={basePrice}
+                      onChange={(e) => setBasePrice(e.target.value)}
+                    />
                   </div>
                   <div className={styles.formGroup}>
                     <label>{t('proposals.create.specialDiscount')}</label>
-                    <input type="number" className={styles.textInput} defaultValue={0} />
+                    <input
+                      type="number"
+                      className={styles.textInput}
+                      value={discountPercent}
+                      onChange={(e) => setDiscountPercent(e.target.value)}
+                    />
                   </div>
 
                   <div className={styles.sectionDivider} style={{ gridColumn: 'span 2' }}>
@@ -157,21 +264,29 @@ export const CreateProposal: React.FC = () => {
                   </div>
 
                   <div className={styles.paymentPlanBuilder} style={{ gridColumn: 'span 2' }}>
-                    <div className={styles.paymentRowForm}>
-                      <input type="text" className={styles.textInput} defaultValue="Down Payment" />
-                      <input type="number" className={styles.textInput} defaultValue={20} style={{ width: '100px' }} />
-                      <input type="text" className={styles.textInput} defaultValue="On Booking" />
-                    </div>
-                    <div className={styles.paymentRowForm}>
-                      <input type="text" className={styles.textInput} defaultValue="During Construction" />
-                      <input type="number" className={styles.textInput} defaultValue={40} style={{ width: '100px' }} />
-                      <input type="text" className={styles.textInput} defaultValue="Across 2 Years" />
-                    </div>
-                    <div className={styles.paymentRowForm}>
-                      <input type="text" className={styles.textInput} defaultValue="On Handover" />
-                      <input type="number" className={styles.textInput} defaultValue={40} style={{ width: '100px' }} />
-                      <input type="text" className={styles.textInput} defaultValue="Q4 2027" />
-                    </div>
+                    {paymentPlan.map((row, idx) => (
+                      <div className={styles.paymentRowForm} key={idx}>
+                        <input
+                          type="text"
+                          className={styles.textInput}
+                          value={row.milestone}
+                          onChange={(e) => updatePaymentRow(idx, { milestone: e.target.value })}
+                        />
+                        <input
+                          type="number"
+                          className={styles.textInput}
+                          value={row.percentage}
+                          onChange={(e) => updatePaymentRow(idx, { percentage: e.target.value })}
+                          style={{ width: '100px' }}
+                        />
+                        <input
+                          type="text"
+                          className={styles.textInput}
+                          value={row.date}
+                          onChange={(e) => updatePaymentRow(idx, { date: e.target.value })}
+                        />
+                      </div>
+                    ))}
                     <p className={styles.hintText}>{t('proposals.create.paymentPlanHint')}</p>
                   </div>
                 </div>
@@ -184,32 +299,37 @@ export const CreateProposal: React.FC = () => {
                     <label>{t('proposals.create.includeBrochures')}</label>
                     <div className={styles.checkboxList}>
                       <label className={styles.checkboxItem}>
-                        <input type="checkbox" defaultChecked /> {t('proposals.create.brochurePdf')}
+                        <input type="checkbox" checked={includeBrochurePdf} onChange={(e) => setIncludeBrochurePdf(e.target.checked)} /> {t('proposals.create.brochurePdf')}
                       </label>
                       <label className={styles.checkboxItem}>
-                        <input type="checkbox" defaultChecked /> {t('proposals.create.floorPlansPdf')}
+                        <input type="checkbox" checked={includeFloorPlans} onChange={(e) => setIncludeFloorPlans(e.target.checked)} /> {t('proposals.create.floorPlansPdf')}
                       </label>
                       <label className={styles.checkboxItem}>
-                        <input type="checkbox" /> {t('proposals.create.roiSheet')}
+                        <input type="checkbox" checked={includeRoiSheet} onChange={(e) => setIncludeRoiSheet(e.target.checked)} /> {t('proposals.create.roiSheet')}
                       </label>
                     </div>
                   </div>
 
                   <div className={styles.formGroup} style={{ marginTop: '24px' }}>
                     <label>{t('proposals.create.selectPhotos')}</label>
-                    <div className={styles.photoGrid}>
-                      <div className={`${styles.photoItem} ${styles.photoSelected}`}>
-                        <img src="/images/exterior.png" alt="Exterior" />
-                        <div className={styles.checkOverlay}><CheckCircle size={24} /></div>
+                    {selectedProjectObj ? (
+                      <div className={styles.photoGrid}>
+                        {selectedProjectObj.images.map((img) => (
+                          <div
+                            key={img}
+                            className={`${styles.photoItem} ${selectedPhotos.includes(img) ? styles.photoSelected : ''}`}
+                            onClick={() => togglePhoto(img)}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <img src={img} alt="" />
+                            {selectedPhotos.includes(img) && <div className={styles.checkOverlay}><CheckCircle size={24} /></div>}
+                          </div>
+                        ))}
                       </div>
-                      <div className={`${styles.photoItem} ${styles.photoSelected}`}>
-                        <img src="/images/interior.png" alt="Interior" />
-                        <div className={styles.checkOverlay}><CheckCircle size={24} /></div>
-                      </div>
-                      <div className={styles.photoItem}>
-                        <img src="/images/amenities.png" alt="Amenities" />
-                      </div>
-                    </div>
+                    ) : (
+                      <p className={styles.hintText}>{t('proposals.create.selectProjectFirst')}</p>
+                    )}
                   </div>
                 </div>
               )}
@@ -225,17 +345,17 @@ export const CreateProposal: React.FC = () => {
                         <span>ProDuality</span>
                       </div>
                       <div className={styles.proposalMeta}>
-                        <div>{t('proposals.view.preparedFor', { name: 'Oliver Hartwell' })}</div>
+                        <div>{t('proposals.view.preparedFor', { name: selectedClientObj?.name ?? '—' })}</div>
                         <div>{t('proposals.view.date', { date: new Date().toLocaleDateString(dateLocale) })}</div>
                       </div>
                     </div>
 
                     <div className={styles.proposalCover}>
-                      <img src="/images/exterior.png" alt="Cover" className={styles.coverImage} />
+                      <img src={coverImage} alt="Cover" className={styles.coverImage} />
                       <div className={styles.coverText}>
                         <h2>{t('proposals.view.coverTag')}</h2>
-                        <h1>Beachfront Residences</h1>
-                        <p>{t('proposals.view.locationPlaceholder')}</p>
+                        <h1>{selectedProjectObj?.name ?? '—'}</h1>
+                        <p>{selectedProjectObj?.location ?? ''}</p>
                       </div>
                     </div>
 
@@ -245,15 +365,11 @@ export const CreateProposal: React.FC = () => {
                         <div className={styles.financialSummary}>
                           <div className={styles.finBox}>
                             <span>{t('proposals.view.totalInvestment')}</span>
-                            <strong>$2,500,000</strong>
-                          </div>
-                          <div className={styles.finBox}>
-                            <span>{t('proposals.view.expectedRoi')}</span>
-                            <strong>7.5% p.a.</strong>
+                            <strong>{currency} {totalValue.toLocaleString()}</strong>
                           </div>
                           <div className={styles.finBox}>
                             <span>{t('proposals.view.handover')}</span>
-                            <strong>Q4 2027</strong>
+                            <strong>{selectedProjectObj?.completionDate ?? '—'}</strong>
                           </div>
                         </div>
                       </div>
@@ -265,9 +381,9 @@ export const CreateProposal: React.FC = () => {
                             <tr><th>{t('proposals.view.milestone')}</th><th>{t('proposals.view.percentage')}</th><th>{t('proposals.view.planDate')}</th></tr>
                           </thead>
                           <tbody>
-                            <tr><td>{t('proposals.view.downPayment')}</td><td>20%</td><td>{t('proposals.view.onBooking')}</td></tr>
-                            <tr><td>{t('proposals.view.duringConstruction')}</td><td>40%</td><td>{t('proposals.view.acrossTwoYears')}</td></tr>
-                            <tr><td>{t('proposals.view.onHandover')}</td><td>40%</td><td>Q4 2027</td></tr>
+                            {paymentPlan.map((row, idx) => (
+                              <tr key={idx}><td>{row.milestone}</td><td>{row.percentage}%</td><td>{row.date}</td></tr>
+                            ))}
                           </tbody>
                         </table>
                       </div>
@@ -275,15 +391,18 @@ export const CreateProposal: React.FC = () => {
                       <div className={styles.attachmentsSectionPreview}>
                         <h3>{t('proposals.view.includedAttachments')}</h3>
                         <div className={styles.attachmentPills}>
-                          <div className={styles.pill}><PenNib size={14}/> Project_Brochure.pdf</div>
-                          <div className={styles.pill}><PenNib size={14}/> Floor_Plans.pdf</div>
+                          {attachmentLabels.length > 0
+                            ? attachmentLabels.map((label) => (
+                              <div className={styles.pill} key={label}><PenNib size={14} /> {label}</div>
+                            ))
+                            : <span className={styles.hintText}>{t('proposals.create.noAttachments')}</span>}
                         </div>
                       </div>
                     </div>
                   </div>
 
                   <div className={styles.previewActions}>
-                    <Button variant="outline"><DownloadSimple size={16} style={{marginRight: 6}}/> {t('proposals.create.downloadAsPdf')}</Button>
+                    <Button variant="outline" onClick={handleDownloadPdf}><DownloadSimple size={16} style={{ marginRight: 6 }} /> {t('proposals.create.downloadAsPdf')}</Button>
                     <p className={styles.hintText}>{t('proposals.create.emailHint')}</p>
                   </div>
                 </div>
@@ -311,8 +430,9 @@ export const CreateProposal: React.FC = () => {
               <Button
                 variant="primary"
                 onClick={handleSaveAndSend}
+                disabled={isSending}
               >
-                {t('proposals.create.sendToClient')}
+                {isSending ? t('proposals.create.sending') : t('proposals.create.sendToClient')}
               </Button>
             )}
           </div>

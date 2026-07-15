@@ -7,21 +7,49 @@ import { ArrowLeft, Plus, X, CheckCircle } from '@phosphor-icons/react';
 import { Modal } from '../../core/components/Modal/Modal';
 import { UploadZone } from '../../core/components/Form/UploadZone';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
+import { developersApi, projectsApi } from '../../core/api/resources';
+import { ApiError } from '../../core/api/client';
+import { useFetch } from '../../core/hooks/useFetch';
+import { useToast } from '../../core/components/Toast/ToastProvider';
+import type { DeveloperDTO } from '../../core/types';
 import styles from './AddProject.module.css';
+
+interface PaymentPlanRow {
+  milestone: string;
+  percentage: string;
+  date: string;
+}
 
 export const AddProject: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const toast = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 4;
 
+  const { data: developersData, loading: developersLoading } = useFetch<DeveloperDTO[]>(() => developersApi.list(), []);
+  const developers = developersData ?? [];
+
+  const [projectName, setProjectName] = useState('');
   const [developer, setDeveloper] = useState('');
   const [projectStatus, setProjectStatus] = useState('off-plan');
-  const [paymentPlans, setPaymentPlans] = useState([{ milestone: '', percentage: '', date: '' }]);
+  const [location, setLocation] = useState('');
+  const [description, setDescription] = useState('');
+
+  const [startingPrice, setStartingPrice] = useState('');
+  const [handoverDate, setHandoverDate] = useState('');
+  const [totalUnits, setTotalUnits] = useState('');
+  const [availableUnits, setAvailableUnits] = useState('');
+  const [paymentPlans, setPaymentPlans] = useState<PaymentPlanRow[]>([{ milestone: '', percentage: '', date: '' }]);
+
   const [amenities, setAmenities] = useState<string[]>(['Pool', 'Gym']);
   const [newAmenity, setNewAmenity] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  const STATUS_LABEL: Record<string, 'Off-plan' | 'Under Construction' | 'Completed'> = {
+    'off-plan': 'Off-plan', 'under-construction': 'Under Construction', completed: 'Completed',
+  };
 
   const handleAddPaymentPlan = () => {
     setPaymentPlans([...paymentPlans, { milestone: '', percentage: '', date: '' }]);
@@ -29,6 +57,10 @@ export const AddProject: React.FC = () => {
 
   const handleRemovePaymentPlan = (index: number) => {
     setPaymentPlans(paymentPlans.filter((_, i) => i !== index));
+  };
+
+  const updatePaymentRow = (idx: number, patch: Partial<PaymentPlanRow>) => {
+    setPaymentPlans((rows) => rows.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
   };
 
   const handleAddAmenity = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -43,13 +75,36 @@ export const AddProject: React.FC = () => {
     setAmenities(amenities.filter(a => a !== amenity));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!projectName.trim()) {
+      toast.error(t('projects.add.nameRequired'));
+      setCurrentStep(1);
+      return;
+    }
     setIsSaving(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      await projectsApi.create({
+        title: projectName.trim(),
+        developerId: developer || undefined,
+        status: STATUS_LABEL[projectStatus],
+        city: location.trim() || undefined,
+        description: description.trim() || undefined,
+        price: startingPrice ? Number(startingPrice) : undefined,
+        completionDate: handoverDate.trim() || undefined,
+        totalUnits: totalUnits ? Number(totalUnits) : undefined,
+        availableUnits: availableUnits ? Number(availableUnits) : undefined,
+        paymentPlan: paymentPlans
+          .filter((p) => p.milestone.trim())
+          .map((p) => ({ milestone: p.milestone.trim(), percentage: Number(p.percentage) || 0, date: p.date.trim() })),
+        amenities,
+      });
       setShowSuccessModal(true);
-    }, 1500);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : t('projects.add.saveError');
+      toast.error(msg);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleModalClose = () => {
@@ -129,7 +184,13 @@ export const AddProject: React.FC = () => {
                 <div className={styles.formGrid}>
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
                     <label>{t('projects.add.projectName')}</label>
-                    <input type="text" className={styles.textInput} placeholder={t('projects.add.projectNamePh')} />
+                    <input
+                      type="text"
+                      className={styles.textInput}
+                      placeholder={t('projects.add.projectNamePh')}
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                    />
                   </div>
 
                   <div className={styles.formGroup}>
@@ -138,12 +199,9 @@ export const AddProject: React.FC = () => {
                       aria-label={t('projects.add.developer')}
                       value={developer}
                       onChange={setDeveloper}
+                      disabled={developersLoading}
                       placeholder={t('projects.add.developerPh')}
-                      options={[
-                        { value: 'emaar', label: 'Emaar Properties' },
-                        { value: 'damac', label: 'DAMAC Properties' },
-                        { value: 'nakheel', label: 'Nakheel' },
-                      ]}
+                      options={developers.map((d) => ({ value: d.id, label: d.name }))}
                     />
                   </div>
 
@@ -163,12 +221,24 @@ export const AddProject: React.FC = () => {
 
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
                     <label>{t('projects.add.location')}</label>
-                    <input type="text" className={styles.textInput} placeholder={t('projects.add.locationPh')} />
+                    <input
+                      type="text"
+                      className={styles.textInput}
+                      placeholder={t('projects.add.locationPh')}
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                    />
                   </div>
 
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
                     <label>{t('projects.add.description')}</label>
-                    <textarea className={styles.textArea} placeholder={t('projects.add.descriptionPh')} rows={4}></textarea>
+                    <textarea
+                      className={styles.textArea}
+                      placeholder={t('projects.add.descriptionPh')}
+                      rows={4}
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                    />
                   </div>
                 </div>
               )}
@@ -178,19 +248,43 @@ export const AddProject: React.FC = () => {
                 <div className={styles.formGrid}>
                   <div className={styles.formGroup}>
                     <label>{t('projects.add.startingPrice')}</label>
-                    <input type="number" className={styles.textInput} placeholder={t('projects.add.startingPricePh')} />
+                    <input
+                      type="number"
+                      className={styles.textInput}
+                      placeholder={t('projects.add.startingPricePh')}
+                      value={startingPrice}
+                      onChange={(e) => setStartingPrice(e.target.value)}
+                    />
                   </div>
                   <div className={styles.formGroup}>
                     <label>{t('projects.add.handoverDate')}</label>
-                    <input type="text" className={styles.textInput} placeholder={t('projects.add.handoverDatePh')} />
+                    <input
+                      type="text"
+                      className={styles.textInput}
+                      placeholder={t('projects.add.handoverDatePh')}
+                      value={handoverDate}
+                      onChange={(e) => setHandoverDate(e.target.value)}
+                    />
                   </div>
                   <div className={styles.formGroup}>
                     <label>{t('projects.add.totalUnits')}</label>
-                    <input type="number" className={styles.textInput} placeholder={t('projects.add.totalUnitsPh')} />
+                    <input
+                      type="number"
+                      className={styles.textInput}
+                      placeholder={t('projects.add.totalUnitsPh')}
+                      value={totalUnits}
+                      onChange={(e) => setTotalUnits(e.target.value)}
+                    />
                   </div>
                   <div className={styles.formGroup}>
                     <label>{t('projects.add.availableUnits')}</label>
-                    <input type="number" className={styles.textInput} placeholder={t('projects.add.availableUnitsPh')} />
+                    <input
+                      type="number"
+                      className={styles.textInput}
+                      placeholder={t('projects.add.availableUnitsPh')}
+                      value={availableUnits}
+                      onChange={(e) => setAvailableUnits(e.target.value)}
+                    />
                   </div>
 
                   <div className={styles.sectionDivider} style={{ gridColumn: 'span 2' }}>
@@ -199,11 +293,30 @@ export const AddProject: React.FC = () => {
                   </div>
 
                   <div className={styles.paymentPlanBuilder} style={{ gridColumn: 'span 2' }}>
-                    {paymentPlans.map((_, idx) => (
+                    {paymentPlans.map((row, idx) => (
                       <div key={idx} className={styles.paymentRowForm}>
-                        <input type="text" className={styles.textInput} placeholder={t('projects.add.milestonePh')} />
-                        <input type="number" className={styles.textInput} placeholder="%" style={{ width: '100px' }} />
-                        <input type="text" className={styles.textInput} placeholder={t('projects.add.datePh')} />
+                        <input
+                          type="text"
+                          className={styles.textInput}
+                          placeholder={t('projects.add.milestonePh')}
+                          value={row.milestone}
+                          onChange={(e) => updatePaymentRow(idx, { milestone: e.target.value })}
+                        />
+                        <input
+                          type="number"
+                          className={styles.textInput}
+                          placeholder="%"
+                          style={{ width: '100px' }}
+                          value={row.percentage}
+                          onChange={(e) => updatePaymentRow(idx, { percentage: e.target.value })}
+                        />
+                        <input
+                          type="text"
+                          className={styles.textInput}
+                          placeholder={t('projects.add.datePh')}
+                          value={row.date}
+                          onChange={(e) => updatePaymentRow(idx, { date: e.target.value })}
+                        />
                         <button className={styles.iconBtnDanger} onClick={() => handleRemovePaymentPlan(idx)}>
                           <X size={16} />
                         </button>
@@ -248,6 +361,8 @@ export const AddProject: React.FC = () => {
                       hint={t('projects.add.documentsHint')}
                     />
                   </div>
+
+                  <p className={styles.hintText} style={{ gridColumn: 'span 2' }}>{t('projects.add.mediaNotPersisted')}</p>
                 </div>
               )}
 
@@ -301,8 +416,9 @@ export const AddProject: React.FC = () => {
               <Button
                 variant="primary"
                 onClick={handleSave}
+                disabled={isSaving}
               >
-                {t('projects.add.completeSave')}
+                {isSaving ? t('projects.add.saving') : t('projects.add.completeSave')}
               </Button>
             )}
           </div>

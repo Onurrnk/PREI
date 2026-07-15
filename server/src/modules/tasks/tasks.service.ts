@@ -3,6 +3,7 @@ import { TasksRepository } from './tasks.repository';
 import type { RequestContext } from '../../common/request-context';
 import { toTaskResponse, type TaskResponse } from './dto/task-response.dto';
 import { STATUS_TO_ENUM, PRIORITY_TO_ENUM, type UpdateTaskDto } from './dto/update-task.dto';
+import type { CreateTaskDto } from './dto/create-task.dto';
 
 @Injectable()
 export class TasksService {
@@ -11,6 +12,17 @@ export class TasksService {
   async list(ctx: RequestContext, assigneeId?: string): Promise<TaskResponse[]> {
     const rows = await this.repo.list(ctx, assigneeId);
     return rows.map(toTaskResponse);
+  }
+
+  async create(ctx: RequestContext, dto: CreateTaskDto): Promise<TaskResponse> {
+    const row = await this.repo.create(ctx, {
+      title: dto.title.trim(),
+      description: dto.description?.trim() || null,
+      dueDate: dto.dueDate ?? null,
+      priority: dto.priority ? PRIORITY_TO_ENUM[dto.priority] : 'medium',
+      assigneeId: dto.assigneeId ?? ctx.userId!,
+    });
+    return toTaskResponse(row);
   }
 
   async update(ctx: RequestContext, id: string, dto: UpdateTaskDto): Promise<TaskResponse> {

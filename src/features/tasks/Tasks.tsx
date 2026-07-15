@@ -1,18 +1,42 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Shield, Clock, CalendarBlank, CheckCircle, Circle } from '@phosphor-icons/react';
-import type { UserDTO, TaskDTO } from '../../core/types';
+import { Shield, Clock, CalendarBlank, CheckCircle, Circle, Plus } from '@phosphor-icons/react';
+import type { UserDTO, TaskDTO, CreateTaskInput } from '../../core/types';
 import { usersApi, tasksApi } from '../../core/api/resources';
+import { ApiError } from '../../core/api/client';
+import { useToast } from '../../core/components/Toast/ToastProvider';
+import { Button } from '../../core/components/Button/Button';
+import { Modal } from '../../core/components/Modal/Modal';
+import { Field, Input, Textarea, FormRow, Select } from '../../core/components/Form/Form';
 import styles from './Tasks.module.css';
 import { useTranslation } from 'react-i18next';
 
+interface NewTaskForm {
+  title: string;
+  description: string;
+  dueDate: string;
+  priority: 'High' | 'Medium' | 'Low';
+  assigneeId: string;
+}
+
+const EMPTY_TASK_FORM: NewTaskForm = {
+  title: '', description: '', dueDate: '', priority: 'Medium', assigneeId: '',
+};
+
 export const Tasks: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const toast = useToast();
   const statusKey = (st: string) => st === 'In Progress' ? 'inProgress' : st.toLowerCase();
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [users, setUsers] = useState<UserDTO[]>([]);
   const [tasks, setTasks] = useState<TaskDTO[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [form, setForm] = useState<NewTaskForm>(EMPTY_TASK_FORM);
+  const [saving, setSaving] = useState(false);
+
+  const setField = <K extends keyof NewTaskForm>(key: K, value: NewTaskForm[K]) =>
+    setForm((f) => ({ ...f, [key]: value }));
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -63,6 +87,38 @@ export const Tasks: React.FC = () => {
     }
   };
 
+  const closeModal = () => {
+    setShowAddModal(false);
+    setForm(EMPTY_TASK_FORM);
+  };
+
+  const handleCreate = async () => {
+    const title = form.title.trim();
+    if (!title) {
+      toast.error(t('tasks.form.titleRequired'));
+      return;
+    }
+    const input: CreateTaskInput = {
+      title,
+      description: form.description.trim() || undefined,
+      dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : undefined,
+      priority: form.priority,
+      assigneeId: form.assigneeId || undefined,
+    };
+    setSaving(true);
+    try {
+      await tasksApi.create(input);
+      toast.success(t('tasks.createSuccess'));
+      closeModal();
+      fetchTasks();
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : t('tasks.createError');
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const groupedTasks = {
     'Pending': tasks.filter(t => t.status === 'Pending'),
     'In Progress': tasks.filter(t => t.status === 'In Progress'),
@@ -79,13 +135,16 @@ export const Tasks: React.FC = () => {
       <header className={styles.header}>
         <h1 className={styles.title}>{t('tasks.title')}</h1>
         <div className={styles.headerActions}>
-          <button 
+          <button
             className={`${styles.adminToggle} ${isAdminMode ? styles.active : ''}`}
             onClick={() => setIsAdminMode(!isAdminMode)}
           >
             <Shield size={16} />
             {isAdminMode ? t('tasks.adminOn') : t('tasks.adminOff')}
           </button>
+          <Button variant="primary" onClick={() => setShowAddModal(true)}>
+            <Plus size={16} /> {t('tasks.newTask')}
+          </Button>
         </div>
       </header>
 
@@ -168,6 +227,73 @@ export const Tasks: React.FC = () => {
           )}
         </div>
       </div>
+
+      <Modal
+        isOpen={showAddModal}
+        onClose={closeModal}
+        title={t('tasks.form.title')}
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={closeModal} disabled={saving}>{t('common.cancel')}</Button>
+            <Button variant="primary" onClick={handleCreate} disabled={saving}>
+              {saving ? t('common.saving') : t('tasks.form.create')}
+            </Button>
+          </>
+        }
+      >
+        <div className={styles.formStack}>
+          <Field label={t('tasks.form.taskTitle')}>
+            <Input
+              type="text"
+              placeholder={t('tasks.form.titlePlaceholder')}
+              value={form.title}
+              onChange={(e) => setField('title', e.target.value)}
+            />
+          </Field>
+
+          <Field label={t('tasks.form.description')}>
+            <Textarea
+              placeholder={t('tasks.form.descriptionPlaceholder')}
+              rows={3}
+              value={form.description}
+              onChange={(e) => setField('description', e.target.value)}
+            />
+          </Field>
+
+          <FormRow>
+            <Field label={t('tasks.form.dueDate')}>
+              <Input
+                type="datetime-local"
+                value={form.dueDate}
+                onChange={(e) => setField('dueDate', e.target.value)}
+              />
+            </Field>
+            <Field label={t('tasks.form.priority')}>
+              <Select
+                value={form.priority}
+                onChange={(e) => setField('priority', e.target.value as NewTaskForm['priority'])}
+              >
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </Select>
+            </Field>
+          </FormRow>
+
+          <Field label={t('tasks.form.assignee')}>
+            <Select
+              value={form.assigneeId}
+              onChange={(e) => setField('assigneeId', e.target.value)}
+            >
+              <option value="">{t('tasks.form.unassigned')}</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>{user.name}</option>
+              ))}
+            </Select>
+          </Field>
+        </div>
+      </Modal>
     </div>
   );
 };

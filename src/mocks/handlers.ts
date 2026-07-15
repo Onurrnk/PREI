@@ -3,6 +3,7 @@ import type {
   ClientNoteDTO,
   ClientTimelineEntryDTO,
   ActivityDTO,
+  GoogleOAuthStatus,
   KPIDTO,
   LeadCommunicationDTO,
   LeadDTO,
@@ -10,14 +11,19 @@ import type {
   ClientDTO,
   ContactDTO,
   ContractDTO,
+  CreateProjectInput,
+  CreateProposalInput,
+  CreateTaskInput,
   DashboardSummaryDTO,
   FinancialsSummaryDTO,
   MeetingDTO,
+  MeResponse,
   TeamMemberDTO,
   UserDetailDTO,
   ProjectDTO,
   DeveloperDTO,
   ProposalDTO,
+  UpdateMeInput,
   VaultDocumentDTO,
   AuditLogDTO,
   UserDTO,
@@ -76,7 +82,7 @@ const mockScoresByLead: Record<string, LeadScoreDTO[]> = {
   ],
 };
 
-const mockProposals: ProposalDTO[] = [
+let mockProposals: ProposalDTO[] = [
   { id: 'prop1', title: 'Beachfront Residences - 3BR Pitch', clientName: 'Oliver Hartwell', projectName: 'Beachfront Residences', status: 'Sent', totalValue: 2800000, createdAt: '2026-06-15', viewCount: 0 },
   { id: 'prop2', title: 'Downtown Heights - Penthouse Offer', clientName: 'Sarah Ahmed', projectName: 'Downtown Heights', status: 'Viewed', totalValue: 4200000, createdAt: '2026-06-14', lastViewed: '2026-06-16T10:30:00Z', viewCount: 3 },
   { id: 'prop3', title: 'DAMAC Hills - Villa 45', clientName: 'Mohammed Al Fayed', projectName: 'DAMAC Hills Villas', status: 'Accepted', totalValue: 3800000, createdAt: '2026-06-10', lastViewed: '2026-06-12T14:15:00Z', viewCount: 5 },
@@ -155,6 +161,22 @@ export const mockUsers: UserDTO[] = [
   { id: 'u4', name: 'Elif Şahin', role: 'Consultant', email: 'elif@prei.app', avatar: 'https://ui-avatars.com/api/?name=Elif+Sahin&background=E76F51&color=fff' },
 ];
 
+// GET/PATCH /api/me — module-level: PATCH mutasyonları oturum boyunca kalıcı.
+let mockMe: MeResponse = {
+  id: 'u1',
+  email: 'admin@prei.app',
+  name: 'Onur Nazım Karataş',
+  phone: '+90 555 123 4567',
+  role: 'Admin',
+  tenantId: 't1',
+  jobTitle: 'Founder & Broker',
+  aboutMe: null,
+  theme: 'dark',
+  locale: 'tr',
+  timezone: 'dubai',
+  notificationPrefs: { newLead: true, taskDue: true, weeklyReport: true, smsHotLeads: false },
+};
+
 // --- Mock auth (token format: "mock-token-<userId>") ---
 const tokenFor = (userId: string) => `mock-token-${userId}`;
 const userIdFromToken = (auth: string | null): string | null => {
@@ -185,6 +207,18 @@ const mockNotesByClient: Record<string, ClientNoteDTO[]> = {
       text: 'Marina Vista 2B viewing debrief: strong buy signal. He compared service charges with Downtown; wants SPA draft before Friday. Wife joins the next call — prepare the school-district one-pager.',
     },
   ],
+};
+
+// Google OAuth (Gmail entegrasyonu) mock durumu — gerçek akışta connect()
+// tam sayfa yönlendirmesiyle (window.location.href) test edilir, bu da JS
+// modülünü sıfırlar; modül değişkeni yerine localStorage kullanılır ki
+// durum sayfa yenilemesinden sonra da (gerçek Postgres kalıcılığı gibi) ayakta kalsın.
+const GOOGLE_CONNECTED_KEY = 'prei_mock_gmail_connected';
+const mockGoogleEmail = 'sarah@prei.app';
+const isGoogleConnected = (): boolean => localStorage.getItem(GOOGLE_CONNECTED_KEY) === '1';
+const setGoogleConnected = (v: boolean): void => {
+  if (v) localStorage.setItem(GOOGLE_CONNECTED_KEY, '1');
+  else localStorage.removeItem(GOOGLE_CONNECTED_KEY);
 };
 
 // İletişim zaman çizelgesi (communications mock'u) — clients.timeline() bu şekle bakar.
@@ -246,6 +280,80 @@ const mockClients: ClientDTO[] = [
       },
     ];
 
+const mockDeveloperNames: Record<string, string> = {
+  '1': 'Emaar Properties', '2': 'DAMAC Properties', '3': 'Nakheel', '4': 'Ellington Properties', '5': 'Sobha Realty',
+};
+
+let mockProjects: ProjectDTO[] = [
+  {
+    id: 'p1', developerId: '1', developerName: 'Emaar Properties', name: 'Beachfront Residences', location: 'Dubai Marina', status: 'Off-plan',
+    totalUnits: 350, availableUnits: 42, startingPrice: 2500000, currency: 'AED', completionDate: 'Q4 2027',
+    projectManagerName: 'Tariq Mansour', projectManagerEmail: 'tariq.m@emaar.ae', projectManagerPhone: '+971 55 987 6543',
+    description: 'Ultra-luxury waterfront apartments featuring panoramic views of the Arabian Gulf and Dubai Marina skyline. Exclusive private beach access and premium lifestyle amenities.',
+    images: ['/images/exterior.png', '/images/interior.png', '/images/amenities.png'],
+    amenities: ['Private Beach Access', 'Infinity Pool', 'State-of-the-art Gym', 'Valet Parking', 'Concierge Service'],
+    paymentPlan: [
+      { milestone: 'Down Payment', percentage: 20, date: 'On Booking' },
+      { milestone: 'During Construction', percentage: 40, date: 'Across 2 Years' },
+      { milestone: 'On Handover', percentage: 40, date: 'Q4 2027' }
+    ],
+    documents: [
+      { id: 'd1', title: 'Project Brochure', type: 'PDF', size: '12 MB' },
+      { id: 'd2', title: 'Floor Plans (2BR & 3BR)', type: 'PDF', size: '8.5 MB' },
+      { id: 'd3', title: 'Current Availability List', type: 'Spreadsheet', size: '1.2 MB' }
+    ]
+  },
+  {
+    id: 'p2', developerId: '1', developerName: 'Emaar Properties', name: 'Downtown Heights', location: 'Downtown Dubai', status: 'Under Construction',
+    totalUnits: 200, availableUnits: 15, startingPrice: 4200000, currency: 'AED', completionDate: 'Q2 2026',
+    projectManagerName: 'Leila Hassan', projectManagerEmail: 'leila.h@emaar.ae', projectManagerPhone: '+971 50 456 7890',
+    description: 'Premium penthouses and apartments steps away from the Burj Khalifa and Dubai Mall. Unrivaled urban luxury.',
+    images: ['/images/interior.png', '/images/exterior.png'],
+    amenities: ['Burj Khalifa Views', 'Rooftop Lounge', 'Spa', 'Smart Home Integration'],
+    paymentPlan: [
+      { milestone: 'Down Payment', percentage: 10, date: 'On Booking' },
+      { milestone: 'During Construction', percentage: 50, date: 'Monthly' },
+      { milestone: 'On Handover', percentage: 40, date: 'Q2 2026' }
+    ],
+    documents: [
+      { id: 'd4', title: 'Executive Presentation', type: 'PDF', size: '15 MB' }
+    ]
+  },
+  {
+    id: 'p3', developerId: '2', developerName: 'DAMAC Properties', name: 'DAMAC Hills Villas', location: 'DAMAC Hills', status: 'Under Construction',
+    totalUnits: 150, availableUnits: 30, startingPrice: 3800000, currency: 'AED', completionDate: 'Q1 2026',
+    projectManagerName: 'Faisal Qureshi', projectManagerEmail: 'faisal.q@damac.ae', projectManagerPhone: '+971 56 111 2233',
+    description: 'Exclusive golf course villas with Trump International Golf Club access. Luxury family living in a gated community.',
+    images: ['/images/exterior.png', '/images/amenities.png'],
+    amenities: ['Golf Course Access', 'Private Pool', 'Gated Community', 'Tennis Courts'],
+    paymentPlan: [
+      { milestone: 'Down Payment', percentage: 20, date: 'On Booking' },
+      { milestone: 'During Construction', percentage: 40, date: 'Construction Linked' },
+      { milestone: 'On Handover', percentage: 40, date: 'Q1 2026' }
+    ],
+    documents: [
+      { id: 'd5', title: 'Villa Layouts', type: 'PDF', size: '10 MB' }
+    ]
+  },
+  {
+    id: 'p4', developerId: '4', developerName: 'Ellington Properties', name: 'Belmont Residences', location: 'JVT', status: 'Off-plan',
+    totalUnits: 85, availableUnits: 12, startingPrice: 1200000, currency: 'AED', completionDate: 'Q3 2026',
+    projectManagerName: 'Elena Rostova', projectManagerEmail: 'elena.r@ellington.ae', projectManagerPhone: '+971 55 444 3322',
+    description: 'Boutique apartments designed with a focus on art and aesthetics. Prime location with excellent ROI potential.',
+    images: ['/images/interior.png'],
+    amenities: ['Resort-style Pool', 'Library', 'Fitness Studio', 'BBQ Area'],
+    paymentPlan: [
+      { milestone: 'Down Payment', percentage: 20, date: 'On Booking' },
+      { milestone: 'During Construction', percentage: 30, date: 'Construction Linked' },
+      { milestone: 'On Handover', percentage: 50, date: 'Q3 2026' }
+    ],
+    documents: [
+      { id: 'd6', title: 'Investment Case Study', type: 'PDF', size: '5 MB' },
+      { id: 'd7', title: 'Factsheet', type: 'PDF', size: '2 MB' }
+    ]
+  }
+];
+
 export const handlers = [
   // ---- Auth ----
   http.post('/api/auth/login', async ({ request }) => {
@@ -267,6 +375,51 @@ export const handlers = [
     return HttpResponse.json<UserDTO>(user);
   }),
 
+  // Gerçek akışta: url() bir Google consent linki döner, kullanıcı oraya
+  // gider, Google geri /auth/google/callback'e yönlendirir, o da
+  // /settings?gmail=connected'e döner. Mock modda gerçek Google yok —
+  // url() doğrudan aynı sonuca (?gmail=connected) giden bir link döner ve
+  // "connected" durumunu bu adımda true'ya çeker (consent verildi gibi).
+  http.get('/api/auth/google/url', () => {
+    setGoogleConnected(true);
+    return HttpResponse.json<{ url: string }>({ url: '/settings?gmail=connected' });
+  }),
+
+  http.get('/api/auth/google/status', () => {
+    const connected = isGoogleConnected();
+    return HttpResponse.json<GoogleOAuthStatus>({
+      connected,
+      email: connected ? mockGoogleEmail : null,
+    });
+  }),
+
+  http.post('/api/auth/google/disconnect', () => {
+    setGoogleConnected(false);
+    return HttpResponse.json<{ ok: true }>({ ok: true });
+  }),
+
+  http.get('/api/me', () => {
+    return HttpResponse.json<MeResponse>(mockMe);
+  }),
+
+  http.patch('/api/me', async ({ request }) => {
+    const patch = (await request.json()) as UpdateMeInput;
+    mockMe = {
+      ...mockMe,
+      ...(patch.fullName !== undefined && { name: patch.fullName }),
+      ...(patch.jobTitle !== undefined && { jobTitle: patch.jobTitle }),
+      ...(patch.phone !== undefined && { phone: patch.phone }),
+      ...(patch.aboutMe !== undefined && { aboutMe: patch.aboutMe }),
+      ...(patch.theme !== undefined && { theme: patch.theme }),
+      ...(patch.locale !== undefined && { locale: patch.locale }),
+      ...(patch.timezone !== undefined && { timezone: patch.timezone }),
+      ...(patch.notificationPrefs !== undefined && {
+        notificationPrefs: { ...mockMe.notificationPrefs, ...patch.notificationPrefs },
+      }),
+    };
+    return HttpResponse.json<MeResponse>(mockMe);
+  }),
+
   http.get('/api/users', () => {
     return HttpResponse.json<UserDTO[]>(mockUsers);
   }),
@@ -279,6 +432,22 @@ export const handlers = [
       filteredTasks = mockTasks.filter(t => t.assigneeId === assigneeId);
     }
     return HttpResponse.json<TaskDTO[]>(filteredTasks);
+  }),
+
+  http.post('/api/tasks', async ({ request }) => {
+    const input = (await request.json()) as CreateTaskInput;
+    const newTask: TaskDTO = {
+      id: `t${Date.now()}`,
+      title: input.title,
+      description: input.description ?? '',
+      dueDate: input.dueDate ?? new Date().toISOString(),
+      priority: input.priority ?? 'Medium',
+      status: 'Pending',
+      assigneeId: input.assigneeId ?? 'u2',
+      type: 'Task',
+    };
+    mockTasks = [...mockTasks, newTask];
+    return HttpResponse.json<TaskDTO>(newTask, { status: 201 });
   }),
 
   http.put('/api/tasks/:id', async ({ params, request }) => {
@@ -339,6 +508,24 @@ export const handlers = [
 
   http.get('/api/proposals', () => {
     return HttpResponse.json<ProposalDTO[]>(mockProposals);
+  }),
+
+  http.post('/api/proposals', async ({ request }) => {
+    const input = (await request.json()) as CreateProposalInput;
+    const clientName = mockClients.find((c) => c.id === input.contactId)?.name ?? '—';
+    const projectName = mockProjects.find((p) => p.id === input.propertyId)?.name ?? '—';
+    const newProposal: ProposalDTO = {
+      id: `prop${Date.now()}`,
+      title: input.title,
+      clientName,
+      projectName,
+      status: 'Sent',
+      totalValue: input.totalValue ?? 0,
+      createdAt: new Date().toISOString(),
+      viewCount: 0,
+    };
+    mockProposals = [...mockProposals, newProposal];
+    return HttpResponse.json<ProposalDTO>(newProposal, { status: 201 });
   }),
 
   http.get('/api/kpi/dashboard', () => {
@@ -673,76 +860,34 @@ export const handlers = [
   }),
 
   http.get('/api/projects', () => {
-    const allProjects: ProjectDTO[] = [
-      {
-        id: 'p1', developerId: '1', developerName: 'Emaar Properties', name: 'Beachfront Residences', location: 'Dubai Marina', status: 'Off-plan',
-        totalUnits: 350, availableUnits: 42, startingPrice: 2500000, currency: 'AED', completionDate: 'Q4 2027',
-        projectManagerName: 'Tariq Mansour', projectManagerEmail: 'tariq.m@emaar.ae', projectManagerPhone: '+971 55 987 6543',
-        description: 'Ultra-luxury waterfront apartments featuring panoramic views of the Arabian Gulf and Dubai Marina skyline. Exclusive private beach access and premium lifestyle amenities.',
-        images: ['/images/exterior.png', '/images/interior.png', '/images/amenities.png'],
-        amenities: ['Private Beach Access', 'Infinity Pool', 'State-of-the-art Gym', 'Valet Parking', 'Concierge Service'],
-        paymentPlan: [
-          { milestone: 'Down Payment', percentage: 20, date: 'On Booking' },
-          { milestone: 'During Construction', percentage: 40, date: 'Across 2 Years' },
-          { milestone: 'On Handover', percentage: 40, date: 'Q4 2027' }
-        ],
-        documents: [
-          { id: 'd1', title: 'Project Brochure', type: 'PDF', size: '12 MB' },
-          { id: 'd2', title: 'Floor Plans (2BR & 3BR)', type: 'PDF', size: '8.5 MB' },
-          { id: 'd3', title: 'Current Availability List', type: 'Spreadsheet', size: '1.2 MB' }
-        ]
-      },
-      {
-        id: 'p2', developerId: '1', developerName: 'Emaar Properties', name: 'Downtown Heights', location: 'Downtown Dubai', status: 'Under Construction',
-        totalUnits: 200, availableUnits: 15, startingPrice: 4200000, currency: 'AED', completionDate: 'Q2 2026',
-        projectManagerName: 'Leila Hassan', projectManagerEmail: 'leila.h@emaar.ae', projectManagerPhone: '+971 50 456 7890',
-        description: 'Premium penthouses and apartments steps away from the Burj Khalifa and Dubai Mall. Unrivaled urban luxury.',
-        images: ['/images/interior.png', '/images/exterior.png'],
-        amenities: ['Burj Khalifa Views', 'Rooftop Lounge', 'Spa', 'Smart Home Integration'],
-        paymentPlan: [
-          { milestone: 'Down Payment', percentage: 10, date: 'On Booking' },
-          { milestone: 'During Construction', percentage: 50, date: 'Monthly' },
-          { milestone: 'On Handover', percentage: 40, date: 'Q2 2026' }
-        ],
-        documents: [
-          { id: 'd4', title: 'Executive Presentation', type: 'PDF', size: '15 MB' }
-        ]
-      },
-      {
-        id: 'p3', developerId: '2', developerName: 'DAMAC Properties', name: 'DAMAC Hills Villas', location: 'DAMAC Hills', status: 'Under Construction',
-        totalUnits: 150, availableUnits: 30, startingPrice: 3800000, currency: 'AED', completionDate: 'Q1 2026',
-        projectManagerName: 'Faisal Qureshi', projectManagerEmail: 'faisal.q@damac.ae', projectManagerPhone: '+971 56 111 2233',
-        description: 'Exclusive golf course villas with Trump International Golf Club access. Luxury family living in a gated community.',
-        images: ['/images/exterior.png', '/images/amenities.png'],
-        amenities: ['Golf Course Access', 'Private Pool', 'Gated Community', 'Tennis Courts'],
-        paymentPlan: [
-          { milestone: 'Down Payment', percentage: 20, date: 'On Booking' },
-          { milestone: 'During Construction', percentage: 40, date: 'Construction Linked' },
-          { milestone: 'On Handover', percentage: 40, date: 'Q1 2026' }
-        ],
-        documents: [
-          { id: 'd5', title: 'Villa Layouts', type: 'PDF', size: '10 MB' }
-        ]
-      },
-      {
-        id: 'p4', developerId: '4', developerName: 'Ellington Properties', name: 'Belmont Residences', location: 'JVT', status: 'Off-plan',
-        totalUnits: 85, availableUnits: 12, startingPrice: 1200000, currency: 'AED', completionDate: 'Q3 2026',
-        projectManagerName: 'Elena Rostova', projectManagerEmail: 'elena.r@ellington.ae', projectManagerPhone: '+971 55 444 3322',
-        description: 'Boutique apartments designed with a focus on art and aesthetics. Prime location with excellent ROI potential.',
-        images: ['/images/interior.png'],
-        amenities: ['Resort-style Pool', 'Library', 'Fitness Studio', 'BBQ Area'],
-        paymentPlan: [
-          { milestone: 'Down Payment', percentage: 20, date: 'On Booking' },
-          { milestone: 'During Construction', percentage: 30, date: 'Construction Linked' },
-          { milestone: 'On Handover', percentage: 50, date: 'Q3 2026' }
-        ],
-        documents: [
-          { id: 'd6', title: 'Investment Case Study', type: 'PDF', size: '5 MB' },
-          { id: 'd7', title: 'Factsheet', type: 'PDF', size: '2 MB' }
-        ]
-      }
-    ];
-    return HttpResponse.json<ProjectDTO[]>(allProjects);
+    return HttpResponse.json<ProjectDTO[]>(mockProjects);
+  }),
+
+  http.post('/api/projects', async ({ request }) => {
+    const input = (await request.json()) as CreateProjectInput;
+    const newProject: ProjectDTO = {
+      id: `p${Date.now()}`,
+      developerId: input.developerId ?? '',
+      developerName: input.developerId ? (mockDeveloperNames[input.developerId] ?? '—') : '—',
+      name: input.title,
+      location: [input.district, input.city].filter(Boolean).join(', ') || '—',
+      status: input.status ?? 'Off-plan',
+      totalUnits: input.totalUnits ?? 0,
+      availableUnits: input.availableUnits ?? 0,
+      startingPrice: input.price ?? 0,
+      currency: input.currency ?? 'EUR',
+      completionDate: input.completionDate ?? '',
+      projectManagerName: '',
+      projectManagerPhone: '',
+      projectManagerEmail: '',
+      description: input.description ?? '',
+      images: [],
+      amenities: input.amenities ?? [],
+      paymentPlan: input.paymentPlan ?? [],
+      documents: [],
+    };
+    mockProjects = [...mockProjects, newProject];
+    return HttpResponse.json<ProjectDTO>(newProject, { status: 201 });
   }),
 
   http.get('/api/gmail/threads', () => {

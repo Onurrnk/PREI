@@ -298,3 +298,9 @@
   justify-content: space-between;
   padding-top: var(--spacing-lg);
 }
+
+.hintText {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: var(--spacing-xs);
+}

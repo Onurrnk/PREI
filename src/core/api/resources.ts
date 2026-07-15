@@ -14,9 +14,13 @@ import type {
   ClientTimelineEntryDTO,
   ContactDTO,
   ContractDTO,
+  CreateProjectInput,
+  CreateProposalInput,
+  CreateTaskInput,
   DashboardSummaryDTO,
   DeveloperDTO,
   FinancialsSummaryDTO,
+  GoogleOAuthStatus,
   FinancialsTimeframe,
   MeetingDTO,
   KPIDTO,
@@ -50,6 +54,12 @@ export const authApi = {
 export const meApi = {
   get: () => api.get<MeResponse>('/api/me'),
   update: (input: UpdateMeInput) => api.patch<MeResponse>('/api/me', input),
+};
+
+export const googleAuthApi = {
+  url: () => api.get<{ url: string }>('/api/auth/google/url'),
+  status: () => api.get<GoogleOAuthStatus>('/api/auth/google/status'),
+  disconnect: () => api.post<{ ok: true }>('/api/auth/google/disconnect'),
 };
 
 export interface CreateLeadInput {
@@ -116,10 +126,12 @@ export const developersApi = {
 
 export const projectsApi = {
   list: () => api.get<ProjectDTO[]>('/api/projects'),
+  create: (input: CreateProjectInput) => api.post<ProjectDTO>('/api/projects', input),
 };
 
 export const proposalsApi = {
   list: () => api.get<ProposalDTO[]>('/api/proposals'),
+  create: (input: CreateProposalInput) => api.post<ProposalDTO>('/api/proposals', input),
 };
 
 export const contractsApi = {
@@ -162,6 +174,7 @@ export const usersApi = {
 export const tasksApi = {
   list: (assigneeId?: string) =>
     api.get<TaskDTO[]>('/api/tasks', { params: { assigneeId } }),
+  create: (input: CreateTaskInput) => api.post<TaskDTO>('/api/tasks', input),
   update: (id: string, updates: Partial<TaskDTO>) =>
     api.put<TaskDTO>(`/api/tasks/${id}`, updates),
 };

@@ -56,4 +56,36 @@ export class ProposalsRepository {
       return rows[0] ?? null;
     });
   }
+
+  async create(
+    ctx: RequestContext,
+    input: {
+      title: string;
+      contactId: string;
+      propertyId: string | null;
+      totalValue: number | null;
+      currency: string;
+      metadata: Record<string, unknown>;
+    },
+  ): Promise<ProposalRow> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `INSERT INTO proposals (tenant_id, contact_id, property_id, owner_id, title, status, total_value, currency, sent_at, metadata, created_by, updated_by)
+         VALUES ($1,$2,$3,$4,$5,'sent',$6,$7,now(),$8,$4,$4)
+         RETURNING id`,
+        [
+          ctx.tenantId, input.contactId, input.propertyId, ctx.userId,
+          input.title, input.totalValue, input.currency, JSON.stringify(input.metadata),
+        ],
+      );
+      const id = rows[0].id;
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'proposal.created','proposal',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, id, JSON.stringify({ title: input.title }), ctx.correlationId],
+      );
+      const { rows: full } = await c.query<ProposalRow>(`${PROPOSAL_SELECT} WHERE p.id = $1`, [id]);
+      return full[0];
+    });
+  }
 }

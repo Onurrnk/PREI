@@ -1,8 +1,8 @@
 // =====================================================================
-// PREI | ProjectsController — /api/projects (properties tabanlı, salt-okuma).
+// PREI | ProjectsController — /api/projects (properties tabanlı, list/detail/create).
 // =====================================================================
 import {
-  Controller, Get, Param, ParseUUIDPipe, Query,
+  Body, Controller, Get, Param, ParseUUIDPipe, Post, Query,
   DefaultValuePipe, ParseIntPipe, UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -11,6 +11,7 @@ import { RequirePermission } from '../../common/require-permission.decorator';
 import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { ProjectsService } from './projects.service';
+import { CreateProjectDto } from './dto/create-project.dto';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -30,5 +31,10 @@ export class ProjectsController {
   @Get(':id')
   findOne(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
     return this.projects.findOne(ctx, id);
+  }
+
+  @Post()
+  create(@Ctx() ctx: RequestContext, @Body() dto: CreateProjectDto) {
+    return this.projects.create(ctx, dto);
   }
 }

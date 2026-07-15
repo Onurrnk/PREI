@@ -303,3 +303,9 @@
   height: 100%;
   color: var(--text-secondary);
 }
+
+.formStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}

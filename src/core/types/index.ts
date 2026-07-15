@@ -241,6 +241,22 @@ export interface ProjectDTO {
   documents: DocumentDTO[];
 }
 
+export interface CreateProjectInput {
+  title: string;
+  developerId?: string;
+  status?: 'Off-plan' | 'Under Construction' | 'Completed';
+  city?: string;
+  district?: string;
+  description?: string;
+  price?: number;
+  currency?: string;
+  completionDate?: string;
+  totalUnits?: number;
+  availableUnits?: number;
+  paymentPlan?: PaymentPlanDTO[];
+  amenities?: string[];
+}
+
 export interface DeveloperDTO {
   id: string;
   name: string;
@@ -267,6 +283,15 @@ export interface ProposalDTO {
   createdAt: string;
   lastViewed?: string;
   viewCount: number;
+}
+
+export interface CreateProposalInput {
+  title: string;
+  contactId: string;
+  propertyId?: string;
+  totalValue?: number;
+  currency?: string;
+  metadata?: Record<string, unknown>;
 }
 
 // GET /api/contracts sözleşmesi — backend ContractResponse ile senkron (OV-8).
@@ -403,6 +428,11 @@ export interface MeResponse {
   notificationPrefs: Record<string, boolean>;
 }
 
+export interface GoogleOAuthStatus {
+  connected: boolean;
+  email: string | null;
+}
+
 export interface UpdateMeInput {
   fullName?: string;
   jobTitle?: string;
@@ -424,4 +454,12 @@ export interface TaskDTO {
   assigneeId: string;
   relatedEntity?: { type: 'Lead' | 'Client' | 'Project'; name: string; id: string };
   type: 'Task' | 'Meeting';
+}
+
+export interface CreateTaskInput {
+  title: string;
+  description?: string;
+  dueDate?: string;
+  priority?: 'High' | 'Medium' | 'Low';
+  assigneeId?: string;
 }
