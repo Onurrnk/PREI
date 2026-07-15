@@ -56,4 +56,9 @@ export class ClientsController {
   ) {
     return this.clients.createNote(ctx, id, dto);
   }
+
+  @Get(':id/timeline')
+  timeline(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.clients.timeline(ctx, id);
+  }
 }

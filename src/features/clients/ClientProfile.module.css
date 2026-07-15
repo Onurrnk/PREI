@@ -345,7 +345,8 @@
 .kind_whatsapp { color: var(--data-positive); background: color-mix(in srgb, var(--data-positive) 12%, transparent); }
 .kind_email    { color: var(--data-info);     background: color-mix(in srgb, var(--data-info) 12%, transparent); }
 .kind_call     { color: var(--brand-secondary); background: var(--brand-primary-soft); }
-.kind_meeting  { color: var(--data-warning);  background: color-mix(in srgb, var(--data-warning) 12%, transparent); }
+.kind_telegram { color: var(--brand-primary); background: var(--brand-primary-soft); }
+.kind_sms      { color: var(--data-warning);  background: color-mix(in srgb, var(--data-warning) 12%, transparent); }
 
 .timelineMeta {
   display: inline-flex;

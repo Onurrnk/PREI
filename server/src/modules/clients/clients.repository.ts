@@ -24,6 +24,16 @@ export interface ClientRow {
   last_contact: string | null;
 }
 
+export interface TimelineCommunicationRow {
+  id: string;
+  channel: string;
+  direction: string;
+  subject: string | null;
+  body: string | null;
+  time: string;
+  score: number | null;
+}
+
 export interface NoteRow {
   id: string;
   raw_content: string | null;
@@ -135,6 +145,29 @@ export class ClientsRepository {
         [id],
       );
       return joined[0] ?? null;
+    });
+  }
+
+  // ================= İletişim zaman çizelgesi (communications) =================
+  // Not: tasks.related_id, related_type='client' satırlarının çoğunda NULL
+  // (yalnız denormalize related_name dolu) — toplantıları isimle eşlemek
+  // yanlış-pozitife açık (danışman/müşteri adı çakışması) olduğundan burada
+  // yalnız FK'si sağlam olan communications kullanılır.
+  async listTimeline(ctx: RequestContext, contactId: string): Promise<TimelineCommunicationRow[]> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<TimelineCommunicationRow>(
+        `SELECT cm.id, cm.channel::text AS channel, cm.direction::text AS direction,
+                cm.subject, cm.body, COALESCE(cm.sent_at, cm.created_at) AS time,
+                (SELECT ls.score FROM lead_scores ls
+                   WHERE ls.lead_id = cm.lead_id
+                     AND ls.created_at <= COALESCE(cm.sent_at, cm.created_at)
+                   ORDER BY ls.created_at DESC LIMIT 1) AS score
+           FROM communications cm
+          WHERE cm.contact_id = $1
+          ORDER BY time DESC LIMIT 100`,
+        [contactId],
+      );
+      return rows;
     });
   }
 

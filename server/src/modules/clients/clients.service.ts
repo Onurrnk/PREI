@@ -4,6 +4,7 @@ import type { RequestContext } from '../../common/request-context';
 import { toClientResponse, type ClientResponse } from './dto/client-response.dto';
 import type { UpdateClientDto } from './dto/client-update.dto';
 import { toClientNoteResponse, type ClientNoteResponse, type CreateClientNoteDto } from './dto/client-note.dto';
+import { toClientTimelineEntry, type ClientTimelineEntryResponse } from './dto/client-timeline.dto';
 
 @Injectable()
 export class ClientsService {
@@ -34,5 +35,10 @@ export class ClientsService {
   async createNote(ctx: RequestContext, contactId: string, dto: CreateClientNoteDto): Promise<ClientNoteResponse> {
     const row = await this.repo.createNote(ctx, contactId, dto.text.trim(), dto.tag);
     return toClientNoteResponse(row);
+  }
+
+  async timeline(ctx: RequestContext, contactId: string): Promise<ClientTimelineEntryResponse[]> {
+    const rows = await this.repo.listTimeline(ctx, contactId);
+    return rows.map(toClientTimelineEntry);
   }
 }

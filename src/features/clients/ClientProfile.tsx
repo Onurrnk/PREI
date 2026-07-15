@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { ClientDTO, ClientNoteDTO } from '../../core/types';
+import type { ClientDTO, ClientNoteDTO, ClientTimelineEntryDTO } from '../../core/types';
+import { formatRelativeTime } from './timelineFormat';
 import { clientsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
@@ -10,7 +11,7 @@ import { Button } from '../../core/components/Button/Button';
 import { EmailClient } from './components/EmailClient';
 import { DocumentVault } from '../documents/DocumentVault';
 import { Modal } from '../../core/components/Modal/Modal';
-import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo, PencilSimple, NotePencil } from '@phosphor-icons/react';
+import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo, TelegramLogo, PencilSimple, NotePencil } from '@phosphor-icons/react';
 import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
@@ -18,33 +19,18 @@ import i18n from '../../core/i18n/config';
 import styles from './ClientProfile.module.css';
 
 // ---------------------------------------------------------------------
-// Mock iletişim zaman çizelgesi — Faz 1-2'de communications tablosuna bağlanır.
-// WhatsApp kayıtları Eylül'ün qualification skorunu taşır.
+// İletişim zaman çizelgesi — clientsApi.timeline() (communications tablosu,
+// bkz. server/src/modules/clients/dto/client-timeline.dto.ts). WhatsApp/
+// Telegram kayıtları varsa Eylül'ün qualification skorunu taşır.
 // ---------------------------------------------------------------------
-type TimelineKind = 'email' | 'call' | 'whatsapp' | 'meeting';
-
-interface TimelineEntry {
-  id: string;
-  kind: TimelineKind;
-  title: string;
-  body: string;
-  time: string;
-  score?: number; // Eylül qualification skoru (yalnız whatsapp)
-}
-
-const timelineEntries: TimelineEntry[] = [
-  { id: 'tl1', kind: 'whatsapp', title: 'WhatsApp · Eylül qualified the lead', body: '"Golden Visa için minimum yatırım tutarını teyit edebilir misiniz?" Score reached 85, Calendly link sent.', time: '12m', score: 85 },
-  { id: 'tl2', kind: 'email', title: 'Email sent: Property Portfolio Update', body: 'Latest Dubai Marina off-plan portfolio PDF shared (4 units, Q4 2027 handover).', time: '2h' },
-  { id: 'tl3', kind: 'call', title: 'Call logged: Payment plan review', body: '18 min. Prefers 60/40 construction-linked plan; asked for Nişantaşı comparison.', time: '1d' },
-  { id: 'tl4', kind: 'meeting', title: 'Meeting: Marina Vista 2B viewing', body: 'On-site viewing completed. Strong interest; requested SPA draft within the week.', time: '3d' },
-  { id: 'tl5', kind: 'whatsapp', title: 'WhatsApp · First contact via CTWA ad', body: 'Arrived from "Golden Visa · Dubai Off-Plan (TR)" campaign. Eylül opened conversation.', time: '6d', score: 25 },
-];
+type TimelineKind = ClientTimelineEntryDTO['kind'];
 
 const TIMELINE_ICON: Record<TimelineKind, React.ReactNode> = {
   email: <EnvelopeSimple size={16} />,
   call: <Phone size={16} />,
   whatsapp: <WhatsappLogo size={16} />,
-  meeting: <CalendarBlank size={16} />,
+  telegram: <TelegramLogo size={16} />,
+  sms: <ChatCircle size={16} />,
 };
 
 const FILTER_KEYS: Array<{ key: 'all' | TimelineKind; labelKey: string }> = [
@@ -52,7 +38,6 @@ const FILTER_KEYS: Array<{ key: 'all' | TimelineKind; labelKey: string }> = [
   { key: 'whatsapp', labelKey: 'clients.profile.filters.whatsapp' },
   { key: 'email', labelKey: 'clients.profile.filters.emails' },
   { key: 'call', labelKey: 'clients.profile.filters.calls' },
-  { key: 'meeting', labelKey: 'clients.profile.filters.meetings' },
 ];
 
 // Satır-içi düzenlenebilir metin: hover'da kalem, Enter/blur kaydeder, Esc iptal.
@@ -209,6 +194,10 @@ export const ClientProfile: React.FC = () => {
   const notes: ClientNoteDTO[] = [...addedNotes, ...(fetchedNotes ?? [])];
   const [noteDraft, setNoteDraft] = useState('');
   const [noteTag, setNoteTag] = useState<ClientNoteDTO['tag']>('Meeting');
+  // İletişim zaman çizelgesi — communications tablosundan (mock modda MSW)
+  const { data: fetchedTimeline, loading: timelineLoading } =
+    useFetch<ClientTimelineEntryDTO[]>(() => clientsApi.timeline(id!), [id]);
+  const timelineEntries = fetchedTimeline ?? [];
   const [timelineFilter, setTimelineFilter] = useState<'all' | TimelineKind>('all');
 
   const [showActivityModal, setShowActivityModal] = useState(false);
@@ -467,7 +456,8 @@ export const ClientProfile: React.FC = () => {
                 </CardHeader>
                 <CardBody className={styles.commBody}>
                   <div className={styles.timeline}>
-                    {timelineEntries
+                    {timelineLoading && <p className={styles.messageEmpty}>{t('clients.email.loading')}</p>}
+                    {!timelineLoading && timelineEntries
                       .filter((e) => timelineFilter === 'all' || e.kind === timelineFilter)
                       .map((entry) => (
                         <div key={entry.id} className={styles.timelineItem}>
@@ -483,14 +473,14 @@ export const ClientProfile: React.FC = () => {
                                     {entry.score}
                                   </span>
                                 )}
-                                <span className={styles.timelineDate}>{entry.time}</span>
+                                <span className={styles.timelineDate}>{formatRelativeTime(entry.time, i18n.language)}</span>
                               </span>
                             </div>
                             <p className={styles.timelineText}>{entry.body}</p>
                           </div>
                         </div>
                       ))}
-                    {timelineEntries.filter((e) => timelineFilter === 'all' || e.kind === timelineFilter).length === 0 && (
+                    {!timelineLoading && timelineEntries.filter((e) => timelineFilter === 'all' || e.kind === timelineFilter).length === 0 && (
                       <div className={styles.timelineEmpty}>
                         <ChatCircle size={28} weight="duotone" />
                         <p>{t('clients.profile.noRecords')}</p>
