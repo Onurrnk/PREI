@@ -197,6 +197,15 @@ export interface ClientNoteDTO {
   text: string;
 }
 
+export interface ClientTimelineEntryDTO {
+  id: string;
+  kind: 'email' | 'call' | 'whatsapp' | 'telegram' | 'sms';
+  title: string;
+  body: string;
+  time: string;
+  score?: number;
+}
+
 export interface DocumentDTO {
   id: string;
   title: string;
@@ -302,6 +311,54 @@ export interface VaultDocumentDTO {
   uploadedAt: string;
   uploadedBy: string;
   relatedId?: string;
+}
+
+// GET /api/gmail/threads, /api/gmail/threads/:id sözleşmesi — backend
+// server/src/modules/gmail/dto/email.dto.ts ile senkron.
+export interface ContactMatchDTO {
+  contactId: string;
+  type: 'lead' | 'client';
+  name: string;
+}
+
+export interface ThreadSummaryDTO {
+  id: string;
+  subject: string;
+  from: string;
+  fromEmail: string;
+  snippet: string;
+  date: string;
+  unread: boolean;
+  contact: ContactMatchDTO | null;
+}
+
+export interface EmailMessageDTO {
+  id: string;
+  threadId: string;
+  from: string;
+  fromEmail: string;
+  to: string[];
+  subject: string;
+  date: string;
+  snippet: string;
+  bodyText: string;
+  bodyHtml: string | null;
+}
+
+export interface ThreadDetailDTO {
+  id: string;
+  subject: string;
+  contact: ContactMatchDTO | null;
+  messages: EmailMessageDTO[];
+}
+
+export interface SendEmailInput {
+  to: string;
+  subject: string;
+  body: string;
+  threadId?: string;
+  inReplyTo?: string;
+  recipientName?: string;
 }
 
 export interface AuditLogDTO {

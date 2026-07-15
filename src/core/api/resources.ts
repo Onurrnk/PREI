@@ -11,6 +11,7 @@ import type {
   AuditLogDTO,
   ClientDTO,
   ClientNoteDTO,
+  ClientTimelineEntryDTO,
   ContactDTO,
   ContractDTO,
   DashboardSummaryDTO,
@@ -26,8 +27,11 @@ import type {
   MeResponse,
   ProjectDTO,
   ProposalDTO,
+  SendEmailInput,
   TaskDTO,
   TeamMemberDTO,
+  ThreadDetailDTO,
+  ThreadSummaryDTO,
   UserDetailDTO,
   UpdateMeInput,
   UserDTO,
@@ -103,6 +107,7 @@ export const clientsApi = {
   notes: (id: string) => api.get<ClientNoteDTO[]>(`/api/clients/${id}/notes`),
   addNote: (id: string, body: { text: string; tag: ClientNoteDTO['tag'] }) =>
     api.post<ClientNoteDTO>(`/api/clients/${id}/notes`, body),
+  timeline: (id: string) => api.get<ClientTimelineEntryDTO[]>(`/api/clients/${id}/timeline`),
 };
 
 export const developersApi = {
@@ -136,6 +141,14 @@ export const documentsApi = {
   },
   downloadUrl: (id: string) => api.get<{ url: string; name: string }>(`/api/documents/${id}/download`),
   remove: (id: string) => api.delete<{ deleted: true }>(`/api/documents/${id}`),
+};
+
+export const gmailApi = {
+  threads: (q?: string, maxResults?: number) =>
+    api.get<ThreadSummaryDTO[]>('/api/gmail/threads', { params: { q, maxResults } }),
+  thread: (id: string) => api.get<ThreadDetailDTO>(`/api/gmail/threads/${id}`),
+  send: (input: SendEmailInput) =>
+    api.post<{ id: string; threadId: string }>('/api/gmail/send', input),
 };
 
 export const auditApi = {

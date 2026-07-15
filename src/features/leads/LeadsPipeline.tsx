@@ -101,7 +101,7 @@ export const LeadsPipeline: React.FC = () => {
   const handleCreate = async () => {
     const name = form.fullName.trim();
     if (!name) {
-      toast.error('Ad Soyad zorunlu.');
+      toast.error(t('leads.nameRequired'));
       return;
     }
     const [firstName, ...rest] = name.split(/\s+/);

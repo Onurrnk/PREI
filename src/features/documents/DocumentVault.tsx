@@ -60,7 +60,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
 
   const handleUpload = async () => {
     if (pendingFiles.length === 0) {
-      toast.error('Önce dosya seçin.');
+      toast.error(t('documents.selectFileFirst'));
       return;
     }
     setIsUploading(true);
@@ -73,7 +73,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
       setPendingFiles([]);
       refetch();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Yükleme başarısız.');
+      toast.error(err instanceof Error ? err.message : t('documents.uploadFailedGeneric'));
     } finally {
       setIsUploading(false);
     }
@@ -84,7 +84,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
       const { url } = await documentsApi.downloadUrl(doc.id);
       window.open(url, '_blank', 'noopener');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'İndirme bağlantısı alınamadı.');
+      toast.error(err instanceof Error ? err.message : t('documents.downloadLinkFailed'));
     }
   };
 
@@ -97,7 +97,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
       setDeleteTarget(null);
       refetch();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Silme başarısız.');
+      toast.error(err instanceof Error ? err.message : t('documents.deleteFailedGeneric'));
     } finally {
       setIsDeleting(false);
     }
@@ -141,7 +141,7 @@ export const DocumentVault: React.FC<DocumentVaultProps> = ({ clientId }) => {
                   onClick={() => { setCurrentFolder(folder); setSearchQuery(''); }}
                 >
                   {currentFolder === folder ? <FolderOpen size={18} /> : <Folder size={18} />}
-                  <span>{folder === 'Root' ? t('documents.allFilesRoot') : folder}</span>
+                  <span>{folder === 'Root' ? t('documents.allFilesRoot') : t(`documents.folderNames.${folder}`)}</span>
                   <span className={styles.folderCount}>
                     {documents.filter(d => d.folder === folder).length}
                   </span>

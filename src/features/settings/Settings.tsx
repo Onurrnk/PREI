@@ -338,7 +338,7 @@ export const Settings: React.FC = () => {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <h3 className={styles.sectionTitle}>{t('settings.team.heading')}</h3>
-                <Button variant="primary" onClick={() => toast.info('Üye ekleme modülü yakında gelecek')}><Plus size={16} /> {t('settings.team.addMember')}</Button>
+                <Button variant="primary" onClick={() => toast.info(t('settings.team.addMemberSoon'))}><Plus size={16} /> {t('settings.team.addMember')}</Button>
               </div>
               <p className={styles.sectionSubtitle}>{t('settings.team.subtitle')}</p>
 

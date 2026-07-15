@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { ProjectDTO } from '../../core/types';
-import { projectsApi } from '../../core/api/resources';
+import type { ClientDTO, ProjectDTO } from '../../core/types';
+import { clientsApi, gmailApi, projectsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { useToast } from '../../core/components/Toast/ToastProvider';
@@ -17,8 +17,13 @@ export const ProjectProfile: React.FC = () => {
   const navigate = useNavigate();
   const { data, loading } = useFetch<ProjectDTO[]>(() => projectsApi.list(), [id]);
   const project = (data ?? []).find(p => p.id === id) ?? null;
+  const { data: clientsData } = useFetch<ClientDTO[]>(() => clientsApi.list(), []);
+  const clients = clientsData ?? [];
   const [selectedImage, setSelectedImage] = useState(0);
   const [shareClient, setShareClient] = useState('');
+  const [emailSubject, setEmailSubject] = useState<string | null>(null);
+  const [emailBody, setEmailBody] = useState<string | null>(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
 
   const toast = useToast();
 
@@ -209,40 +214,67 @@ export const ProjectProfile: React.FC = () => {
                     value={shareClient}
                     onChange={setShareClient}
                     placeholder={t('projects.selectClientPh')}
-                    options={[
-                      { value: 'c1', label: 'Oliver Hartwell (CL-10024)' },
-                      { value: 'c2', label: 'Sarah Ahmed (CL-10025)' },
-                      { value: 'c3', label: 'Mohammed Al Fayed (VIP)' },
-                    ]}
+                    options={clients.map(c => ({ value: c.id, label: `${c.name} (${c.clientId})` }))}
                   />
                 </div>
 
                 <div className={styles.formGroup}>
                   <label>{t('projects.subject')}</label>
-                  <input type="text" className={styles.textInput} defaultValue={t('projects.emailSubject', { project: project.name, developer: project.developerName })} />
+                  <input
+                    type="text"
+                    className={styles.textInput}
+                    value={emailSubject ?? t('projects.emailSubject', { project: project.name, developer: project.developerName })}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                  />
                 </div>
 
                 <div className={styles.formGroup}>
                   <label>{t('projects.message')}</label>
-                  <textarea className={styles.textArea} defaultValue={t('projects.emailBody', { project: project.name, location: project.location, price: formatCurrency(project.startingPrice) })}></textarea>
+                  <textarea
+                    className={styles.textArea}
+                    value={emailBody ?? t('projects.emailBody', { project: project.name, location: project.location, price: formatCurrency(project.startingPrice) })}
+                    onChange={(e) => setEmailBody(e.target.value)}
+                  />
                 </div>
 
-                <div className={styles.attachmentsSection}>
-                  <div className={styles.attachmentLabel}>{t('projects.includedAttachments')}</div>
-                  {project.documents.map(doc => (
-                    <div key={doc.id} className={styles.attachmentPill}>
-                      <Paperclip size={12} /> {doc.title}.pdf
-                    </div>
-                  ))}
-                  <div className={styles.attachmentPill}>
-                    <Paperclip size={12} /> {project.name}_Gallery.zip
+                {project.documents.length > 0 && (
+                  <div className={styles.attachmentsSection}>
+                    <div className={styles.attachmentLabel}>{t('projects.includedAttachments')}</div>
+                    {project.documents.map(doc => (
+                      <div key={doc.id} className={styles.attachmentPill}>
+                        <Paperclip size={12} /> {doc.title}
+                      </div>
+                    ))}
                   </div>
-                </div>
+                )}
               </div>
 
               <div className={styles.composerFooter}>
                 <Button variant="outline" onClick={() => handleActionClick('Preview Email')}>{t('projects.preview')}</Button>
-                <Button variant="primary" onClick={() => handleActionClick('Send Email to Client')}><PaperPlaneTilt size={16} style={{ marginRight: '8px' }} /> {t('projects.sendEmail')}</Button>
+                <Button
+                  variant="primary"
+                  disabled={!shareClient || sendingEmail}
+                  onClick={async () => {
+                    const client = clients.find(c => c.id === shareClient);
+                    if (!client) {
+                      toast.error(t('projects.selectClientFirst'));
+                      return;
+                    }
+                    const subject = emailSubject ?? t('projects.emailSubject', { project: project.name, developer: project.developerName });
+                    const body = emailBody ?? t('projects.emailBody', { project: project.name, location: project.location, price: formatCurrency(project.startingPrice) });
+                    setSendingEmail(true);
+                    try {
+                      await gmailApi.send({ to: client.email, subject, body, recipientName: client.name });
+                      toast.success(t('projects.emailSentTo', { name: client.name }));
+                    } catch (err) {
+                      toast.error(err instanceof Error ? err.message : t('projects.emailSendFailed'));
+                    } finally {
+                      setSendingEmail(false);
+                    }
+                  }}
+                >
+                  <PaperPlaneTilt size={16} style={{ marginRight: '8px' }} /> {sendingEmail ? t('clients.email.sending') : t('projects.sendEmail')}
+                </Button>
               </div>
             </CardBody>
           </Card>

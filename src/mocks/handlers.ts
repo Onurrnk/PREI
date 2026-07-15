@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw';
 import type {
   ClientNoteDTO,
+  ClientTimelineEntryDTO,
   ActivityDTO,
   KPIDTO,
   LeadCommunicationDTO,
@@ -21,6 +22,8 @@ import type {
   AuditLogDTO,
   UserDTO,
   TaskDTO,
+  ThreadDetailDTO,
+  ThreadSummaryDTO,
 } from '../core/types';
 
 // Re-export domain types for backward compatibility. The canonical source
@@ -89,6 +92,53 @@ const mockVaultDocuments: VaultDocumentDTO[] = [
   { id: 'doc6', name: 'ROI_Calculator_2026.xlsx', folder: 'Root', type: 'excel', sizeMB: 0.5, uploadedAt: '2026-01-10', uploadedBy: 'Finance' },
 ];
 
+// Mock modda Gmail thread'leri — module-level, mockThreads'e gönderilen
+// mesajlar oturum içinde kalıcı (gerçek modda server/src/modules/gmail).
+const mockThreads: ThreadDetailDTO[] = [
+  {
+    id: 't1',
+    subject: 'Re: Dubai Marina Off-plan Projects',
+    contact: { contactId: '1', type: 'client', name: 'Oliver Hartwell' },
+    messages: [
+      {
+        id: 'm1', threadId: 't1', from: 'Oliver Hartwell', fromEmail: 'oliver.hartwell@example.com',
+        to: ['info@produality.com'], subject: 'Re: Dubai Marina Off-plan Projects',
+        date: '2026-06-16T10:45:00Z', snippet: 'Thanks for the PDF. I am interested in the 2BR options...',
+        bodyText: "Hello,\n\nThanks for sending over the PDF with the latest off-plan projects in Dubai Marina.\n\nI've reviewed the options and I'm particularly interested in the 2-bedroom apartments in the EMAAR Beachfront development. Could you please send me the specific payment plans for those?\n\nAlso, let me know when we can schedule a quick call to discuss the expected ROI.\n\nBest regards,\nOliver Hartwell",
+        bodyHtml: null,
+      },
+    ],
+  },
+  {
+    id: 't2',
+    subject: 'Property Portfolio Update',
+    contact: { contactId: '1', type: 'client', name: 'Oliver Hartwell' },
+    messages: [
+      {
+        id: 'm2', threadId: 't2', from: 'ProDuality Advisory', fromEmail: 'info@produality.com',
+        to: ['oliver.hartwell@example.com'], subject: 'Property Portfolio Update',
+        date: '2026-06-15T09:00:00Z', snippet: 'Please find attached the latest portfolio options tailored to your profile.',
+        bodyText: 'Dear Oliver,\n\nPlease find attached the latest portfolio options tailored to your investment profile: 4 units across Dubai Marina and Downtown, all within your stated budget range.\n\nTwo of them include a 60/40 construction-linked payment plan, which matches the structure you preferred in our last call.\n\nHappy to walk you through the comparison whenever suits you.\n\nKind regards,\nProDuality Advisory',
+        bodyHtml: null,
+      },
+    ],
+  },
+  {
+    id: 't3',
+    subject: 'Initial Consultation Follow-up',
+    contact: { contactId: '1', type: 'client', name: 'Oliver Hartwell' },
+    messages: [
+      {
+        id: 'm3', threadId: 't3', from: 'ProDuality Advisory', fromEmail: 'info@produality.com',
+        to: ['oliver.hartwell@example.com'], subject: 'Initial Consultation Follow-up',
+        date: '2026-06-04T09:00:00Z', snippet: 'It was great speaking with you today regarding your investment goals...',
+        bodyText: 'Dear Oliver,\n\nIt was great speaking with you today regarding your investment goals in the Gulf region.\n\nAs discussed, I will prepare a shortlist focused on 2BR waterfront units with strong rental yield history, and share it before the end of the week.\n\nKind regards,\nProDuality Advisory',
+        bodyHtml: null,
+      },
+    ],
+  },
+];
+
 const mockAuditLogs: AuditLogDTO[] = [
   { id: 'al1', actor: 'Elif Şahin', action: 'Downloaded Document', resource: 'SPA_Template_Emaar.word', timestamp: '2026-06-16T10:45:00Z', ipAddress: '192.168.1.45', status: 'Success' },
   { id: 'al2', actor: 'System', action: 'Nightly Backup', resource: 'DB_Cluster_Primary', timestamp: '2026-06-16T03:00:00Z', ipAddress: '10.0.0.1', status: 'Success' },
@@ -134,6 +184,16 @@ const mockNotesByClient: Record<string, ClientNoteDTO[]> = {
       id: 'mn1', author: 'Sarah Ahmed', role: 'Senior Consultant', tag: 'Meeting', createdAt: day(3),
       text: 'Marina Vista 2B viewing debrief: strong buy signal. He compared service charges with Downtown; wants SPA draft before Friday. Wife joins the next call — prepare the school-district one-pager.',
     },
+  ],
+};
+
+// İletişim zaman çizelgesi (communications mock'u) — clients.timeline() bu şekle bakar.
+const mockTimelineByClient: Record<string, ClientTimelineEntryDTO[]> = {
+  '1': [
+    { id: 'tl1', kind: 'whatsapp', title: 'WhatsApp message received', body: '"Golden Visa için minimum yatırım tutarını teyit edebilir misiniz?" Score reached 85, Calendly link sent.', time: day(0.02), score: 85 },
+    { id: 'tl2', kind: 'email', title: 'Email sent: Property Portfolio Update', body: 'Latest Dubai Marina off-plan portfolio PDF shared (4 units, Q4 2027 handover).', time: day(0.1) },
+    { id: 'tl3', kind: 'call', title: 'Call logged: Payment plan review', body: '18 min. Prefers 60/40 construction-linked plan; asked for Nişantaşı comparison.', time: day(1) },
+    { id: 'tl4', kind: 'whatsapp', title: 'WhatsApp message received', body: 'Arrived from "Golden Visa · Dubai Off-Plan (TR)" campaign. Eylül opened conversation.', time: day(6), score: 25 },
   ],
 };
 
@@ -507,6 +567,10 @@ export const handlers = [
     return HttpResponse.json<ClientNoteDTO>(note, { status: 201 });
   }),
 
+  http.get('/api/clients/:id/timeline', ({ params }) => {
+    return HttpResponse.json<ClientTimelineEntryDTO[]>(mockTimelineByClient[String(params.id)] ?? []);
+  }),
+
 
   http.get('/api/developers', () => {
     return HttpResponse.json<DeveloperDTO[]>([
@@ -679,5 +743,43 @@ export const handlers = [
       }
     ];
     return HttpResponse.json<ProjectDTO[]>(allProjects);
+  }),
+
+  http.get('/api/gmail/threads', () => {
+    const summaries: ThreadSummaryDTO[] = mockThreads.map((thread) => {
+      const last = thread.messages[thread.messages.length - 1];
+      return {
+        id: thread.id,
+        subject: thread.subject,
+        from: last.from,
+        fromEmail: last.fromEmail,
+        snippet: last.snippet,
+        date: last.date,
+        unread: false,
+        contact: thread.contact,
+      };
+    });
+    return HttpResponse.json<ThreadSummaryDTO[]>(summaries);
+  }),
+
+  http.get('/api/gmail/threads/:id', ({ params }) => {
+    const thread = mockThreads.find((th) => th.id === params.id);
+    if (!thread) return new HttpResponse(null, { status: 404 });
+    return HttpResponse.json<ThreadDetailDTO>(thread);
+  }),
+
+  http.post('/api/gmail/send', async ({ request }) => {
+    const body = (await request.json()) as { to: string; subject: string; body: string; threadId?: string };
+    const thread = body.threadId ? mockThreads.find((th) => th.id === body.threadId) : undefined;
+    const id = crypto.randomUUID();
+    const threadId = thread?.id ?? crypto.randomUUID();
+    if (thread) {
+      thread.messages.push({
+        id, threadId, from: 'ProDuality Advisory', fromEmail: 'info@produality.com',
+        to: [body.to], subject: body.subject, date: new Date().toISOString(),
+        snippet: body.body.slice(0, 120), bodyText: body.body, bodyHtml: null,
+      });
+    }
+    return HttpResponse.json({ id, threadId });
   }),
 ];

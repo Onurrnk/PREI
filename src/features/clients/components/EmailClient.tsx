@@ -1,87 +1,97 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MagnifyingGlass, Paperclip, PaperPlaneTilt, ArrowBendUpLeft, Trash, DotsThreeVertical, EnvelopeSimple } from '@phosphor-icons/react';
+import type { EmailMessageDTO, ThreadSummaryDTO, ThreadDetailDTO } from '../../../core/types';
+import { gmailApi } from '../../../core/api/resources';
+import { useFetch } from '../../../core/hooks/useFetch';
 import { Card, CardHeader, CardBody } from '../../../core/components/Card/Card';
 import { Button } from '../../../core/components/Button/Button';
 import { useToast } from '../../../core/components/Toast/ToastProvider';
 import styles from './EmailClient.module.css';
 
-// Mock thread'ler — Faz 1'de Gmail API'ye (server/src/modules/gmail) bağlanır.
-interface EmailThread {
-  id: string;
-  subject: string;
-  snippet: string;
-  date: string;
-  unread: boolean;
-  fromClient: boolean;
-  paragraphs: string[];
-}
-
-const buildThreads = (clientName: string): EmailThread[] => [
-  {
-    id: '1',
-    subject: 'Re: Dubai Marina Off-plan Projects',
-    snippet: 'Thanks for the PDF. I am interested in the 2BR options...',
-    date: '10:45',
-    unread: true,
-    fromClient: true,
-    paragraphs: [
-      'Hello,',
-      'Thanks for sending over the PDF with the latest off-plan projects in Dubai Marina.',
-      "I've reviewed the options and I'm particularly interested in the 2-bedroom apartments in the EMAAR Beachfront development. Could you please send me the specific payment plans for those?",
-      'Also, let me know when we can schedule a quick call to discuss the expected ROI.',
-      `Best regards,\n${clientName}`,
-    ],
-  },
-  {
-    id: '2',
-    subject: 'Property Portfolio Update',
-    snippet: 'Please find attached the latest portfolio options tailored to your profile.',
-    date: 'Yesterday',
-    unread: false,
-    fromClient: false,
-    paragraphs: [
-      `Dear ${clientName.split(' ')[0]},`,
-      'Please find attached the latest portfolio options tailored to your investment profile: 4 units across Dubai Marina and Downtown, all within your stated budget range.',
-      'Two of them include a 60/40 construction-linked payment plan, which matches the structure you preferred in our last call.',
-      'Happy to walk you through the comparison whenever suits you.',
-      'Kind regards,\nProDuality Advisory',
-    ],
-  },
-  {
-    id: '3',
-    subject: 'Initial Consultation Follow-up',
-    snippet: 'It was great speaking with you today regarding your investment goals...',
-    date: '12 Jun',
-    unread: false,
-    fromClient: false,
-    paragraphs: [
-      `Dear ${clientName.split(' ')[0]},`,
-      'It was great speaking with you today regarding your investment goals in the Gulf region.',
-      'As discussed, I will prepare a shortlist focused on 2BR waterfront units with strong rental yield history, and share it before the end of the week.',
-      'Kind regards,\nProDuality Advisory',
-    ],
-  },
-];
+const formatThreadDate = (iso: string, locale: string): string => {
+  const date = new Date(iso);
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+  if (sameDay) return date.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return locale.startsWith('tr') ? 'Dün' : 'Yesterday';
+  return date.toLocaleDateString(locale, { day: '2-digit', month: 'short' });
+};
 
 export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> = ({ clientEmail, clientName }) => {
-  const { t } = useTranslation();
-  const [threads, setThreads] = useState<EmailThread[]>(() => buildThreads(clientName));
-  const [selectedId, setSelectedId] = useState<string>('1');
-  const [reply, setReply] = useState('');
+  const { t, i18n: i18nInstance } = useTranslation();
+  const locale = i18nInstance.language?.startsWith('tr') ? 'tr-TR' : 'en-GB';
   const toast = useToast();
 
-  const selected = threads.find((t) => t.id === selectedId) ?? null;
+  const { data: threadList, loading: threadsLoading, error: threadsError } =
+    useFetch<ThreadSummaryDTO[]>(() => gmailApi.threads(clientEmail), [clientEmail]);
+  const threads = threadList ?? [];
+
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Kullanıcı henüz seçim yapmadıysa ilk thread'i türetilmiş değer olarak
+  // kullan — effect içinde senkron setState yerine (render-time derivation).
+  const effectiveSelectedId = selectedId ?? threads[0]?.id ?? null;
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [reply, setReply] = useState('');
+  const [sending, setSending] = useState(false);
+  // Gönderilen mesajları thread bazında yerelde tutar — GET round-trip'i
+  // beklemeden anında görünür (ClientProfile'daki addedNotes deseniyle aynı).
+  const [sentByThread, setSentByThread] = useState<Record<string, EmailMessageDTO[]>>({});
+
+  const {
+    data: selectedThread,
+    loading: threadLoading,
+    refetch: refetchThread,
+  } = useFetch<ThreadDetailDTO | null>(
+    () => (effectiveSelectedId ? gmailApi.thread(effectiveSelectedId) : Promise.resolve(null)),
+    [effectiveSelectedId],
+  );
+  void threadLoading; // future: inline skeleton for message pane
 
   const selectThread = (id: string) => {
     setSelectedId(id);
-    setThreads((list) => list.map((t) => (t.id === id ? { ...t, unread: false } : t)));
+    setReadIds((prev) => new Set(prev).add(id));
   };
 
-  const handleSend = () => {
-    if (!reply.trim()) return;
-    toast.success(t('clients.email.emailSent'));
-    setReply('');
+  const handleSend = async () => {
+    const body = reply.trim();
+    if (!body || !selectedThread) return;
+    setSending(true);
+    try {
+      const subject = selectedThread.subject.startsWith('Re:') ? selectedThread.subject : `Re: ${selectedThread.subject}`;
+      const result = await gmailApi.send({
+        to: clientEmail,
+        subject,
+        body,
+        threadId: selectedThread.id,
+        recipientName: clientName,
+      });
+      const sentMessage: EmailMessageDTO = {
+        id: result.id,
+        threadId: result.threadId,
+        from: 'ProDuality',
+        fromEmail: 'info@produality.com',
+        to: [clientEmail],
+        subject,
+        date: new Date().toISOString(),
+        snippet: body.slice(0, 120),
+        bodyText: body,
+        bodyHtml: null,
+      };
+      setSentByThread((prev) => ({
+        ...prev,
+        [selectedThread.id]: [...(prev[selectedThread.id] ?? []), sentMessage],
+      }));
+      toast.success(t('clients.email.emailSent'));
+      setReply('');
+      refetchThread();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('clients.email.sendFailed'));
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -102,44 +112,43 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
 
       <CardBody className={styles.emailBody}>
         <div className={styles.threadList}>
-          {threads.map((thread) => (
-            <button
-              key={thread.id}
-              className={`${styles.threadItem} ${selectedId === thread.id ? styles.active : ''} ${thread.unread ? styles.unread : ''}`}
-              onClick={() => selectThread(thread.id)}
-            >
-              <div className={styles.threadHeader}>
-                <span className={styles.threadSender}>
-                  {thread.unread && <span className={styles.unreadDot} aria-label="unread" />}
-                  {thread.fromClient ? clientName : t('clients.email.me')}
-                </span>
-                <span className={styles.threadDate}>{thread.date}</span>
-              </div>
-              <div className={styles.threadSubject}>{thread.subject}</div>
-              <div className={styles.threadSnippet}>{thread.snippet}</div>
-            </button>
-          ))}
+          {threadsLoading && <p className={styles.messageEmpty}>{t('clients.email.loading')}</p>}
+          {threadsError && <p className={styles.messageEmpty}>{threadsError}</p>}
+          {!threadsLoading && !threadsError && threads.length === 0 && (
+            <div className={styles.messageEmpty}>
+              <EnvelopeSimple size={28} weight="duotone" />
+              <p>{t('clients.email.noThreads')}</p>
+            </div>
+          )}
+          {threads.map((thread) => {
+            const unread = thread.unread && !readIds.has(thread.id);
+            const fromClient = thread.fromEmail?.toLowerCase() === clientEmail.toLowerCase();
+            return (
+              <button
+                key={thread.id}
+                className={`${styles.threadItem} ${effectiveSelectedId === thread.id ? styles.active : ''} ${unread ? styles.unread : ''}`}
+                onClick={() => selectThread(thread.id)}
+              >
+                <div className={styles.threadHeader}>
+                  <span className={styles.threadSender}>
+                    {unread && <span className={styles.unreadDot} aria-label="unread" />}
+                    {fromClient ? clientName : t('clients.email.me')}
+                  </span>
+                  <span className={styles.threadDate}>{formatThreadDate(thread.date, locale)}</span>
+                </div>
+                <div className={styles.threadSubject}>{thread.subject}</div>
+                <div className={styles.threadSnippet}>{thread.snippet}</div>
+              </button>
+            );
+          })}
         </div>
 
         <div className={styles.messageView}>
-          {selected ? (
+          {selectedThread ? (
             <div className={styles.messageContent}>
               <div className={styles.messageHeader}>
                 <div className={styles.messageMeta}>
-                  <h3 className={styles.messageSubject}>{selected.subject}</h3>
-                  <div className={styles.messageSenderDetails}>
-                    <div className={styles.avatar}>
-                      {(selected.fromClient ? clientName : 'ProDuality').charAt(0)}
-                    </div>
-                    <div className={styles.senderInfo}>
-                      <span className={styles.senderName}>
-                        {selected.fromClient ? clientName : 'ProDuality Advisory'}
-                      </span>
-                      <span className={styles.senderEmail}>
-                        {selected.fromClient ? clientEmail : 'info@produality.com'}
-                      </span>
-                    </div>
-                  </div>
+                  <h3 className={styles.messageSubject}>{selectedThread.subject}</h3>
                 </div>
                 <div className={styles.messageActions}>
                   <button className={styles.iconBtn} title={t('clients.email.reply')}><ArrowBendUpLeft size={16} /></button>
@@ -148,9 +157,25 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
                 </div>
               </div>
               <div className={styles.messageBody}>
-                {selected.paragraphs.map((p, i) => (
-                  <p key={i} className={styles.messageParagraph}>{p}</p>
-                ))}
+                {[...selectedThread.messages, ...(sentByThread[selectedThread.id] ?? [])].map((msg) => {
+                  const fromClient = msg.fromEmail?.toLowerCase() === clientEmail.toLowerCase();
+                  return (
+                    <div key={msg.id} className={styles.messageContent}>
+                      <div className={styles.messageSenderDetails}>
+                        <div className={styles.avatar}>
+                          {(fromClient ? clientName : 'ProDuality').charAt(0)}
+                        </div>
+                        <div className={styles.senderInfo}>
+                          <span className={styles.senderName}>{fromClient ? clientName : msg.from}</span>
+                          <span className={styles.senderEmail}>{msg.fromEmail}</span>
+                        </div>
+                      </div>
+                      {msg.bodyText.split('\n').map((p, i) => (
+                        <p key={i} className={styles.messageParagraph}>{p || ' '}</p>
+                      ))}
+                    </div>
+                  );
+                })}
               </div>
 
               <div className={styles.replyBox}>
@@ -162,8 +187,8 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
                 />
                 <div className={styles.replyActions}>
                   <button className={styles.attachBtn} title={t('clients.email.attach')}><Paperclip size={16} /></button>
-                  <Button variant="primary" onClick={handleSend}>
-                    <PaperPlaneTilt size={14} /> {t('clients.email.send')}
+                  <Button variant="primary" onClick={handleSend} disabled={sending || !reply.trim()}>
+                    <PaperPlaneTilt size={14} /> {sending ? t('clients.email.sending') : t('clients.email.send')}
                   </Button>
                 </div>
               </div>

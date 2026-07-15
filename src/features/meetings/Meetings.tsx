@@ -84,7 +84,7 @@ export const Meetings: React.FC = () => {
   const handleSync = () => {
     setIsSyncing(true);
     // Google Takvim entegrasyonu ayrı bir faz — şimdilik simüle.
-    setTimeout(() => { setIsSyncing(false); toast.info('Google Takvim senkronu ayrı entegrasyon fazında bağlanacak.'); }, 900);
+    setTimeout(() => { setIsSyncing(false); toast.info(t('meetings.gcalSyncSoon')); }, 900);
   };
 
   const openMeetingDetails = (m: MeetingDTO) => { setSelectedMeeting(m); setShowDetailsModal(true); };
