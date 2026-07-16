@@ -279,6 +279,9 @@
   line-height: 1.6;
   flex: 1;
   overflow-y: auto;
+  /* Flex çocuğu içerik yüksekliğinin altına inebilsin — yoksa uzun mail
+     kompozörü kartın dışına iter ve Gönder butonu kaybolur. */
+  min-height: 0;
 }
 
 .messageBody p {
@@ -291,7 +294,12 @@
   border-radius: var(--radius-md);
   background-color: var(--bg-surface);
   overflow: hidden;
-  flex-shrink: 0;
+  /* Dar viewport'ta kompozör karta sığsın diye küçülebilir (editör
+     min-height'ına kadar); araç çubuğu/imza/aksiyonlar sabit kalır. */
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-height: 0;
 }
 
 .replyBox:focus-within {
@@ -307,6 +315,7 @@
   padding: var(--spacing-xs) var(--spacing-sm);
   border-bottom: 1px solid var(--border-subtle);
   background-color: var(--bg-app);
+  flex-shrink: 0;
 }
 
 .formatButtons {
@@ -346,8 +355,9 @@
 }
 
 .richEditor {
-  min-height: 180px;
-  max-height: 38vh;
+  flex: 1 1 auto;
+  min-height: 160px;
+  max-height: 30vh;
   overflow-y: auto;
   padding: var(--spacing-md);
   color: var(--text-primary);
@@ -371,6 +381,36 @@
 .richEditor ol {
   margin: 0 0 var(--spacing-sm) 0;
   padding-left: 1.4em;
+}
+
+.signaturePreview {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-top: 1px dashed var(--border-subtle);
+  background-color: var(--bg-app);
+  flex-shrink: 0;
+}
+
+.signatureLabel {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.signatureName {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.signatureMeta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 
 .attachmentList {
@@ -432,6 +472,7 @@
   padding: var(--spacing-sm) var(--spacing-md);
   border-top: 1px solid var(--border-color);
   background-color: var(--bg-app);
+  flex-shrink: 0;
 }
 
 .fileInput {

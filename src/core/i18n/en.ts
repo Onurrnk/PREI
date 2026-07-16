@@ -491,6 +491,8 @@ export const en = {
         bulletList: 'Bullet list',
         numberList: 'Numbered list',
         templateLabel: 'Insert template…',
+        signatureLabel: 'Signature',
+        signatureHint: 'Automatically appended to the branded email — edit your name/title in Settings.',
         templates: {
           followUp: {
             title: 'Follow-up',

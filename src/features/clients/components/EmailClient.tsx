@@ -4,8 +4,8 @@ import {
   MagnifyingGlass, Paperclip, PaperPlaneTilt, ArrowBendUpLeft, Trash, DotsThreeVertical,
   EnvelopeSimple, TextB, TextItalic, TextUnderline, ListBullets, ListNumbers, FileText, X,
 } from '@phosphor-icons/react';
-import type { EmailMessageDTO, ThreadSummaryDTO, ThreadDetailDTO, EmailAttachmentInput } from '../../../core/types';
-import { gmailApi } from '../../../core/api/resources';
+import type { EmailMessageDTO, ThreadSummaryDTO, ThreadDetailDTO, EmailAttachmentInput, MeResponse } from '../../../core/types';
+import { gmailApi, meApi } from '../../../core/api/resources';
 import { useFetch } from '../../../core/hooks/useFetch';
 import { Card, CardHeader, CardBody } from '../../../core/components/Card/Card';
 import { Button } from '../../../core/components/Button/Button';
@@ -66,6 +66,10 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
   const { data: threadList, loading: threadsLoading, error: threadsError } =
     useFetch<ThreadSummaryDTO[]>(() => gmailApi.threads(clientEmail), [clientEmail]);
   const threads = threadList ?? [];
+
+  // İmza önizlemesi: gönderilen maile sunucu tarafında otomatik eklenen
+  // markalı imzanın (ad/unvan/e-posta) kompozördeki görünür karşılığı.
+  const { data: me } = useFetch<MeResponse>(() => meApi.get(), []);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // Kullanıcı henüz seçim yapmadıysa ilk thread'i türetilmiş değer olarak
@@ -338,6 +342,15 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
                   onInput={syncEditorEmpty}
                   suppressContentEditableWarning
                 />
+
+                {me && (
+                  <div className={styles.signaturePreview} title={t('clients.email.signatureHint')}>
+                    <span className={styles.signatureLabel}>{t('clients.email.signatureLabel')}</span>
+                    <span className={styles.signatureName}>{me.name}</span>
+                    {me.jobTitle && <span className={styles.signatureMeta}>· {me.jobTitle}</span>}
+                    <span className={styles.signatureMeta}>· {me.email}</span>
+                  </div>
+                )}
 
                 {attachments.length > 0 && (
                   <div className={styles.attachmentList}>

@@ -490,6 +490,8 @@ export const tr = {
         bulletList: 'Madde işaretli liste',
         numberList: 'Numaralı liste',
         templateLabel: 'Şablon ekle…',
+        signatureLabel: 'İmza',
+        signatureHint: 'Markalı e-postaya otomatik eklenir — ad/unvan bilgisini Ayarlar\'dan düzenleyebilirsiniz.',
         templates: {
           followUp: {
             title: 'Takip mesajı',
