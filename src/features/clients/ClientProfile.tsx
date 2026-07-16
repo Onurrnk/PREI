@@ -187,7 +187,7 @@ export const ClientProfile: React.FC = () => {
   };
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState<EditableProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<'communication' | 'vault' | 'notes'>('communication');
+  const [activeTab, setActiveTab] = useState<'communication' | 'email' | 'vault' | 'notes'>('communication');
   // Danışman iç notları — meeting_notes tablosundan (mock modda MSW)
   const { data: fetchedNotes } = useFetch<ClientNoteDTO[]>(() => clientsApi.notes(id!), [id]);
   const [addedNotes, setAddedNotes] = useState<ClientNoteDTO[]>([]);
@@ -423,6 +423,12 @@ export const ClientProfile: React.FC = () => {
               <ChatCircle size={16} /> {t('clients.profile.communicationCenter')}
             </button>
             <button
+              className={`${styles.tabBtn} ${activeTab === 'email' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('email')}
+            >
+              <EnvelopeSimple size={16} /> {t('clients.profile.mailTab')}
+            </button>
+            <button
               className={`${styles.tabBtn} ${activeTab === 'vault' ? styles.activeTab : ''}`}
               onClick={() => setActiveTab('vault')}
             >
@@ -438,8 +444,7 @@ export const ClientProfile: React.FC = () => {
           </div>
 
           {activeTab === 'communication' && (
-            <>
-              <Card className={styles.communicationCenter}>
+            <Card className={styles.communicationCenter}>
                 <CardHeader className={styles.commHeader}>
                   <h3 className={styles.cardTitle}>{t('clients.profile.communicationTimeline')}</h3>
                   <div className={styles.commFilters}>
@@ -489,16 +494,17 @@ export const ClientProfile: React.FC = () => {
                   </div>
                 </CardBody>
               </Card>
+          )}
 
-              <Card className={styles.emailCard}>
-                <CardHeader>
-                  <h3 className={styles.cardTitle}>{t('clients.profile.sendEmail')}</h3>
-                </CardHeader>
-                <CardBody>
-                  <EmailClient clientEmail={client.email} clientName={client.name} />
-                </CardBody>
-              </Card>
-            </>
+          {activeTab === 'email' && (
+            <Card className={styles.emailCard}>
+              <CardHeader>
+                <h3 className={styles.cardTitle}>{t('clients.profile.sendEmail')}</h3>
+              </CardHeader>
+              <CardBody>
+                <EmailClient clientEmail={client.email} clientName={client.name} />
+              </CardBody>
+            </Card>
           )}
 
           {activeTab === 'vault' && (

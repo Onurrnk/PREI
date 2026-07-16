@@ -408,6 +408,7 @@ export const tr = {
         createProposal: 'Teklif Oluştur',
         viewVault: 'Müşteri Arşivini Görüntüle',
         communicationCenter: 'İletişim Merkezi',
+        mailTab: 'Mail',
         documentVault: 'Müşteri Doküman Arşivi',
         internalNotes: 'İç Notlar',
         communicationTimeline: 'İletişim Zaman Çizelgesi',

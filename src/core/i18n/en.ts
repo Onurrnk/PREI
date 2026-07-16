@@ -409,6 +409,7 @@ export const en = {
         createProposal: 'Create Proposal',
         viewVault: 'View Client Vault',
         communicationCenter: 'Communication Center',
+        mailTab: 'Mail',
         documentVault: 'Client Document Vault',
         internalNotes: 'Internal Notes',
         communicationTimeline: 'Communication Timeline',
