@@ -2,9 +2,9 @@
   display: flex;
   flex-direction: column;
   /* Viewport'u doldur: üstte kabuk başlığı + profil başlığı + sekmeler
-     (~300px) düşülür. Mesaj geçmişi kart içinde kayar, kompozör her
+     (~250px) düşülür. Mesaj geçmişi kart içinde kayar, kompozör her
      zaman görünür kalır — sayfanın en dibine itilmez. */
-  height: max(540px, calc(100vh - 300px));
+  height: max(640px, calc(100vh - 250px));
 }
 
 .emailHeader {
@@ -346,8 +346,8 @@
 }
 
 .richEditor {
-  min-height: 140px;
-  max-height: 320px;
+  min-height: 180px;
+  max-height: 38vh;
   overflow-y: auto;
   padding: var(--spacing-md);
   color: var(--text-primary);

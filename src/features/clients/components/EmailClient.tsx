@@ -27,6 +27,25 @@ const formatThreadDate = (iso: string, locale: string): string => {
 const formatFileSize = (bytes: number): string =>
   bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
+/** Yalnız HTML gövdeli mailler (ör. otomatik yanıtlar) için okunur düz
+ *  metin çıkarır — HTML'i doğrudan render etmek yerine (XSS riski)
+ *  satır sonlarını koruyarak etiketleri söker. */
+const htmlToPlainText = (html: string | null): string => {
+  if (!html) return '';
+  const withBreaks = html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|h[1-6]|tr)>/gi, '\n')
+    .replace(/<(style|script)[\s\S]*?<\/\1>/gi, '');
+  const doc = new DOMParser().parseFromString(withBreaks, 'text/html');
+  const text = doc.body.textContent ?? '';
+  return text.replace(/\n{3,}/g, '\n\n').trim();
+};
+
+/** Mesajın gösterilecek metni: düz metin parçası varsa o; yoksa HTML'den
+ *  çıkarılmış metin; o da yoksa Gmail snippet'i. */
+const messageDisplayText = (msg: EmailMessageDTO): string =>
+  msg.bodyText.trim() || htmlToPlainText(msg.bodyHtml) || msg.snippet;
+
 // Ek başına 5MB, e-posta başına toplam 15MB (backend limiti ile hizalı).
 const MAX_TOTAL_ATTACHMENT_BYTES = 15 * 1024 * 1024;
 
@@ -266,7 +285,7 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
                           <span className={styles.senderEmail}>{msg.fromEmail}</span>
                         </div>
                       </div>
-                      {msg.bodyText.split('\n').map((p, i) => (
+                      {messageDisplayText(msg).split('\n').map((p, i) => (
                         <p key={i} className={styles.messageParagraph}>{p || ' '}</p>
                       ))}
                     </div>
