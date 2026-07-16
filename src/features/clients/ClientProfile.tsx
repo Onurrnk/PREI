@@ -497,14 +497,9 @@ export const ClientProfile: React.FC = () => {
           )}
 
           {activeTab === 'email' && (
-            <Card className={styles.emailCard}>
-              <CardHeader>
-                <h3 className={styles.cardTitle}>{t('clients.profile.sendEmail')}</h3>
-              </CardHeader>
-              <CardBody>
-                <EmailClient clientEmail={client.email} clientName={client.name} />
-              </CardBody>
-            </Card>
+            <div className={styles.emailCard}>
+              <EmailClient clientEmail={client.email} clientName={client.name} />
+            </div>
           )}
 
           {activeTab === 'vault' && (
