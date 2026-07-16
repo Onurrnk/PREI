@@ -18,6 +18,9 @@ export interface ClientEmailParams {
   consultantPhone?: string;
   /** Paragraf paragraf gövde metni — her biri ayrı <p> olur. */
   bodyParagraphs: string[];
+  /** Kompozörden gelen zengin gövde (sanitize edilmiş HTML). Verilirse
+   *  bodyParagraphs yerine bu kullanılır. */
+  bodyHtml?: string;
   ctaLabel?: string;
   ctaUrl?: string;
   /** Gizli önizleme metni (inbox listesinde konudan sonra görünür). */
@@ -47,9 +50,11 @@ function escapeHtml(s: string): string {
 }
 
 export function buildClientEmailHtml(p: ClientEmailParams): string {
-  const paragraphs = p.bodyParagraphs
-    .map((para) => `<p style="margin:0 0 16px 0;font-size:15px;line-height:1.65;color:${COLORS.textPrimary};font-family:${FONT_SANS};">${escapeHtml(para)}</p>`)
-    .join('\n');
+  const paragraphs = p.bodyHtml
+    ? `<div style="font-size:15px;line-height:1.65;color:${COLORS.textPrimary};font-family:${FONT_SANS};">${p.bodyHtml}</div>`
+    : p.bodyParagraphs
+      .map((para) => `<p style="margin:0 0 16px 0;font-size:15px;line-height:1.65;color:${COLORS.textPrimary};font-family:${FONT_SANS};">${escapeHtml(para)}</p>`)
+      .join('\n');
 
   const cta = p.ctaLabel && p.ctaUrl ? `
     <tr>

@@ -4,7 +4,7 @@
 // PREI DTOs (never raw Gmail objects). Associates senders with CRM
 // contacts via ContactMatcherService.
 // =====================================================================
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { google, type gmail_v1 } from 'googleapis';
 import { GoogleOAuthService } from '../auth/google-oauth.service';
 import { ContactMatcherService } from '../contacts/contact-matcher.service';
@@ -28,6 +28,32 @@ interface SenderProfile {
   email: string;
   phone: string | null;
   jobTitle: string | null;
+}
+
+// Gmail'in ham mesaj limiti ~25MB; base64 şişmesi + şablon payı için
+// eklerin toplamını 15MB (base64 olarak ~20MB) ile sınırlıyoruz.
+const MAX_ATTACHMENT_TOTAL_BASE64 = 20 * 1024 * 1024;
+
+/** Kompozör HTML'ini e-postaya gömmeden önce daralt: yalnız temel
+ *  biçimlendirme etiketlerine izin ver, olay öznitelikleri ile script/style
+ *  gövdelerini at. (Girdi zaten kimlik doğrulamalı danışmandan gelir; bu
+ *  katman yanlışlıkla yapıştırılan aktif içeriğe karşı emniyet kemeri.) */
+function sanitizeComposerHtml(html: string): string {
+  const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'S', 'BR', 'P', 'DIV', 'UL', 'OL', 'LI', 'A', 'SPAN']);
+  return html
+    .replace(/<(script|style|iframe|object|embed)[\s\S]*?<\/\1>/gi, '')
+    .replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)((?:\s+[^<>]*?)?)\/?>/g, (full, tagName: string, attrs: string) => {
+      const upper = tagName.toUpperCase();
+      if (!ALLOWED.has(upper)) return '';
+      const isClosing = full.startsWith('</');
+      if (isClosing) return `</${tagName.toLowerCase()}>`;
+      // Yalnız <a href="http(s)://..."> özniteliğini koru; gerisini at.
+      if (upper === 'A') {
+        const hrefMatch = /href\s*=\s*"(https?:\/\/[^"]*)"/i.exec(attrs);
+        return hrefMatch ? `<a href="${hrefMatch[1]}" style="color:#94529F;">` : '<a>';
+      }
+      return `<${tagName.toLowerCase()}>`;
+    });
 }
 
 @Injectable()
@@ -121,6 +147,10 @@ export class GmailService {
    *  branded HTML template (§ email-template.ts) with a plain-text
    *  fallback part for clients that don't render HTML. */
   async sendEmail(userId: string, dto: SendEmailDTO): Promise<{ id: string; threadId: string }> {
+    const attachmentTotal = (dto.attachments ?? []).reduce((sum, a) => sum + a.dataBase64.length, 0);
+    if (attachmentTotal > MAX_ATTACHMENT_TOTAL_BASE64) {
+      throw new BadRequestException('Ekler çok büyük — toplam en fazla ~15MB gönderilebilir.');
+    }
     const gmail = await this.client(userId);
     const sender = await this.senderProfile(userId);
     const raw = this.buildRawMessage(dto, sender);
@@ -138,8 +168,10 @@ export class GmailService {
   private buildRawMessage(dto: SendEmailDTO, sender: SenderProfile): string {
     const altBoundary = `prei_alt_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const relBoundary = `prei_rel_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const mixBoundary = `prei_mix_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const bodyParagraphs = dto.body.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean);
     const recipientName = dto.recipientName?.trim() || dto.to.split('@')[0];
+    const attachments = dto.attachments ?? [];
 
     const templateParams = {
       recipientName,
@@ -148,17 +180,23 @@ export class GmailService {
       consultantEmail: sender.email,
       consultantPhone: sender.phone ?? undefined,
       bodyParagraphs,
+      bodyHtml: dto.bodyHtml ? sanitizeComposerHtml(dto.bodyHtml) : undefined,
       preheader: bodyParagraphs[0]?.slice(0, 140),
     };
     const textPart = buildClientEmailText(templateParams);
     const htmlPart = buildClientEmailHtml(templateParams);
+
+    // Ek varsa en dış zarf multipart/mixed olur; markalı gövde (related)
+    // ilk parça, ekler onu izler. Ek yoksa yapı öncekiyle birebir aynı.
+    const outerBoundary = attachments.length > 0 ? mixBoundary : relBoundary;
+    const outerType = attachments.length > 0 ? 'multipart/mixed' : 'multipart/related';
 
     const headers = [
       `To: ${dto.to}`,
       `From: ${sender.name} <${sender.email}>`,
       `Subject: ${this.encodeSubject(dto.subject)}`,
       'MIME-Version: 1.0',
-      `Content-Type: multipart/related; boundary="${relBoundary}"`,
+      `Content-Type: ${outerType}; boundary="${outerBoundary}"`,
     ];
     if (dto.inReplyTo) {
       headers.push(`In-Reply-To: ${dto.inReplyTo}`);
@@ -167,9 +205,7 @@ export class GmailService {
 
     const logoBase64Lines = PRODUALITY_LOGO_BASE64.match(/.{1,76}/g) ?? [];
 
-    const message = [
-      headers.join('\r\n'),
-      '',
+    const relatedPart = [
       `--${relBoundary}`,
       `Content-Type: multipart/alternative; boundary="${altBoundary}"`,
       '',
@@ -196,7 +232,36 @@ export class GmailService {
       logoBase64Lines.join('\r\n'),
       '',
       `--${relBoundary}--`,
-    ].join('\r\n');
+    ];
+
+    let bodyLines: string[];
+    if (attachments.length === 0) {
+      bodyLines = relatedPart;
+    } else {
+      bodyLines = [
+        `--${mixBoundary}`,
+        `Content-Type: multipart/related; boundary="${relBoundary}"`,
+        '',
+        ...relatedPart,
+        '',
+      ];
+      for (const att of attachments) {
+        const safeName = att.filename.replace(/[\r\n"]/g, '_');
+        const dataLines = att.dataBase64.replace(/\s/g, '').match(/.{1,76}/g) ?? [];
+        bodyLines.push(
+          `--${mixBoundary}`,
+          `Content-Type: ${att.mimeType}; name="${safeName}"`,
+          'Content-Transfer-Encoding: base64',
+          `Content-Disposition: attachment; filename="${safeName}"`,
+          '',
+          dataLines.join('\r\n'),
+          '',
+        );
+      }
+      bodyLines.push(`--${mixBoundary}--`);
+    }
+
+    const message = [headers.join('\r\n'), '', ...bodyLines].join('\r\n');
 
     return Buffer.from(message, 'utf-8').toString('base64url');
   }

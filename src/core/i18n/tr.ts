@@ -477,11 +477,37 @@ export const tr = {
         delete: 'Sil',
         more: 'Diğer',
         attach: 'Dosya ekle',
+        attachTooLarge: 'Ekler çok büyük — e-posta başına toplam en fazla 15MB.',
+        removeAttachment: '{{name}} ekini kaldır',
         emailSent: 'E-posta gönderildi',
         sendFailed: 'E-posta gönderilemedi.',
         sending: 'Gönderiliyor…',
         loading: 'Konuşmalar yükleniyor…',
         noThreads: 'Henüz e-posta konuşması yok.',
+        bold: 'Kalın',
+        italic: 'İtalik',
+        underline: 'Altı çizili',
+        bulletList: 'Madde işaretli liste',
+        numberList: 'Numaralı liste',
+        templateLabel: 'Şablon ekle…',
+        templates: {
+          followUp: {
+            title: 'Takip mesajı',
+            body: 'Umarım iyisinizdir.\n\nSon görüşmemizin ardından, paylaştığımız seçenekleri inceleme fırsatınız olup olmadığını öğrenmek istedim. Bu süreçte aklınıza takılan sorular olduysa detayları birlikte gözden geçirmekten memnuniyet duyarım.\n\nBu hafta kısa bir görüşme sizin için uygun olur mu?',
+          },
+          portfolio: {
+            title: 'Portföy güncellemesi',
+            body: 'Umarım iyisinizdir.\n\nYatırım profilinize ve tercih ettiğiniz bölgelere göre hazırladığımız güncel portföy seçkisini ekte bulabilirsiniz. Her seçenekte güncel ödeme planı ve öngörülen teslim tarihi yer alıyor.\n\nİlginizi çeken projeler için yerinde görüntüleme organize etmekten memnuniyet duyarım.',
+          },
+          meetingInvite: {
+            title: 'Toplantı daveti',
+            body: 'İlginiz için teşekkür ederim.\n\nGüncel fırsatları detaylıca değerlendirmek ve sorularınızı yanıtlamak üzere kısa bir toplantı yapmayı öneririm. Yüz yüze veya çevrim içi — size hangisi uygunsa o şekilde ilerleyebiliriz.\n\nBu hafta uygun olduğunuz birkaç zaman dilimini paylaşabilir misiniz?',
+          },
+          paymentPlan: {
+            title: 'Ödeme planı detayları',
+            body: 'Projeye gösterdiğiniz ilgi için teşekkür ederim.\n\nTalebiniz üzerine ödeme planı şu şekilde işliyor: rezervasyonda peşinat, inşaat sürecine bağlı ara ödemeler ve teslimde kalan bakiye. Kesin oranlar üniteye ve geliştirici kampanyasına göre değişir.\n\nDetaylı ödeme takvimini ekte bulabilirsiniz; her türlü soru için hizmetinizdeyim.',
+          },
+        },
       },
     },
     tasks: {

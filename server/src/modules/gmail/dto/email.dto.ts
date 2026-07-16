@@ -4,7 +4,8 @@
 // deliberately decoupled from Gmail's raw schema (ACL boundary).
 // Request DTOs are validated by class-validator.
 // =====================================================================
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsEmail, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export interface ContactMatchDTO {
   contactId: string;
@@ -43,6 +44,22 @@ export interface ThreadDetailDTO {
   messages: EmailMessageDTO[];
 }
 
+export class EmailAttachmentDTO {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(255)
+  filename!: string;
+
+  @IsString()
+  @MaxLength(120)
+  mimeType!: string;
+
+  /** Dosya içeriği, base64 (data: prefix'siz). Toplam boyut serviste sınırlanır. */
+  @IsString()
+  @MinLength(1)
+  dataBase64!: string;
+}
+
 export class SendEmailDTO {
   @IsEmail()
   to!: string;
@@ -54,6 +71,19 @@ export class SendEmailDTO {
   @IsString()
   @MinLength(1)
   body!: string;
+
+  /** Kompozörden gelen zengin gövde (b/i/u/liste). Verilirse markalı
+   *  şablonun paragraf bölümüne (sanitize edilerek) bu yerleştirilir. */
+  @IsOptional()
+  @IsString()
+  bodyHtml?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(5)
+  @ValidateNested({ each: true })
+  @Type(() => EmailAttachmentDTO)
+  attachments?: EmailAttachmentDTO[];
 
   /** Reply within an existing thread. */
   @IsOptional()

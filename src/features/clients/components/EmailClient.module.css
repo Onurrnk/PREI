@@ -1,7 +1,9 @@
 .emailContainer {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  /* Sabit yükseklik: mesaj geçmişi kart içinde kayar, kompozör her zaman
+     görünür kalır — sayfanın en dibine itilmez. */
+  height: min(72vh, 780px);
 }
 
 .emailHeader {
@@ -169,8 +171,13 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
   background-color: var(--bg-inset);
+}
+
+.messageItem {
+  margin-bottom: var(--spacing-lg);
 }
 
 .messageEmpty {
@@ -192,6 +199,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
 }
 
 .messageHeader {
@@ -282,26 +290,138 @@
   border-radius: var(--radius-md);
   background-color: var(--bg-surface);
   overflow: hidden;
-}
-
-.replyInput {
-  width: 100%;
-  min-height: 100px;
-  background: transparent;
-  border: none;
-  padding: var(--spacing-md);
-  color: var(--text-primary);
-  font-family: inherit;
-  resize: vertical;
-}
-
-.replyInput:focus {
-  outline: none;
+  flex-shrink: 0;
 }
 
 .replyBox:focus-within {
   border-color: var(--border-focus);
   box-shadow: 0 0 0 2px var(--brand-primary-soft);
+}
+
+.composerToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-bottom: 1px solid var(--border-subtle);
+  background-color: var(--bg-app);
+}
+
+.formatButtons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.formatBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.formatBtn:hover {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.toolbarDivider {
+  width: 1px;
+  height: 16px;
+  background-color: var(--border-color);
+  margin: 0 var(--spacing-xs);
+}
+
+.templatePicker {
+  min-width: 190px;
+}
+
+.richEditor {
+  min-height: 110px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: var(--spacing-md);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  outline: none;
+}
+
+.richEditor:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.richEditor p {
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.richEditor ul,
+.richEditor ol {
+  margin: 0 0 var(--spacing-sm) 0;
+  padding-left: 1.4em;
+}
+
+.attachmentList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.attachmentChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background-color: var(--bg-surface-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  max-width: 240px;
+}
+
+.attachmentName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.attachmentSize {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.attachmentRemove {
+  display: inline-flex;
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.attachmentRemove:hover {
+  color: var(--color-danger);
+  background-color: var(--bg-surface-active);
 }
 
 .replyActions {
@@ -313,9 +433,30 @@
   background-color: var(--bg-app);
 }
 
+.fileInput {
+  display: none;
+}
+
 .attachBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: transparent;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.attachBtn:hover {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.attachCount {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--brand-primary);
+  font-weight: 600;
 }

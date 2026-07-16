@@ -413,10 +413,18 @@ export interface ThreadDetailDTO {
   messages: EmailMessageDTO[];
 }
 
+export interface EmailAttachmentInput {
+  filename: string;
+  mimeType: string;
+  dataBase64: string;
+}
+
 export interface SendEmailInput {
   to: string;
   subject: string;
   body: string;
+  bodyHtml?: string;
+  attachments?: EmailAttachmentInput[];
   threadId?: string;
   inReplyTo?: string;
   recipientName?: string;

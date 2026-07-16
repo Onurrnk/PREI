@@ -478,11 +478,37 @@ export const en = {
         delete: 'Delete',
         more: 'More',
         attach: 'Attach file',
+        attachTooLarge: 'Attachments too large — up to 15MB total per email.',
+        removeAttachment: 'Remove {{name}}',
         emailSent: 'Email sent',
         sendFailed: 'Could not send email.',
         sending: 'Sending…',
         loading: 'Loading conversations…',
         noThreads: 'No email conversations yet.',
+        bold: 'Bold',
+        italic: 'Italic',
+        underline: 'Underline',
+        bulletList: 'Bullet list',
+        numberList: 'Numbered list',
+        templateLabel: 'Insert template…',
+        templates: {
+          followUp: {
+            title: 'Follow-up',
+            body: 'I hope this message finds you well.\n\nI wanted to follow up on our recent conversation and see whether you have had a chance to review the options we discussed. If any questions have come up in the meantime, I would be glad to walk you through the details.\n\nWould a short call this week suit you?',
+          },
+          portfolio: {
+            title: 'Portfolio update',
+            body: 'I hope you are doing well.\n\nPlease find attached the latest portfolio selection prepared according to your investment profile and preferred regions. Each option includes the current payment plan and expected handover date.\n\nI would be happy to arrange viewings for any project that catches your attention.',
+          },
+          meetingInvite: {
+            title: 'Meeting invitation',
+            body: 'Thank you for your continued interest.\n\nI would like to invite you to a short meeting to review the current opportunities in detail and answer any outstanding questions. We can meet in person or online — whichever is more convenient for you.\n\nCould you share a few time slots that work for you this week?',
+          },
+          paymentPlan: {
+            title: 'Payment plan details',
+            body: 'Thank you for your interest in the project.\n\nAs requested, the payment plan works as follows: a down payment on booking, construction-linked instalments during the build period, and the remaining balance on handover. Exact percentages vary by unit and developer campaign.\n\nPlease find the detailed schedule attached; I am at your disposal for any clarification.',
+          },
+        },
       },
     },
     tasks: {

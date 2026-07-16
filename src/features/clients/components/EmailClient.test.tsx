@@ -26,18 +26,32 @@ describe('EmailClient', () => {
     expect(await screen.findByText(/EMAAR Beachfront/i)).toBeInTheDocument();
   });
 
-  it('yanıt gönderince yeni mesaj thread içinde anında görünür ve kutu temizlenir', async () => {
+  it('yanıt gönderince yeni mesaj thread içinde anında görünür ve editör temizlenir', async () => {
     renderEmailClient();
     await screen.findByText(/Dubai Marina Off-plan Projects/i);
 
-    const textarea = (await screen.findByPlaceholderText(/reply|yanıt/i)) as HTMLTextAreaElement;
-    fireEvent.change(textarea, { target: { value: 'Test yanıtı 123' } });
-    expect(textarea.value).toBe('Test yanıtı 123');
+    // Zengin kompozör contentEditable div'dir (textarea değil).
+    const editor = (await screen.findByRole('textbox', { name: /reply|yanıt/i })) as HTMLDivElement;
+    editor.innerHTML = '<p>Test yanıtı 123</p>';
+    fireEvent.input(editor);
 
     const sendBtn = screen.getByRole('button', { name: /send|gönder/i });
+    await waitFor(() => expect(sendBtn).not.toBeDisabled());
     fireEvent.click(sendBtn);
 
     await waitFor(() => expect(screen.getByText('Test yanıtı 123')).toBeInTheDocument());
-    await waitFor(() => expect(textarea.value).toBe(''));
+    await waitFor(() => expect(editor.innerHTML).toBe(''));
+  });
+
+  it('zengin biçimlendirme araç çubuğu ve şablon seçici render edilir', async () => {
+    renderEmailClient();
+    await screen.findByText(/Dubai Marina Off-plan Projects/i);
+
+    // Kompozör, thread detayı yüklendikten sonra render olur — bekle.
+    expect(await screen.findByRole('button', { name: /^bold$|^kalın$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^italic$|^italik$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /underline|altı çizili/i })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /template|şablon/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /attach|dosya ekle/i }).length).toBeGreaterThan(0);
   });
 });
