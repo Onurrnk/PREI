@@ -356,9 +356,12 @@
 
 .richEditor {
   flex: 1 1 auto;
-  min-height: 160px;
+  /* Okuma öncelikli: boştayken tek satır dursun, mail alanı geniş kalsın.
+     Yazmaya odaklanınca (veya içerik varken) genişler. */
+  min-height: 48px;
   max-height: 30vh;
   overflow-y: auto;
+  transition: min-height 0.18s ease-out;
   padding: var(--spacing-md);
   color: var(--text-primary);
   font-family: inherit;
@@ -372,6 +375,7 @@
   color: var(--text-muted);
   pointer-events: none;
 }
+
 
 .richEditor p {
   margin: 0 0 var(--spacing-sm) 0;

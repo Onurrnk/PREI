@@ -86,6 +86,7 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
   // günceller.
   const editorRef = useRef<HTMLDivElement>(null);
   const [editorEmpty, setEditorEmpty] = useState(true);
+  const [editorFocused, setEditorFocused] = useState(false);
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -334,12 +335,17 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
                 <div
                   ref={editorRef}
                   className={styles.richEditor}
+                  /* Okuma öncelikli kompozör: boş+odaksızken tek satır, yazarken
+                     rahat yükseklik. Inline style — CSS kaskadına bağımlı değil. */
+                  style={{ minHeight: (editorFocused || !editorEmpty) ? 180 : 48 }}
                   contentEditable
                   role="textbox"
                   aria-multiline="true"
                   aria-label={t('clients.email.replyPlaceholder')}
                   data-placeholder={t('clients.email.replyPlaceholder')}
                   onInput={syncEditorEmpty}
+                  onFocus={() => setEditorFocused(true)}
+                  onBlur={() => setEditorFocused(false)}
                   suppressContentEditableWarning
                 />
 
