@@ -1,7 +1,9 @@
 // =====================================================================
 // PREI | Hoş geldiniz e-postası metinleri — web sitesinden gelen yeni
 // yatırımcıya (iletişim formu / ROI Calculator) gönderilen İLK temas.
-// Marka + değer önerisi; her zaman isimle hitap edilir (greeting).
+// Ses: .claude/brand-voice-guidelines.md (2026-07-17 marka keşfi) —
+// "satıcı değil danışman", sakin kesinlik, risk dürüstlüğü, kısa
+// paragraflar, baskısız Calendly daveti. Her zaman isimle hitap.
 // Sonraki temaslar Eylül/danışman akışında kullanıcı onayıyla ilerler.
 // =====================================================================
 
@@ -16,7 +18,8 @@ export interface WelcomeEmailCopy {
   ctaUrl: string;
 }
 
-const CTA_URL = 'https://produality.com';
+// Playbook'un tekil randevu kanalı — kişi zamanı kendi seçer, plana biz uyarız.
+const CALENDLY_URL = 'https://calendly.com/produality-info/30min';
 
 export function buildWelcomeCopy(
   lang: WelcomeLang,
@@ -25,45 +28,45 @@ export function buildWelcomeCopy(
 ): WelcomeEmailCopy {
   if (lang === 'en') {
     const paragraphs = [
-      'Welcome to ProDuality Property & Investment — and thank you for reaching out. From this point on, you have a dedicated team following international property markets on your behalf.',
-      'ProDuality is an investment advisory house active across Dubai, Istanbul, the Turkish Riviera, Spain and the United Kingdom. We work for the investor, not the developer: every recommendation we make is grounded in current market data, realistic rental yields and verified project fundamentals.',
-      'What you can expect from us: curated opportunities matched to your goals rather than listings, transparent return projections before any commitment, and end-to-end execution — from payment plan negotiation to title deed, and on to rental management. Where residency or Golden Visa eligibility matters, we structure the investment accordingly and manage the process for you.',
+      'Welcome to ProDuality — and thank you for reaching out. From today, you have an advisor following your international investment decision on your behalf.',
+      "We are not an estate agency. We are an independent investment advisory: we don't sell property, we help you get the decision right. Our side of the table is always yours.",
+      "You will notice this in practice. Every recommendation we make rests on real market data, and we are honest about risk — if an investment is not right for you, you will hear it from us first.",
     ];
     if (source === 'roi_report') {
       paragraphs.push(
-        'Your requested ROI report has been sent to your inbox separately. When we speak, we would be glad to walk through its assumptions with you and tailor the scenario to your situation.',
+        'Your ROI report has been sent to your inbox separately. When we speak, we can walk through the numbers together.',
       );
     }
     paragraphs.push(
-      'One of our consultants will contact you shortly to understand your objectives and prepare a personal assessment. You can also simply reply to this email — it reaches us directly.',
+      'The first step is a short introductory call, so we can listen to your goals. Choose whichever time suits you below — we will keep to it. You can also simply reply to this email; it reaches us directly.',
     );
     return {
-      subject: 'Welcome to ProDuality — Your Investment Journey Begins',
+      subject: 'Welcome to ProDuality',
       greeting: `Dear ${recipientName},`,
       paragraphs,
-      ctaLabel: 'Explore Current Opportunities',
-      ctaUrl: CTA_URL,
+      ctaLabel: 'Choose a Time That Suits You',
+      ctaUrl: CALENDLY_URL,
     };
   }
 
   const paragraphs = [
-    "ProDuality Property & Investment'a hoş geldiniz — bize ulaştığınız için teşekkür ederiz. Bu andan itibaren uluslararası gayrimenkul piyasalarını sizin adınıza takip eden bir ekibiniz var.",
-    "ProDuality; Dubai, İstanbul, Türk Rivierası, İspanya ve İngiltere pazarlarında faaliyet gösteren bir yatırım danışmanlık evidir. Geliştirici için değil, yatırımcı için çalışırız: her önerimiz güncel pazar verisine, gerçekçi kira getirilerine ve doğrulanmış proje temellerine dayanır.",
-    'Bizden bekleyebilecekleriniz: ilan listeleri değil, hedeflerinize göre seçilmiş fırsatlar; herhangi bir taahhütten önce şeffaf getiri projeksiyonları; ödeme planı müzakeresinden tapuya ve kiralama yönetimine kadar uçtan uca süreç yürütme. Oturum izni veya Golden Visa hedefi olan yatırımlarda ise yapıyı buna göre kurar, süreci sizin adınıza yönetiriz.',
+    "ProDuality'ye hoş geldiniz — bize ulaştığınız için teşekkür ederiz. Bugünden itibaren, uluslararası yatırım kararınızı sizin adınıza takip eden bir danışmanınız var.",
+    'Biz bir emlak ajansı değiliz. Bağımsız bir yatırım danışmanlığıyız: mülk satmayız, doğru kararı vermeniz için çalışırız. Masada tarafımız her zaman bellidir — sizin tarafınız.',
+    'Bunu ilk günden hissedeceksiniz. Her önerimiz gerçek pazar verisine dayanır ve riski de dürüstçe söyleriz — bir yatırım size uygun değilse, bunu ilk bizden duyarsınız.',
   ];
   if (source === 'roi_report') {
     paragraphs.push(
-      'Talep ettiğiniz ROI raporu e-posta kutunuza ayrıca iletildi. Görüştüğümüzde rapordaki varsayımların üzerinden birlikte geçmekten ve senaryoyu durumunuza göre özelleştirmekten memnuniyet duyarız.',
+      'Talep ettiğiniz ROI raporu kutunuza ayrıca iletildi. Görüştüğümüzde rakamların üzerinden birlikte geçebiliriz.',
     );
   }
   paragraphs.push(
-    'Danışmanlarımızdan biri, hedeflerinizi dinlemek ve size özel bir değerlendirme hazırlamak için kısa süre içinde sizinle iletişime geçecek. Dilerseniz bu e-postayı doğrudan yanıtlayarak da bize ulaşabilirsiniz.',
+    'İlk adım, hedeflerinizi dinleyeceğimiz kısa bir tanışma görüşmesi. Aşağıdan size uygun zamanı seçmeniz yeterli — biz o plana sadık kalırız. Dilerseniz bu e-postayı doğrudan yanıtlayabilirsiniz; mesajınız bize ulaşır.',
   );
   return {
-    subject: "ProDuality'ye Hoş Geldiniz — Yatırım Yolculuğunuz Başlıyor",
-    greeting: `Sayın ${recipientName},`,
+    subject: "ProDuality'ye Hoş Geldiniz",
+    greeting: `Merhaba ${recipientName},`,
     paragraphs,
-    ctaLabel: 'Güncel Fırsatları İnceleyin',
-    ctaUrl: CTA_URL,
+    ctaLabel: 'Size Uygun Zamanı Seçin',
+    ctaUrl: CALENDLY_URL,
   };
 }
