@@ -232,6 +232,7 @@ export const tr = {
       last12Weeks: 'son 12 hafta',
       days30: '30 gün',
       noPipelineData: 'Aktif pipeline verisi yok.',
+      noLeadSources: 'Son 30 günde kayıtlı aday yok.',
       pipelineMomentum: 'Pipeline İvmesi',
       portfolioByMarket: 'Pazara Göre Portföy',
       leadSources: 'Aday Kaynakları',

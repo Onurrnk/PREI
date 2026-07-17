@@ -17,6 +17,16 @@ export interface ActivityDTO {
 // GET /api/dashboard/summary — gerçek aggregate (EUR bazlı). Trend/spark yok
 // (zaman-serisi geçmiş ister); frontend onları temsili tutar.
 export interface MarketSplitItemDTO { code: string; name: string; valueEur: number }
+export interface WeeklyTrendsDTO {
+  weeks: string[];          // 'W14' … (son 12 ISO haftası)
+  pipelineEur: number[];
+  activeLeads: number[];
+  meetings: number[];
+  closedWonEur: number[];
+}
+
+export interface LeadSourceItemDTO { name: string; value: number }
+
 export interface DashboardSummaryDTO {
   activeLeads: number;
   pipelineValueEur: number;
@@ -24,6 +34,8 @@ export interface DashboardSummaryDTO {
   proposalsActive: number;
   meetingsThisWeek: number;
   marketSplit: MarketSplitItemDTO[];
+  trends: WeeklyTrendsDTO;
+  leadSources: LeadSourceItemDTO[];
 }
 
 // GET /api/financials/summary?timeframe=Q1|Q2|YTD|1Y — gerçek aggregate (EUR).

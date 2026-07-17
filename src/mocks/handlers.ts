@@ -676,6 +676,17 @@ export const handlers = [
         { code: 'ES', name: 'Spain', valueEur: 780_000 },
         { code: 'GB', name: 'United Kingdom', valueEur: 540_000 },
       ],
+      trends: {
+        weeks: ['W14', 'W15', 'W16', 'W17', 'W18', 'W19', 'W20', 'W21', 'W22', 'W23', 'W24', 'W25'],
+        pipelineEur: [3_120_000, 3_310_000, 3_240_000, 3_580_000, 3_460_000, 3_890_000, 4_070_000, 3_980_000, 4_310_000, 4_490_000, 4_570_000, 4_720_000],
+        activeLeads: [19, 21, 20, 22, 24, 23, 25, 24, 26, 27, 26, 28],
+        meetings: [8, 7, 9, 6, 7, 8, 7, 9, 8, 7, 7, 6],
+        closedWonEur: [7_200_000, 7_800_000, 8_100_000, 8_900_000, 9_400_000, 9_800_000, 10_300_000, 10_900_000, 11_200_000, 11_800_000, 12_100_000, 12_400_000],
+      },
+      leadSources: [
+        { name: 'WhatsApp', value: 14 }, { name: 'Instagram', value: 9 },
+        { name: 'Referral', value: 6 }, { name: 'Website', value: 4 }, { name: 'Direct', value: 3 },
+      ],
     });
   }),
 

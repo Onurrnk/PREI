@@ -18,37 +18,22 @@ import { useTranslation } from 'react-i18next';
 import styles from './Dashboard.module.css';
 
 // ---------------------------------------------------------------------
-// KPI başlık değerleri, market dağılımı, Schedule ve Priority Tasks GERÇEK
-// veriye bağlı. Trend/sparkline/delta ve Lead Sources zaman-serisi/kaynak
-// geçmişi ister → onlar temsili kalır (veri biriktikçe gerçeğe döner).
+// TÜM kartlar gerçek veriye bağlı. Trend serileri backend'de mevcut
+// kayıtlardan türetilir (durum geçmişi tablosu olmadığı için created_at/
+// updated_at yaklaşımı — dashboard.service.ts başlığına bkz.).
 // ---------------------------------------------------------------------
-
-// Sparkline ve delta: temsili micro-trend (geçmiş veri yok).
-const SPARK: Record<string, number[]> = {
-  pipeline: [3.1, 3.3, 3.2, 3.6, 3.5, 3.9, 4.1, 4.0, 4.3, 4.5, 4.6, 4.72],
-  leads: [19, 21, 20, 22, 24, 23, 25, 24, 26, 27, 26, 28],
-  meetings: [8, 7, 9, 6, 7, 8, 7, 9, 8, 7, 7, 6],
-  closed: [7.2, 7.8, 8.1, 8.9, 9.4, 9.8, 10.3, 10.9, 11.2, 11.8, 12.1, 12.4],
-};
-
-// Temsili: haftalık pipeline momentumu (gerçek trend zaman-serisi ister).
-const pipelineTrend = [
-  { label: 'W14', value: 3_120_000 }, { label: 'W15', value: 3_310_000 },
-  { label: 'W16', value: 3_240_000 }, { label: 'W17', value: 3_580_000 },
-  { label: 'W18', value: 3_460_000 }, { label: 'W19', value: 3_890_000 },
-  { label: 'W20', value: 4_070_000 }, { label: 'W21', value: 3_980_000 },
-  { label: 'W22', value: 4_310_000 }, { label: 'W23', value: 4_490_000 },
-  { label: 'W24', value: 4_570_000 }, { label: 'W25', value: 4_720_000 },
-];
-
-// Temsili: lead kaynakları (seed lead'lerde source verisi yok).
-const leadSources = [
-  { name: 'WhatsApp', value: 14 }, { name: 'Instagram', value: 9 },
-  { name: 'Referral', value: 6 }, { name: 'Website', value: 4 }, { name: 'Direct', value: 3 },
-];
 
 const fmtTime = (iso: string | null): string =>
   iso ? new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+
+// Son iki hafta arasındaki yüzde değişim; önceki 0 ise delta göstermeyiz.
+const weeklyDelta = (series: number[] | undefined): number | null => {
+  if (!series || series.length < 2) return null;
+  const prev = series[series.length - 2];
+  const last = series[series.length - 1];
+  if (prev === 0) return null;
+  return ((last - prev) / prev) * 100;
+};
 
 const PRIORITY_RANK: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
 
@@ -60,12 +45,21 @@ export const Dashboard: React.FC = () => {
   const { data: meetingsData } = useFetch<MeetingDTO[]>(() => meetingsApi.list(), []);
   const { data: tasksData } = useFetch<TaskDTO[]>(() => tasksApi.list(), []);
 
+  const trends = summary?.trends;
   const kpis = useMemo(() => [
-    { id: 'pipeline', label: t('dashboard.kpi.pipelineValue'), value: summary ? fmtEUR(summary.pipelineValueEur) : '—', delta: 8.4, spark: SPARK.pipeline },
-    { id: 'leads', label: t('dashboard.kpi.activeLeads'), value: summary ? String(summary.activeLeads) : '—', delta: 12.0, spark: SPARK.leads },
-    { id: 'meetings', label: t('dashboard.kpi.meetingsWeek'), value: summary ? String(summary.meetingsThisWeek) : '—', delta: -14.3, spark: SPARK.meetings },
-    { id: 'closed', label: t('dashboard.kpi.closedWon'), value: summary ? fmtEUR(summary.closedWonEur) : '—', delta: 6.1, spark: SPARK.closed },
-  ], [summary, t]);
+    { id: 'pipeline', label: t('dashboard.kpi.pipelineValue'), value: summary ? fmtEUR(summary.pipelineValueEur) : '—', delta: weeklyDelta(trends?.pipelineEur), spark: trends?.pipelineEur ?? [] },
+    { id: 'leads', label: t('dashboard.kpi.activeLeads'), value: summary ? String(summary.activeLeads) : '—', delta: weeklyDelta(trends?.activeLeads), spark: trends?.activeLeads ?? [] },
+    { id: 'meetings', label: t('dashboard.kpi.meetingsWeek'), value: summary ? String(summary.meetingsThisWeek) : '—', delta: weeklyDelta(trends?.meetings), spark: trends?.meetings ?? [] },
+    { id: 'closed', label: t('dashboard.kpi.closedWon'), value: summary ? fmtEUR(summary.closedWonEur) : '—', delta: weeklyDelta(trends?.closedWonEur), spark: trends?.closedWonEur ?? [] },
+  ], [summary, trends, t]);
+
+  // Haftalık pipeline momentumu — backend trend serisinden.
+  const pipelineTrend = useMemo(
+    () => (trends ? trends.weeks.map((label, i) => ({ label, value: trends.pipelineEur[i] ?? 0 })) : []),
+    [trends],
+  );
+
+  const leadSources = summary?.leadSources ?? [];
 
   const marketSplit = useMemo(
     () => (summary?.marketSplit ?? []).map((m) => ({ name: m.name, value: m.valueEur })),
@@ -100,7 +94,7 @@ export const Dashboard: React.FC = () => {
         <span className={styles.headerDate}>{new Date().toLocaleDateString(dateLocale, { day: '2-digit', month: 'short', year: 'numeric' })}</span>
       </div>
 
-      {/* KPI şeridi — başlık değerleri gerçek; spark/delta temsili */}
+      {/* KPI şeridi — değer, delta ve sparkline gerçek trend serisinden */}
       <div className={styles.kpiGrid}>
         {kpis.map((kpi) => (
           <Card key={kpi.id} padding="md">
@@ -108,14 +102,18 @@ export const Dashboard: React.FC = () => {
               <span className={styles.kpiLabel}>{kpi.label}</span>
               <div className={styles.kpiValueRow}>
                 <span className={styles.kpiValue}>{kpi.value}</span>
-                <span className={`${styles.kpiDelta} ${kpi.delta >= 0 ? styles.deltaUp : styles.deltaDown}`}>
-                  {kpi.delta >= 0 ? <TrendUp size={14} /> : <TrendDown size={14} />}
-                  {Math.abs(kpi.delta).toFixed(1)}%
-                </span>
+                {kpi.delta !== null && (
+                  <span className={`${styles.kpiDelta} ${kpi.delta >= 0 ? styles.deltaUp : styles.deltaDown}`}>
+                    {kpi.delta >= 0 ? <TrendUp size={14} /> : <TrendDown size={14} />}
+                    {Math.abs(kpi.delta).toFixed(1)}%
+                  </span>
+                )}
               </div>
-              <div className={styles.kpiSpark}>
-                <Sparkline data={kpi.spark} />
-              </div>
+              {kpi.spark.length > 1 && (
+                <div className={styles.kpiSpark}>
+                  <Sparkline data={kpi.spark} />
+                </div>
+              )}
             </div>
           </Card>
         ))}
@@ -128,7 +126,11 @@ export const Dashboard: React.FC = () => {
             <h2 className={styles.cardTitle}>{t('dashboard.pipelineMomentum')}</h2>
             <span className={styles.cardMeta}>{t('dashboard.last12Weeks')}</span>
           </div>
-          <TrendArea data={pipelineTrend} formatValue={fmtEUR} name="Pipeline" height={280} />
+          {pipelineTrend.length > 0 ? (
+            <TrendArea data={pipelineTrend} formatValue={fmtEUR} name="Pipeline" height={280} />
+          ) : (
+            <div className={styles.emptyChart}>{t('dashboard.noPipelineData')}</div>
+          )}
         </Card>
 
         <Card padding="md">
@@ -158,7 +160,11 @@ export const Dashboard: React.FC = () => {
             </h2>
             <span className={styles.cardMeta}>{t('dashboard.days30')}</span>
           </div>
-          <HBarCompare data={leadSources} />
+          {leadSources.length > 0 ? (
+            <HBarCompare data={leadSources} />
+          ) : (
+            <div className={styles.emptyChart}>{t('dashboard.noLeadSources')}</div>
+          )}
         </Card>
 
         <Card padding="none">

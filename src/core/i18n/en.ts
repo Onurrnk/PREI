@@ -233,6 +233,7 @@ export const en = {
       last12Weeks: 'last 12 weeks',
       days30: '30 days',
       noPipelineData: 'No active pipeline data.',
+      noLeadSources: 'No leads recorded in the last 30 days.',
       pipelineMomentum: 'Pipeline Momentum',
       portfolioByMarket: 'Portfolio by Market',
       leadSources: 'Lead Sources',
