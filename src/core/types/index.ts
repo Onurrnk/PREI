@@ -86,6 +86,8 @@ export interface TeamMemberDTO {
   lastActiveAt: string | null;
   clientsRegistered: number;
 }
+export interface RoleOptionDTO { key: string; name: string }
+export interface UpdateTeamMemberInput { roleKey?: string; isActive?: boolean }
 export interface PipelineBucketDTO { key: string; count: number }
 export interface PipelineClientDTO {
   id: string; bucket: string; name: string; interest: string | null;

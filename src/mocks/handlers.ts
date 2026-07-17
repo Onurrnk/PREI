@@ -23,6 +23,8 @@ import type {
   MeetingDTO,
   MeResponse,
   TeamMemberDTO,
+  RoleOptionDTO,
+  UpdateTeamMemberInput,
   UserDetailDTO,
   ProjectDTO,
   DeveloperDTO,
@@ -86,6 +88,12 @@ const mockScoresByLead: Record<string, LeadScoreDTO[]> = {
       signals: { budget_clarity: 'high', urgency_signal: 'none' } },
   ],
 };
+
+const mockTeam: TeamMemberDTO[] = [
+  { id: 'u1', name: 'Onur N. Karataş', role: 'super_admin', isActive: true, lastActiveAt: new Date().toISOString(), clientsRegistered: 9 },
+  { id: 'u2', name: 'Selin Yıldız', role: 'consultant', isActive: true, lastActiveAt: null, clientsRegistered: 0 },
+  { id: 'u3', name: 'Marco Bianchi', role: 'consultant', isActive: true, lastActiveAt: null, clientsRegistered: 0 },
+];
 
 let mockProposals: ProposalDTO[] = [
   {
@@ -781,11 +789,27 @@ export const handlers = [
   }),
 
   http.get('/api/admin/team', () => {
-    return HttpResponse.json<TeamMemberDTO[]>([
-      { id: 'u1', name: 'Onur N. Karataş', role: 'super_admin', isActive: true, lastActiveAt: new Date().toISOString(), clientsRegistered: 9 },
-      { id: 'u2', name: 'Selin Yıldız', role: 'consultant', isActive: true, lastActiveAt: null, clientsRegistered: 0 },
-      { id: 'u3', name: 'Marco Bianchi', role: 'consultant', isActive: true, lastActiveAt: null, clientsRegistered: 0 },
+    return HttpResponse.json<TeamMemberDTO[]>(mockTeam);
+  }),
+
+  http.get('/api/admin/roles', () => {
+    return HttpResponse.json<RoleOptionDTO[]>([
+      { key: 'super_admin', name: 'Super Admin' },
+      { key: 'manager', name: 'Manager' },
+      { key: 'finance_manager', name: 'Finance Manager' },
+      { key: 'marketing_manager', name: 'Marketing Manager' },
+      { key: 'consultant', name: 'Consultant' },
+      { key: 'service_agent', name: 'Service Agent' },
     ]);
+  }),
+
+  http.patch('/api/admin/team/:id', async ({ params, request }) => {
+    const idx = mockTeam.findIndex((m) => m.id === params.id);
+    if (idx === -1) return new HttpResponse(null, { status: 404 });
+    const patch = (await request.json()) as UpdateTeamMemberInput;
+    if (patch.roleKey !== undefined) mockTeam[idx] = { ...mockTeam[idx], role: patch.roleKey };
+    if (patch.isActive !== undefined) mockTeam[idx] = { ...mockTeam[idx], isActive: patch.isActive };
+    return HttpResponse.json<TeamMemberDTO>(mockTeam[idx]);
   }),
 
   http.get('/api/admin/team/:id', ({ params }) => {

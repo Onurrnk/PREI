@@ -9,7 +9,7 @@ import { useToast } from '../../core/components/Toast/ToastProvider';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../../core/hooks/useFetch';
 import { meApi, googleAuthApi, adminApi } from '../../core/api/resources';
-import type { MeResponse, GoogleOAuthStatus, BrandingSettingsDTO, TeamMemberDTO } from '../../core/types';
+import type { MeResponse, GoogleOAuthStatus, BrandingSettingsDTO, TeamMemberDTO, RoleOptionDTO } from '../../core/types';
 import { useAuth } from '../../core/auth/AuthContext';
 import { useTheme } from '../../core/theme/ThemeContext';
 import { supabase } from '../../core/auth/supabaseClient';
@@ -29,7 +29,33 @@ export const Settings: React.FC = () => {
 
   const { data: me } = useFetch<MeResponse>(() => meApi.get(), []);
   const { data: branding, refetch: refetchBranding } = useFetch<BrandingSettingsDTO>(() => adminApi.branding(), []);
-  const { data: team, loading: teamLoading } = useFetch<TeamMemberDTO[]>(() => adminApi.team(), []);
+  const { data: team, loading: teamLoading, refetch: refetchTeam } = useFetch<TeamMemberDTO[]>(() => adminApi.team(), []);
+  const { data: roleOptions } = useFetch<RoleOptionDTO[]>(() => adminApi.roles(), []);
+  const [editingMember, setEditingMember] = useState<TeamMemberDTO | null>(null);
+  const [editRoleKey, setEditRoleKey] = useState('');
+  const [editIsActive, setEditIsActive] = useState(true);
+  const [savingMember, setSavingMember] = useState(false);
+
+  const openEditMember = (member: TeamMemberDTO) => {
+    setEditingMember(member);
+    setEditRoleKey(member.role);
+    setEditIsActive(member.isActive);
+  };
+
+  const handleSaveMember = async () => {
+    if (!editingMember) return;
+    setSavingMember(true);
+    try {
+      await adminApi.updateTeamMember(editingMember.id, { roleKey: editRoleKey, isActive: editIsActive });
+      toast.success(t('settings.team.memberUpdated'));
+      refetchTeam();
+      setEditingMember(null);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('settings.team.memberUpdateFailed'));
+    } finally {
+      setSavingMember(false);
+    }
+  };
 
   // Gmail entegrasyonu (Google OAuth) — Integrations sekmesi
   const [searchParams, setSearchParams] = useSearchParams();
@@ -461,7 +487,8 @@ export const Settings: React.FC = () => {
                   const isAdmin = member.role === 'super_admin';
                   const isManager = member.role === 'manager';
                   const badgeClass = isAdmin ? styles.badgeAdmin : isManager ? styles.badgeManager : styles.badgeAgent;
-                  const roleLabel = isAdmin ? t('settings.team.roleAdmin') : isManager ? t('settings.team.roleManager') : t('settings.team.roleAgent');
+                  const roleLabel = roleOptions?.find((r) => r.key === member.role)?.name
+                    ?? (isAdmin ? t('settings.team.roleAdmin') : isManager ? t('settings.team.roleManager') : t('settings.team.roleAgent'));
                   return (
                     <div className={styles.teamMember} key={member.id}>
                       <div className={styles.memberInfo}>
@@ -469,13 +496,14 @@ export const Settings: React.FC = () => {
                         <div>
                           <div className={styles.memberName}>
                             {member.id === user?.id ? t('settings.team.you', { name: member.name }) : member.name}
+                            {!member.isActive && <span className={styles.badge} style={{ marginLeft: '8px' }}>{t('settings.team.inactive')}</span>}
                           </div>
                           <div className={styles.memberRole}>{t('settings.team.clientsRegistered', { count: member.clientsRegistered })}</div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <span className={`${styles.badge} ${badgeClass}`}>{roleLabel}</span>
-                        <Button variant="outline" onClick={() => toast.info(t('settings.team.editMemberSoon'))}>{t('common.edit')}</Button>
+                        <Button variant="outline" onClick={() => openEditMember(member)}>{t('common.edit')}</Button>
                       </div>
                     </div>
                   );
@@ -675,6 +703,51 @@ export const Settings: React.FC = () => {
             {t('settings.savedBody2')}
           </p>
         </div>
+      </Modal>
+
+      <Modal
+        isOpen={editingMember !== null}
+        onClose={() => setEditingMember(null)}
+        title={editingMember ? t('settings.team.editMemberTitle', { name: editingMember.name }) : ''}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setEditingMember(null)}>{t('common.cancel')}</Button>
+            <Button variant="primary" onClick={handleSaveMember} disabled={savingMember}>
+              {savingMember ? t('common.saving') : t('common.saveChanges')}
+            </Button>
+          </>
+        }
+      >
+        {editingMember && (
+          <div className={styles.formGrid}>
+            <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
+              <label>{t('settings.team.roleLabel')}</label>
+              <SelectMenu
+                aria-label={t('settings.team.roleLabel')}
+                value={editRoleKey}
+                onChange={(v) => setEditRoleKey(v)}
+                options={(roleOptions ?? []).map((r) => ({ value: r.key, label: r.name }))}
+                disabled={editingMember.id === user?.id}
+              />
+            </div>
+            <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="checkbox"
+                  checked={editIsActive}
+                  disabled={editingMember.id === user?.id}
+                  onChange={(e) => setEditIsActive(e.target.checked)}
+                />
+                {t('settings.team.activeLabel')}
+              </label>
+            </div>
+            {editingMember.id === user?.id && (
+              <p style={{ gridColumn: 'span 2', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+                {t('settings.team.cannotEditSelf')}
+              </p>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );

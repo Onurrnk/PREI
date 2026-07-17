@@ -3,12 +3,13 @@
 // 'admin' izni yalnız super_admin'de (permissions.ts) — komisyon/pipeline
 // detayları başka bir danışmanın verisidir, RBAC bilinçli olarak dar.
 // =====================================================================
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { DatabaseService } from '../../database/database.service';
 import { MEDIA_BUCKET, StorageService } from '../documents/storage.service';
 import type { RequestContext } from '../../common/request-context';
 import type { UpdateBrandingDto } from './dto/update-branding.dto';
+import type { UpdateTeamMemberDto } from './dto/update-team-member.dto';
 
 export interface UploadedLogoLike {
   originalname: string;
@@ -43,6 +44,8 @@ const STATUS_BUCKET: Record<string, string> = {
   unqualified: 'frozen',
   lost: 'lost',
 };
+
+export interface RoleOption { key: string; name: string }
 
 export interface TeamMemberRow {
   id: string;
@@ -129,6 +132,69 @@ export class AdminService {
         lastActiveAt: r.last_active,
         clientsRegistered: Number(r.clients_registered),
       }));
+    });
+  }
+
+  async listRoles(ctx: RequestContext): Promise<RoleOption[]> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<RoleOption>(
+        `SELECT key, name FROM roles WHERE tenant_id = $1 ORDER BY name ASC`,
+        [ctx.tenantId],
+      );
+      return rows;
+    });
+  }
+
+  /** Rol atar (mevcut atamaların yerine geçer — UI tek-rol seçtirir) ve/veya aktiflik günceller. */
+  async updateTeamMember(ctx: RequestContext, userId: string, dto: UpdateTeamMemberDto): Promise<TeamMemberRow> {
+    if (userId === ctx.userId && (dto.isActive === false || (dto.roleKey && dto.roleKey !== 'super_admin'))) {
+      throw new ForbiddenException('Kendi hesabınızı devre dışı bırakamaz veya yetkinizi düşüremezsiniz.');
+    }
+    return this.db.withContext(ctx, async (c) => {
+      const { rows: userRows } = await c.query<{ id: string; full_name: string; is_active: boolean }>(
+        `SELECT id, full_name, is_active FROM users WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`,
+        [userId, ctx.tenantId],
+      );
+      if (userRows.length === 0) throw new NotFoundException('Kullanıcı bulunamadı');
+
+      if (dto.roleKey) {
+        const { rows: roleRows } = await c.query<{ id: string }>(
+          `SELECT id FROM roles WHERE tenant_id = $1 AND key = $2`,
+          [ctx.tenantId, dto.roleKey],
+        );
+        if (roleRows.length === 0) throw new BadRequestException(`Bilinmeyen rol: ${dto.roleKey}`);
+        await c.query(`DELETE FROM user_roles WHERE user_id = $1 AND tenant_id = $2`, [userId, ctx.tenantId]);
+        await c.query(
+          `INSERT INTO user_roles (tenant_id, user_id, role_id, created_by) VALUES ($1,$2,$3,$4)`,
+          [ctx.tenantId, userId, roleRows[0].id, ctx.userId],
+        );
+      }
+      if (dto.isActive !== undefined) {
+        await c.query(`UPDATE users SET is_active = $2 WHERE id = $1`, [userId, dto.isActive]);
+      }
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'team_member.updated','user',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, userId, JSON.stringify(dto), ctx.correlationId],
+      );
+
+      const { rows } = await c.query<{
+        id: string; full_name: string; is_active: boolean; role: string | null;
+        last_active: string | null; clients_registered: string;
+      }>(
+        `SELECT u.id, u.full_name, u.is_active,
+                (SELECT r.key FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+                   WHERE ur.user_id = u.id LIMIT 1) AS role,
+                (SELECT max(occurred_at) FROM audit_log WHERE actor_id = u.id) AS last_active,
+                (SELECT count(*) FROM contacts ct WHERE ct.created_by = u.id AND ct.deleted_at IS NULL) AS clients_registered
+           FROM users u WHERE u.id = $1`,
+        [userId],
+      );
+      const r = rows[0];
+      return {
+        id: r.id, name: r.full_name, role: r.role ?? 'consultant', isActive: r.is_active,
+        lastActiveAt: r.last_active, clientsRegistered: Number(r.clients_registered),
+      };
     });
   }
 
