@@ -68,6 +68,20 @@ export class AgentController {
     return this.agent.updateLeadProfile(ctx, dto);
   }
 
+  @Get('leads/welcome-follow-up')
+  welcomeFollowUpCandidates(
+    @Ctx() ctx: RequestContext,
+    @Query('days', new DefaultValuePipe(3), ParseIntPipe) days: number,
+  ) {
+    return this.agent.welcomeFollowUpCandidates(ctx, days);
+  }
+
+  @Post('contacts/:id/welcome-follow-up-sent')
+  @HttpCode(200)
+  markWelcomeFollowUpSent(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.agent.markWelcomeFollowUpSent(ctx, id);
+  }
+
   @Get('proposals/stale')
   proposalsNeedingFollowUp(
     @Ctx() ctx: RequestContext,

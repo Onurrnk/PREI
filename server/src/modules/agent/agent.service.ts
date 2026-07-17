@@ -66,6 +66,17 @@ export interface WebLeadResult {
   welcome_email: 'sent' | 'already_sent' | 'no_phone' | 'no_sender' | 'failed';
 }
 
+export interface WelcomeFollowUpCandidate {
+  contact_id: string;
+  lead_id: string;
+  name: string;
+  email: string;
+  lang: string;
+  source: string | null;
+  welcome_sent_at: string;
+  days_since: number;
+}
+
 @Injectable()
 export class AgentService {
   private readonly logger = new Logger(AgentService.name);
@@ -300,6 +311,68 @@ export class AgentService {
 
       await this.writeEvent(c, ctx, 'lead', leadId, 'lead.whatsapp_message', { contactId, sessionId, channel });
       return { contact_id: contactId, lead_id: leadId, session_id: sessionId, deduped: false };
+    });
+  }
+
+  /**
+   * Hoş geldiniz maili gönderilmiş ama ≥N gündür inbound yanıt alınmamış
+   * kişiler — Eylül'ün takip taslağı hazırlayıp Onur onayına sunacağı liste.
+   * Takibi zaten gönderilmiş (welcome_follow_up_sent_at) veya lead'i
+   * kapanmış (converted/lost) kişiler listelenmez.
+   */
+  async welcomeFollowUpCandidates(ctx: RequestContext, days = 3): Promise<WelcomeFollowUpCandidate[]> {
+    const safeDays = Math.max(1, Math.min(60, days));
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<WelcomeFollowUpCandidate>(
+        `SELECT ct.id AS contact_id, l.id AS lead_id,
+                trim(concat(ct.first_name, ' ', coalesce(ct.last_name, ''))) AS name,
+                ct.email, coalesce(ct.preferred_lang, 'tr') AS lang,
+                ls.name AS source,
+                (ct.metadata->>'welcome_email_sent_at') AS welcome_sent_at,
+                floor(extract(epoch from (now() - (ct.metadata->>'welcome_email_sent_at')::timestamptz)) / 86400)::int AS days_since
+           FROM contacts ct
+           JOIN LATERAL (
+             SELECT id, source_id FROM leads
+              WHERE tenant_id = ct.tenant_id AND contact_id = ct.id AND deleted_at IS NULL
+                AND status NOT IN ('converted','lost')
+              ORDER BY created_at DESC LIMIT 1
+           ) l ON true
+           LEFT JOIN lead_sources ls ON ls.id = l.source_id
+          WHERE ct.deleted_at IS NULL AND ct.merged_into_id IS NULL
+            AND ct.email IS NOT NULL
+            AND ct.metadata ? 'welcome_email_sent_at'
+            AND NOT (ct.metadata ? 'welcome_follow_up_sent_at')
+            AND (ct.metadata->>'welcome_email_sent_at')::timestamptz <= now() - make_interval(days => $1)
+            AND NOT EXISTS (
+              SELECT 1 FROM communications co
+               WHERE co.contact_id = ct.id AND co.direction = 'inbound'
+                 AND co.sent_at > (ct.metadata->>'welcome_email_sent_at')::timestamptz
+            )
+          ORDER BY (ct.metadata->>'welcome_email_sent_at')::timestamptz ASC
+          LIMIT 50`,
+        [safeDays],
+      );
+      return rows;
+    });
+  }
+
+  /** Onaylanan takip maili gönderildikten sonra n8n bu ucu çağırır — tekrar
+   *  listelenmesin diye işaretler (idempotent). */
+  async markWelcomeFollowUpSent(ctx: RequestContext, contactId: string): Promise<{ ok: true }> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `UPDATE contacts SET metadata = metadata || $2::jsonb, updated_by = $3
+          WHERE id = $1 AND deleted_at IS NULL
+          RETURNING id`,
+        [contactId, JSON.stringify({ welcome_follow_up_sent_at: new Date().toISOString() }), ctx.userId],
+      );
+      if (rows.length === 0) throw new NotFoundException('Kişi bulunamadı');
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'contact.welcome_follow_up_sent','contact',$3,'{}',$4)`,
+        [ctx.tenantId, ctx.userId, contactId, ctx.correlationId],
+      );
+      return { ok: true as const };
     });
   }
 
