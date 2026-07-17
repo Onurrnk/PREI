@@ -37,6 +37,8 @@ import type {
   ProposalDTO,
   RoleOptionDTO,
   UpdateTeamMemberInput,
+  CreateTeamMemberInput,
+  CreateTeamMemberResult,
   SendEmailInput,
   TaskDTO,
   TeamMemberDTO,
@@ -215,6 +217,8 @@ export const adminApi = {
   roles: () => api.get<RoleOptionDTO[]>('/api/admin/roles'),
   updateTeamMember: (id: string, input: UpdateTeamMemberInput) =>
     api.patch<TeamMemberDTO>(`/api/admin/team/${id}`, input),
+  createTeamMember: (input: CreateTeamMemberInput) =>
+    api.post<CreateTeamMemberResult>('/api/admin/team', input),
   uploadLogo: (file: File) => {
     const form = new FormData();
     form.append('file', file);

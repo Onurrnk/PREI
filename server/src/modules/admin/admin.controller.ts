@@ -14,6 +14,7 @@ import type { RequestContext } from '../../common/request-context';
 import { AdminService, type UploadedLogoLike } from './admin.service';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
 import { UpdateTeamMemberDto } from './dto/update-team-member.dto';
+import { CreateTeamMemberDto } from './dto/create-team-member.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -29,6 +30,11 @@ export class AdminController {
   @Get('team/:id')
   userDetail(@Ctx() ctx: RequestContext, @Param('id') id: string) {
     return this.admin.userDetail(ctx, id);
+  }
+
+  @Post('team')
+  createTeamMember(@Ctx() ctx: RequestContext, @Body() dto: CreateTeamMemberDto) {
+    return this.admin.createTeamMember(ctx, dto);
   }
 
   @Patch('team/:id')

@@ -57,6 +57,47 @@ export const Settings: React.FC = () => {
     }
   };
 
+  // Yeni üye ekleme (super_admin) — geçici şifreyle Supabase Auth hesabı oluşturur.
+  const [addingMember, setAddingMember] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newRoleKey, setNewRoleKey] = useState('consultant');
+  const [newPhone, setNewPhone] = useState('');
+  const [creatingMember, setCreatingMember] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState<{ email: string; password: string } | null>(null);
+
+  const openAddMember = () => {
+    setNewName('');
+    setNewEmail('');
+    setNewRoleKey(roleOptions?.[0]?.key ?? 'consultant');
+    setNewPhone('');
+    setCreatedCredentials(null);
+    setAddingMember(true);
+  };
+
+  const handleCreateMember = async () => {
+    if (!newName.trim() || !newEmail.trim()) {
+      toast.error(t('settings.team.addMissingFields'));
+      return;
+    }
+    setCreatingMember(true);
+    try {
+      const res = await adminApi.createTeamMember({
+        fullName: newName.trim(),
+        email: newEmail.trim(),
+        roleKey: newRoleKey,
+        phone: newPhone.trim() || undefined,
+      });
+      refetchTeam();
+      // Modal, geçici şifreyi tek seferlik gösterecek ekrana geçer.
+      setCreatedCredentials({ email: newEmail.trim(), password: res.tempPassword });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('settings.team.addFailed'));
+    } finally {
+      setCreatingMember(false);
+    }
+  };
+
   // Gmail entegrasyonu (Google OAuth) — Integrations sekmesi
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: gmailStatus, refetch: refetchGmailStatus } = useFetch<GoogleOAuthStatus>(() => googleAuthApi.status(), []);
@@ -476,7 +517,7 @@ export const Settings: React.FC = () => {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                 <h3 className={styles.sectionTitle}>{t('settings.team.heading')}</h3>
-                <Button variant="primary" onClick={() => toast.info(t('settings.team.addMemberSoon'))}><Plus size={16} /> {t('settings.team.addMember')}</Button>
+                <Button variant="primary" onClick={openAddMember}><Plus size={16} /> {t('settings.team.addMember')}</Button>
               </div>
               <p className={styles.sectionSubtitle}>{t('settings.team.subtitle')}</p>
 
@@ -746,6 +787,70 @@ export const Settings: React.FC = () => {
                 {t('settings.team.cannotEditSelf')}
               </p>
             )}
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={addingMember}
+        onClose={() => setAddingMember(false)}
+        title={createdCredentials ? t('settings.team.addedTitle') : t('settings.team.addTitle')}
+        footer={
+          createdCredentials ? (
+            <Button variant="primary" onClick={() => setAddingMember(false)}>{t('common.close')}</Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => setAddingMember(false)}>{t('common.cancel')}</Button>
+              <Button variant="primary" onClick={handleCreateMember} disabled={creatingMember}>
+                {creatingMember ? t('common.saving') : t('settings.team.createMember')}
+              </Button>
+            </>
+          )
+        }
+      >
+        {createdCredentials ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.5 }}>{t('settings.team.credentialsIntro')}</p>
+            <div style={{ background: 'var(--bg-app)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '2px' }}>{t('settings.team.emailLabel')}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.875rem', color: 'var(--text-primary)' }}>{createdCredentials.email}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '2px' }}>{t('settings.team.tempPasswordLabel')}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.875rem', color: 'var(--text-primary)', wordBreak: 'break-all' }}>{createdCredentials.password}</code>
+                  <Button variant="outline" onClick={() => { void navigator.clipboard?.writeText(createdCredentials.password); toast.success(t('settings.team.copied')); }}>
+                    {t('settings.team.copy')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--data-warning, var(--text-muted))', lineHeight: 1.5 }}>{t('settings.team.credentialsWarning')}</p>
+          </div>
+        ) : (
+          <div className={styles.formGrid}>
+            <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
+              <label>{t('settings.team.nameLabel')}</label>
+              <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder={t('settings.team.namePlaceholder')} />
+            </div>
+            <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
+              <label>{t('settings.team.emailLabel')}</label>
+              <input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="isim@produality.com" />
+            </div>
+            <div className={styles.formGroup}>
+              <label>{t('settings.team.roleLabel')}</label>
+              <SelectMenu
+                aria-label={t('settings.team.roleLabel')}
+                value={newRoleKey}
+                onChange={(v) => setNewRoleKey(v)}
+                options={(roleOptions ?? []).map((r) => ({ value: r.key, label: r.name }))}
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label>{t('settings.team.phoneLabel')}</label>
+              <input type="tel" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="+90 5xx xxx xx xx" />
+            </div>
           </div>
         )}
       </Modal>

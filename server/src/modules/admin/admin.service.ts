@@ -3,13 +3,16 @@
 // 'admin' izni yalnız super_admin'de (permissions.ts) — komisyon/pipeline
 // detayları başka bir danışmanın verisidir, RBAC bilinçli olarak dar.
 // =====================================================================
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { randomUUID, randomBytes } from 'node:crypto';
+import { ConfigService } from '@nestjs/config';
 import { DatabaseService } from '../../database/database.service';
 import { MEDIA_BUCKET, StorageService } from '../documents/storage.service';
+import type { AppConfig } from '../../config/configuration';
 import type { RequestContext } from '../../common/request-context';
 import type { UpdateBrandingDto } from './dto/update-branding.dto';
 import type { UpdateTeamMemberDto } from './dto/update-team-member.dto';
+import type { CreateTeamMemberDto } from './dto/create-team-member.dto';
 
 export interface UploadedLogoLike {
   originalname: string;
@@ -107,6 +110,7 @@ export class AdminService {
   constructor(
     private readonly db: DatabaseService,
     private readonly storage: StorageService,
+    private readonly config: ConfigService<AppConfig, true>,
   ) {}
 
   async listTeam(ctx: RequestContext): Promise<TeamMemberRow[]> {
@@ -133,6 +137,123 @@ export class AdminService {
         clientsRegistered: Number(r.clients_registered),
       }));
     });
+  }
+
+  /** Güçlü geçici şifre üretir (büyük/küçük/rakam/simge içerir, tahmini zor). */
+  private generateTempPassword(): string {
+    // 18 baytlık base64url gövde + garantili karakter sınıfları.
+    const body = randomBytes(18).toString('base64').replace(/[+/=]/g, '');
+    return `Pr!${body}9`;
+  }
+
+  /** Supabase Auth Admin API ile e-posta/şifreli kullanıcı oluşturur (e-posta onaylı). */
+  private async createSupabaseAuthUser(email: string, password: string, fullName: string): Promise<void> {
+    const sb = this.config.get('supabase', { infer: true });
+    const res = await fetch(`${sb.url.replace(/\/$/, '')}/auth/v1/admin/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: sb.serviceRoleKey,
+        Authorization: `Bearer ${sb.serviceRoleKey}`,
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        email_confirm: true, // hesap hemen giriş yapabilir; şifreyi sonra kendi değiştirir
+        user_metadata: { full_name: fullName },
+      }),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      // Supabase 422: e-posta zaten kayıtlı
+      if (res.status === 422 || text.includes('already been registered')) {
+        throw new ConflictException('Bu e-posta ile bir Supabase hesabı zaten var.');
+      }
+      throw new InternalServerErrorException(`Auth kullanıcısı oluşturulamadı (${res.status}): ${text.slice(0, 200)}`);
+    }
+  }
+
+  /** Supabase Auth kullanıcısını e-posta ile bulur ve siler (rollback için). */
+  private async deleteSupabaseAuthUserByEmail(email: string): Promise<void> {
+    const sb = this.config.get('supabase', { infer: true });
+    const headers = { apikey: sb.serviceRoleKey, Authorization: `Bearer ${sb.serviceRoleKey}` };
+    const listRes = await fetch(
+      `${sb.url.replace(/\/$/, '')}/auth/v1/admin/users?filter=${encodeURIComponent(email)}`,
+      { headers },
+    );
+    if (!listRes.ok) return;
+    const data = (await listRes.json()) as { users?: Array<{ id: string; email?: string }> };
+    const match = (data.users ?? []).find((u) => u.email?.toLowerCase() === email.toLowerCase());
+    if (!match) return;
+    await fetch(`${sb.url.replace(/\/$/, '')}/auth/v1/admin/users/${match.id}`, {
+      method: 'DELETE',
+      headers,
+    }).catch(() => undefined);
+  }
+
+  /**
+   * Yeni ekip üyesi oluşturur: Supabase Auth hesabı (geçici şifre) + PREI users
+   * satırı + rol ataması. Geçici şifreyi BİR KEZ döndürür (sadece bu yanıtta).
+   * Sıra: Auth önce (en olası hata kaynağı) → DB. DB başarısızsa Auth geri alınır.
+   */
+  async createTeamMember(
+    ctx: RequestContext,
+    dto: CreateTeamMemberDto,
+  ): Promise<{ member: TeamMemberRow; tempPassword: string }> {
+    const email = dto.email.trim().toLowerCase();
+    const fullName = dto.fullName.trim();
+
+    // Ön kontroller (Auth hesabı oluşturmadan önce) — RLS bağlamında.
+    const roleId = await this.db.withContext(ctx, async (c) => {
+      const { rows: existing } = await c.query<{ id: string }>(
+        `SELECT id FROM users WHERE tenant_id = $1 AND lower(email) = $2 AND deleted_at IS NULL`,
+        [ctx.tenantId, email],
+      );
+      if (existing.length > 0) throw new ConflictException('Bu e-posta ile aktif bir kullanıcı zaten var.');
+      const { rows: roleRows } = await c.query<{ id: string }>(
+        `SELECT id FROM roles WHERE tenant_id = $1 AND key = $2`,
+        [ctx.tenantId, dto.roleKey],
+      );
+      if (roleRows.length === 0) throw new BadRequestException(`Bilinmeyen rol: ${dto.roleKey}`);
+      return roleRows[0].id;
+    });
+
+    const tempPassword = this.generateTempPassword();
+    await this.createSupabaseAuthUser(email, tempPassword, fullName);
+
+    try {
+      const member = await this.db.withContext(ctx, async (c) => {
+        const { rows } = await c.query<{ id: string }>(
+          `INSERT INTO users (tenant_id, email, full_name, phone, is_active)
+           VALUES ($1,$2,$3,$4,true)
+           RETURNING id`,
+          [ctx.tenantId, email, fullName, dto.phone?.trim() || null],
+        );
+        const userId = rows[0].id;
+        await c.query(
+          `INSERT INTO user_roles (tenant_id, user_id, role_id, created_by) VALUES ($1,$2,$3,$4)`,
+          [ctx.tenantId, userId, roleId, ctx.userId],
+        );
+        await c.query(
+          `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+           VALUES ($1,$2,'team_member.created','user',$3,$4,$5)`,
+          [ctx.tenantId, ctx.userId, userId, JSON.stringify({ email, roleKey: dto.roleKey }), ctx.correlationId],
+        );
+        return {
+          id: userId,
+          name: fullName,
+          role: dto.roleKey,
+          isActive: true,
+          lastActiveAt: null,
+          clientsRegistered: 0,
+        } satisfies TeamMemberRow;
+      });
+      return { member, tempPassword };
+    } catch (err) {
+      // DB yazımı başarısız → yetim Auth hesabını geri al (best-effort).
+      await this.deleteSupabaseAuthUserByEmail(email);
+      throw err;
+    }
   }
 
   async listRoles(ctx: RequestContext): Promise<RoleOption[]> {

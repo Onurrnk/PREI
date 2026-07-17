@@ -25,6 +25,8 @@ import type {
   TeamMemberDTO,
   RoleOptionDTO,
   UpdateTeamMemberInput,
+  CreateTeamMemberInput,
+  CreateTeamMemberResult,
   UserDetailDTO,
   ProjectDTO,
   DeveloperDTO,
@@ -801,6 +803,27 @@ export const handlers = [
     if (patch.roleKey !== undefined) mockTeam[idx] = { ...mockTeam[idx], role: patch.roleKey };
     if (patch.isActive !== undefined) mockTeam[idx] = { ...mockTeam[idx], isActive: patch.isActive };
     return HttpResponse.json<TeamMemberDTO>(mockTeam[idx]);
+  }),
+
+  http.post('/api/admin/team', async ({ request }) => {
+    const input = (await request.json()) as CreateTeamMemberInput;
+    const email = input.email.trim().toLowerCase();
+    if (mockTeam.some((m) => m.name.toLowerCase() === input.fullName.trim().toLowerCase())) {
+      return HttpResponse.json({ message: 'Bu e-posta ile aktif bir kullanıcı zaten var.' }, { status: 409 });
+    }
+    const member: TeamMemberDTO = {
+      id: crypto.randomUUID(),
+      name: input.fullName.trim(),
+      role: input.roleKey,
+      isActive: true,
+      lastActiveAt: null,
+      clientsRegistered: 0,
+    };
+    mockTeam.push(member);
+    return HttpResponse.json<CreateTeamMemberResult>(
+      { member, tempPassword: `Pr!mock${email.slice(0, 4)}Demo9` },
+      { status: 201 },
+    );
   }),
 
   http.get('/api/admin/team/:id', ({ params }) => {

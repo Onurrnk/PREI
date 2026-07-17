@@ -88,6 +88,8 @@ export interface TeamMemberDTO {
 }
 export interface RoleOptionDTO { key: string; name: string }
 export interface UpdateTeamMemberInput { roleKey?: string; isActive?: boolean }
+export interface CreateTeamMemberInput { fullName: string; email: string; roleKey: string; phone?: string }
+export interface CreateTeamMemberResult { member: TeamMemberDTO; tempPassword: string }
 export interface PipelineBucketDTO { key: string; count: number }
 export interface PipelineClientDTO {
   id: string; bucket: string; name: string; interest: string | null;
