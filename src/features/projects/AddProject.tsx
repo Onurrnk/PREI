@@ -44,6 +44,7 @@ export const AddProject: React.FC = () => {
 
   const [amenities, setAmenities] = useState<string[]>(['Pool', 'Gym']);
   const [newAmenity, setNewAmenity] = useState('');
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -83,7 +84,7 @@ export const AddProject: React.FC = () => {
     }
     setIsSaving(true);
     try {
-      await projectsApi.create({
+      const created = await projectsApi.create({
         title: projectName.trim(),
         developerId: developer || undefined,
         status: STATUS_LABEL[projectStatus],
@@ -98,6 +99,14 @@ export const AddProject: React.FC = () => {
           .map((p) => ({ milestone: p.milestone.trim(), percentage: Number(p.percentage) || 0, date: p.date.trim() })),
         amenities,
       });
+      // Galeri görselleri: proje oluştuktan sonra media bucket'ına yüklenir.
+      if (galleryFiles.length > 0) {
+        try {
+          await projectsApi.uploadImages(created.id, galleryFiles);
+        } catch {
+          toast.error(t('projects.add.imagesUploadFailed'));
+        }
+      }
       setShowSuccessModal(true);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : t('projects.add.saveError');
@@ -339,6 +348,7 @@ export const AddProject: React.FC = () => {
                       accept="image/jpeg,image/png,image/webp"
                       prompt={t('projects.add.galleryPrompt')}
                       hint={t('projects.add.galleryHint')}
+                      onFilesChange={setGalleryFiles}
                     />
                   </div>
 

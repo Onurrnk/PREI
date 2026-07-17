@@ -3,9 +3,10 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RbacGuard } from '../../common/rbac.guard';
+import { StorageService } from '../documents/storage.service';
 
 @Module({
   controllers: [AdminController],
-  providers: [AdminService, JwtAuthGuard, RbacGuard],
+  providers: [AdminService, StorageService, JwtAuthGuard, RbacGuard],
 })
 export class AdminModule {}

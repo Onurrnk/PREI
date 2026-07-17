@@ -97,6 +97,29 @@ export class CatalogRepository {
     });
   }
 
+  /** Projenin metadata.images dizisine yeni public URL'ler ekler. */
+  async appendProjectImages(ctx: RequestContext, id: string, urls: string[]): Promise<ProjectRow | null> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `UPDATE properties
+            SET metadata = jsonb_set(metadata, '{images}',
+                  COALESCE(metadata->'images', '[]'::jsonb) || $2::jsonb),
+                updated_by = $3
+          WHERE id = $1 AND deleted_at IS NULL
+          RETURNING id`,
+        [id, JSON.stringify(urls), ctx.userId],
+      );
+      if (!rows[0]) return null;
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'project.images_added','property',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, id, JSON.stringify({ count: urls.length }), ctx.correlationId],
+      );
+      const { rows: full } = await c.query<ProjectRow>(`${PROJECT_SELECT} WHERE p.id = $1`, [id]);
+      return full[0];
+    });
+  }
+
   async listDevelopers(ctx: RequestContext, limit = 100, offset = 0): Promise<DeveloperRow[]> {
     return this.db.withContext(ctx, async (c) => {
       const { rows } = await c.query<DeveloperRow>(

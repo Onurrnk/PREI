@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
@@ -101,6 +101,8 @@ export const Settings: React.FC = () => {
   const [showSaveModal, setShowSaveModal] = useState(false);
 
   // Branding sekmesi — /api/admin/branding'den yüklenip düzenlenen alanlar
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [companyName, setCompanyName] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [primaryColor, setPrimaryColor] = useState('#9B5BB3');
@@ -133,6 +135,20 @@ export const Settings: React.FC = () => {
     setOffPlanCommission(String(branding.offPlanCommissionPct));
     setSecondaryCommission(String(branding.secondaryCommissionPct));
   }, [branding]);
+
+  const handleLogoUpload = async (file: File | null) => {
+    if (!file) return;
+    setLogoUploading(true);
+    try {
+      await adminApi.uploadLogo(file);
+      refetchBranding();
+      toast.success(t('settings.branding.logoUploaded'));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('settings.branding.logoUploadFailed'));
+    } finally {
+      setLogoUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -397,10 +413,23 @@ export const Settings: React.FC = () => {
               <div style={{ marginTop: '24px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)' }}>{t('settings.branding.logo')}</label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                  <div style={{ width: '80px', height: '80px', borderRadius: '8px', backgroundColor: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border-color)' }}>
-                    <Buildings size={32} color="var(--text-muted)" />
+                  <div style={{ width: '160px', height: '80px', borderRadius: '8px', backgroundColor: 'var(--bg-app)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border-color)', overflow: 'hidden' }}>
+                    {branding?.logoUrl ? (
+                      <img src={branding.logoUrl} alt={t('settings.branding.logo')} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                    ) : (
+                      <Buildings size={32} color="var(--text-muted)" />
+                    )}
                   </div>
-                  <Button variant="outline" onClick={() => toast.info(t('settings.branding.logoUploadSoon'))}>{t('settings.branding.uploadLogo')}</Button>
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    style={{ display: 'none' }}
+                    onChange={(e) => { void handleLogoUpload(e.target.files?.[0] ?? null); e.target.value = ''; }}
+                  />
+                  <Button variant="outline" onClick={() => logoInputRef.current?.click()} disabled={logoUploading}>
+                    {logoUploading ? t('common.saving') : t('settings.branding.uploadLogo')}
+                  </Button>
                   <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{t('settings.branding.logoHint')}</span>
                 </div>
               </div>

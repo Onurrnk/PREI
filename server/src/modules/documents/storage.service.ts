@@ -1,13 +1,15 @@
 // =====================================================================
-// PREI | StorageService — Supabase Storage REST sarmalayıcısı (vault bucket).
-// service_role YALNIZ burada, sunucu tarafında kullanılır; istemciye inen
-// tek şey kısa ömürlü imzalı URL'dir.
+// PREI | StorageService — Supabase Storage REST sarmalayıcısı.
+// İki bucket: 'vault' (özel; kısa ömürlü imzalı URL) ve 'media' (herkese
+// açık; proje görselleri + marka logosu gibi <img>'de doğrudan kullanılan
+// varlıklar). service_role YALNIZ burada, sunucu tarafında kullanılır.
 // =====================================================================
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AppConfig } from '../../config/configuration';
 
-const BUCKET = 'vault';
+export const VAULT_BUCKET = 'vault';
+export const MEDIA_BUCKET = 'media';
 
 @Injectable()
 export class StorageService {
@@ -28,9 +30,9 @@ export class StorageService {
     };
   }
 
-  /** Dosyayı vault bucket'ına yükler. */
-  async upload(path: string, body: Buffer, contentType: string): Promise<void> {
-    const res = await fetch(`${this.baseUrl}/object/${BUCKET}/${path}`, {
+  /** Dosyayı bucket'a yükler (varsayılan: vault). */
+  async upload(path: string, body: Buffer, contentType: string, bucket = VAULT_BUCKET): Promise<void> {
+    const res = await fetch(`${this.baseUrl}/object/${bucket}/${path}`, {
       method: 'POST',
       headers: this.headers({ 'Content-Type': contentType, 'x-upsert': 'false' }),
       body: new Uint8Array(body),
@@ -41,9 +43,9 @@ export class StorageService {
     }
   }
 
-  /** Kısa ömürlü indirme URL'i üretir (varsayılan 5 dk). */
-  async signedUrl(path: string, expiresInSeconds = 300): Promise<string> {
-    const res = await fetch(`${this.baseUrl}/object/sign/${BUCKET}/${path}`, {
+  /** Kısa ömürlü indirme URL'i üretir (varsayılan 5 dk; vault için). */
+  async signedUrl(path: string, expiresInSeconds = 300, bucket = VAULT_BUCKET): Promise<string> {
+    const res = await fetch(`${this.baseUrl}/object/sign/${bucket}/${path}`, {
       method: 'POST',
       headers: this.headers({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ expiresIn: expiresInSeconds }),
@@ -56,9 +58,14 @@ export class StorageService {
     return `${this.baseUrl}${json.signedURL}`;
   }
 
+  /** Public bucket'taki nesnenin kalıcı URL'i (media için). */
+  publicUrl(path: string, bucket = MEDIA_BUCKET): string {
+    return `${this.baseUrl}/object/public/${bucket}/${path}`;
+  }
+
   /** Nesneyi bucket'tan siler (DB soft-delete ile birlikte çağrılır). */
-  async remove(path: string): Promise<void> {
-    const res = await fetch(`${this.baseUrl}/object/${BUCKET}/${path}`, {
+  async remove(path: string, bucket = VAULT_BUCKET): Promise<void> {
+    const res = await fetch(`${this.baseUrl}/object/${bucket}/${path}`, {
       method: 'DELETE',
       headers: this.headers(),
     });

@@ -2,13 +2,16 @@
 // PREI | AdminController — /api/admin/team, /api/admin/team/:id
 // 'admin' izni (yalnız super_admin).
 // =====================================================================
-import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body, Controller, Get, Param, Patch, Post, UploadedFile, UseGuards, UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RbacGuard } from '../../common/rbac.guard';
 import { RequirePermission } from '../../common/require-permission.decorator';
 import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
-import { AdminService } from './admin.service';
+import { AdminService, type UploadedLogoLike } from './admin.service';
 import { UpdateBrandingDto } from './dto/update-branding.dto';
 
 @Controller('admin')
@@ -35,5 +38,11 @@ export class AdminController {
   @Patch('branding')
   updateBranding(@Ctx() ctx: RequestContext, @Body() dto: UpdateBrandingDto) {
     return this.admin.updateBranding(ctx, dto);
+  }
+
+  @Post('branding/logo')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 2 * 1024 * 1024 } }))
+  uploadLogo(@Ctx() ctx: RequestContext, @UploadedFile() file: UploadedLogoLike) {
+    return this.admin.uploadLogo(ctx, file);
   }
 }

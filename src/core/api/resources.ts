@@ -134,6 +134,11 @@ export const developersApi = {
 export const projectsApi = {
   list: () => api.get<ProjectDTO[]>('/api/projects'),
   create: (input: CreateProjectInput) => api.post<ProjectDTO>('/api/projects', input),
+  uploadImages: (id: string, files: File[]) => {
+    const form = new FormData();
+    files.forEach((f) => form.append('files', f));
+    return api.post<ProjectDTO>(`/api/projects/${id}/images`, form);
+  },
 };
 
 export const proposalsApi = {
@@ -203,4 +208,9 @@ export const adminApi = {
   userDetail: (id: string) => api.get<UserDetailDTO>(`/api/admin/team/${id}`),
   branding: () => api.get<BrandingSettingsDTO>('/api/admin/branding'),
   updateBranding: (input: UpdateBrandingInput) => api.patch<BrandingSettingsDTO>('/api/admin/branding', input),
+  uploadLogo: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post<BrandingSettingsDTO>('/api/admin/branding/logo', form);
+  },
 };

@@ -70,6 +70,7 @@ export interface BrandingSettingsDTO {
   companyName: string;
   websiteUrl: string;
   primaryColor: string;
+  logoUrl: string;
   offPlanCommissionPct: number;
   secondaryCommissionPct: number;
 }

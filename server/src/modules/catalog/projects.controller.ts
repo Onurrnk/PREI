@@ -3,14 +3,15 @@
 // =====================================================================
 import {
   Body, Controller, Get, Param, ParseUUIDPipe, Post, Query,
-  DefaultValuePipe, ParseIntPipe, UseGuards,
+  DefaultValuePipe, ParseIntPipe, UploadedFiles, UseGuards, UseInterceptors,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RbacGuard } from '../../common/rbac.guard';
 import { RequirePermission } from '../../common/require-permission.decorator';
 import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
-import { ProjectsService } from './projects.service';
+import { ProjectsService, type UploadedImageLike } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 
 @Controller('projects')
@@ -36,5 +37,15 @@ export class ProjectsController {
   @Post()
   create(@Ctx() ctx: RequestContext, @Body() dto: CreateProjectDto) {
     return this.projects.create(ctx, dto);
+  }
+
+  @Post(':id/images')
+  @UseInterceptors(FilesInterceptor('files', 8, { limits: { fileSize: 10 * 1024 * 1024 } }))
+  uploadImages(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @UploadedFiles() files: UploadedImageLike[],
+  ) {
+    return this.projects.uploadImages(ctx, id, files);
   }
 }

@@ -3,10 +3,22 @@
 // 'admin' izni yalnız super_admin'de (permissions.ts) — komisyon/pipeline
 // detayları başka bir danışmanın verisidir, RBAC bilinçli olarak dar.
 // =====================================================================
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { DatabaseService } from '../../database/database.service';
+import { MEDIA_BUCKET, StorageService } from '../documents/storage.service';
 import type { RequestContext } from '../../common/request-context';
 import type { UpdateBrandingDto } from './dto/update-branding.dto';
+
+export interface UploadedLogoLike {
+  originalname: string;
+  mimetype: string;
+  size: number;
+  buffer: Buffer;
+}
+
+const ALLOWED_LOGO_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']);
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
 const ACTION_LABEL: Record<string, string> = {
   'lead.created': 'Yeni aday oluşturdu',
@@ -70,6 +82,7 @@ export interface BrandingSettings {
   companyName: string;
   websiteUrl: string;
   primaryColor: string;
+  logoUrl: string;
   offPlanCommissionPct: number;
   secondaryCommissionPct: number;
 }
@@ -80,6 +93,7 @@ function toBranding(row: { name: string; metadata: Record<string, unknown> | nul
     companyName: row.name,
     websiteUrl: typeof m.website_url === 'string' ? m.website_url : '',
     primaryColor: typeof m.primary_color === 'string' ? m.primary_color : '#9B5BB3',
+    logoUrl: typeof m.logo_url === 'string' ? m.logo_url : '',
     offPlanCommissionPct: typeof m.off_plan_commission_pct === 'number' ? m.off_plan_commission_pct : 50,
     secondaryCommissionPct: typeof m.secondary_commission_pct === 'number' ? m.secondary_commission_pct : 60,
   };
@@ -87,7 +101,10 @@ function toBranding(row: { name: string; metadata: Record<string, unknown> | nul
 
 @Injectable()
 export class AdminService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly storage: StorageService,
+  ) {}
 
   async listTeam(ctx: RequestContext): Promise<TeamMemberRow[]> {
     return this.db.withContext(ctx, async (c) => {
@@ -243,6 +260,35 @@ export class AdminService {
         `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
          VALUES ($1,$2,'branding.updated','tenant',$1,$3,$4)`,
         [ctx.tenantId, ctx.userId, JSON.stringify(metadataPatch), ctx.correlationId],
+      );
+      return toBranding(rows[0]);
+    });
+  }
+
+  /** Şirket logosunu media bucket'ına yükler, public URL'i tenant'a yazar. */
+  async uploadLogo(ctx: RequestContext, file: UploadedLogoLike): Promise<BrandingSettings> {
+    if (!file) throw new BadRequestException('Logo dosyası gelmedi.');
+    if (!ALLOWED_LOGO_TYPES.has(file.mimetype)) {
+      throw new BadRequestException(`Desteklenmeyen logo türü: ${file.mimetype}`);
+    }
+    if (file.size > MAX_LOGO_BYTES) {
+      throw new BadRequestException('Logo çok büyük (maks 2MB).');
+    }
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-60);
+    const path = `branding/${ctx.tenantId}/${randomUUID()}-${safeName}`;
+    await this.storage.upload(path, file.buffer, file.mimetype, MEDIA_BUCKET);
+    const logoUrl = this.storage.publicUrl(path);
+
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ name: string; metadata: Record<string, unknown> | null }>(
+        `UPDATE tenants SET metadata = metadata || $2::jsonb
+          WHERE id = $1 RETURNING name, metadata`,
+        [ctx.tenantId, JSON.stringify({ logo_url: logoUrl })],
+      );
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'branding.logo_uploaded','tenant',$1,$3,$4)`,
+        [ctx.tenantId, ctx.userId, JSON.stringify({ logo_url: logoUrl }), ctx.correlationId],
       );
       return toBranding(rows[0]);
     });

@@ -6,9 +6,10 @@ import { DevelopersController } from './developers.controller';
 import { DevelopersService } from './developers.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RbacGuard } from '../../common/rbac.guard';
+import { StorageService } from '../documents/storage.service';
 
 @Module({
   controllers: [ProjectsController, DevelopersController],
-  providers: [CatalogRepository, ProjectsService, DevelopersService, JwtAuthGuard, RbacGuard],
+  providers: [CatalogRepository, ProjectsService, DevelopersService, StorageService, JwtAuthGuard, RbacGuard],
 })
 export class CatalogModule {}

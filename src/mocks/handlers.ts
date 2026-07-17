@@ -300,6 +300,7 @@ let mockBranding: BrandingSettingsDTO = {
   companyName: 'ProDuality Real Estate',
   websiteUrl: 'https://produality.com',
   primaryColor: '#9B5BB3',
+  logoUrl: '',
   offPlanCommissionPct: 50,
   secondaryCommissionPct: 60,
 };
@@ -747,6 +748,14 @@ export const handlers = [
     return HttpResponse.json<BrandingSettingsDTO>(mockBranding);
   }),
 
+  http.post('/api/admin/branding/logo', async ({ request }) => {
+    const form = await request.formData();
+    const file = form.get('file');
+    if (!(file instanceof File)) return new HttpResponse(null, { status: 400 });
+    mockBranding = { ...mockBranding, logoUrl: `/media/mock-${file.name}` };
+    return HttpResponse.json<BrandingSettingsDTO>(mockBranding);
+  }),
+
   http.get('/api/admin/team', () => {
     return HttpResponse.json<TeamMemberDTO[]>([
       { id: 'u1', name: 'Onur N. Karataş', role: 'super_admin', isActive: true, lastActiveAt: new Date().toISOString(), clientsRegistered: 9 },
@@ -876,6 +885,17 @@ export const handlers = [
 
   http.get('/api/projects', () => {
     return HttpResponse.json<ProjectDTO[]>(mockProjects);
+  }),
+
+  http.post('/api/projects/:id/images', async ({ params, request }) => {
+    const idx = mockProjects.findIndex((p) => p.id === params.id);
+    if (idx === -1) return new HttpResponse(null, { status: 404 });
+    const form = await request.formData();
+    const files = form.getAll('files').filter((f): f is File => f instanceof File);
+    if (files.length === 0) return new HttpResponse(null, { status: 400 });
+    const urls = files.map((f) => `/media/mock-projects/${f.name}`);
+    mockProjects[idx] = { ...mockProjects[idx], images: [...mockProjects[idx].images, ...urls] };
+    return HttpResponse.json<ProjectDTO>(mockProjects[idx]);
   }),
 
   http.post('/api/projects', async ({ request }) => {
