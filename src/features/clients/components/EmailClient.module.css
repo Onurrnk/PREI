@@ -1,10 +1,15 @@
+.emailWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
 .emailContainer {
   display: flex;
   flex-direction: column;
-  /* Viewport'u doldur: üstte kabuk başlığı + profil başlığı + sekmeler
-     (~250px) düşülür. Mesaj geçmişi kart içinde kayar, kompozör her
-     zaman görünür kalır — sayfanın en dibine itilmez. */
-  height: max(640px, calc(100vh - 250px));
+  /* Salt-okuma kartı: kompozör artık DIŞINDA (altında). Bu yükseklik
+     hiç değişmez — kompozör büyüyünce maili ezemez, sayfa aşağı uzar. */
+  height: max(500px, calc(100vh - 430px));
 }
 
 .emailHeader {
@@ -289,17 +294,12 @@
 }
 
 .replyBox {
-  margin: var(--spacing-md);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   background-color: var(--bg-surface);
   overflow: hidden;
-  /* Dar viewport'ta kompozör karta sığsın diye küçülebilir (editör
-     min-height'ına kadar); araç çubuğu/imza/aksiyonlar sabit kalır. */
   display: flex;
   flex-direction: column;
-  flex: 0 1 auto;
-  min-height: 0;
 }
 
 .replyBox:focus-within {

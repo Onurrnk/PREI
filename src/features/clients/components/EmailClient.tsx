@@ -215,6 +215,7 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
   };
 
   return (
+    <div className={styles.emailWrapper}>
     <Card className={styles.emailContainer}>
       <CardHeader className={styles.emailHeader}>
         <div className={styles.headerTop}>
@@ -297,7 +298,20 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
                   );
                 })}
               </div>
+            </div>
+          ) : (
+            <div className={styles.messageEmpty}>
+              <EnvelopeSimple size={28} weight="duotone" />
+              <p>{t('clients.email.selectThread')}</p>
+            </div>
+          )}
+        </div>
+      </CardBody>
+    </Card>
 
+      {/* Kompozör — okuma kartının DIŞINDA, altında ayrı blok. Büyüyünce
+          maili ezmez; sayfa aşağı doğru uzar. */}
+      {selectedThread && (
               <div className={styles.replyBox}>
                 <div className={styles.composerToolbar}>
                   <div className={styles.formatButtons}>
@@ -401,15 +415,7 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
                   </Button>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className={styles.messageEmpty}>
-              <EnvelopeSimple size={28} weight="duotone" />
-              <p>{t('clients.email.selectThread')}</p>
-            </div>
-          )}
-        </div>
-      </CardBody>
-    </Card>
+      )}
+    </div>
   );
 };
