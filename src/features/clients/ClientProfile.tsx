@@ -216,6 +216,14 @@ export const ClientProfile: React.FC = () => {
       setActiveTab('vault');
       return;
     }
+    if (actionName === 'Send Email') {
+      setActiveTab('email');
+      return;
+    }
+    if (actionName === 'Create Proposal') {
+      navigate('/proposals/new');
+      return;
+    }
     if (actionName === 'Log Call') {
       setActivityType('Call');
       setShowActivityModal(true);
@@ -235,9 +243,18 @@ export const ClientProfile: React.FC = () => {
   };
 
   const handleSaveActivity = () => {
-    toast.success(t('clients.profile.activitySaved', { type: activityTypeLabel(activityType) }));
-    setShowActivityModal(false);
-    setActivityNote('');
+    const text = activityNote.trim();
+    if (!text || !client) return;
+    // Aktivite = etiketli iç not (meeting_notes) — Notlar sekmesiyle aynı kalıcı uç.
+    const tag = activityType === 'Note' ? 'General' : activityType;
+    void clientsApi.addNote(client.id, { text, tag })
+      .then((created) => {
+        setAddedNotes(prev => [created, ...prev]);
+        toast.success(t('clients.profile.activitySaved', { type: activityTypeLabel(activityType) }));
+        setShowActivityModal(false);
+        setActivityNote('');
+      })
+      .catch(() => toast.error(t('clients.profile.noteSaveFailed')));
   };
 
   if (loading) {
@@ -588,7 +605,7 @@ export const ClientProfile: React.FC = () => {
         footer={
           <>
             <Button variant="outline" onClick={() => setShowActivityModal(false)}>{t('clients.cancel')}</Button>
-            <Button variant="primary" onClick={handleSaveActivity}>{t('clients.profile.saveActivity', { type: activityTypeLabel(activityType) })}</Button>
+            <Button variant="primary" onClick={handleSaveActivity} disabled={!activityNote.trim()}>{t('clients.profile.saveActivity', { type: activityTypeLabel(activityType) })}</Button>
           </>
         }
       >

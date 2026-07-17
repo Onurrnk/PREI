@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { CreateDeveloperInput, DeveloperDTO } from '../../core/types';
@@ -30,8 +30,13 @@ export const DeveloperProfile: React.FC = () => {
 
   const toast = useToast();
 
-  const handleActionClick = (actionName: string) => {
-    toast.info(actionName);
+  // E-posta kompozörüne kaydır + odakla (Request Inventory / Log Call için
+  // gerçek eylem: geliştiriciyle yazışma buradan yürür).
+  const emailPanelRef = useRef<HTMLDivElement>(null);
+  const focusComposer = () => {
+    emailPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const editor = emailPanelRef.current?.querySelector<HTMLElement>('[contenteditable="true"]');
+    editor?.focus();
   };
 
   const handleVisitWebsite = () => {
@@ -108,7 +113,7 @@ export const DeveloperProfile: React.FC = () => {
         </div>
         <div className={styles.headerActions}>
           <Button variant="outline" onClick={handleVisitWebsite}><Globe size={16} /> {t('developers.website')}</Button>
-          <Button variant="outline" onClick={() => handleActionClick('Schedule Meeting')}><CalendarBlank size={16} /> {t('developers.meeting')}</Button>
+          <Button variant="outline" onClick={() => navigate('/meetings')}><CalendarBlank size={16} /> {t('developers.meeting')}</Button>
           <Button variant="primary" onClick={openEdit}>{t('developers.editProfile')}</Button>
         </div>
       </div>
@@ -160,9 +165,9 @@ export const DeveloperProfile: React.FC = () => {
               <h3 className={styles.cardTitle}>{t('developers.quickActions')}</h3>
             </CardHeader>
             <CardBody>
-              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Request Inventory Update')}><EnvelopeSimple size={16} /> {t('developers.requestInventory')}</Button>
-              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Log Call with Developer')}><Phone size={16} /> {t('developers.logCall')}</Button>
-              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => handleActionClick('Review Commission Agreement')}><FileText size={16} /> {t('developers.reviewContracts')}</Button>
+              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={focusComposer}><EnvelopeSimple size={16} /> {t('developers.requestInventory')}</Button>
+              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => { window.location.href = `tel:${developer.keyContactPhone}`; }}><Phone size={16} /> {t('developers.logCall')}</Button>
+              <Button variant="outline" fullWidth className={styles.actionBtn} onClick={() => navigate('/contracts')}><FileText size={16} /> {t('developers.reviewContracts')}</Button>
             </CardBody>
           </Card>
         </div>
@@ -218,14 +223,14 @@ export const DeveloperProfile: React.FC = () => {
                 <div className={styles.emptyState}>
                   <Buildings size={48} className={styles.emptyIcon} />
                   <p>{t('developers.emptyProjects')}</p>
-                  <Button variant="outline" onClick={() => handleActionClick('Sync Projects from ERP')}>{t('developers.syncProjects')}</Button>
+                  <Button variant="outline" onClick={() => navigate('/projects/add')}>{t('developers.addProject')}</Button>
                 </div>
               )}
             </CardBody>
           </Card>
         </div>
 
-        <div className={styles.rightSidebar}>
+        <div className={styles.rightSidebar} ref={emailPanelRef}>
           {/* Reusing the EmailClient component from Clients module for Gmail Integration */}
           <EmailClient clientEmail={developer.keyContactEmail} clientName={developer.keyContactName} />
         </div>

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   MagnifyingGlass, Paperclip, PaperPlaneTilt, ArrowBendUpLeft, Trash, DotsThreeVertical,
@@ -63,8 +63,18 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
   const locale = i18nInstance.language?.startsWith('tr') ? 'tr-TR' : 'en-GB';
   const toast = useToast();
 
+  // Arama: Gmail'in kendi q sözdizimiyle, müşteri filtresinin üstüne eklenir.
+  // 400ms debounce — her tuşta istek atmamak için.
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 400);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  const gmailQuery = debouncedSearch ? `${clientEmail} ${debouncedSearch}` : clientEmail;
   const { data: threadList, loading: threadsLoading, error: threadsError } =
-    useFetch<ThreadSummaryDTO[]>(() => gmailApi.threads(clientEmail), [clientEmail]);
+    useFetch<ThreadSummaryDTO[]>(() => gmailApi.threads(gmailQuery), [gmailQuery]);
   const threads = threadList ?? [];
 
   // İmza önizlemesi: gönderilen maile sunucu tarafında otomatik eklenen
@@ -227,7 +237,13 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
         </div>
         <div className={styles.searchBar}>
           <MagnifyingGlass size={14} className={styles.searchIcon} />
-          <input type="text" placeholder={t('clients.email.searchPlaceholder', { email: clientEmail })} className={styles.searchInput} />
+          <input
+            type="text"
+            placeholder={t('clients.email.searchPlaceholder', { email: clientEmail })}
+            className={styles.searchInput}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
       </CardHeader>
 
