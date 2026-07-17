@@ -1,10 +1,12 @@
 // =====================================================================
 // PREI | ContractResponse — contracts tablosu sözleşmesi (dış yüzey).
 // property→proje adı + geliştirici join; status enum→görsel etiket ('Expiring'
-// türetilir). Komisyon/legalEntity/paymentTerms/documents metadata jsonb'dan.
+// türetilir). Komisyon/legalEntity/paymentTerms metadata jsonb'dan;
+// documents ise documents_vault'tan (related_type='contract') — gerçek
+// dosyalar, indirilebilir signed URL ile.
 // Frontend ContractDTO ile senkron (alan adları mock'la korundu).
 // =====================================================================
-import type { ContractRow } from '../contracts.repository';
+import type { ContractRow, ContractDocRow } from '../contracts.repository';
 
 export interface ContractDocRef { id: string; name: string; size: string }
 
@@ -47,7 +49,12 @@ function displayStatus(status: string, endDate: string | null): string {
   return cap(status);
 }
 
-export function toContractResponse(row: ContractRow): ContractResponse {
+function formatSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+export function toContractResponse(row: ContractRow, docs: ContractDocRow[] = []): ContractResponse {
   const m = (row.metadata ?? {}) as Record<string, unknown>;
   return {
     id: row.id,
@@ -62,6 +69,6 @@ export function toContractResponse(row: ContractRow): ContractResponse {
     paymentTerms: str(m.payment_terms),
     amount: num(row.amount),
     currency: row.currency,
-    documents: Array.isArray(m.documents) ? (m.documents as ContractDocRef[]) : [],
+    documents: docs.map((d) => ({ id: d.id, name: d.name, size: formatSize(Number(d.size_bytes)) })),
   };
 }

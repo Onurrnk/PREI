@@ -9,12 +9,14 @@ export class ContractsService {
 
   async list(ctx: RequestContext, limit?: number, offset?: number): Promise<ContractResponse[]> {
     const rows = await this.repo.list(ctx, limit, offset);
-    return rows.map(toContractResponse);
+    const docs = await this.repo.documentsByContractIds(ctx, rows.map((r) => r.id));
+    return rows.map((row) => toContractResponse(row, docs.filter((d) => d.related_id === row.id)));
   }
 
   async findOne(ctx: RequestContext, id: string): Promise<ContractResponse> {
     const row = await this.repo.findById(ctx, id);
     if (!row) throw new NotFoundException();
-    return toContractResponse(row);
+    const docs = await this.repo.documentsByContractIds(ctx, [id]);
+    return toContractResponse(row, docs);
   }
 }

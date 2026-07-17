@@ -106,9 +106,9 @@ let mockProposals: ProposalDTO[] = [
 const mockVaultDocuments: VaultDocumentDTO[] = [
   { id: 'doc1', name: 'Oliver_Hartwell_Passport.pdf', folder: 'Client KYC', type: 'pdf', sizeMB: 2.4, uploadedAt: '2026-06-15', uploadedBy: 'Elif Şahin' },
   { id: 'doc2', name: 'Beachfront_Brochure_V2.pdf', folder: 'Marketing', type: 'pdf', sizeMB: 15.6, uploadedAt: '2026-06-10', uploadedBy: 'Marketing Team' },
-  { id: 'doc3', name: 'SPA_Template_Emaar.word', folder: 'Contracts', type: 'word', sizeMB: 1.1, uploadedAt: '2026-06-01', uploadedBy: 'Legal Dept' },
+  { id: 'doc3', name: 'SPA_Template_Emaar.word', folder: 'Contracts', type: 'word', sizeMB: 1.1, uploadedAt: '2026-06-01', uploadedBy: 'Legal Dept', relatedId: 'C-1001' },
   { id: 'doc4', name: 'Downtown_Heights_Floorplans.pdf', folder: 'Marketing', type: 'pdf', sizeMB: 8.2, uploadedAt: '2026-05-20', uploadedBy: 'Elif Şahin' },
-  { id: 'doc5', name: 'MOU_Sarah_Ahmed_Signed.pdf', folder: 'Contracts', type: 'pdf', sizeMB: 4.5, uploadedAt: '2026-06-14', uploadedBy: 'Elif Şahin' },
+  { id: 'doc5', name: 'MOU_Sarah_Ahmed_Signed.pdf', folder: 'Contracts', type: 'pdf', sizeMB: 4.5, uploadedAt: '2026-06-14', uploadedBy: 'Elif Şahin', relatedId: 'C-1002' },
   { id: 'doc6', name: 'ROI_Calculator_2026.xlsx', folder: 'Root', type: 'excel', sizeMB: 0.5, uploadedAt: '2026-01-10', uploadedBy: 'Finance' },
 ];
 
@@ -531,6 +531,7 @@ export const handlers = [
     const form = await request.formData();
     const file = form.get('file') as File | null;
     const folder = (form.get('folder') as string | null) ?? 'Root';
+    const relatedId = (form.get('related_id') as string | null) ?? undefined;
     if (!file) return HttpResponse.json({ message: 'Dosya boş.' }, { status: 400 });
     const doc: VaultDocumentDTO = {
       id: crypto.randomUUID(),
@@ -543,6 +544,7 @@ export const handlers = [
       sizeMB: Math.round((file.size / (1024 * 1024)) * 100) / 100,
       uploadedAt: new Date().toISOString().slice(0, 10),
       uploadedBy: 'Onur Nazım Karataş',
+      relatedId,
     };
     mockVaultDocuments.unshift(doc);
     return HttpResponse.json<VaultDocumentDTO>(doc, { status: 201 });
@@ -674,12 +676,15 @@ export const handlers = [
   }),
 
   http.get('/api/contracts', () => {
-    const doc = (id: string, name: string, size: string) => ({ id, name, size });
+    const docsFor = (contractId: string): ContractDTO['documents'] =>
+      mockVaultDocuments
+        .filter((d) => d.relatedId === contractId)
+        .map((d) => ({ id: d.id, name: d.name, size: `${d.sizeMB} MB` }));
     return HttpResponse.json<ContractDTO[]>([
-      { id: 'C-1001', developer: 'Emaar Properties', project: 'Downtown Views II', status: 'Active', contractType: 'pm', startDate: '2025-01-01', expiryDate: '2026-12-31', commission: '5%', legalEntity: 'Emaar Development PJSC', paymentTerms: '30 Days Net', amount: null, currency: 'AED', documents: [doc('d1', 'Agency Agreement_Emaar_2025.pdf', '2.4 MB'), doc('d2', 'Marketing Guidelines.pdf', '1.1 MB')] },
-      { id: 'C-1002', developer: 'Nakheel', project: 'Palm Beach Towers', status: 'Active', contractType: 'pm', startDate: '2025-06-15', expiryDate: '2027-06-14', commission: '4%', legalEntity: 'Nakheel PJSC', paymentTerms: '45 Days Net', amount: null, currency: 'AED', documents: [doc('d4', 'Nakheel_Broker_Agreement.pdf', '3.1 MB')] },
-      { id: 'C-1003', developer: 'Damac Properties', project: 'Damac Hills', status: 'Expiring', contractType: 'pm', startDate: '2024-08-01', expiryDate: '2026-08-20', commission: '6%', legalEntity: 'Damac Real Estate Dev.', paymentTerms: '15 Days Net', amount: null, currency: 'AED', documents: [doc('d6', 'Damac_Agency_Contract.pdf', '1.9 MB')] },
-      { id: 'C-1004', developer: 'Meraas', project: 'City Walk', status: 'Expired', contractType: 'pm', startDate: '2024-01-01', expiryDate: '2026-01-01', commission: '5%', legalEntity: 'Meraas Holding', paymentTerms: '30 Days Net', amount: null, currency: 'AED', documents: [doc('d8', 'Old_Agreement_Meraas.pdf', '2.0 MB')] },
+      { id: 'C-1001', developer: 'Emaar Properties', project: 'Downtown Views II', status: 'Active', contractType: 'pm', startDate: '2025-01-01', expiryDate: '2026-12-31', commission: '5%', legalEntity: 'Emaar Development PJSC', paymentTerms: '30 Days Net', amount: null, currency: 'AED', documents: docsFor('C-1001') },
+      { id: 'C-1002', developer: 'Nakheel', project: 'Palm Beach Towers', status: 'Active', contractType: 'pm', startDate: '2025-06-15', expiryDate: '2027-06-14', commission: '4%', legalEntity: 'Nakheel PJSC', paymentTerms: '45 Days Net', amount: null, currency: 'AED', documents: docsFor('C-1002') },
+      { id: 'C-1003', developer: 'Damac Properties', project: 'Damac Hills', status: 'Expiring', contractType: 'pm', startDate: '2024-08-01', expiryDate: '2026-08-20', commission: '6%', legalEntity: 'Damac Real Estate Dev.', paymentTerms: '15 Days Net', amount: null, currency: 'AED', documents: docsFor('C-1003') },
+      { id: 'C-1004', developer: 'Meraas', project: 'City Walk', status: 'Expired', contractType: 'pm', startDate: '2024-01-01', expiryDate: '2026-01-01', commission: '5%', legalEntity: 'Meraas Holding', paymentTerms: '30 Days Net', amount: null, currency: 'AED', documents: docsFor('C-1004') },
     ]);
   }),
 

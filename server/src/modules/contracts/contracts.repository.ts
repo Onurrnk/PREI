@@ -20,6 +20,13 @@ export interface ContractRow {
   updated_at: string;
 }
 
+export interface ContractDocRow {
+  id: string;
+  name: string;
+  size_bytes: string; // pg bigint → string
+  related_id: string;
+}
+
 const CONTRACT_SELECT = `
   SELECT ct.id, ct.contract_type, ct.status,
          ct.start_date::text AS start_date, ct.end_date::text AS end_date,
@@ -54,6 +61,21 @@ export class ContractsRepository {
         [id],
       );
       return rows[0] ?? null;
+    });
+  }
+
+  /** Vault'a related_type='contract' ile bağlanmış gerçek dosyalar. */
+  async documentsByContractIds(ctx: RequestContext, ids: string[]): Promise<ContractDocRow[]> {
+    if (ids.length === 0) return [];
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<ContractDocRow>(
+        `SELECT id, name, size_bytes, related_id
+           FROM documents_vault
+          WHERE related_type = 'contract' AND related_id = ANY($1) AND deleted_at IS NULL
+          ORDER BY created_at DESC`,
+        [ids],
+      );
+      return rows;
     });
   }
 }

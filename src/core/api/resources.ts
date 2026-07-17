@@ -158,10 +158,12 @@ export const meetingsApi = {
 
 export const documentsApi = {
   list: () => api.get<VaultDocumentDTO[]>('/api/documents'),
-  upload: (file: File, folder: string) => {
+  upload: (file: File, folder: string, relatedType?: string, relatedId?: string) => {
     const form = new FormData();
     form.append('file', file);
     form.append('folder', folder);
+    if (relatedType) form.append('related_type', relatedType);
+    if (relatedId) form.append('related_id', relatedId);
     return api.post<VaultDocumentDTO>('/api/documents', form);
   },
   downloadUrl: (id: string) => api.get<{ url: string; name: string }>(`/api/documents/${id}/download`),

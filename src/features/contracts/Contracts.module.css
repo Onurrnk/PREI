@@ -130,6 +130,18 @@
   margin-bottom: var(--sp-3);
 }
 
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+
+.sectionHeader .sectionTitle {
+  margin-bottom: 0;
+}
+
 .documentsList {
   display: flex;
   flex-direction: column;

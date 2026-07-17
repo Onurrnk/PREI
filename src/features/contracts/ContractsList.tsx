@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardBody } from '../../core/components/Card/Card';
 import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from '../../core/components/Table/Table';
 import { Button } from '../../core/components/Button/Button';
 import { useToast } from '../../core/components/Toast/ToastProvider';
-import { FileText, DownloadSimple, Buildings, CalendarBlank, Percent, ShieldCheck, Scroll } from '@phosphor-icons/react';
+import { FileText, DownloadSimple, Buildings, CalendarBlank, Percent, ShieldCheck, Scroll, Paperclip } from '@phosphor-icons/react';
 import { Modal } from '../../core/components/Modal/Modal';
 import type { ContractDTO } from '../../core/types';
-import { contractsApi } from '../../core/api/resources';
+import { contractsApi, documentsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import styles from './Contracts.module.css';
@@ -22,9 +22,12 @@ const STATUS_KEY: Record<string, string> = {
 
 export const ContractsList: React.FC = () => {
   const { t } = useTranslation();
-  const { data, loading, error } = useFetch<ContractDTO[]>(() => contractsApi.list(), []);
+  const { data, loading, error, refetch } = useFetch<ContractDTO[]>(() => contractsApi.list(), []);
   const contracts = data ?? [];
-  const [selectedContract, setSelectedContract] = useState<ContractDTO | null>(null);
+  const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
+  const selectedContract = contracts.find((c) => c.id === selectedContractId) ?? null;
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
 
   const getStatusBadge = (status: string) => {
@@ -37,8 +40,31 @@ export const ContractsList: React.FC = () => {
     return <span className={`${styles.statusBadge} ${cls}`}>{label}</span>;
   };
 
-  const handleDownload = (docName: string) => {
-    toast.info(t('contracts.downloading', { name: docName }));
+  const handleDownload = async (docId: string) => {
+    try {
+      const { url } = await documentsApi.downloadUrl(docId);
+      window.open(url, '_blank', 'noopener');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('contracts.downloadFailed'));
+    }
+  };
+
+  const handleUploadClick = () => fileInputRef.current?.click();
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !selectedContractId) return;
+    setIsUploading(true);
+    try {
+      await documentsApi.upload(file, 'Contracts', 'contract', selectedContractId);
+      toast.success(t('contracts.uploadedToast', { name: file.name }));
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('contracts.uploadFailed'));
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -83,7 +109,7 @@ export const ContractsList: React.FC = () => {
                     <TableCell><span className={styles.numCell}>{contract.commission || '—'}</span></TableCell>
                     <TableCell><span className={styles.numCell}>{contract.expiryDate ?? '—'}</span></TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedContract(contract)}>
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedContractId(contract.id)}>
                         {t('contracts.viewDetails')}
                       </Button>
                     </TableCell>
@@ -98,7 +124,7 @@ export const ContractsList: React.FC = () => {
       {/* Contract Details Modal */}
       <Modal
         isOpen={selectedContract !== null}
-        onClose={() => setSelectedContract(null)}
+        onClose={() => setSelectedContractId(null)}
         title={selectedContract ? t('contracts.agreementTitle', { developer: selectedContract.developer }) : ''}
         size="lg"
       >
@@ -132,9 +158,15 @@ export const ContractsList: React.FC = () => {
             </div>
 
             <div>
-              <h3 className={styles.sectionTitle}>
-                <FileText size={18} /> {t('contracts.attachedDocuments')}
-              </h3>
+              <div className={styles.sectionHeader}>
+                <h3 className={styles.sectionTitle}>
+                  <FileText size={18} /> {t('contracts.attachedDocuments')}
+                </h3>
+                <Button variant="outline" size="sm" onClick={handleUploadClick} disabled={isUploading}>
+                  <Paperclip size={16} /> {isUploading ? t('common.saving') : t('contracts.attachDocument')}
+                </Button>
+                <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={handleFileSelected} />
+              </div>
               <div className={styles.documentsList}>
                 {selectedContract.documents.length === 0 && (
                   <span style={{ color: 'var(--text-muted)' }}>{t('contracts.noDocuments')}</span>
@@ -147,10 +179,10 @@ export const ContractsList: React.FC = () => {
                       </div>
                       <div>
                         <div className={styles.documentName}>{doc.name}</div>
-                        <div className={styles.documentSize}>{doc.size} · PDF</div>
+                        <div className={styles.documentSize}>{doc.size}</div>
                       </div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => handleDownload(doc.name)}>
+                    <Button variant="outline" size="sm" onClick={() => handleDownload(doc.id)}>
                       <DownloadSimple size={16} /> {t('contracts.download')}
                     </Button>
                   </div>
