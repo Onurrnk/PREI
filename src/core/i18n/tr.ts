@@ -501,19 +501,19 @@ export const tr = {
         templates: {
           followUp: {
             title: 'Takip mesajı',
-            body: 'Umarım iyisinizdir.\n\nSon görüşmemizin ardından, paylaştığımız seçenekleri inceleme fırsatınız olup olmadığını öğrenmek istedim. Bu süreçte aklınıza takılan sorular olduysa detayları birlikte gözden geçirmekten memnuniyet duyarım.\n\nBu hafta kısa bir görüşme sizin için uygun olur mu?',
+            body: 'Son görüşmemizin ardından, ele aldığımız seçenekleri değerlendirme fırsatı bulup bulmadığınızı öğrenmek istedim. Bu süreçte aklınıza takılan bir soru olduysa detayları birlikte gözden geçirmekten memnuniyet duyarım.\n\nBu hafta kısa bir görüşme sizin için uygun olur mu?',
           },
           portfolio: {
             title: 'Portföy güncellemesi',
-            body: 'Umarım iyisinizdir.\n\nYatırım profilinize ve tercih ettiğiniz bölgelere göre hazırladığımız güncel portföy seçkisini ekte bulabilirsiniz. Her seçenekte güncel ödeme planı ve öngörülen teslim tarihi yer alıyor.\n\nİlginizi çeken projeler için yerinde görüntüleme organize etmekten memnuniyet duyarım.',
+            body: 'Yatırım profilinize ve tercih ettiğiniz pazarlara göre hazırladığımız güncel portföy seçkisini ekte bulabilirsiniz. Her seçenek, güncel ödeme planı ve öngörülen teslim tarihiyle birlikte sunuluyor.\n\nİlginizi çeken herhangi bir proje için size uygun bir zamanda yerinde görüntüleme organize etmekten memnuniyet duyarım.',
           },
           meetingInvite: {
             title: 'Toplantı daveti',
-            body: 'İlginiz için teşekkür ederim.\n\nGüncel fırsatları detaylıca değerlendirmek ve sorularınızı yanıtlamak üzere kısa bir toplantı yapmayı öneririm. Yüz yüze veya çevrim içi — size hangisi uygunsa o şekilde ilerleyebiliriz.\n\nBu hafta uygun olduğunuz birkaç zaman dilimini paylaşabilir misiniz?',
+            body: 'Süregelen ilginiz için teşekkür ederim. Güncel fırsatları detaylıca değerlendirmek ve açık kalan sorularınızı yanıtlamak üzere kısa bir toplantı önermek isterim — yüz yüze veya çevrim içi, size hangisi uygunsa.\n\nBu hafta uygun olduğunuz birkaç zaman dilimini paylaşabilir misiniz?',
           },
           paymentPlan: {
             title: 'Ödeme planı detayları',
-            body: 'Projeye gösterdiğiniz ilgi için teşekkür ederim.\n\nTalebiniz üzerine ödeme planı şu şekilde işliyor: rezervasyonda peşinat, inşaat sürecine bağlı ara ödemeler ve teslimde kalan bakiye. Kesin oranlar üniteye ve geliştirici kampanyasına göre değişir.\n\nDetaylı ödeme takvimini ekte bulabilirsiniz; her türlü soru için hizmetinizdeyim.',
+            body: 'Projeye gösterdiğiniz ilgi için teşekkür ederim. Talebiniz üzerine ödeme yapısı şu şekilde işliyor: rezervasyonda başlangıç peşinatı, inşaat sürecine bağlı ara ödemeler ve teslimde kalan bakiye. Kesin oranlar üniteye ve geliştiricinin güncel kampanyasına göre değişir.\n\nDetaylı ödeme takvimini ekte bulabilirsiniz; her türlü açıklama için hizmetinizdeyim.',
           },
         },
       },
