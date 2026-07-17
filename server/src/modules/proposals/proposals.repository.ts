@@ -19,6 +19,9 @@ export interface ProposalRow {
   contact_first_name: string | null;
   contact_last_name: string | null;
   project_title: string | null;
+  project_city: string | null;
+  project_district: string | null;
+  project_country: string | null;
 }
 
 const PROPOSAL_SELECT = `
@@ -26,7 +29,10 @@ const PROPOSAL_SELECT = `
          p.last_viewed_at, p.created_at, p.metadata,
          ct.first_name AS contact_first_name,
          ct.last_name  AS contact_last_name,
-         prop.title    AS project_title
+         prop.title    AS project_title,
+         prop.city     AS project_city,
+         prop.district AS project_district,
+         prop.country  AS project_country
     FROM proposals p
     LEFT JOIN contacts ct    ON ct.id = p.contact_id
     LEFT JOIN properties prop ON prop.id = p.property_id`;

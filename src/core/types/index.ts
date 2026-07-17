@@ -317,10 +317,17 @@ export interface ProposalDTO {
   clientName: string;
   projectName: string;
   status: 'Draft' | 'Sent' | 'Viewed' | 'Accepted' | 'Rejected';
+  projectLocation?: string;
   totalValue: number;
+  currency: string;
   createdAt: string;
   lastViewed?: string;
   viewCount: number;
+  paymentPlan?: PaymentPlanDTO[];
+  includeBrochurePdf?: boolean;
+  includeFloorPlans?: boolean;
+  includeRoiSheet?: boolean;
+  coverImage?: string;
 }
 
 export interface CreateProposalInput {

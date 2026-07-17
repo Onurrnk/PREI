@@ -88,10 +88,19 @@ const mockScoresByLead: Record<string, LeadScoreDTO[]> = {
 };
 
 let mockProposals: ProposalDTO[] = [
-  { id: 'prop1', title: 'Beachfront Residences - 3BR Pitch', clientName: 'Oliver Hartwell', projectName: 'Beachfront Residences', status: 'Sent', totalValue: 2800000, createdAt: '2026-06-15', viewCount: 0 },
-  { id: 'prop2', title: 'Downtown Heights - Penthouse Offer', clientName: 'Sarah Ahmed', projectName: 'Downtown Heights', status: 'Viewed', totalValue: 4200000, createdAt: '2026-06-14', lastViewed: '2026-06-16T10:30:00Z', viewCount: 3 },
-  { id: 'prop3', title: 'DAMAC Hills - Villa 45', clientName: 'Mohammed Al Fayed', projectName: 'DAMAC Hills Villas', status: 'Accepted', totalValue: 3800000, createdAt: '2026-06-10', lastViewed: '2026-06-12T14:15:00Z', viewCount: 5 },
-  { id: 'prop4', title: 'Belmont Investment Portfolio', clientName: 'Carmen Ortega', projectName: 'Belmont Residences', status: 'Draft', totalValue: 1200000, createdAt: '2026-06-16', viewCount: 0 }
+  {
+    id: 'prop1', title: 'Beachfront Residences - 3BR Pitch', clientName: 'Oliver Hartwell', projectName: 'Beachfront Residences',
+    projectLocation: 'Dubai Marina, Dubai', status: 'Sent', totalValue: 2800000, currency: 'USD', createdAt: '2026-06-15', viewCount: 0,
+    paymentPlan: [
+      { milestone: 'Down Payment', percentage: 20, date: 'On Booking' },
+      { milestone: 'During Construction', percentage: 40, date: 'Across 2 Years' },
+      { milestone: 'On Handover', percentage: 40, date: 'Q4 2027' },
+    ],
+    includeBrochurePdf: true, includeFloorPlans: true,
+  },
+  { id: 'prop2', title: 'Downtown Heights - Penthouse Offer', clientName: 'Sarah Ahmed', projectName: 'Downtown Heights', status: 'Viewed', totalValue: 4200000, currency: 'USD', createdAt: '2026-06-14', lastViewed: '2026-06-16T10:30:00Z', viewCount: 3 },
+  { id: 'prop3', title: 'DAMAC Hills - Villa 45', clientName: 'Mohammed Al Fayed', projectName: 'DAMAC Hills Villas', status: 'Accepted', totalValue: 3800000, currency: 'USD', createdAt: '2026-06-10', lastViewed: '2026-06-12T14:15:00Z', viewCount: 5 },
+  { id: 'prop4', title: 'Belmont Investment Portfolio', clientName: 'Carmen Ortega', projectName: 'Belmont Residences', status: 'Draft', totalValue: 1200000, currency: 'EUR', createdAt: '2026-06-16', viewCount: 0 }
 ];
 
 const mockVaultDocuments: VaultDocumentDTO[] = [
@@ -560,17 +569,27 @@ export const handlers = [
 
   http.post('/api/proposals', async ({ request }) => {
     const input = (await request.json()) as CreateProposalInput;
+    const project = mockProjects.find((p) => p.id === input.propertyId);
     const clientName = mockClients.find((c) => c.id === input.contactId)?.name ?? '—';
-    const projectName = mockProjects.find((p) => p.id === input.propertyId)?.name ?? '—';
+    const meta = (input.metadata ?? {}) as Record<string, unknown>;
+    const paymentPlan = Array.isArray(meta.paymentPlan) ? (meta.paymentPlan as ProposalDTO['paymentPlan']) : undefined;
+    const selectedPhotos = Array.isArray(meta.selectedPhotos) ? (meta.selectedPhotos as string[]) : [];
     const newProposal: ProposalDTO = {
       id: `prop${Date.now()}`,
       title: input.title,
       clientName,
-      projectName,
+      projectName: project?.name ?? '—',
+      projectLocation: project?.location,
       status: 'Sent',
       totalValue: input.totalValue ?? 0,
+      currency: input.currency ?? 'EUR',
       createdAt: new Date().toISOString(),
       viewCount: 0,
+      paymentPlan: paymentPlan && paymentPlan.length > 0 ? paymentPlan : undefined,
+      includeBrochurePdf: meta.includeBrochurePdf as boolean | undefined,
+      includeFloorPlans: meta.includeFloorPlans as boolean | undefined,
+      includeRoiSheet: meta.includeRoiSheet as boolean | undefined,
+      coverImage: selectedPhotos[0],
     };
     mockProposals = [...mockProposals, newProposal];
     return HttpResponse.json<ProposalDTO>(newProposal, { status: 201 });

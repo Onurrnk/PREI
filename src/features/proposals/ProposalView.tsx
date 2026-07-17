@@ -29,10 +29,19 @@ export const ProposalView: React.FC<ProposalViewProps> = ({ proposalId, onClose 
   if (!proposal) return <div className={styles.error}>{t('proposals.view.notFound')}</div>;
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: proposal.currency || 'EUR', maximumFractionDigits: 0 }).format(value);
   };
 
   const dateLocale = i18n.language === 'tr' ? 'tr-TR' : 'en-GB';
+
+  // metadata'dan gelen gerçek alanlar; eski kayıtlarda yoksa bölüm hiç çizilmez.
+  const paymentPlan = proposal.paymentPlan ?? [];
+  const attachmentLabels = [
+    proposal.includeBrochurePdf ? t('proposals.create.brochurePdf') : null,
+    proposal.includeFloorPlans ? t('proposals.create.floorPlansPdf') : null,
+    proposal.includeRoiSheet ? t('proposals.create.roiSheet') : null,
+  ].filter((v): v is string => Boolean(v));
+  const coverImage = proposal.coverImage || '/images/exterior.png';
 
   return (
     <div className={`${styles.container} ${onClose ? styles.isDrawerMode : ''}`}>
@@ -68,11 +77,11 @@ export const ProposalView: React.FC<ProposalViewProps> = ({ proposalId, onClose 
             </div>
 
             <div className={styles.proposalCover}>
-              <img src="/images/exterior.png" alt="Cover" className={styles.coverImage} />
+              <img src={coverImage} alt="Cover" className={styles.coverImage} />
               <div className={styles.coverText}>
                 <h2>{t('proposals.view.coverTag')}</h2>
                 <h1>{proposal.projectName}</h1>
-                <p>{t('proposals.view.locationPlaceholder')}</p>
+                {proposal.projectLocation && <p>{proposal.projectLocation}</p>}
               </div>
             </div>
 
@@ -84,34 +93,35 @@ export const ProposalView: React.FC<ProposalViewProps> = ({ proposalId, onClose 
                     <span>{t('proposals.view.totalInvestment')}</span>
                     <strong>{formatCurrency(proposal.totalValue)}</strong>
                   </div>
-                  <div className={styles.finBox}>
-                    <span>{t('proposals.view.expectedRoi')}</span>
-                    <strong>7.5% p.a.</strong>
+                </div>
+              </div>
+
+              {paymentPlan.length > 0 && (
+                <div className={styles.bodySection}>
+                  <h3>{t('proposals.view.paymentPlan')}</h3>
+                  <table className={styles.previewTable}>
+                    <thead>
+                      <tr><th>{t('proposals.view.milestone')}</th><th>{t('proposals.view.percentage')}</th><th>{t('proposals.view.planDate')}</th></tr>
+                    </thead>
+                    <tbody>
+                      {paymentPlan.map((row, idx) => (
+                        <tr key={idx}><td>{row.milestone}</td><td>{row.percentage}%</td><td>{row.date}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {attachmentLabels.length > 0 && (
+                <div className={styles.attachmentsSectionPreview}>
+                  <h3>{t('proposals.view.includedAttachments')}</h3>
+                  <div className={styles.attachmentPills}>
+                    {attachmentLabels.map((label) => (
+                      <div key={label} className={styles.pill}><PenNib size={14}/> {label}</div>
+                    ))}
                   </div>
                 </div>
-              </div>
-
-              <div className={styles.bodySection}>
-                <h3>{t('proposals.view.paymentPlan')}</h3>
-                <table className={styles.previewTable}>
-                  <thead>
-                    <tr><th>{t('proposals.view.milestone')}</th><th>{t('proposals.view.percentage')}</th><th>{t('proposals.view.planDate')}</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr><td>{t('proposals.view.downPayment')}</td><td>20%</td><td>{t('proposals.view.onBooking')}</td></tr>
-                    <tr><td>{t('proposals.view.duringConstruction')}</td><td>40%</td><td>{t('proposals.view.acrossTwoYears')}</td></tr>
-                    <tr><td>{t('proposals.view.onHandover')}</td><td>40%</td><td>Q4 2027</td></tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div className={styles.attachmentsSectionPreview}>
-                <h3>{t('proposals.view.includedAttachments')}</h3>
-                <div className={styles.attachmentPills}>
-                  <div className={styles.pill}><PenNib size={14}/> Project_Brochure.pdf</div>
-                  <div className={styles.pill}><PenNib size={14}/> Floor_Plans.pdf</div>
-                </div>
-              </div>
+              )}
             </div>
           </CardBody>
         </Card>

@@ -22,8 +22,8 @@ export const ProposalsList: React.FC = () => {
 
   if (loading) return <div className={styles.loading}>{t('proposals.loading')}</div>;
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+  const formatCurrency = (value: number, currency: string) => {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'EUR', maximumFractionDigits: 0 }).format(value);
   };
 
   return (
@@ -83,7 +83,7 @@ export const ProposalsList: React.FC = () => {
                 </TableCell>
                 <TableCell>{prop.clientName}</TableCell>
                 <TableCell>{prop.projectName}</TableCell>
-                <TableCell style={{ fontWeight: 600 }}>{formatCurrency(prop.totalValue)}</TableCell>
+                <TableCell style={{ fontWeight: 600 }}>{formatCurrency(prop.totalValue, prop.currency)}</TableCell>
                 <TableCell>
                   <span className={`${styles.statusBadge} ${styles[prop.status.toLowerCase().replace(/ /g, '-')]}`}>
                     {prop.status}
