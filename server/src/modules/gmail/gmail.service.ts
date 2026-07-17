@@ -184,6 +184,9 @@ export class GmailService {
       bodyHtml: dto.bodyHtml ? sanitizeComposerHtml(dto.bodyHtml) : undefined,
       ctaLabel: dto.ctaLabel,
       ctaUrl: dto.ctaUrl,
+      paragraphsAfterCta: dto.bodyAfterCta
+        ? dto.bodyAfterCta.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
+        : undefined,
       preheader: bodyParagraphs[0]?.slice(0, 140),
     };
     const textPart = buildClientEmailText(templateParams);

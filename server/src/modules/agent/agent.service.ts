@@ -230,6 +230,7 @@ export class AgentService {
         to: contact.email,
         subject: copy.subject,
         body: copy.paragraphs.join('\n\n'),
+        bodyAfterCta: copy.paragraphsAfterCta.join('\n\n'),
         recipientName: fullName,
         greeting: copy.greeting,
         ctaLabel: copy.ctaLabel,

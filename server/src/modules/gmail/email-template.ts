@@ -21,6 +21,9 @@ export interface ClientEmailParams {
   consultantPhone?: string;
   /** Paragraf paragraf gövde metni — her biri ayrı <p> olur. */
   bodyParagraphs: string[];
+  /** CTA butonunun ALTINDA devam eden paragraflar (ör. kurucu mesajı +
+   *  "Saygılarımla,") — buton metnin ortasına doğal yerleşsin diye. */
+  paragraphsAfterCta?: string[];
   /** Kompozörden gelen zengin gövde (sanitize edilmiş HTML). Verilirse
    *  bodyParagraphs yerine bu kullanılır. */
   bodyHtml?: string;
@@ -71,6 +74,15 @@ export function buildClientEmailHtml(p: ClientEmailParams): string {
             </td>
           </tr>
         </table>
+      </td>
+    </tr>` : '';
+
+  const afterCta = p.paragraphsAfterCta?.length ? `
+    <tr>
+      <td>
+        ${p.paragraphsAfterCta
+          .map((para) => `<p style="margin:0 0 16px 0;font-size:15px;line-height:1.65;color:${COLORS.textPrimary};font-family:${FONT_SANS};">${escapeHtml(para)}</p>`)
+          .join('\n')}
       </td>
     </tr>` : '';
 
@@ -127,6 +139,7 @@ export function buildClientEmailHtml(p: ClientEmailParams): string {
                   </td>
                 </tr>
                 ${cta}
+                ${afterCta}
               </table>
             </td>
           </tr>
@@ -192,6 +205,9 @@ export function buildClientEmailText(p: ClientEmailParams): string {
   ];
   if (p.ctaLabel && p.ctaUrl) {
     lines.push(`${p.ctaLabel}: ${p.ctaUrl}`, '');
+  }
+  if (p.paragraphsAfterCta?.length) {
+    lines.push(...p.paragraphsAfterCta, '');
   }
   lines.push('--', p.consultantName);
   if (p.consultantTitle) lines.push(p.consultantTitle);

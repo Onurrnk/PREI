@@ -114,4 +114,10 @@ export class SendEmailDTO {
   @IsOptional()
   @IsString()
   ctaUrl?: string;
+
+  /** CTA butonundan SONRA devam eden gövde (çift satır sonuyla paragraflanır) —
+   *  ör. kurucu mesajı + kapanış ("Saygılarımla,"). */
+  @IsOptional()
+  @IsString()
+  bodyAfterCta?: string;
 }
