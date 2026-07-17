@@ -3,15 +3,18 @@
 // atomik yazım (OV-4). Tek transaction; B-8 idempotency: external_message_id
 // tekrarında sessizce no-op. Reklam atıfı varsa lead_attributions'a yazar (K-5).
 // =====================================================================
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { DatabaseService } from '../../database/database.service';
+import { GmailService } from '../gmail/gmail.service';
 import type { RequestContext } from '../../common/request-context';
 import type { WhatsAppEventDto } from './dto/whatsapp-event.dto';
 import type { LeadScoreEventDto } from './dto/lead-score-event.dto';
 import type { KnowledgeSearchDto } from './dto/knowledge-search.dto';
 import type { OutboundMessageDto } from './dto/outbound-message.dto';
 import type { LeadProfileDto } from './dto/lead-profile.dto';
+import type { WebLeadDto } from './dto/web-lead.dto';
+import { buildWelcomeCopy } from './welcome-email-copy';
 
 export interface IngestResult {
   contact_id: string;
@@ -57,9 +60,199 @@ export interface ActiveClientEmail {
   email: string;
 }
 
+export interface WebLeadResult {
+  contact_id: string;
+  lead_id: string;
+  welcome_email: 'sent' | 'already_sent' | 'no_phone' | 'no_sender' | 'failed';
+}
+
 @Injectable()
 export class AgentService {
-  constructor(private readonly db: DatabaseService) {}
+  private readonly logger = new Logger(AgentService.name);
+
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly gmail: GmailService,
+  ) {}
+
+  /**
+   * Web sitesi formu (iletişim / ROI Calculator) → contact+lead+communication.
+   * Telefon VE e-posta doluysa ve daha önce gönderilmemişse, markalı hoş
+   * geldiniz e-postası otomatik gönderilir (tenant'ın Gmail-bağlı hesabından).
+   * İdempotenlik: contacts.metadata.welcome_email_sent_at.
+   */
+  async webLead(ctx: RequestContext, dto: WebLeadDto): Promise<WebLeadResult> {
+    const email = dto.email.trim().toLowerCase();
+    const name = dto.name.trim();
+    const lang: 'tr' | 'en' = dto.lang === 'en' ? 'en' : 'tr';
+    const sourceName = dto.source === 'roi_report' ? 'ROI Calculator' : 'Website Contact Form';
+
+    const { contactId, leadId } = await this.db.withContext(ctx, async (c) => {
+      // Contact: önce e-posta, sonra (varsa) telefonla eşleştir; yoksa oluştur.
+      const first = name.split(/\s+/)[0];
+      const last = name.split(/\s+/).slice(1).join(' ') || null;
+      const normalizedPhone = dto.phone ? dto.phone.replace(/[^0-9]/g, '') : '';
+
+      let contactId: string | null = null;
+      const { rows: byEmail } = await c.query<{ id: string }>(
+        `SELECT id FROM contacts
+           WHERE tenant_id = $1 AND lower(email) = $2 AND deleted_at IS NULL AND merged_into_id IS NULL
+           LIMIT 1`,
+        [ctx.tenantId, email],
+      );
+      if (byEmail.length > 0) contactId = byEmail[0].id;
+      if (!contactId && normalizedPhone) {
+        const { rows: byPhone } = await c.query<{ id: string }>(
+          `SELECT id FROM contacts
+             WHERE tenant_id = $1 AND normalized_phone = $2 AND deleted_at IS NULL AND merged_into_id IS NULL
+             LIMIT 1`,
+          [ctx.tenantId, normalizedPhone],
+        );
+        if (byPhone.length > 0) contactId = byPhone[0].id;
+      }
+
+      if (contactId) {
+        // Yalnız BOŞ alanları doldur — danışmanın girdiği veri ezilmez.
+        await c.query(
+          `UPDATE contacts SET
+             email = COALESCE(email, $2),
+             phone = COALESCE(phone, $3),
+             preferred_lang = COALESCE(preferred_lang, $4),
+             updated_by = $5
+           WHERE id = $1`,
+          [contactId, email, dto.phone?.trim() || null, lang, ctx.userId],
+        );
+      } else {
+        const { rows: created } = await c.query<{ id: string }>(
+          `INSERT INTO contacts (tenant_id, first_name, last_name, email, phone, preferred_lang, created_by, updated_by)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$7) RETURNING id`,
+          [ctx.tenantId, first, last, email, dto.phone?.trim() || null, lang, ctx.userId],
+        );
+        contactId = created[0].id;
+      }
+
+      // Lead source: adıyla upsert (dashboard lead-kaynakları buradan beslenir).
+      const { rows: srcRows } = await c.query<{ id: string }>(
+        `SELECT id FROM lead_sources WHERE tenant_id = $1 AND name = $2 LIMIT 1`,
+        [ctx.tenantId, sourceName],
+      );
+      let sourceId = srcRows[0]?.id ?? null;
+      if (!sourceId) {
+        const { rows: srcCreated } = await c.query<{ id: string }>(
+          `INSERT INTO lead_sources (tenant_id, name, channel) VALUES ($1,$2,'web') RETURNING id`,
+          [ctx.tenantId, sourceName],
+        );
+        sourceId = srcCreated[0].id;
+      }
+
+      // Açık lead varsa kullan (kaynağı boşsa doldur), yoksa oluştur.
+      const { rows: openLead } = await c.query<{ id: string }>(
+        `SELECT id FROM leads
+           WHERE tenant_id = $1 AND contact_id = $2 AND deleted_at IS NULL
+             AND status NOT IN ('converted','lost')
+           ORDER BY created_at DESC LIMIT 1`,
+        [ctx.tenantId, contactId],
+      );
+      let leadId: string;
+      if (openLead.length > 0) {
+        leadId = openLead[0].id;
+        await c.query(
+          `UPDATE leads SET source_id = COALESCE(source_id, $2), updated_by = $3 WHERE id = $1`,
+          [leadId, sourceId, ctx.userId],
+        );
+      } else {
+        const { rows: createdLead } = await c.query<{ id: string }>(
+          `INSERT INTO leads (tenant_id, contact_id, source_id, status, interest_type, created_by, updated_by)
+           VALUES ($1,$2,$3,'new','invest',$4,$4) RETURNING id`,
+          [ctx.tenantId, contactId, sourceId, ctx.userId],
+        );
+        leadId = createdLead[0].id;
+        await this.writeEvent(c, ctx, 'lead', leadId, 'lead.created', { via: 'website', source: dto.source });
+      }
+
+      // Formu inbound iletişim olarak timeline'a düş.
+      const subject = dto.source === 'roi_report' ? 'ROI Calculator raporu talebi' : 'Web sitesi iletişim formu';
+      const body = [dto.message?.trim(), dto.country ? `Ülke: ${dto.country}` : null, dto.page ? `Sayfa: ${dto.page}` : null]
+        .filter(Boolean).join('\n') || subject;
+      await c.query(
+        `INSERT INTO communications (tenant_id, lead_id, contact_id, channel, direction, subject, body, sent_at, created_by)
+         VALUES ($1,$2,$3,'email','inbound',$4,$5,now(),$6)`,
+        [ctx.tenantId, leadId, contactId, subject, body, ctx.userId],
+      );
+      await this.writeEvent(c, ctx, 'lead', leadId, 'lead.web_form', { contactId, source: dto.source, page: dto.page ?? null });
+
+      return { contactId, leadId };
+    });
+
+    const welcome = await this.maybeSendWelcome(ctx, contactId, lang, dto.source === 'roi_report' ? 'roi_report' : 'contact');
+    return { contact_id: contactId, lead_id: leadId, welcome_email: welcome };
+  }
+
+  /** Hoş geldiniz e-postasını (koşullar sağlanıyorsa) gönderir — ingest'i asla bozmaz. */
+  private async maybeSendWelcome(
+    ctx: RequestContext,
+    contactId: string,
+    lang: 'tr' | 'en',
+    source: 'contact' | 'roi_report',
+  ): Promise<WebLeadResult['welcome_email']> {
+    try {
+      const contact = await this.db.withContext(ctx, async (c) => {
+        const { rows } = await c.query<{
+          first_name: string; last_name: string | null;
+          email: string | null; phone: string | null;
+          metadata: Record<string, unknown>;
+        }>(
+          `SELECT first_name, last_name, email, phone, metadata FROM contacts WHERE id = $1`,
+          [contactId],
+        );
+        return rows[0] ?? null;
+      });
+      if (!contact?.email) return 'failed';
+      if (!contact.phone) return 'no_phone';
+      if (contact.metadata?.welcome_email_sent_at) return 'already_sent';
+
+      // Gönderen: tenant'ta Gmail hesabı bağlamış ilk aktif kullanıcı
+      // (pratikte şirket hesabı info@produality.com).
+      const senders = await this.db.raw<{ id: string }>(
+        `SELECT id FROM users
+           WHERE tenant_id = $1 AND metadata ? 'googleOAuth' AND is_active = true AND deleted_at IS NULL
+           ORDER BY created_at ASC LIMIT 1`,
+        [ctx.tenantId],
+      );
+      if (senders.length === 0) {
+        this.logger.warn('Hoş geldiniz maili atlanıyor: Gmail bağlı kullanıcı yok.');
+        return 'no_sender';
+      }
+
+      const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(' ');
+      const copy = buildWelcomeCopy(lang, fullName, source);
+      await this.gmail.sendEmail(senders[0].id, {
+        to: contact.email,
+        subject: copy.subject,
+        body: copy.paragraphs.join('\n\n'),
+        recipientName: fullName,
+        greeting: copy.greeting,
+        ctaLabel: copy.ctaLabel,
+        ctaUrl: copy.ctaUrl,
+      });
+
+      await this.db.withContext(ctx, async (c) => {
+        await c.query(
+          `UPDATE contacts SET metadata = metadata || $2::jsonb, updated_by = $3 WHERE id = $1`,
+          [contactId, JSON.stringify({ welcome_email_sent_at: new Date().toISOString(), welcome_email_lang: lang }), ctx.userId],
+        );
+        await c.query(
+          `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+           VALUES ($1,$2,'contact.welcome_email_sent','contact',$3,$4,$5)`,
+          [ctx.tenantId, ctx.userId, contactId, JSON.stringify({ lang, source }), ctx.correlationId],
+        );
+      });
+      return 'sent';
+    } catch (err) {
+      this.logger.error(`Hoş geldiniz maili gönderilemedi (contact=${contactId}): ${(err as Error).message}`);
+      return 'failed';
+    }
+  }
 
   async ingest(ctx: RequestContext, dto: WhatsAppEventDto): Promise<IngestResult> {
     const channel = dto.channel ?? 'whatsapp';

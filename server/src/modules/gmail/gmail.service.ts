@@ -175,12 +175,15 @@ export class GmailService {
 
     const templateParams = {
       recipientName,
+      greeting: dto.greeting,
       consultantName: sender.name,
       consultantTitle: sender.jobTitle ?? undefined,
       consultantEmail: sender.email,
       consultantPhone: sender.phone ?? undefined,
       bodyParagraphs,
       bodyHtml: dto.bodyHtml ? sanitizeComposerHtml(dto.bodyHtml) : undefined,
+      ctaLabel: dto.ctaLabel,
+      ctaUrl: dto.ctaUrl,
       preheader: bodyParagraphs[0]?.slice(0, 140),
     };
     const textPart = buildClientEmailText(templateParams);

@@ -99,4 +99,19 @@ export class SendEmailDTO {
   @IsOptional()
   @IsString()
   recipientName?: string;
+
+  /** Selamlama satırının tamamı (ör. "Dear John,"). Verilmezse şablon
+   *  Türkçe varsayılanı kullanır: "Sayın {recipientName},". */
+  @IsOptional()
+  @IsString()
+  greeting?: string;
+
+  /** Markalı şablonda gövde altında buton — ikisi birlikte verilirse çizilir. */
+  @IsOptional()
+  @IsString()
+  ctaLabel?: string;
+
+  @IsOptional()
+  @IsString()
+  ctaUrl?: string;
 }

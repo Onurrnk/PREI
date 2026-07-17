@@ -15,6 +15,7 @@ import { LeadScoreEventDto } from './dto/lead-score-event.dto';
 import { KnowledgeSearchDto } from './dto/knowledge-search.dto';
 import { OutboundMessageDto } from './dto/outbound-message.dto';
 import { LeadProfileDto } from './dto/lead-profile.dto';
+import { WebLeadDto } from './dto/web-lead.dto';
 
 @Controller('agent')
 @UseGuards(AgentKeyGuard)
@@ -25,6 +26,12 @@ export class AgentController {
   @HttpCode(200)
   ingest(@Ctx() ctx: RequestContext, @Body() dto: WhatsAppEventDto) {
     return this.agent.ingest(ctx, dto);
+  }
+
+  @Post('web-lead')
+  @HttpCode(200)
+  webLead(@Ctx() ctx: RequestContext, @Body() dto: WebLeadDto) {
+    return this.agent.webLead(ctx, dto);
   }
 
   @Post('lead-score')

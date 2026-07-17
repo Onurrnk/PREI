@@ -10,5 +10,7 @@ import { RbacGuard } from '../../common/rbac.guard';
   imports: [AuthModule, ContactsModule],
   controllers: [GmailController],
   providers: [GmailService, JwtAuthGuard, RbacGuard],
+  // AgentModule hoş geldiniz e-postasını GmailService üzerinden gönderir.
+  exports: [GmailService],
 })
 export class GmailModule {}

@@ -12,6 +12,9 @@ import { PRODUALITY_LOGO_CONTENT_ID } from './logo-asset';
 
 export interface ClientEmailParams {
   recipientName: string;
+  /** Selamlama satırının tamamı (ör. "Dear John," / "Sayın Ahmet Bey,").
+   *  Verilmezse Türkçe varsayılan kullanılır: "Sayın {recipientName},". */
+  greeting?: string;
   consultantName: string;
   consultantTitle?: string;
   consultantEmail: string;
@@ -115,7 +118,7 @@ export function buildClientEmailHtml(p: ClientEmailParams): string {
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td style="padding-bottom:18px;">
-                    <span style="font-family:${FONT_SANS};font-size:16px;font-weight:600;color:${COLORS.textPrimary};">Sayın ${escapeHtml(p.recipientName)},</span>
+                    <span style="font-family:${FONT_SANS};font-size:16px;font-weight:600;color:${COLORS.textPrimary};">${escapeHtml(p.greeting ?? `Sayın ${p.recipientName},`)}</span>
                   </td>
                 </tr>
                 <tr>
@@ -182,7 +185,7 @@ export function buildClientEmailHtml(p: ClientEmailParams): string {
 /** Zengin metinsiz e-posta istemcileri için düz metin karşılığı. */
 export function buildClientEmailText(p: ClientEmailParams): string {
   const lines = [
-    `Sayın ${p.recipientName},`,
+    p.greeting ?? `Sayın ${p.recipientName},`,
     '',
     ...p.bodyParagraphs,
     '',
