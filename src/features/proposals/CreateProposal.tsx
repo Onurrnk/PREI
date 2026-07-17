@@ -347,13 +347,13 @@ export const CreateProposal: React.FC = () => {
                       </div>
                       <div className={styles.proposalMeta}>
                         <div>{t('proposals.view.preparedFor', { name: selectedClientObj?.name ?? '—' })}</div>
-                        <div>{t('proposals.view.date', { date: new Date().toLocaleDateString(dateLocale) })}</div>
+                        <div className={styles.metaDate}>{t('proposals.view.date', { date: new Date().toLocaleDateString(dateLocale) })}</div>
                       </div>
                     </div>
 
                     <div className={styles.proposalCover}>
                       <img src={coverImage} alt="Cover" className={styles.coverImage} />
-                      <div className={styles.coverText}>
+                      <div className={styles.coverText} data-print-cover>
                         <h2>{t('proposals.view.coverTag')}</h2>
                         <h1>{selectedProjectObj?.name ?? '—'}</h1>
                         <p>{selectedProjectObj?.location ?? ''}</p>

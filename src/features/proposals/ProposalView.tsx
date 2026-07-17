@@ -72,13 +72,13 @@ export const ProposalView: React.FC<ProposalViewProps> = ({ proposalId, onClose 
               </div>
               <div className={styles.proposalMeta}>
                 <div>{t('proposals.view.preparedFor', { name: proposal.clientName })}</div>
-                <div>{t('proposals.view.date', { date: proposal.createdAt })}</div>
+                <div className={styles.metaDate}>{t('proposals.view.date', { date: proposal.createdAt })}</div>
               </div>
             </div>
 
             <div className={styles.proposalCover}>
               <img src={coverImage} alt="Cover" className={styles.coverImage} />
-              <div className={styles.coverText}>
+              <div className={styles.coverText} data-print-cover>
                 <h2>{t('proposals.view.coverTag')}</h2>
                 <h1>{proposal.projectName}</h1>
                 {proposal.projectLocation && <p>{proposal.projectLocation}</p>}

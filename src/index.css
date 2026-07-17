@@ -85,6 +85,11 @@ p, h1, h2, h3, h4, h5, h6 {
    koyu tema yazdırmada beyaz zemine çevrilir.
    ===================================================================== */
 @media print {
+  /* Sayfa kenar boşluğu — belge hissi (ekran padding'i değil kağıt marjı) */
+  @page {
+    margin: 18mm 16mm;
+  }
+
   body.print-proposal * {
     visibility: hidden;
   }
@@ -98,19 +103,44 @@ p, h1, h2, h3, h4, h5, h6 {
     top: 0;
     width: 100%;
     margin: 0;
-    padding: 24px;
+    padding: 0;
     background: #fff !important;
     color: #1B1A18 !important;
     box-shadow: none !important;
     border: none !important;
+    /* Kapak scrim'i ve renkli öğeler yazıcıda korunsun */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   body.print-proposal [data-print-root] * {
-    background: transparent !important;
     color: #1B1A18 !important;
-    border-color: #d9d6d0 !important;
+    border-color: #E7E5E1 !important;
     box-shadow: none !important;
   }
+
+  /* Kapak görseli + üzerindeki metin okunur kalsın: koyu scrim + beyaz yazı.
+     data-print-cover, ProposalView/CreateProposal kapak metnine işaretlenir. */
+  body.print-proposal [data-print-root] [data-print-cover] {
+    background: rgba(11, 12, 14, 0.62) !important;
+  }
+  body.print-proposal [data-print-root] [data-print-cover],
+  body.print-proposal [data-print-root] [data-print-cover] * {
+    color: #FFFFFF !important;
+  }
+
   body.print-proposal [data-print-root] img {
     visibility: visible;
+  }
+
+  /* Sayfa kırılımı: bölümler ve tablo satırları ikiye bölünmesin;
+     tablo başlığı her sayfada tekrarlansın. */
+  body.print-proposal [data-print-root] table {
+    page-break-inside: auto;
+  }
+  body.print-proposal [data-print-root] thead {
+    display: table-header-group;
+  }
+  body.print-proposal [data-print-root] tr {
+    page-break-inside: avoid;
   }
 }

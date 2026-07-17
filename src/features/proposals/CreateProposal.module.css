@@ -284,9 +284,9 @@
   max-width: 800px;
   background-color: var(--bg-app); /* Needs to look like a document, but fits theme */
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-1);
 }
 
 .proposalHeader {
@@ -302,7 +302,7 @@
   align-items: center;
   gap: var(--spacing-sm);
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
 }
 
@@ -310,6 +310,13 @@
   text-align: right;
   font-size: 0.875rem;
   color: var(--text-secondary);
+}
+
+/* Tarih = sayı: mono + tabular (Design System §2.2 "sayılar kutsal") */
+.metaDate {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
 }
 
 .proposalCover {
@@ -329,8 +336,10 @@
   left: 0;
   width: 100%;
   padding: var(--spacing-xl);
-  background: linear-gradient(transparent, rgba(0,0,0,0.8));
-  color: white;
+  /* Sessiz lüks: gradyan yok (Design System §2). Metin okunurluğu için
+     düz yarı-saydam koyu şerit — dekoratif gradyan değil, işlevsel scrim. */
+  background: rgba(11, 12, 14, 0.62);
+  color: #FFFFFF;
 }
 
 .coverText h2 {
@@ -342,7 +351,7 @@
 
 .coverText h1 {
   font-size: 2.5rem;
-  font-weight: 700;
+  font-weight: 600;
   margin-bottom: 8px;
 }
 
@@ -355,7 +364,10 @@
 
 .bodySection h3 {
   font-size: 1.25rem;
-  color: var(--color-primary-purple);
+  font-weight: 600;
+  /* Accent dekorasyon değil (Design System §2.3): başlık nötr metin,
+     hiyerarşi ağırlık + hairline ayraçla kurulur. */
+  color: var(--text-primary);
   margin-bottom: var(--spacing-md);
   border-bottom: 1px solid var(--border-color);
   padding-bottom: var(--spacing-sm);
@@ -386,6 +398,9 @@
 .finBox strong {
   font-size: 1.25rem;
   color: var(--text-primary);
+  /* Para = sayı: mono + tabular (Design System §2.2) */
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .previewTable {
@@ -403,6 +418,17 @@
   font-weight: 600;
   color: var(--text-muted);
   font-size: 0.875rem;
+}
+
+/* Sayısal kolonlar (yüzde, tarih): mono + tabular, sağa hizalı (§5.2) */
+.previewTable th:nth-child(2), .previewTable th:nth-child(3),
+.previewTable td:nth-child(2), .previewTable td:nth-child(3) {
+  text-align: right;
+}
+
+.previewTable td:nth-child(2), .previewTable td:nth-child(3) {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .attachmentsSectionPreview h3 {
