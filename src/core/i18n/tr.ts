@@ -764,7 +764,6 @@ export const tr = {
         selectProjectFirst: 'Fotoğrafları seçmek için önce bir proje seçin.',
         noAttachments: 'Seçili ek yok.',
         downloadAsPdf: "PDF Olarak İndir",
-        pdfComingSoon: 'PDF dışa aktarma henüz mevcut değil.',
         emailHint: 'Kaydetmek teklifi "Gönderildi" olarak işaretler ve Teklif Merkezi\'nde görünür hale getirir. Müşteriye otomatik e-posta gönderimi henüz bağlı değil.',
         missingFields: 'Göndermeden önce lütfen bir müşteri, bir proje seçin ve başlık girin.',
         sendError: 'Teklif oluşturulamadı.',

@@ -78,3 +78,39 @@ p, h1, h2, h3, h4, h5, h6 {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* =====================================================================
+   Teklif PDF çıktısı — window.print() ile tarayıcının "PDF olarak kaydet"
+   akışı. body.print-proposal aktifken yalnız [data-print-root] görünür;
+   koyu tema yazdırmada beyaz zemine çevrilir.
+   ===================================================================== */
+@media print {
+  body.print-proposal * {
+    visibility: hidden;
+  }
+  body.print-proposal [data-print-root],
+  body.print-proposal [data-print-root] * {
+    visibility: visible;
+  }
+  body.print-proposal [data-print-root] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 24px;
+    background: #fff !important;
+    color: #1B1A18 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  body.print-proposal [data-print-root] * {
+    background: transparent !important;
+    color: #1B1A18 !important;
+    border-color: #d9d6d0 !important;
+    box-shadow: none !important;
+  }
+  body.print-proposal [data-print-root] img {
+    visibility: visible;
+  }
+}

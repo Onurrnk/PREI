@@ -10,6 +10,7 @@ import { clientsApi, projectsApi, proposalsApi } from '../../core/api/resources'
 import { ApiError } from '../../core/api/client';
 import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
+import { printProposal } from '../../core/utils/printProposal';
 import type { ClientDTO, ProjectDTO } from '../../core/types';
 import styles from './CreateProposal.module.css';
 
@@ -126,7 +127,7 @@ export const CreateProposal: React.FC = () => {
   };
 
   const handleDownloadPdf = () => {
-    toast.info(t('proposals.create.pdfComingSoon'));
+    printProposal();
   };
 
   const dateLocale = i18n.language === 'tr' ? 'tr-TR' : 'en-GB';
@@ -337,7 +338,7 @@ export const CreateProposal: React.FC = () => {
               {/* STEP 4: PREVIEW */}
               {currentStep === 4 && (
                 <div className={styles.previewContainer}>
-                  <div className={styles.digitalProposal}>
+                  <div className={styles.digitalProposal} data-print-root>
                     <div className={styles.proposalHeader}>
                       {/* ProDuality Branding explicitly requested by user */}
                       <div className={styles.brandLogo}>

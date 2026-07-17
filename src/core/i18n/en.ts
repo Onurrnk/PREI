@@ -765,7 +765,6 @@ export const en = {
         selectProjectFirst: 'Select a project first to choose its photos.',
         noAttachments: 'No attachments selected.',
         downloadAsPdf: 'Download as PDF',
-        pdfComingSoon: 'PDF export is not available yet.',
         emailHint: 'Saving marks the proposal as Sent and it appears in the Proposal Center. Automatic email delivery to the client is not wired up yet.',
         missingFields: 'Please select a client, a project, and enter a title before sending.',
         sendError: 'Could not create the proposal.',
