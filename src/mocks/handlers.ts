@@ -118,6 +118,8 @@ const mockVaultDocuments: VaultDocumentDTO[] = [
   { id: 'doc4', name: 'Downtown_Heights_Floorplans.pdf', folder: 'Marketing', type: 'pdf', sizeMB: 8.2, uploadedAt: '2026-05-20', uploadedBy: 'Elif Şahin' },
   { id: 'doc5', name: 'MOU_Sarah_Ahmed_Signed.pdf', folder: 'Contracts', type: 'pdf', sizeMB: 4.5, uploadedAt: '2026-06-14', uploadedBy: 'Elif Şahin', relatedId: 'C-1002' },
   { id: 'doc6', name: 'ROI_Calculator_2026.xlsx', folder: 'Root', type: 'excel', sizeMB: 0.5, uploadedAt: '2026-01-10', uploadedBy: 'Finance' },
+  { id: 'doc7', name: 'Beachfront_Brochure.pdf', folder: 'Marketing', type: 'pdf', sizeMB: 12, uploadedAt: '2026-06-01', uploadedBy: 'Marketing Team', relatedId: 'p1' },
+  { id: 'doc8', name: 'Villa_Layouts.pdf', folder: 'Marketing', type: 'pdf', sizeMB: 10, uploadedAt: '2026-05-15', uploadedBy: 'Marketing Team', relatedId: 'p3' },
 ];
 
 // Mock modda Gmail thread'leri — module-level, mockThreads'e gönderilen
@@ -362,11 +364,7 @@ let mockProjects: ProjectDTO[] = [
       { milestone: 'During Construction', percentage: 40, date: 'Across 2 Years' },
       { milestone: 'On Handover', percentage: 40, date: 'Q4 2027' }
     ],
-    documents: [
-      { id: 'd1', title: 'Project Brochure', type: 'PDF', size: '12 MB' },
-      { id: 'd2', title: 'Floor Plans (2BR & 3BR)', type: 'PDF', size: '8.5 MB' },
-      { id: 'd3', title: 'Current Availability List', type: 'Spreadsheet', size: '1.2 MB' }
-    ]
+    documents: []
   },
   {
     id: 'p2', developerId: '1', developerName: 'Emaar Properties', name: 'Downtown Heights', location: 'Downtown Dubai', status: 'Under Construction',
@@ -380,9 +378,7 @@ let mockProjects: ProjectDTO[] = [
       { milestone: 'During Construction', percentage: 50, date: 'Monthly' },
       { milestone: 'On Handover', percentage: 40, date: 'Q2 2026' }
     ],
-    documents: [
-      { id: 'd4', title: 'Executive Presentation', type: 'PDF', size: '15 MB' }
-    ]
+    documents: []
   },
   {
     id: 'p3', developerId: '2', developerName: 'DAMAC Properties', name: 'DAMAC Hills Villas', location: 'DAMAC Hills', status: 'Under Construction',
@@ -396,9 +392,7 @@ let mockProjects: ProjectDTO[] = [
       { milestone: 'During Construction', percentage: 40, date: 'Construction Linked' },
       { milestone: 'On Handover', percentage: 40, date: 'Q1 2026' }
     ],
-    documents: [
-      { id: 'd5', title: 'Villa Layouts', type: 'PDF', size: '10 MB' }
-    ]
+    documents: []
   },
   {
     id: 'p4', developerId: '4', developerName: 'Ellington Properties', name: 'Belmont Residences', location: 'JVT', status: 'Off-plan',
@@ -412,10 +406,7 @@ let mockProjects: ProjectDTO[] = [
       { milestone: 'During Construction', percentage: 30, date: 'Construction Linked' },
       { milestone: 'On Handover', percentage: 50, date: 'Q3 2026' }
     ],
-    documents: [
-      { id: 'd6', title: 'Investment Case Study', type: 'PDF', size: '5 MB' },
-      { id: 'd7', title: 'Factsheet', type: 'PDF', size: '2 MB' }
-    ]
+    documents: []
   }
 ];
 
@@ -932,7 +923,15 @@ export const handlers = [
   }),
 
   http.get('/api/projects', () => {
-    return HttpResponse.json<ProjectDTO[]>(mockProjects);
+    const docType = (t: VaultDocumentDTO['type']): 'PDF' | 'Image' | 'Spreadsheet' =>
+      t === 'excel' ? 'Spreadsheet' : t === 'image' ? 'Image' : 'PDF';
+    const withDocs = mockProjects.map((p) => ({
+      ...p,
+      documents: mockVaultDocuments
+        .filter((d) => d.relatedId === p.id)
+        .map((d) => ({ id: d.id, title: d.name, type: docType(d.type), size: `${d.sizeMB} MB` })),
+    }));
+    return HttpResponse.json<ProjectDTO[]>(withDocs);
   }),
 
   http.post('/api/projects/:id/images', async ({ params, request }) => {

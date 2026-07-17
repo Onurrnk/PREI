@@ -25,13 +25,15 @@ export class ProjectsService {
 
   async list(ctx: RequestContext, limit?: number, offset?: number): Promise<ProjectResponse[]> {
     const rows = await this.repo.listProjects(ctx, limit, offset);
-    return rows.map(toProjectResponse);
+    const docs = await this.repo.documentsByProjectIds(ctx, rows.map((r) => r.id));
+    return rows.map((row) => toProjectResponse(row, docs.filter((d) => d.related_id === row.id)));
   }
 
   async findOne(ctx: RequestContext, id: string): Promise<ProjectResponse> {
     const row = await this.repo.findProject(ctx, id);
     if (!row) throw new NotFoundException();
-    return toProjectResponse(row);
+    const docs = await this.repo.documentsByProjectIds(ctx, [id]);
+    return toProjectResponse(row, docs);
   }
 
   async create(ctx: RequestContext, dto: CreateProjectDto): Promise<ProjectResponse> {

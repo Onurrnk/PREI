@@ -32,7 +32,7 @@ function num(v: unknown): number {
 
 export function toDeveloperResponse(row: DeveloperRow, projectRows: ProjectRow[]): DeveloperResponse {
   const m = (row.metadata ?? {}) as Record<string, unknown>;
-  const projects = projectRows.map(toProjectResponse);
+  const projects = projectRows.map((row) => toProjectResponse(row));
   const completedFromData = projects.filter((p) => p.status === 'Completed').length;
   return {
     id: row.id,

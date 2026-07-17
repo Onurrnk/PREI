@@ -7,7 +7,7 @@ import { ArrowLeft, Plus, X, CheckCircle } from '@phosphor-icons/react';
 import { Modal } from '../../core/components/Modal/Modal';
 import { UploadZone } from '../../core/components/Form/UploadZone';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
-import { developersApi, projectsApi } from '../../core/api/resources';
+import { developersApi, projectsApi, documentsApi } from '../../core/api/resources';
 import { ApiError } from '../../core/api/client';
 import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
@@ -45,6 +45,7 @@ export const AddProject: React.FC = () => {
   const [amenities, setAmenities] = useState<string[]>(['Pool', 'Gym']);
   const [newAmenity, setNewAmenity] = useState('');
   const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [documentFiles, setDocumentFiles] = useState<File[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -105,6 +106,14 @@ export const AddProject: React.FC = () => {
           await projectsApi.uploadImages(created.id, galleryFiles);
         } catch {
           toast.error(t('projects.add.imagesUploadFailed'));
+        }
+      }
+      // Dokümanlar: Vault'a related_type='project' ile yüklenir.
+      if (documentFiles.length > 0) {
+        try {
+          await Promise.all(documentFiles.map((f) => documentsApi.upload(f, 'Marketing', 'project', created.id)));
+        } catch {
+          toast.error(t('projects.add.documentsUploadFailed'));
         }
       }
       setShowSuccessModal(true);
@@ -353,26 +362,15 @@ export const AddProject: React.FC = () => {
                   </div>
 
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
-                    <label>{t('projects.add.videoLabel')}</label>
-                    <UploadZone
-                      kind="video"
-                      accept="video/mp4,video/quicktime,video/webm"
-                      prompt={t('projects.add.videoPrompt')}
-                      hint={t('projects.add.videoHint')}
-                    />
-                  </div>
-
-                  <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
                     <label>{t('projects.add.documentsLabel')}</label>
                     <UploadZone
                       kind="document"
                       accept=".pdf,.xls,.xlsx,application/pdf"
                       prompt={t('projects.add.documentsPrompt')}
                       hint={t('projects.add.documentsHint')}
+                      onFilesChange={setDocumentFiles}
                     />
                   </div>
-
-                  <p className={styles.hintText} style={{ gridColumn: 'span 2' }}>{t('projects.add.mediaNotPersisted')}</p>
                 </div>
               )}
 

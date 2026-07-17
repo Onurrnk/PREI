@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { ClientDTO, ProjectDTO } from '../../core/types';
-import { clientsApi, gmailApi, projectsApi } from '../../core/api/resources';
+import { clientsApi, gmailApi, projectsApi, documentsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { useToast } from '../../core/components/Toast/ToastProvider';
@@ -29,6 +29,15 @@ export const ProjectProfile: React.FC = () => {
 
   const handleActionClick = (actionName: string) => {
     toast.info(actionName);
+  };
+
+  const handleDownloadDoc = async (docId: string) => {
+    try {
+      const { url } = await documentsApi.downloadUrl(docId);
+      window.open(url, '_blank', 'noopener');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('projects.downloadFailed'));
+    }
   };
 
   if (loading) {
@@ -176,8 +185,11 @@ export const ProjectProfile: React.FC = () => {
               <CardHeader><h3 className={styles.cardTitle}>{t('projects.documentsTitle')}</h3></CardHeader>
               <CardBody>
                 <div className={styles.docsList}>
+                  {project.documents.length === 0 && (
+                    <span style={{ color: 'var(--text-muted)' }}>{t('projects.noDocuments')}</span>
+                  )}
                   {project.documents.map(doc => (
-                    <div key={doc.id} className={styles.docCard} onClick={() => handleActionClick(t('projects.viewDocument', { title: doc.title }))}>
+                    <div key={doc.id} className={styles.docCard} onClick={() => handleDownloadDoc(doc.id)}>
                       <div className={styles.docIcon} data-type={doc.type}>{docIcon(doc.type)}</div>
                       <div className={styles.docInfo}>
                         <span className={styles.docTitle}>{doc.title}</span>
@@ -186,7 +198,7 @@ export const ProjectProfile: React.FC = () => {
                       <button
                         className={styles.docAction}
                         aria-label={t('projects.downloadAria', { title: doc.title })}
-                        onClick={(e) => { e.stopPropagation(); handleActionClick(t('projects.download', { title: doc.title })); }}
+                        onClick={(e) => { e.stopPropagation(); handleDownloadDoc(doc.id); }}
                       >
                         <DownloadSimple size={16} />
                       </button>

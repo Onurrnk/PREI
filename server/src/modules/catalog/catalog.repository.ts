@@ -21,6 +21,14 @@ export interface ProjectRow {
   updated_at: string;
 }
 
+export interface ProjectDocRow {
+  id: string;
+  name: string;
+  mime_type: string;
+  size_bytes: string; // pg bigint → string
+  related_id: string;
+}
+
 export interface DeveloperRow {
   id: string;
   name: string;
@@ -117,6 +125,21 @@ export class CatalogRepository {
       );
       const { rows: full } = await c.query<ProjectRow>(`${PROJECT_SELECT} WHERE p.id = $1`, [id]);
       return full[0];
+    });
+  }
+
+  /** Vault'a related_type='project' ile bağlanmış gerçek dosyalar. */
+  async documentsByProjectIds(ctx: RequestContext, ids: string[]): Promise<ProjectDocRow[]> {
+    if (ids.length === 0) return [];
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<ProjectDocRow>(
+        `SELECT id, name, mime_type, size_bytes, related_id
+           FROM documents_vault
+          WHERE related_type = 'project' AND related_id = ANY($1) AND deleted_at IS NULL
+          ORDER BY created_at DESC`,
+        [ids],
+      );
+      return rows;
     });
   }
 

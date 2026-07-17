@@ -4,7 +4,7 @@
 // şemada karşılığı properties satırı + zengin alanlar metadata jsonb'da.
 // Alan adları frontend mock'uyla aynı tutuldu (dondurulmuş UI değişmesin).
 // =====================================================================
-import type { ProjectRow } from '../catalog.repository';
+import type { ProjectRow, ProjectDocRow } from '../catalog.repository';
 
 export interface PaymentPlanItem { milestone: string; percentage: number; date: string }
 export interface ProjectDocItem { id: string; title: string; type: string; size: string }
@@ -42,7 +42,18 @@ function arr<T>(v: unknown): T[] {
   return Array.isArray(v) ? (v as T[]) : [];
 }
 
-export function toProjectResponse(row: ProjectRow): ProjectResponse {
+function docType(mime: string): string {
+  if (mime === 'application/pdf') return 'PDF';
+  if (mime.startsWith('image/')) return 'Image';
+  if (mime.includes('sheet') || mime.includes('excel') || mime === 'text/csv') return 'Spreadsheet';
+  return 'PDF';
+}
+function formatSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+
+export function toProjectResponse(row: ProjectRow, docs: ProjectDocRow[] = []): ProjectResponse {
   const m = (row.metadata ?? {}) as Record<string, unknown>;
   const location = [row.district, row.city].filter(Boolean).join(', ') || row.country || '—';
   return {
@@ -64,6 +75,8 @@ export function toProjectResponse(row: ProjectRow): ProjectResponse {
     images: arr<string>(m.images),
     amenities: arr<string>(m.amenities),
     paymentPlan: arr<PaymentPlanItem>(m.payment_plan),
-    documents: arr<ProjectDocItem>(m.documents),
+    documents: docs.map((d) => ({
+      id: d.id, title: d.name, type: docType(d.mime_type), size: formatSize(Number(d.size_bytes)),
+    })),
   };
 }
