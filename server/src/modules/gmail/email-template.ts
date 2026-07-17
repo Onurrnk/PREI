@@ -34,8 +34,10 @@ const COLORS = {
   textSecondary: '#5C5A55',
   textMuted: '#8E8C86',
   border: '#E7E5E1',
-  brand: '#94529F',
-  brandDim: '#7C4285',
+  // Tasarım sistemi tek accent'i — logo moru (#9B5BB3). E-posta istemcilerinde
+  // var() çalışmadığından literal hex; design-system --brand-primary ile birebir.
+  brand: '#9B5BB3',
+  brandDim: '#8A4DA1',
   onBrand: '#FFFFFF',
 };
 
@@ -90,7 +92,8 @@ export function buildClientEmailHtml(p: ClientEmailParams): string {
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${COLORS.bgApp};">
     <tr>
       <td align="center" style="padding:40px 16px;">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background-color:${COLORS.bgSurface};border:1px solid ${COLORS.border};border-radius:4px;">
+        <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td><![endif]-->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:${COLORS.bgSurface};border:1px solid ${COLORS.border};border-radius:12px;">
 
           <!-- Header: krem zemin, gerçek logo (CID inline image), altında ince çizgi -->
           <tr>
@@ -125,15 +128,11 @@ export function buildClientEmailHtml(p: ClientEmailParams): string {
             </td>
           </tr>
 
-          <!-- Divider: çizgi + baklava motifi (sözleşme kapağındaki ayraçtan esinle) -->
+          <!-- Divider: sade hairline (sessiz lüks — accent dekorasyonda kullanılmaz) -->
           <tr>
             <td style="padding:0 32px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td style="border-top:1px solid ${COLORS.border};font-size:0;line-height:0;">&nbsp;</td>
-                  <td width="28" align="center" style="font-size:13px;line-height:1;color:${COLORS.brand};padding:0 6px;">&#9671;</td>
-                  <td style="border-top:1px solid ${COLORS.border};font-size:0;line-height:0;">&nbsp;</td>
-                </tr>
+                <tr><td style="border-top:1px solid ${COLORS.border};font-size:0;line-height:0;">&nbsp;</td></tr>
               </table>
             </td>
           </tr>
@@ -145,8 +144,9 @@ export function buildClientEmailHtml(p: ClientEmailParams): string {
                 <tr>
                   <td>
                     <div style="font-family:${FONT_SANS};font-size:14px;font-weight:600;color:${COLORS.textPrimary};">${escapeHtml(p.consultantName)}</div>
-                    ${consultantMeta ? `<div style="font-family:${FONT_SANS};font-size:12px;color:${COLORS.textSecondary};margin-top:3px;">${consultantMeta}</div>` : ''}
-                    <div style="font-family:${FONT_SANS};font-size:12px;color:${COLORS.brand};margin-top:3px;">${escapeHtml(p.consultantEmail)}</div>
+                    ${consultantMeta ? `<div style="font-family:${FONT_SANS};font-size:12px;color:${COLORS.textSecondary};margin-top:3px;">${escapeHtml(consultantMeta)}</div>` : ''}
+                    <div style="font-family:${FONT_SANS};font-size:12px;color:${COLORS.brand};margin-top:6px;">${escapeHtml(p.consultantEmail)}</div>
+                    ${p.consultantPhone ? `<div style="font-family:${FONT_SANS};font-size:12px;color:${COLORS.textSecondary};margin-top:2px;">${escapeHtml(p.consultantPhone)}</div>` : ''}
                   </td>
                 </tr>
               </table>
@@ -171,6 +171,7 @@ export function buildClientEmailHtml(p: ClientEmailParams): string {
           </tr>
 
         </table>
+        <!--[if mso]></td></tr></table><![endif]-->
       </td>
     </tr>
   </table>
@@ -191,8 +192,9 @@ export function buildClientEmailText(p: ClientEmailParams): string {
   }
   lines.push('--', p.consultantName);
   if (p.consultantTitle) lines.push(p.consultantTitle);
+  lines.push(p.consultantEmail);
+  if (p.consultantPhone) lines.push(p.consultantPhone);
   lines.push(
-    p.consultantEmail,
     '',
     'ProDuality Property & Investment',
     'info@produality.com | +90 507 857 69 05 | produality.com',
