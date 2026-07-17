@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  MagnifyingGlass, Paperclip, PaperPlaneTilt, ArrowBendUpLeft, Trash, DotsThreeVertical,
+  MagnifyingGlass, Paperclip, PaperPlaneTilt, ArrowBendUpLeft,
   EnvelopeSimple, TextB, TextItalic, TextUnderline, ListBullets, ListNumbers, FileText, X,
 } from '@phosphor-icons/react';
 import type { EmailMessageDTO, ThreadSummaryDTO, ThreadDetailDTO, EmailAttachmentInput, MeResponse } from '../../../core/types';
@@ -114,6 +114,11 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
   const selectThread = (id: string) => {
     setSelectedId(id);
     setReadIds((prev) => new Set(prev).add(id));
+  };
+
+  const focusComposer = () => {
+    editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    editorRef.current?.focus();
   };
 
   // innerText satır sonlarını korur; jsdom'da tanımsız olduğundan textContent'e düşer.
@@ -288,9 +293,9 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
                   <h3 className={styles.messageSubject}>{selectedThread.subject}</h3>
                 </div>
                 <div className={styles.messageActions}>
-                  <button className={styles.iconBtn} title={t('clients.email.reply')}><ArrowBendUpLeft size={16} /></button>
-                  <button className={styles.iconBtn} title={t('clients.email.delete')}><Trash size={16} /></button>
-                  <button className={styles.iconBtn} title={t('clients.email.more')}><DotsThreeVertical size={16} /></button>
+                  <button type="button" className={styles.iconBtn} title={t('clients.email.reply')} onClick={focusComposer}>
+                    <ArrowBendUpLeft size={16} />
+                  </button>
                 </div>
               </div>
               <div className={styles.messageBody}>

@@ -476,8 +476,6 @@ export const tr = {
         replyPlaceholder: 'Yanıtınızı buraya yazın…',
         send: 'Gönder',
         reply: 'Yanıtla',
-        delete: 'Sil',
-        more: 'Diğer',
         attach: 'Dosya ekle',
         attachTooLarge: 'Ekler çok büyük — e-posta başına toplam en fazla 15MB.',
         removeAttachment: '{{name}} ekini kaldır',

@@ -477,8 +477,6 @@ export const en = {
         replyPlaceholder: 'Type your reply here…',
         send: 'Send',
         reply: 'Reply',
-        delete: 'Delete',
-        more: 'More',
         attach: 'Attach file',
         attachTooLarge: 'Attachments too large — up to 15MB total per email.',
         removeAttachment: 'Remove {{name}}',
