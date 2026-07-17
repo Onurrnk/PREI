@@ -42,12 +42,13 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
     return () => document.removeEventListener('mousedown', onDocDown);
   }, [open]);
 
-  useEffect(() => {
-    if (open) {
-      const idx = options.findIndex(o => o.value === value);
-      setActiveIdx(idx >= 0 ? idx : 0);
-    }
-  }, [open, options, value]);
+  // Menü AÇILIRKEN aktif satır seçili değere kurulur — effect yerine tek
+  // kapı (react-hooks/set-state-in-effect: effect içinde senkron setState yok).
+  const openMenu = () => {
+    const idx = options.findIndex(o => o.value === value);
+    setActiveIdx(idx >= 0 ? idx : 0);
+    setOpen(true);
+  };
 
   useEffect(() => {
     if (open && activeIdx >= 0) {
@@ -67,11 +68,11 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
       case 'Enter':
       case ' ':
         e.preventDefault();
-        if (open && activeIdx >= 0) commit(activeIdx); else setOpen(true);
+        if (open && activeIdx >= 0) commit(activeIdx); else openMenu();
         break;
       case 'ArrowDown':
         e.preventDefault();
-        if (!open) setOpen(true);
+        if (!open) openMenu();
         else setActiveIdx(i => Math.min(options.length - 1, i + 1));
         break;
       case 'ArrowUp':
@@ -104,7 +105,7 @@ export const SelectMenu: React.FC<SelectMenuProps> = ({
         aria-controls={listboxId}
         aria-label={ariaLabel}
         disabled={disabled}
-        onClick={() => setOpen(o => !o)}
+        onClick={() => { if (open) setOpen(false); else openMenu(); }}
         onKeyDown={onKeyDown}
       >
         <span className={selected ? styles.value : styles.placeholder}>

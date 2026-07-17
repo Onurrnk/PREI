@@ -97,8 +97,6 @@ export const GlobalSearch: React.FC = () => {
       .slice(0, 8);
   }, [query, pool]);
 
-  useEffect(() => { setActiveIdx(0); }, [query]);
-
   const go = (hit: Hit) => {
     setOpen(false);
     setQuery('');
@@ -113,9 +111,6 @@ export const GlobalSearch: React.FC = () => {
     if (e.key === 'Enter' && results[activeIdx]) { e.preventDefault(); go(results[activeIdx]); }
   };
 
-  // Grup başlıkları için sıralı render
-  let lastKind: Hit['kind'] | null = null;
-
   return (
     <div className={styles.root} ref={rootRef}>
       <MagnifyingGlass className={styles.icon} size={20} />
@@ -126,7 +121,7 @@ export const GlobalSearch: React.FC = () => {
         className={styles.input}
         value={query}
         aria-label={t('search.placeholder')}
-        onChange={(e) => { setQuery(e.target.value); setOpen(true); void ensurePool(); }}
+        onChange={(e) => { setQuery(e.target.value); setActiveIdx(0); setOpen(true); void ensurePool(); }}
         onFocus={() => { if (query.trim().length >= 2) setOpen(true); }}
         onKeyDown={onKeyDown}
       />
@@ -139,8 +134,9 @@ export const GlobalSearch: React.FC = () => {
             <div className={styles.empty}>{t('search.noResults', { query: query.trim() })}</div>
           )}
           {results.map((hit, i) => {
-            const showHeader = hit.kind !== lastKind;
-            lastKind = hit.kind;
+            // Grup başlığı: önceki sonuçla tür değiştiğinde (render içinde
+            // değişken reassign etmeden — react-hooks/immutability).
+            const showHeader = i === 0 || results[i - 1].kind !== hit.kind;
             return (
               <React.Fragment key={`${hit.kind}-${hit.id}`}>
                 {showHeader && <div className={styles.groupHeader}>{t(KIND_LABEL_KEY[hit.kind])}</div>}
