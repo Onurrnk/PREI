@@ -174,9 +174,14 @@ export function buildClientEmailHtml(p: ClientEmailParams): string {
             <td style="padding:20px 32px 32px 32px;" align="center">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td align="center" style="border-top:1px solid ${COLORS.border};padding-top:18px;">
-                    <div style="font-family:${FONT_SANS};font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${COLORS.textMuted};line-height:1.8;">
-                      ProDuality Property &amp; Investment &bull; T&uuml;rkiye, BAE, İspanya, İngiltere<br>
+                  <td align="center" style="border-top:1px solid ${COLORS.border};padding-top:20px;">
+                    <!-- Sosyal medya ikonları (PNG, mutlak URL — tüm istemcilerde çalışır) -->
+                    <a href="https://www.instagram.com/produality" target="_blank" style="text-decoration:none;margin:0 5px;display:inline-block;"><img src="https://produality.com/assets/images/social/instagram.png" width="28" height="28" alt="Instagram" style="border:0;display:inline-block;"></a>
+                    <a href="https://www.linkedin.com/company/produality" target="_blank" style="text-decoration:none;margin:0 5px;display:inline-block;"><img src="https://produality.com/assets/images/social/linkedin.png" width="28" height="28" alt="LinkedIn" style="border:0;display:inline-block;"></a>
+                    <a href="https://www.facebook.com/produality1" target="_blank" style="text-decoration:none;margin:0 5px;display:inline-block;"><img src="https://produality.com/assets/images/social/facebook.png" width="28" height="28" alt="Facebook" style="border:0;display:inline-block;"></a>
+                    <a href="https://wa.me/905078576905" target="_blank" style="text-decoration:none;margin:0 5px;display:inline-block;"><img src="https://produality.com/assets/images/social/whatsapp.png" width="28" height="28" alt="WhatsApp" style="border:0;display:inline-block;"></a>
+                    <div style="font-family:${FONT_SANS};font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:${COLORS.textMuted};line-height:1.8;margin-top:16px;">
+                      ProDuality Property &amp; Investment &bull; T&uuml;rkiye, BAE, İngiltere<br>
                       <a href="mailto:info@produality.com" style="color:${COLORS.textMuted};text-decoration:underline;">info@produality.com</a> &bull; +90 507 857 69 05 &bull;
                       <a href="https://produality.com" style="color:${COLORS.textMuted};text-decoration:underline;">produality.com</a>
                     </div>
