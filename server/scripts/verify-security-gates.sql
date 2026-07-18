@@ -10,6 +10,7 @@ DO $$
 DECLARE
   v_bool boolean;
   v_txt  text;
+  v_expr text;
   v_int  integer;
   v_tgtype smallint;
 BEGIN
@@ -60,6 +61,22 @@ BEGIN
       AND grantee IN ('PUBLIC','authenticated','anon');
   IF v_int > 0 THEN RAISE EXCEPTION 'G-KAPI: audit_log UPDATE/DELETE PUBLIC/authenticated/anon''a GRANT edilmiş'; END IF;
   RAISE NOTICE '3) audit_log append-only (F6): trigger + INSERT-only policy + REVOKE ✓';
+
+  -- 4) Ownership/ABAC RLS (go/no-go #5): consultant başkasının lead/deal'ini
+  --    göremez. leads_ownership/deals_ownership RESTRICTIVE + owner_id +
+  --    app_is_privileged referansı zorunlu. Permissive'e çevrilirse consultant
+  --    tüm tenant lead'lerini görür → sızıntı; bu kontrol onu yakalar.
+  FOR v_txt IN SELECT unnest(ARRAY['leads','deals']) LOOP
+    SELECT p.polpermissive, pg_get_expr(p.polqual, p.polrelid)
+      INTO v_bool, v_expr
+      FROM pg_policy p JOIN pg_class c ON c.oid = p.polrelid
+     WHERE c.relname = v_txt AND p.polname = v_txt || '_ownership';
+    IF v_bool IS NULL THEN RAISE EXCEPTION 'G-KAPI: %_ownership politikası YOK', v_txt; END IF;
+    IF v_bool <> false THEN RAISE EXCEPTION 'G-KAPI: %_ownership PERMISSIVE olmuş (RESTRICTIVE olmalı)', v_txt; END IF;
+    IF v_expr !~ 'owner_id' OR v_expr !~ 'app_is_privileged' THEN
+      RAISE EXCEPTION 'G-KAPI: %_ownership sahiplik/ayrıcalık kontrolünü kaybetmiş', v_txt; END IF;
+  END LOOP;
+  RAISE NOTICE '4) Ownership RLS (go/no-go #5): leads/deals RESTRICTIVE + owner/privileged ✓';
 
   RAISE NOTICE '=== TÜM GÜVENLİK KAPILARI GEÇTİ ===';
 END $$;
