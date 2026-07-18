@@ -143,4 +143,21 @@ geçen/kalan sayısı. Kayıtlar bu dosyanın altına eklenir.
 
 ## Koşum geçmişi
 
-*(henüz koşulmadı — ilk koşum: Onur + Claude, planlanıyor)*
+### Koşum #1 — 2026-07-19 (otonom, canlı prompt harness'ı, gpt-4o-mini)
+15 senaryo + 6 tekrar. **Kritik/iş-riski kalemleri TAMAMEN GEÇTİ:** doğruluk
+çapaları (S9 İspanya GV kaldırıldı, S10 BAE vatandaşlık yok, S11 TR 400K USD,
+S12 UK mülk oturum vermez) 4/4 doğru; guardrail'ler (S13 ücret→komisyon +
+yazılım fiyatı sunmadı, S14 garanti yok, S15 kimlik no istemedi/kesin vergi
+yok) geçti; S7 RAG önerisi somut, S4 kimlik şeffaf.
+**Tekrarlayan ton/davranış kusurları (gpt-4o-mini negatif kurallara zayıf
+uyuyor):** (a) S17 İngilizce ilk-temasa Türkçe cevap; (b) görüşme konusunu
+zaten söyleyene tekrar sordu; (c) şikâyette bahane uydurdu ("meşguldüm");
+(d) konuşma ortasında "Merhaba, ben Eylül" tekrarı; (e) "...belirttiniz/
+anladım" papağanı. Düzeltilen: KAPSAM (Bali kapsam dışı dürüstçe) + İngilizce
+çok-turlu (mid-conversation) artık İngilizce; replyLang hesabı eklendi.
+
+### Karşılaştırma — gpt-4o (aynı 6 sorunlu senaryo)
+gpt-4o hepsini TEMİZ geçti: İngilizce ilk-temas→İngilizce, konu tekrar
+sorulmadı (teyit+link+kapat), şikâyet→bahanesiz özür+Onur eskale, mid-intro
+yok. **SONUÇ: kalan kusurlar prompt değil model-kapasitesi limiti; karar =
+Telegram sohbet botu gpt-4o'ya alınmalı (batch workflow'lar mini kalabilir).**
