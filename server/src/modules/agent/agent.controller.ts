@@ -16,6 +16,7 @@ import { KnowledgeSearchDto } from './dto/knowledge-search.dto';
 import { OutboundMessageDto } from './dto/outbound-message.dto';
 import { LeadProfileDto } from './dto/lead-profile.dto';
 import { WebLeadDto } from './dto/web-lead.dto';
+import { MeetingEventDto } from './dto/meeting-event.dto';
 
 @Controller('agent')
 @UseGuards(AgentKeyGuard)
@@ -99,5 +100,12 @@ export class AgentController {
   @Get('clients/active')
   activeClientEmails(@Ctx() ctx: RequestContext) {
     return this.agent.activeClientEmails(ctx);
+  }
+
+  /** Calendly randevusu → tasks(type=meeting); idempotent (external_id). */
+  @Post('meeting')
+  @HttpCode(200)
+  recordMeeting(@Ctx() ctx: RequestContext, @Body() dto: MeetingEventDto) {
+    return this.agent.recordMeeting(ctx, dto);
   }
 }

@@ -15,6 +15,7 @@ import type { OutboundMessageDto } from './dto/outbound-message.dto';
 import type { LeadProfileDto } from './dto/lead-profile.dto';
 import type { WebLeadDto } from './dto/web-lead.dto';
 import { buildWelcomeCopy } from './welcome-email-copy';
+import { buildMeetingTask, type MeetingEventDto } from './dto/meeting-event.dto';
 
 export interface IngestResult {
   contact_id: string;
@@ -763,6 +764,95 @@ export class AgentService {
       [ctx.tenantId, contactId, leadId, channel, ext ?? null, ctx.userId],
     );
     return created[0].id;
+  }
+
+  /**
+   * Calendly randevusu → tasks(type=meeting). Meetings takvimi bu tablodan
+   * beslenir. Idempotent: external_id (Calendly event URI) tekrarında no-op.
+   * Davetli e-postası bir contact'la eşleşirse related_* bağlanır; assignee
+   * super_admin (Onur) — görüşmeyi o yapacak.
+   */
+  async recordMeeting(ctx: RequestContext, dto: MeetingEventDto): Promise<{
+    task_id: string; deduped: boolean; matched_contact: boolean;
+  }> {
+    return this.db.withContext(ctx, async (c) => {
+      if (dto.external_id) {
+        const { rows: existing } = await c.query<{ id: string }>(
+          `SELECT id FROM tasks
+            WHERE tenant_id = $1 AND metadata->>'calendly_id' = $2 AND deleted_at IS NULL
+            LIMIT 1`,
+          [ctx.tenantId, dto.external_id],
+        );
+        if (existing.length > 0) {
+          return { task_id: existing[0].id, deduped: true, matched_contact: false };
+        }
+      }
+
+      const { rows: contacts } = await c.query<{ id: string; first_name: string; last_name: string | null }>(
+        `SELECT id, first_name, last_name FROM contacts
+          WHERE tenant_id = $1 AND lower(email) = lower($2) AND deleted_at IS NULL
+          LIMIT 1`,
+        [ctx.tenantId, dto.invitee_email],
+      );
+      const contact = contacts[0] ?? null;
+
+      const { rows: admins } = await c.query<{ id: string }>(
+        `SELECT u.id FROM users u
+          WHERE u.tenant_id = $1 AND EXISTS (
+            SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+             WHERE ur.user_id = u.id AND r.key = 'super_admin')
+          LIMIT 1`,
+        [ctx.tenantId],
+      );
+
+      const { title, durationMinutes } = buildMeetingTask(dto);
+      const relatedName = contact
+        ? [contact.first_name, contact.last_name].filter(Boolean).join(' ')
+        : dto.invitee_name;
+
+      const { rows: created } = await c.query<{ id: string }>(
+        `INSERT INTO tasks
+           (tenant_id, assignee_id, title, description, due_date, priority, status,
+            task_type, related_type, related_id, related_name, metadata, created_by, updated_by)
+         VALUES ($1,$2,$3,$4,$5,'high','pending','meeting',$6,$7,$8,$9,$10,$10)
+         RETURNING id`,
+        [
+          ctx.tenantId,
+          admins[0]?.id ?? null,
+          title,
+          `Calendly randevusu — ${dto.invitee_name} (${dto.invitee_email})` +
+            (dto.join_url ? `\nZoom: ${dto.join_url}` : ''),
+          dto.start_time,
+          contact ? 'client' : null,
+          contact?.id ?? null,
+          relatedName,
+          JSON.stringify({
+            source: 'calendly',
+            platform: 'Zoom',
+            meeting_kind: 'discovery',
+            duration: durationMinutes,
+            join_url: dto.join_url ?? null,
+            invitee_email: dto.invitee_email,
+            calendly_id: dto.external_id ?? null,
+          }),
+          ctx.userId,
+        ],
+      );
+      const taskId = created[0].id;
+
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'meeting.created','task',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, taskId,
+         JSON.stringify({ after: { title, start: dto.start_time, invitee: dto.invitee_email } }),
+         ctx.correlationId],
+      );
+      await this.writeEvent(c, ctx, 'task', taskId, 'meeting.created', {
+        title, start: dto.start_time, invitee: dto.invitee_email, matched_contact: !!contact,
+      });
+
+      return { task_id: taskId, deduped: false, matched_contact: !!contact };
+    });
   }
 
   private async findSession(c: PoolClient, ctx: RequestContext, normalized: string, channel: string): Promise<string | null> {
