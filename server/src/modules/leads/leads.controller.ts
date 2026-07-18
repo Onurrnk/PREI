@@ -3,7 +3,7 @@
 // JwtAuthGuard (kimlik) + RbacGuard (izin) tüm route'larda; ctx JWT'den.
 // =====================================================================
 import {
-  Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query,
+  Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query,
   DefaultValuePipe, ParseIntPipe, UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -56,5 +56,11 @@ export class LeadsController {
     @Body() dto: UpdateLeadDto,
   ) {
     return this.leads.update(ctx, id, dto);
+  }
+
+  /** KALICI silme — servis katmanı super_admin zorlar (diğer roller 404). */
+  @Delete(':id')
+  remove(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.leads.remove(ctx, id);
   }
 }

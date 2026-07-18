@@ -98,6 +98,48 @@ export class ContactsRepository {
     });
   }
 
+  /**
+   * KALICI silme (super_admin). Kişi + tüm lead'leri + iletişim izleri tek
+   * transaction'da temizlenir ("sıfırdan başla" senaryosu — telefon dedup'ı
+   * eski kaydı bulmasın diye HARD delete). Gerçek iş verisi korunur:
+   * deal/financial/contract bağı varsa 'has_business' döner (409).
+   * Silme sırası FK yönünde: proposals → meeting_notes → activities →
+   * communications → conversation_sessions → leads (cascade) → merged
+   * referansları → contact. audit_log'a 'contact.deleted' düşer (o kalıcı).
+   */
+  async remove(ctx: RequestContext, id: string): Promise<'ok' | 'not_found' | 'has_business'> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows: before } = await c.query<ContactRow>(
+        `SELECT * FROM contacts WHERE id = $1`, [id],
+      );
+      if (before.length === 0) return 'not_found';
+
+      const { rows: biz } = await c.query<{ n: number }>(
+        `SELECT (SELECT count(*) FROM deals d JOIN leads l ON l.id = d.lead_id WHERE l.contact_id = $1)
+              + (SELECT count(*) FROM financials WHERE contact_id = $1)
+              + (SELECT count(*) FROM contracts  WHERE contact_id = $1) AS n`,
+        [id],
+      );
+      if (Number(biz[0].n) > 0) return 'has_business';
+
+      await c.query(
+        `DELETE FROM proposals
+          WHERE contact_id = $1 OR lead_id IN (SELECT id FROM leads WHERE contact_id = $1)`,
+        [id],
+      );
+      await c.query(`DELETE FROM meeting_notes WHERE contact_id = $1`, [id]);
+      await c.query(`DELETE FROM activities WHERE contact_id = $1`, [id]);
+      await c.query(`DELETE FROM communications WHERE contact_id = $1`, [id]);
+      await c.query(`DELETE FROM conversation_sessions WHERE contact_id = $1`, [id]);
+      await c.query(`DELETE FROM leads WHERE contact_id = $1`, [id]);
+      await c.query(`UPDATE contacts SET merged_into_id = NULL WHERE merged_into_id = $1`, [id]);
+      await c.query(`DELETE FROM contacts WHERE id = $1`, [id]);
+
+      await this.writeAuditAndEvent(c, ctx, 'contact.deleted', id, { before: before[0] });
+      return 'ok';
+    });
+  }
+
   /** audit_log (forensics) + events (outbox) — aynı transaction, correlation_id bağlı. */
   private async writeAuditAndEvent(
     c: PoolClient, ctx: RequestContext, action: string, entityId: string, diff: unknown,

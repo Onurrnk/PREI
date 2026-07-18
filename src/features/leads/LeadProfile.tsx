@@ -9,8 +9,10 @@ import { Button } from '../../core/components/Button/Button';
 import {
   ArrowLeft, CurrencyDollar, Tag, Flag, MapPin, CalendarBlank, UserCircle,
   WhatsappLogo, EnvelopeSimple, Phone, ChatCircleDots, ArrowDown, ArrowUp, ChatCircle,
-  Sparkle, TelegramLogo,
+  Sparkle, TelegramLogo, Trash,
 } from '@phosphor-icons/react';
+import { useAuth } from '../../core/auth/AuthContext';
+import { useToast } from '../../core/components/Toast/ToastProvider';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import i18n from '../../core/i18n/config';
 import styles from './LeadProfile.module.css';
@@ -48,6 +50,26 @@ export const LeadProfile: React.FC = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const toast = useToast();
+  // Kalıcı silme — yalnız super_admin görür; iki aşamalı onay (modal'sız).
+  const [confirmingDelete, setConfirmingDelete] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+  const canDelete = user?.role === 'super_admin';
+
+  const handleDelete = async () => {
+    if (!id) return;
+    setDeleting(true);
+    try {
+      await leadsApi.remove(id);
+      toast.success(t('leads.profile.deleteSuccess'));
+      navigate('/leads');
+    } catch (e) {
+      toast.error(`${t('leads.profile.deleteError')}: ${e instanceof Error ? e.message : String(e)}`);
+      setDeleting(false);
+      setConfirmingDelete(false);
+    }
+  };
 
   const { data: lead, loading, error } = useFetch<LeadDTO>(() => leadsApi.get(id!), [id]);
   const { data: comms, loading: commsLoading } = useFetch<LeadCommunicationDTO[]>(
@@ -94,6 +116,29 @@ export const LeadProfile: React.FC = () => {
             </p>
           </div>
         </div>
+        {canDelete && (
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {confirmingDelete ? (
+              <>
+                <span style={{ fontSize: 13, color: 'var(--color-danger)' }}>
+                  {t('leads.profile.deleteConfirm')}
+                </span>
+                <Button variant="outline" onClick={handleDelete} disabled={deleting}
+                  style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}>
+                  <Trash size={16} /> {t('leads.profile.deleteYes')}
+                </Button>
+                <Button variant="ghost" onClick={() => setConfirmingDelete(false)} disabled={deleting}>
+                  {t('leads.profile.deleteCancel')}
+                </Button>
+              </>
+            ) : (
+              <Button variant="ghost" onClick={() => setConfirmingDelete(true)}
+                style={{ color: 'var(--color-danger)' }}>
+                <Trash size={16} /> {t('leads.profile.delete')}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className={styles.content}>

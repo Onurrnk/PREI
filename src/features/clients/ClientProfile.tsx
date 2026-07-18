@@ -11,7 +11,8 @@ import { Button } from '../../core/components/Button/Button';
 import { EmailClient } from './components/EmailClient';
 import { DocumentVault } from '../documents/DocumentVault';
 import { Modal } from '../../core/components/Modal/Modal';
-import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo, TelegramLogo, PencilSimple, NotePencil } from '@phosphor-icons/react';
+import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo, TelegramLogo, PencilSimple, NotePencil, Trash } from '@phosphor-icons/react';
+import { useAuth } from '../../core/auth/AuthContext';
 import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
@@ -187,6 +188,11 @@ export const ClientProfile: React.FC = () => {
   };
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState<EditableProfile | null>(null);
+  // Kalıcı silme — yalnız super_admin; kişi + tüm lead'leri + iletişim izleri.
+  const { user } = useAuth();
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const canDelete = user?.role === 'super_admin';
   const [activeTab, setActiveTab] = useState<'communication' | 'email' | 'vault' | 'notes'>('communication');
   // Danışman iç notları — meeting_notes tablosundan (mock modda MSW)
   const { data: fetchedNotes } = useFetch<ClientNoteDTO[]>(() => clientsApi.notes(id!), [id]);
@@ -257,6 +263,20 @@ export const ClientProfile: React.FC = () => {
       .catch(() => toast.error(t('clients.profile.noteSaveFailed')));
   };
 
+  const handleDelete = async () => {
+    if (!client) return;
+    setDeleting(true);
+    try {
+      await clientsApi.remove(client.id);
+      toast.success(t('clients.profile.deleteSuccess'));
+      navigate('/clients');
+    } catch (e) {
+      toast.error(`${t('clients.profile.deleteError')}: ${e instanceof Error ? e.message : String(e)}`);
+      setDeleting(false);
+      setConfirmingDelete(false);
+    }
+  };
+
   if (loading) {
     return <TableSkeleton rows={6} />;
   }
@@ -318,6 +338,25 @@ export const ClientProfile: React.FC = () => {
           >
             <PencilSimple size={16} /> {t('clients.profile.editProfile')}
           </Button>
+          {canDelete && (confirmingDelete ? (
+            <>
+              <span style={{ fontSize: 13, color: 'var(--color-danger)', alignSelf: 'center' }}>
+                {t('clients.profile.deleteConfirm')}
+              </span>
+              <Button variant="outline" onClick={handleDelete} disabled={deleting}
+                style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}>
+                <Trash size={16} /> {t('clients.profile.deleteYes')}
+              </Button>
+              <Button variant="ghost" onClick={() => setConfirmingDelete(false)} disabled={deleting}>
+                {t('clients.profile.deleteCancel')}
+              </Button>
+            </>
+          ) : (
+            <Button variant="ghost" onClick={() => setConfirmingDelete(true)}
+              style={{ color: 'var(--color-danger)' }}>
+              <Trash size={16} /> {t('clients.profile.delete')}
+            </Button>
+          ))}
         </div>
       </div>
 

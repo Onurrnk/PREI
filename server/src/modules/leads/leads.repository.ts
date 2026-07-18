@@ -196,6 +196,34 @@ export class LeadsRepository {
     });
   }
 
+  /**
+   * KALICI silme (super_admin). Aynı transaction'da: deal kontrolü →
+   * proposals temizliği → leads DELETE (communications/activities/scores/
+   * attributions/tags FK CASCADE ile; sessions/meeting_notes SET NULL) →
+   * audit 'lead.deleted'. Deal'i olan lead silinmez ('has_deals') — gerçek
+   * iş verisi yanlışlıkla kaybolmasın.
+   */
+  async remove(ctx: RequestContext, id: string): Promise<'ok' | 'not_found' | 'has_deals'> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows: before } = await c.query<LeadRow>(
+        `SELECT * FROM leads WHERE id = $1`, [id],
+      );
+      if (before.length === 0) return 'not_found';
+
+      const { rows: deals } = await c.query<{ n: number }>(
+        `SELECT count(*)::int AS n FROM deals WHERE lead_id = $1`, [id],
+      );
+      if (deals[0].n > 0) return 'has_deals';
+
+      // proposals.lead_id FK'sı cascade değil — lead'in teklifleri de silinir.
+      await c.query(`DELETE FROM proposals WHERE lead_id = $1`, [id]);
+      await c.query(`DELETE FROM leads WHERE id = $1`, [id]);
+
+      await this.writeAuditAndEvent(c, ctx, 'lead.deleted', id, { before: before[0] });
+      return 'ok';
+    });
+  }
+
   /** audit_log (forensics) + events (outbox) — aynı transaction, correlation_id bağlı. */
   private async writeAuditAndEvent(
     c: PoolClient, ctx: RequestContext, action: string, entityId: string, diff: unknown,

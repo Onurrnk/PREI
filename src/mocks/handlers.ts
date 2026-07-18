@@ -644,6 +644,25 @@ export const handlers = [
     return HttpResponse.json<LeadScoreDTO[]>(mockScoresByLead[params.id as string] ?? []);
   }),
 
+  // Kalıcı silme (super_admin) — mock modda oturum-içi kalıcı (module-level dizi).
+  http.delete('/api/leads/:id', ({ params }) => {
+    const i = mockLeads.findIndex((l) => l.id === params.id);
+    if (i === -1) return new HttpResponse(null, { status: 404 });
+    mockLeads.splice(i, 1);
+    return HttpResponse.json({ deleted: true });
+  }),
+
+  http.delete('/api/contacts/:id', ({ params }) => {
+    // Client id = contact id; mock müşteri listesinden ve lead'lerinden düşür.
+    const ci = mockClients.findIndex((c) => c.id === params.id);
+    if (ci === -1) return new HttpResponse(null, { status: 404 });
+    mockClients.splice(ci, 1);
+    for (let li = mockLeads.length - 1; li >= 0; li--) {
+      if (mockLeads[li].contactId === params.id) mockLeads.splice(li, 1);
+    }
+    return HttpResponse.json({ deleted: true });
+  }),
+
   // FAZ 1 create akışı — mock demoda hata vermesin diye plausible yanıt döner
   // (kalıcı değil; gerçek yazım VITE_USE_REAL_API=true backend'inde).
   http.post('/api/contacts', async ({ request }) => {

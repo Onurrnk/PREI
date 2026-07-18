@@ -3,7 +3,7 @@
 // JwtAuthGuard + RbacGuard; 'clients' izni (kişi/ilişki domaini).
 // =====================================================================
 import {
-  Body, Controller, Get, Param, ParseUUIDPipe, Post, Query,
+  Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Query,
   DefaultValuePipe, ParseIntPipe, UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -38,5 +38,11 @@ export class ContactsController {
   @Post()
   create(@Ctx() ctx: RequestContext, @Body() dto: CreateContactDto) {
     return this.contacts.create(ctx, dto);
+  }
+
+  /** KALICI silme — servis katmanı super_admin zorlar (diğer roller 404). */
+  @Delete(':id')
+  remove(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.contacts.remove(ctx, id);
   }
 }

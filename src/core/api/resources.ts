@@ -118,6 +118,8 @@ export const leadsApi = {
   update: (id: string, input: UpdateLeadInput) => api.patch<LeadDTO>(`/api/leads/${id}`, input),
   communications: (id: string) => api.get<LeadCommunicationDTO[]>(`/api/leads/${id}/communications`),
   scores: (id: string) => api.get<LeadScoreDTO[]>(`/api/leads/${id}/scores`),
+  /** KALICI silme — yalnız super_admin (backend zorlar); deal bağıysa 409. */
+  remove: (id: string) => api.delete<{ deleted: true }>(`/api/leads/${id}`),
 };
 
 export const clientsApi = {
@@ -127,6 +129,12 @@ export const clientsApi = {
   addNote: (id: string, body: { text: string; tag: ClientNoteDTO['tag'] }) =>
     api.post<ClientNoteDTO>(`/api/clients/${id}/notes`, body),
   timeline: (id: string) => api.get<ClientTimelineEntryDTO[]>(`/api/clients/${id}/timeline`),
+  /**
+   * KALICI silme — client id = contact id; kişi + tüm lead'leri + iletişim
+   * izleri gider. Yalnız super_admin (backend zorlar); deal/finans/sözleşme
+   * bağıysa 409.
+   */
+  remove: (id: string) => api.delete<{ deleted: true }>(`/api/contacts/${id}`),
 };
 
 export const developersApi = {
