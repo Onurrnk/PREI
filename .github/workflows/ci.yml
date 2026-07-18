@@ -92,3 +92,12 @@ jobs:
             echo "== applying $f"
             psql -h localhost -U postgres -d prei_ci -v ON_ERROR_STOP=1 -f "$f"
           done
+      # Güvenlik kapıları (G-1..G-6): komisyon gizliliği RESTRICTIVE, gizli
+      # erişimin AI'ya genişletilmemesi, audit append-only trigger/GRANT.
+      # Migration bir güvenlik politikasını zayıflatırsa CI burada kırılır.
+      - name: Güvenlik kapıları regresyon doğrulaması (G-1..G-6)
+        env:
+          PGPASSWORD: ci
+        run: |
+          psql -h localhost -U postgres -d prei_ci -v ON_ERROR_STOP=1 \
+            -f server/scripts/verify-security-gates.sql
