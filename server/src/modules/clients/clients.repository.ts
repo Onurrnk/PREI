@@ -189,6 +189,27 @@ export class ClientsRepository {
     });
   }
 
+  // ============ AI Analiz raporları (meeting_notes, kind='ai_analysis') ============
+  // n8n analiz workflow'u markAnalysisSent ile yazar; ClientProfile sekmesi okur.
+  async listAnalyses(ctx: RequestContext, contactId: string): Promise<Array<{
+    id: string; subject: string; report: string; created_at: string;
+  }>> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string; subject: string; report: string; created_at: string }>(
+        `SELECT id,
+                COALESCE(metadata->>'subject', 'Görüşme Analizi') AS subject,
+                COALESCE(raw_content, '') AS report,
+                created_at
+           FROM meeting_notes
+          WHERE contact_id = $1 AND deleted_at IS NULL
+            AND metadata->>'kind' = 'ai_analysis'
+          ORDER BY created_at DESC LIMIT 20`,
+        [contactId],
+      );
+      return rows;
+    });
+  }
+
   // ================= İç notlar (meeting_notes, source='text') =================
 
   async listNotes(ctx: RequestContext, contactId: string): Promise<NoteRow[]> {

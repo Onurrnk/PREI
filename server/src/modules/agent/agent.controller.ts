@@ -18,6 +18,7 @@ import { LeadProfileDto } from './dto/lead-profile.dto';
 import { WebLeadDto } from './dto/web-lead.dto';
 import { MeetingEventDto } from './dto/meeting-event.dto';
 import { KnowledgeAddDto } from './dto/knowledge-add.dto';
+import { AnalysisSentDto } from './dto/analysis-sent.dto';
 
 @Controller('agent')
 @UseGuards(AgentKeyGuard)
@@ -128,8 +129,12 @@ export class AgentController {
 
   @Post('leads/:id/analysis-sent')
   @HttpCode(200)
-  markAnalysisSent(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
-    return this.agent.markAnalysisSent(ctx, id);
+  markAnalysisSent(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AnalysisSentDto,
+  ) {
+    return this.agent.markAnalysisSent(ctx, id, dto);
   }
 
   /** Son N günün konuşmaları — haftalık kendini-geliştirme döngüsü hammadesi. */

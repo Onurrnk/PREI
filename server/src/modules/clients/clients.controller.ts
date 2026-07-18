@@ -48,6 +48,12 @@ export class ClientsController {
     return this.clients.listNotes(ctx, id);
   }
 
+  /** AI Analiz raporları — ClientProfile "AI Analiz" sekmesi. */
+  @Get(':id/analyses')
+  listAnalyses(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.clients.listAnalyses(ctx, id);
+  }
+
   @Post(':id/notes')
   createNote(
     @Ctx() ctx: RequestContext,

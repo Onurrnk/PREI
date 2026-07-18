@@ -182,6 +182,7 @@ export class AgentService {
         );
         leadId = createdLead[0].id;
         await this.writeEvent(c, ctx, 'lead', leadId, 'lead.created', { via: 'website', source: dto.source });
+        this.notifyAdminNewLead(name, `web (${sourceName})`, leadId);
       }
 
       // Formu inbound iletişim olarak timeline'a düş.
@@ -287,7 +288,9 @@ export class AgentService {
       }
 
       const contactId = await this.upsertContact(c, ctx, normalized, dto.name);
-      const leadId = await this.ensureOpenLead(c, ctx, contactId, dto.qualification_score);
+      const lead = await this.ensureOpenLead(c, ctx, contactId, dto.qualification_score);
+      const leadId = lead.id;
+      if (lead.created) this.notifyAdminNewLead(dto.name ?? 'Yeni yatırımcı', channel, leadId);
       const sessionId = await this.upsertSession(c, ctx, contactId, leadId, channel, dto.external_session_id);
 
       // Mesajı communications'a yaz (inbound)
@@ -728,7 +731,9 @@ export class AgentService {
     return created[0].id;
   }
 
-  private async ensureOpenLead(c: PoolClient, ctx: RequestContext, contactId: string, score?: number): Promise<string> {
+  private async ensureOpenLead(
+    c: PoolClient, ctx: RequestContext, contactId: string, score?: number,
+  ): Promise<{ id: string; created: boolean }> {
     const { rows } = await c.query<{ id: string }>(
       `SELECT id FROM leads
          WHERE tenant_id = $1 AND contact_id = $2 AND deleted_at IS NULL
@@ -740,7 +745,7 @@ export class AgentService {
       if (score !== undefined) {
         await c.query(`UPDATE leads SET score = $2, updated_by = $3 WHERE id = $1`, [rows[0].id, score, ctx.userId]);
       }
-      return rows[0].id;
+      return { id: rows[0].id, created: false };
     }
     const { rows: created } = await c.query<{ id: string }>(
       `INSERT INTO leads (tenant_id, contact_id, owner_id, source_id, status, interest_type, score, created_by, updated_by)
@@ -748,7 +753,26 @@ export class AgentService {
       [ctx.tenantId, contactId, score ?? null, ctx.userId],
     );
     await this.writeEvent(c, ctx, 'lead', created[0].id, 'lead.created', { via: 'whatsapp_agent' });
-    return created[0].id;
+    return { id: created[0].id, created: true };
+  }
+
+  /**
+   * Yeni lead düştüğünde admin'e Telegram bildirimi — fire-and-forget:
+   * bildirim altyapısı çökse bile ingest/webLead asla etkilenmez.
+   * TELEGRAM_BOT_TOKEN + ADMIN_TELEGRAM_CHAT_ID env yoksa sessizce atlar.
+   */
+  private notifyAdminNewLead(name: string, channel: string, leadId: string): void {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.ADMIN_TELEGRAM_CHAT_ID;
+    if (!token || !chatId) return;
+    const text = `🆕 Yeni lead: ${name}\nKanal: ${channel}\nhttps://prei.produality.com/leads/${leadId}`;
+    void fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    }).then((r) => {
+      if (!r.ok) this.logger.warn(`Yeni-lead bildirimi gönderilemedi: HTTP ${r.status}`);
+    }).catch((e) => this.logger.warn(`Yeni-lead bildirimi hatası: ${(e as Error).message}`));
   }
 
   private async upsertSession(c: PoolClient, ctx: RequestContext, contactId: string, leadId: string, channel: string, ext?: string): Promise<string> {
@@ -935,15 +959,32 @@ export class AgentService {
     });
   }
 
-  /** Analiz maili gönderildi — tekrar listelenmesin (idempotent işaret). */
-  async markAnalysisSent(ctx: RequestContext, leadId: string): Promise<{ ok: true }> {
+  /**
+   * Analiz maili gönderildi — tekrar listelenmesin (idempotent işaret).
+   * Rapor gövdesi verilirse meeting_notes'a da kaydedilir → ClientProfile
+   * "AI Analiz" sekmesi buradan okur (mail aramaya gerek kalmaz).
+   */
+  async markAnalysisSent(
+    ctx: RequestContext, leadId: string, report?: { subject?: string; report?: string },
+  ): Promise<{ ok: true }> {
     return this.db.withContext(ctx, async (c) => {
-      const { rows } = await c.query<{ id: string }>(
+      const { rows } = await c.query<{ id: string; contact_id: string }>(
         `UPDATE leads SET metadata = metadata || $2::jsonb, updated_by = $3
-          WHERE id = $1 AND deleted_at IS NULL RETURNING id`,
+          WHERE id = $1 AND deleted_at IS NULL RETURNING id, contact_id`,
         [leadId, JSON.stringify({ analysis_sent_at: new Date().toISOString() }), ctx.userId],
       );
       if (rows.length === 0) throw new NotFoundException('Lead bulunamadı');
+
+      if (report?.report) {
+        await c.query(
+          `INSERT INTO meeting_notes (tenant_id, contact_id, lead_id, source_type, raw_content, metadata, created_by)
+           VALUES ($1,$2,$3,'text',$4,$5::jsonb,$6)`,
+          [ctx.tenantId, rows[0].contact_id, leadId, report.report,
+           JSON.stringify({ kind: 'ai_analysis', tag: 'AI', subject: report.subject ?? 'Görüşme Analizi' }),
+           ctx.userId],
+        );
+      }
+
       await c.query(
         `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
          VALUES ($1,$2,'lead.analysis_sent','lead',$3,'{}',$4)`,

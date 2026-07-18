@@ -14,6 +14,7 @@ import {
 import { useAuth } from '../../core/auth/AuthContext';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
+import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import i18n from '../../core/i18n/config';
 import styles from './LeadProfile.module.css';
 
@@ -56,6 +57,20 @@ export const LeadProfile: React.FC = () => {
   const [confirmingDelete, setConfirmingDelete] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const canDelete = user?.role === 'super_admin';
+
+  // Danışman atama (super_admin) — owner_id PATCH; version optimistic lock.
+  const [assignedOwnerId, setAssignedOwnerId] = React.useState<string | null>(null);
+  const handleAssign = async (ownerId: string) => {
+    if (!id || !lead || !ownerId) return;
+    try {
+      const updated = await leadsApi.update(id, { owner_id: ownerId, version: lead.version });
+      setAssignedOwnerId(updated.ownerId);
+      lead.version = updated.version; // yerel sürümü tazele (arka arkaya atama 409 yemesin)
+      toast.success(t('leads.profile.assignSuccess'));
+    } catch (e) {
+      toast.error(`${t('leads.profile.assignError')}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  };
 
   const handleDelete = async () => {
     if (!id) return;
@@ -164,7 +179,22 @@ export const LeadProfile: React.FC = () => {
               <div className={styles.detailRow}>
                 <span className={styles.detailIcon}><UserCircle size={14} /></span>
                 <span className={styles.detailLabel}>{t('leads.profile.consultant')}</span>
-                <span className={styles.detailValue}>{ownerName ?? t('leads.profile.notAssigned')}</span>
+                {canDelete && users && users.length > 0 ? (
+                  /* super_admin: yatırımcıyı bir danışmana ata (owner_id PATCH) */
+                  <span style={{ minWidth: 150 }}>
+                    <SelectMenu
+                      aria-label="assign consultant"
+                      value={assignedOwnerId ?? lead.ownerId ?? ''}
+                      onChange={(v) => { void handleAssign(v); }}
+                      options={[
+                        { value: '', label: t('leads.profile.notAssigned') },
+                        ...users.map((u) => ({ value: u.id, label: u.name })),
+                      ]}
+                    />
+                  </span>
+                ) : (
+                  <span className={styles.detailValue}>{ownerName ?? t('leads.profile.notAssigned')}</span>
+                )}
               </div>
               <div className={styles.detailRow}>
                 <span className={styles.detailIcon}><CalendarBlank size={14} /></span>

@@ -12,6 +12,7 @@ import type {
   BrandingSettingsDTO,
   ClientDTO,
   ClientNoteDTO,
+  ClientAnalysisDTO,
   ClientTimelineEntryDTO,
   ContactDTO,
   ContractDTO,
@@ -129,6 +130,7 @@ export const clientsApi = {
   addNote: (id: string, body: { text: string; tag: ClientNoteDTO['tag'] }) =>
     api.post<ClientNoteDTO>(`/api/clients/${id}/notes`, body),
   timeline: (id: string) => api.get<ClientTimelineEntryDTO[]>(`/api/clients/${id}/timeline`),
+  analyses: (id: string) => api.get<ClientAnalysisDTO[]>(`/api/clients/${id}/analyses`),
   /**
    * KALICI silme — client id = contact id; kişi + tüm lead'leri + iletişim
    * izleri gider. Yalnız super_admin (backend zorlar); deal/finans/sözleşme

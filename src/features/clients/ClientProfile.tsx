@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { ClientDTO, ClientNoteDTO, ClientTimelineEntryDTO } from '../../core/types';
+import type { ClientAnalysisDTO, ClientDTO, ClientNoteDTO, ClientTimelineEntryDTO } from '../../core/types';
 import { formatRelativeTime } from './timelineFormat';
 import { clientsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
@@ -11,7 +11,7 @@ import { Button } from '../../core/components/Button/Button';
 import { EmailClient } from './components/EmailClient';
 import { DocumentVault } from '../documents/DocumentVault';
 import { Modal } from '../../core/components/Modal/Modal';
-import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo, TelegramLogo, PencilSimple, NotePencil, Trash } from '@phosphor-icons/react';
+import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo, TelegramLogo, PencilSimple, NotePencil, Trash, Sparkle } from '@phosphor-icons/react';
 import { useAuth } from '../../core/auth/AuthContext';
 import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
@@ -193,11 +193,13 @@ export const ClientProfile: React.FC = () => {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const canDelete = user?.role === 'super_admin';
-  const [activeTab, setActiveTab] = useState<'communication' | 'email' | 'vault' | 'notes'>('communication');
+  const [activeTab, setActiveTab] = useState<'communication' | 'email' | 'vault' | 'notes' | 'analysis'>('communication');
   // Danışman iç notları — meeting_notes tablosundan (mock modda MSW)
   const { data: fetchedNotes } = useFetch<ClientNoteDTO[]>(() => clientsApi.notes(id!), [id]);
   const [addedNotes, setAddedNotes] = useState<ClientNoteDTO[]>([]);
   const notes: ClientNoteDTO[] = [...addedNotes, ...(fetchedNotes ?? [])];
+  // AI Analiz raporları — n8n analiz workflow'u üretir, meeting_notes'ta saklanır.
+  const { data: analyses } = useFetch<ClientAnalysisDTO[]>(() => clientsApi.analyses(id!), [id]);
   const [noteDraft, setNoteDraft] = useState('');
   const [noteTag, setNoteTag] = useState<ClientNoteDTO['tag']>('Meeting');
   // İletişim zaman çizelgesi — communications tablosundan (mock modda MSW)
@@ -529,7 +531,40 @@ export const ClientProfile: React.FC = () => {
               <NotePencil size={16} /> {t('clients.profile.internalNotes')}
               <span className={styles.tabCount}>{notes.length}</span>
             </button>
+            <button
+              className={`${styles.tabBtn} ${activeTab === 'analysis' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('analysis')}
+            >
+              <Sparkle size={16} /> {t('clients.profile.aiAnalysisTab')}
+              <span className={styles.tabCount}>{analyses?.length ?? 0}</span>
+            </button>
           </div>
+
+          {activeTab === 'analysis' && (
+            <Card>
+              <CardHeader>
+                <h3 className={styles.cardTitle}>{t('clients.profile.aiAnalysisTab')}</h3>
+                <span className={styles.notesHint}>{t('clients.profile.aiAnalysisHint')}</span>
+              </CardHeader>
+              <CardBody>
+                {(!analyses || analyses.length === 0) ? (
+                  <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('clients.profile.aiAnalysisEmpty')}</p>
+                ) : (
+                  analyses.map((a) => (
+                    <div key={a.id} style={{ marginBottom: 24, paddingBottom: 20, borderBottom: '1px solid var(--border-subtle, rgba(128,128,128,0.15))' }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
+                        <strong style={{ fontSize: 14 }}>{a.subject}</strong>
+                        <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                          {new Date(a.createdAt).toLocaleString(i18n.language === 'tr' ? 'tr-TR' : 'en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 13, lineHeight: 1.6, margin: 0 }}>{a.report}</pre>
+                    </div>
+                  ))
+                )}
+              </CardBody>
+            </Card>
+          )}
 
           {activeTab === 'communication' && (
             <Card className={styles.communicationCenter}>

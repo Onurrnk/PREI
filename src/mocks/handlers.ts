@@ -904,6 +904,17 @@ export const handlers = [
     return HttpResponse.json<ClientDTO>(mockClients[idx]);
   }),
 
+  // AI Analiz raporları — mock demo: yalnız ilk müşteride örnek rapor.
+  http.get('/api/clients/:id/analyses', ({ params }) => {
+    if (params.id !== '1') return HttpResponse.json([]);
+    return HttpResponse.json([{
+      id: 'an1',
+      subject: 'Görüşme Analizi: Oliver Hartwell, skor 88',
+      report: 'Özet:\nOliver Hartwell, Golden Visa hedefiyle Dubai Marina bölgesinde 2+1/3+1 arayışında. Yüksek bütçe ve net zaman planı ile öncelikli fırsat.\n\nProfil:\n• Amaç: Golden Visa\n• Bölge: Dubai Marina, Downtown Dubai\n• Bütçe: €1.5M – €3.0M\n\nSinyaller:\n• Görüşme talebi kendisinden geldi\n• 60/40 ödeme planı tercihi net\n\nÖnerilen strateji:\n• Q4 2027 teslim projeleri öne çıkarın\n• SPA taslağını görüşme öncesi hazırlayın',
+      createdAt: new Date(Date.now() - 7200000).toISOString(),
+    }]);
+  }),
+
   http.get('/api/clients/:id/notes', ({ params }) => {
     return HttpResponse.json<ClientNoteDTO[]>(mockNotesByClient[String(params.id)] ?? []);
   }),

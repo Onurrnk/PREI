@@ -41,4 +41,12 @@ export class ClientsService {
     const rows = await this.repo.listTimeline(ctx, contactId);
     return rows.map(toClientTimelineEntry);
   }
+
+  /** AI Analiz raporları (n8n analiz workflow'u yazar) — camelCase sözleşme. */
+  async listAnalyses(ctx: RequestContext, contactId: string): Promise<Array<{
+    id: string; subject: string; report: string; createdAt: string;
+  }>> {
+    const rows = await this.repo.listAnalyses(ctx, contactId);
+    return rows.map((r) => ({ id: r.id, subject: r.subject, report: r.report, createdAt: r.created_at }));
+  }
 }

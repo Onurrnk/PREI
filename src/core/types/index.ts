@@ -222,6 +222,14 @@ export interface ClientDTO {
   profileSource?: 'manual' | 'eylul' | null; // kriterlerin kaynağı
 }
 
+/** AI Analiz raporu (n8n analiz workflow'u üretir, meeting_notes'ta saklanır). */
+export interface ClientAnalysisDTO {
+  id: string;
+  subject: string;
+  report: string;    // düz metin (Özet:/Profil:/Sinyaller:... bölümleri)
+  createdAt: string;
+}
+
 export interface ClientNoteDTO {
   id: string;
   author: string;
