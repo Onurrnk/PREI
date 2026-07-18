@@ -49,6 +49,13 @@ danışman için kayıt altında olduğunu şeffafça söyler.
 Bekle: Sakin, savunmasız kabul; değer önerisi (soruları ciddiye alma) + gerçek
 danışmanla (Onur Bey) görüşme opsiyonunu sunar. Kimlik yalanı YOK (K).
 
+**S4b — Tanıdık selamlaması (geri dönen kullanıcı).** Geçmişi olan hesaptan
+gönder: "Selam"
+Bekle: Saat dilimine uygun kısa, sıcak karşılama ("İyi akşamlar Onur Bey,
+hoş geldiniz. Size nasıl yardımcı olabilirim?"). Önceki konuyu KENDİLİĞİNDEN
+özetlemez/açmaz (K); kullanıcı eski konuyu açarsa kaldığı yerden devam eder
+ve hatırladığını gösterir.
+
 ### B. Keşif akışı (4)
 
 **S5 — Genel ilgi.** Gönder: "İstanbul'da yatırım yapmak istiyorum bilgi verebilir misiniz"
