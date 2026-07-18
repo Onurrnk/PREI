@@ -38,7 +38,7 @@ const MAX_ATTACHMENT_TOTAL_BASE64 = 20 * 1024 * 1024;
  *  biçimlendirme etiketlerine izin ver, olay öznitelikleri ile script/style
  *  gövdelerini at. (Girdi zaten kimlik doğrulamalı danışmandan gelir; bu
  *  katman yanlışlıkla yapıştırılan aktif içeriğe karşı emniyet kemeri.) */
-function sanitizeComposerHtml(html: string): string {
+export function sanitizeComposerHtml(html: string): string {
   const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'S', 'BR', 'P', 'DIV', 'UL', 'OL', 'LI', 'A', 'SPAN']);
   return html
     .replace(/<(script|style|iframe|object|embed)[\s\S]*?<\/\1>/gi, '')
