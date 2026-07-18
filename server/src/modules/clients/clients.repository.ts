@@ -22,6 +22,12 @@ export interface ClientRow {
   active_properties: number;
   consultant: string | null;
   last_contact: string | null;
+  // Son lead'in AI-çıkarımlı profili (Eylül extraction → leads.metadata.criteria)
+  lead_budget_min: string | null;
+  lead_budget_max: string | null;
+  lead_currency: string | null;
+  lead_criteria: Record<string, unknown> | null;
+  lead_score: number | null;
 }
 
 export interface TimelineCommunicationRow {
@@ -64,8 +70,20 @@ const CLIENT_SELECT = `
          (SELECT u.full_name FROM leads l JOIN users u ON u.id = l.owner_id
             WHERE l.contact_id = c.id AND l.owner_id IS NOT NULL
             ORDER BY l.created_at DESC LIMIT 1) AS consultant,
-         (SELECT max(cm.sent_at) FROM communications cm WHERE cm.contact_id = c.id) AS last_contact
-    FROM contacts c`;
+         (SELECT max(cm.sent_at) FROM communications cm WHERE cm.contact_id = c.id) AS last_contact,
+         ll.budget_min AS lead_budget_min,
+         ll.budget_max AS lead_budget_max,
+         ll.currency   AS lead_currency,
+         ll.criteria   AS lead_criteria,
+         ll.score      AS lead_score
+    FROM contacts c
+    LEFT JOIN LATERAL (
+      SELECT l.budget_min, l.budget_max, l.currency,
+             l.metadata->'criteria' AS criteria, l.score
+        FROM leads l
+       WHERE l.contact_id = c.id AND l.deleted_at IS NULL
+       ORDER BY l.updated_at DESC LIMIT 1
+    ) ll ON true`;
 
 @Injectable()
 export class ClientsRepository {

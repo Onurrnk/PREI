@@ -211,11 +211,15 @@ export interface ClientDTO {
   relationshipStatus: 'Active' | 'Dormant' | 'Churned';
   assignedConsultant: string;
   lastContactDate: string;
-  /* Yatırım kriterleri (opsiyonel — gerçek backend'de contacts.metadata'ya eşlenir) */
+  /* Yatırım kriterleri (opsiyonel — manuel giriş VEYA Eylül'ün konuşma çıkarımı) */
   unitTypes?: string[];              // aranan daire tipleri: Studio, 1+1, 2+1...
-  purpose?: 'Investment' | 'End-use' | 'Golden Visa' | 'Relocation';
-  budgetRange?: string;              // örn. '€1.5M – €3.0M'
+  purpose?: string;                  // 'Investment' vb. veya Eylül'ün serbest metni ('kira getirisi')
+  budgetRange?: string;              // örn. '€1.5M – €3.0M' veya '2.500.000 – 3.200.000 AED'
   requirements?: string;             // özel talepler: deniz manzarası, yüksek kat...
+  /* Durum bayrakları + kaynak (gerçek backend üretir; mock'ta opsiyonel) */
+  welcomeEmailSentAt?: string | null; // null = hoş geldiniz maili gönderilmedi
+  aiScore?: number | null;            // son lead skoru (Eylül/RAG)
+  profileSource?: 'manual' | 'eylul' | null; // kriterlerin kaynağı
 }
 
 export interface ClientNoteDTO {

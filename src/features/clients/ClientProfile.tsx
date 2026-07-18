@@ -389,14 +389,46 @@ export const ClientProfile: React.FC = () => {
                 <span className={styles.detailLabel}>{t('clients.profile.assignedConsultant')}</span>
                 <span className={styles.detailValue}>{client.assignedConsultant}</span>
               </div>
+
+              {/* Durum bayrakları — küçük ama kritik operasyon detayları */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+                {(!client.email || client.email === '—') && (
+                  <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 'var(--radius-control, 6px)', color: 'var(--color-danger)', border: '1px solid var(--color-danger)', opacity: 0.9 }}>
+                    ⚠ {t('clients.profile.flagEmailMissing')}
+                  </span>
+                )}
+                {client.email && client.email !== '—' && client.welcomeEmailSentAt === null && (
+                  <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 'var(--radius-control, 6px)', color: 'var(--color-warning)', border: '1px solid var(--color-warning)', opacity: 0.9 }}>
+                    {t('clients.profile.flagWelcomeNotSent')}
+                  </span>
+                )}
+                {client.welcomeEmailSentAt ? (
+                  <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 'var(--radius-control, 6px)', color: 'var(--color-success)', border: '1px solid var(--color-success)', opacity: 0.9 }}>
+                    ✓ {t('clients.profile.flagWelcomeSent', { date: new Date(client.welcomeEmailSentAt).toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-GB', { day: '2-digit', month: 'short' }) })}
+                  </span>
+                ) : null}
+              </div>
             </CardBody>
           </Card>
 
           <Card>
             <CardHeader>
-              <h3 className={styles.cardTitle}>{t('clients.profile.overview')}</h3>
+              <h3 className={styles.cardTitle} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {t('clients.profile.overview')}
+                {client.profileSource === 'eylul' && (
+                  <span style={{ fontSize: 10, fontWeight: 500, padding: '2px 7px', borderRadius: 'var(--radius-control, 6px)', color: 'var(--brand-primary)', border: '1px solid var(--brand-primary)' }}>
+                    {t('clients.profile.eylulExtracted')}
+                  </span>
+                )}
+              </h3>
             </CardHeader>
             <CardBody>
+              {typeof client.aiScore === 'number' && (
+                <div className={styles.detailRow}>
+                  <span className={styles.detailLabel}>{t('clients.profile.aiScoreLabel')}</span>
+                  <span className={`${styles.detailValue} ${styles.monoValue}`}>{client.aiScore} / 100</span>
+                </div>
+              )}
               <div className={styles.kpiGrid}>
                 <div className={styles.kpiBox}>
                   <CurrencyDollar size={16} className={styles.kpiIcon} />

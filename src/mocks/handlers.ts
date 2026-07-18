@@ -266,7 +266,8 @@ const mockClients: ClientDTO[] = [
         investmentProfile: 'Balanced', source: 'Referral', relationshipStatus: 'Active',
         assignedConsultant: 'Sarah Ahmed', lastContactDate: '2026-06-15T10:30:00Z',
         unitTypes: ['2+1', '3+1'], purpose: 'Golden Visa', budgetRange: '€1.5M – €3.0M',
-        requirements: 'Sea view, high floor, 60/40 construction-linked payment plan; handover by Q4 2027.'
+        requirements: 'Sea view, high floor, 60/40 construction-linked payment plan; handover by Q4 2027.',
+        welcomeEmailSentAt: '2026-06-01T09:00:00Z', aiScore: 88, profileSource: 'manual',
       },
       {
         id: '2', clientId: 'CL-10025', name: 'Carmen Ortega', type: 'Individual', nationality: 'Spain',
@@ -275,7 +276,8 @@ const mockClients: ClientDTO[] = [
         investmentProfile: 'Conservative', source: 'Web Lead', relationshipStatus: 'Active',
         assignedConsultant: 'Michael Chen', lastContactDate: '2026-06-10T14:15:00Z',
         unitTypes: ['1+1'], purpose: 'Investment', budgetRange: '€400K – €700K',
-        requirements: 'High rental yield focus; furnished preferred, near metro.'
+        requirements: 'High rental yield focus; furnished preferred, near metro.',
+        welcomeEmailSentAt: null, aiScore: 62, profileSource: 'eylul',
       },
       {
         id: '3', clientId: 'CL-10026', name: 'Meridian Gulf Investments', type: 'Corporate', nationality: 'UAE',
