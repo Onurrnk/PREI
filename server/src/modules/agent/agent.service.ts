@@ -16,6 +16,7 @@ import type { LeadProfileDto } from './dto/lead-profile.dto';
 import type { WebLeadDto } from './dto/web-lead.dto';
 import { buildWelcomeCopy } from './welcome-email-copy';
 import { buildMeetingTask, type MeetingEventDto } from './dto/meeting-event.dto';
+import type { KnowledgeAddDto } from './dto/knowledge-add.dto';
 
 export interface IngestResult {
   contact_id: string;
@@ -852,6 +853,172 @@ export class AgentService {
       });
 
       return { task_id: taskId, deduped: false, matched_contact: !!contact };
+    });
+  }
+
+  /**
+   * Welcome takibi de yanıtsız kalan lead'leri 'frozen' statüsüne çeker
+   * (günlük n8n akışının son adımı). Koşul: takip maili gönderileli ≥days
+   * gün olmuş VE o tarihten sonra hiç inbound mesaj yok VE lead hâlâ açık.
+   */
+  async freezeStaleLeads(ctx: RequestContext, days = 3): Promise<{ count: number; frozen: Array<{ lead_id: string; name: string }> }> {
+    const safeDays = Math.max(1, Math.min(60, days));
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ lead_id: string; name: string }>(
+        `UPDATE leads l SET status = 'frozen', updated_by = $2
+           FROM contacts ct
+          WHERE ct.id = l.contact_id
+            AND l.tenant_id = $3 AND l.deleted_at IS NULL
+            AND l.status IN ('new','contacted','qualified','nurturing')
+            AND ct.metadata ? 'welcome_follow_up_sent_at'
+            AND (ct.metadata->>'welcome_follow_up_sent_at')::timestamptz <= now() - make_interval(days => $1)
+            AND NOT EXISTS (
+              SELECT 1 FROM communications co
+               WHERE co.contact_id = ct.id AND co.direction = 'inbound'
+                 AND co.sent_at > (ct.metadata->>'welcome_follow_up_sent_at')::timestamptz
+            )
+          RETURNING l.id AS lead_id,
+                    trim(concat(ct.first_name, ' ', coalesce(ct.last_name, ''))) AS name`,
+        [safeDays, ctx.userId, ctx.tenantId],
+      );
+      for (const r of rows) {
+        await c.query(
+          `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+           VALUES ($1,$2,'lead.frozen','lead',$3,$4,$5)`,
+          [ctx.tenantId, ctx.userId, r.lead_id,
+           JSON.stringify({ reason: 'welcome_follow_up_no_reply', days: safeDays }), ctx.correlationId],
+        );
+        await this.writeEvent(c, ctx, 'lead', r.lead_id, 'lead.frozen', { name: r.name, days: safeDays });
+      }
+      return { count: rows.length, frozen: rows };
+    });
+  }
+
+  /**
+   * Görüşme analizi adayları: skor ≥70 OLAN veya yaklaşan randevusu OLAN,
+   * henüz analiz maili gönderilmemiş lead'ler. n8n 6 saatte bir sorar,
+   * rapor+analizi Onur'a mailler, sonra markAnalysisSent çağırır.
+   */
+  async analysisCandidates(ctx: RequestContext): Promise<Array<{
+    lead_id: string; contact_id: string; name: string; score: number | null;
+    trigger: 'score' | 'meeting'; meeting_at: string | null;
+  }>> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{
+        lead_id: string; contact_id: string; name: string; score: number | null;
+        trigger: 'score' | 'meeting'; meeting_at: string | null;
+      }>(
+        `SELECT l.id AS lead_id, ct.id AS contact_id,
+                trim(concat(ct.first_name, ' ', coalesce(ct.last_name, ''))) AS name,
+                l.score,
+                CASE WHEN m.due_date IS NOT NULL THEN 'meeting' ELSE 'score' END AS trigger,
+                m.due_date::text AS meeting_at
+           FROM leads l
+           JOIN contacts ct ON ct.id = l.contact_id
+           LEFT JOIN LATERAL (
+             SELECT due_date FROM tasks t
+              WHERE t.tenant_id = l.tenant_id AND t.task_type = 'meeting'
+                AND t.deleted_at IS NULL AND t.due_date > now()
+                AND (t.related_id = ct.id OR t.metadata->>'invitee_email' = ct.email)
+              ORDER BY t.due_date ASC LIMIT 1
+           ) m ON true
+          WHERE l.tenant_id = $1 AND l.deleted_at IS NULL
+            AND l.status NOT IN ('lost','unqualified','frozen')
+            AND NOT (l.metadata ? 'analysis_sent_at')
+            AND (coalesce(l.score, 0) >= 70 OR m.due_date IS NOT NULL)
+          ORDER BY l.updated_at DESC
+          LIMIT 20`,
+        [ctx.tenantId],
+      );
+      return rows;
+    });
+  }
+
+  /** Analiz maili gönderildi — tekrar listelenmesin (idempotent işaret). */
+  async markAnalysisSent(ctx: RequestContext, leadId: string): Promise<{ ok: true }> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `UPDATE leads SET metadata = metadata || $2::jsonb, updated_by = $3
+          WHERE id = $1 AND deleted_at IS NULL RETURNING id`,
+        [leadId, JSON.stringify({ analysis_sent_at: new Date().toISOString() }), ctx.userId],
+      );
+      if (rows.length === 0) throw new NotFoundException('Lead bulunamadı');
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'lead.analysis_sent','lead',$3,'{}',$4)`,
+        [ctx.tenantId, ctx.userId, leadId, ctx.correlationId],
+      );
+      return { ok: true as const };
+    });
+  }
+
+  /**
+   * Son N günün konuşmaları — Eylül'ün haftalık kendini-geliştirme döngüsü
+   * için ham madde (lead başına gruplu, en yeni 30 lead × 40 mesaj).
+   */
+  async recentConversations(ctx: RequestContext, days = 7): Promise<Array<{
+    lead_id: string; name: string;
+    messages: Array<{ direction: string; body: string | null; sent_at: string | null }>;
+  }>> {
+    const safeDays = Math.max(1, Math.min(60, days));
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{
+        lead_id: string; name: string;
+        messages: Array<{ direction: string; body: string | null; sent_at: string | null }>;
+      }>(
+        `SELECT l.id AS lead_id,
+                trim(concat(ct.first_name, ' ', coalesce(ct.last_name, ''))) AS name,
+                (SELECT json_agg(x) FROM (
+                   SELECT co.direction, co.body, co.sent_at::text
+                     FROM communications co
+                    WHERE co.lead_id = l.id
+                    ORDER BY co.sent_at ASC NULLS LAST
+                    LIMIT 40
+                 ) x) AS messages
+           FROM leads l
+           JOIN contacts ct ON ct.id = l.contact_id
+          WHERE l.tenant_id = $1 AND l.deleted_at IS NULL
+            AND EXISTS (
+              SELECT 1 FROM communications co
+               WHERE co.lead_id = l.id AND co.created_at > now() - make_interval(days => $2)
+            )
+          ORDER BY l.updated_at DESC
+          LIMIT 30`,
+        [ctx.tenantId, safeDays],
+      );
+      return rows;
+    });
+  }
+
+  /**
+   * Onaylı Q&A'yı bilgi bankasına (documents/pgvector) ekler — Eylül'ün RAG'ı
+   * bir sonraki sorudan itibaren bu içeriği görür. Yalnız Onur'un Telegram'dan
+   * onayladığı içerik gelir (n8n akışı onay kapılı).
+   */
+  async addKnowledge(ctx: RequestContext, dto: KnowledgeAddDto): Promise<{ id: string }> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `INSERT INTO documents (content, embedding, metadata)
+         VALUES ($1, $2::vector, $3) RETURNING id`,
+        [
+          dto.content,
+          JSON.stringify(dto.embedding),
+          JSON.stringify({
+            ...(dto.metadata ?? {}),
+            source: 'conversation_qa',
+            category: 'faq',
+            added_by: 'eylul_self_improve',
+            added_at: new Date().toISOString(),
+          }),
+        ],
+      );
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'knowledge.added','document',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, rows[0].id,
+         JSON.stringify({ preview: dto.content.slice(0, 120) }), ctx.correlationId],
+      );
+      return { id: rows[0].id };
     });
   }
 

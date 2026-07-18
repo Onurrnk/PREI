@@ -301,6 +301,7 @@ export const en = {
         converted: 'Converted',
         unqualified: 'Unqualified',
         lost: 'Lost',
+        frozen: 'Frozen',
       },
       form: {
         title: 'New Lead',

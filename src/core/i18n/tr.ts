@@ -300,6 +300,7 @@ export const tr = {
         converted: 'Dönüştü',
         unqualified: 'Niteliksiz',
         lost: 'Kaybedildi',
+        frozen: 'Donduruldu',
       },
       form: {
         title: 'Yeni Aday',

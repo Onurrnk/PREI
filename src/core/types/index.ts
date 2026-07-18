@@ -119,7 +119,8 @@ export interface KPIDTO {
   percentage: number;
 }
 
-// Backend lead_status enum (7 değer) — dondurulmuş 9-aşamalı Kanban buna hizalandı (Faz 1 kararı).
+// Backend lead_status enum (8 değer) — dondurulmuş 9-aşamalı Kanban buna hizalandı (Faz 1 kararı).
+// 'frozen' (002i): welcome takibi de yanıtsız kalan lead — otomasyon atar, elle de seçilebilir.
 export type LeadStatus =
   | 'new'
   | 'contacted'
@@ -127,7 +128,8 @@ export type LeadStatus =
   | 'unqualified'
   | 'nurturing'
   | 'converted'
-  | 'lost';
+  | 'lost'
+  | 'frozen';
 
 export type LeadPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type LeadInterest = 'buy' | 'rent' | 'sell' | 'invest';

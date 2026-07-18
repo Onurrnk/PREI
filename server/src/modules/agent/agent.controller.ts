@@ -17,6 +17,7 @@ import { OutboundMessageDto } from './dto/outbound-message.dto';
 import { LeadProfileDto } from './dto/lead-profile.dto';
 import { WebLeadDto } from './dto/web-lead.dto';
 import { MeetingEventDto } from './dto/meeting-event.dto';
+import { KnowledgeAddDto } from './dto/knowledge-add.dto';
 
 @Controller('agent')
 @UseGuards(AgentKeyGuard)
@@ -107,5 +108,43 @@ export class AgentController {
   @HttpCode(200)
   recordMeeting(@Ctx() ctx: RequestContext, @Body() dto: MeetingEventDto) {
     return this.agent.recordMeeting(ctx, dto);
+  }
+
+  /** Welcome takibi de yanıtsız kalanları 'frozen' statüsüne çeker. */
+  @Post('leads/freeze-stale')
+  @HttpCode(200)
+  freezeStale(
+    @Ctx() ctx: RequestContext,
+    @Query('days', new DefaultValuePipe(3), ParseIntPipe) days: number,
+  ) {
+    return this.agent.freezeStaleLeads(ctx, days);
+  }
+
+  /** Skor ≥70 veya yaklaşan randevusu olan, analiz maili bekleyen lead'ler. */
+  @Get('leads/analysis-candidates')
+  analysisCandidates(@Ctx() ctx: RequestContext) {
+    return this.agent.analysisCandidates(ctx);
+  }
+
+  @Post('leads/:id/analysis-sent')
+  @HttpCode(200)
+  markAnalysisSent(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.agent.markAnalysisSent(ctx, id);
+  }
+
+  /** Son N günün konuşmaları — haftalık kendini-geliştirme döngüsü hammadesi. */
+  @Get('conversations/recent')
+  recentConversations(
+    @Ctx() ctx: RequestContext,
+    @Query('days', new DefaultValuePipe(7), ParseIntPipe) days: number,
+  ) {
+    return this.agent.recentConversations(ctx, days);
+  }
+
+  /** Onur'un onayladığı Q&A'yı bilgi bankasına ekler (RAG anında görür). */
+  @Post('knowledge/add')
+  @HttpCode(200)
+  addKnowledge(@Ctx() ctx: RequestContext, @Body() dto: KnowledgeAddDto) {
+    return this.agent.addKnowledge(ctx, dto);
   }
 }

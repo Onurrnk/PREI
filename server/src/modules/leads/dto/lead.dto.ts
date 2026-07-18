@@ -6,7 +6,7 @@ import {
   IsUUID, IsOptional, IsString, IsIn, IsNumber, Min, MaxLength, IsInt, Max,
 } from 'class-validator';
 
-const LEAD_STATUS = ['new', 'contacted', 'qualified', 'unqualified', 'nurturing', 'converted', 'lost'] as const;
+const LEAD_STATUS = ['new', 'contacted', 'qualified', 'unqualified', 'nurturing', 'converted', 'lost', 'frozen'] as const;
 const INTEREST = ['buy', 'rent', 'sell', 'invest'] as const;
 const PRIORITY = ['low', 'medium', 'high', 'urgent'] as const;
 

@@ -16,10 +16,11 @@ import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import { useTranslation } from 'react-i18next';
 
-// Kanban kolonları = backend lead_status enum (7 değer). Dondurulmuş 9-aşamalı
-// tasarım Faz 1'de DB'nin tek doğruluk kaynağına hizalandı.
+// Kanban kolonları = backend lead_status enum (8 değer). Dondurulmuş 9-aşamalı
+// tasarım Faz 1'de DB'nin tek doğruluk kaynağına hizalandı; 'frozen' 002i ile
+// eklendi (welcome takibi yanıtsız → otomasyon dondurur).
 const PIPELINE_STAGES: LeadStatus[] = [
-  'new', 'contacted', 'qualified', 'nurturing', 'converted', 'unqualified', 'lost',
+  'new', 'contacted', 'qualified', 'nurturing', 'converted', 'unqualified', 'lost', 'frozen',
 ];
 
 type ViewMode = 'kanban' | 'list';
