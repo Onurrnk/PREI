@@ -141,6 +141,16 @@ export class AgentController {
     return this.agent.recentConversations(ctx, days);
   }
 
+  /** Calendly free-tier senkronu: Gmail'deki bildirim eklerinden randevu tara. */
+  @Post('calendly-email-sweep')
+  @HttpCode(200)
+  calendlySweep(
+    @Ctx() ctx: RequestContext,
+    @Query('days', new DefaultValuePipe(3), ParseIntPipe) days: number,
+  ) {
+    return this.agent.calendlyEmailSweep(ctx, days);
+  }
+
   /** Onur'un onayladığı Q&A'yı bilgi bankasına ekler (RAG anında görür). */
   @Post('knowledge/add')
   @HttpCode(200)

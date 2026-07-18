@@ -88,6 +88,48 @@ export class GmailService {
     return { contactId: match.contactId, type: match.type, name: match.name };
   }
 
+  /**
+   * Gmail sorgusuna uyan mesajların .ics eklerini döndürür (Calendly
+   * free-tier senkronu: webhook yok → bildirim mailindeki davet ekinden
+   * randevu çıkarılır). Ek yoksa ics=null ile mesaj yine listelenir.
+   */
+  async listMessagesWithIcs(
+    userId: string, q: string, maxResults = 15,
+  ): Promise<Array<{ messageId: string; ics: string | null }>> {
+    const gmail = await this.client(userId);
+    const list = await gmail.users.messages.list({ userId: 'me', q, maxResults });
+    const out: Array<{ messageId: string; ics: string | null }> = [];
+
+    for (const m of list.data.messages ?? []) {
+      const full = await gmail.users.messages.get({ userId: 'me', id: m.id!, format: 'full' });
+      const parts: gmail_v1.Schema$MessagePart[] = [];
+      const walk = (p?: gmail_v1.Schema$MessagePart | null): void => {
+        if (!p) return;
+        parts.push(p);
+        (p.parts ?? []).forEach(walk);
+      };
+      walk(full.data.payload);
+
+      let ics: string | null = null;
+      for (const p of parts) {
+        const isIcs = p.mimeType === 'text/calendar'
+          || (p.filename ?? '').toLowerCase().endsWith('.ics');
+        if (!isIcs) continue;
+        if (p.body?.data) {
+          ics = Buffer.from(p.body.data, 'base64url').toString('utf8');
+        } else if (p.body?.attachmentId) {
+          const att = await gmail.users.messages.attachments.get({
+            userId: 'me', messageId: m.id!, id: p.body.attachmentId,
+          });
+          if (att.data.data) ics = Buffer.from(att.data.data, 'base64url').toString('utf8');
+        }
+        if (ics) break;
+      }
+      out.push({ messageId: m.id!, ics });
+    }
+    return out;
+  }
+
   /** List recent threads (optionally filtered by a Gmail query `q`). */
   async listThreads(userId: string, q?: string, maxResults = 20): Promise<ThreadSummaryDTO[]> {
     const gmail = await this.client(userId);

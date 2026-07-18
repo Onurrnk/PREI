@@ -17,6 +17,7 @@ import type { WebLeadDto } from './dto/web-lead.dto';
 import { buildWelcomeCopy } from './welcome-email-copy';
 import { buildMeetingTask, type MeetingEventDto } from './dto/meeting-event.dto';
 import type { KnowledgeAddDto } from './dto/knowledge-add.dto';
+import { parseCalendlyIcs } from './calendly-ics';
 
 export interface IngestResult {
   contact_id: string;
@@ -1020,6 +1021,65 @@ export class AgentService {
       );
       return { id: rows[0].id };
     });
+  }
+
+  /**
+   * Calendly free-tier senkronu: bağlı Gmail kutusundaki Calendly bildirim
+   * maillerinin .ics eklerini tarar, her yeni randevuyu recordMeeting ile
+   * PREI Meetings takvimine yazar. Idempotent (UID / mail id). n8n 15 dk'da
+   * bir çağırır. İptal (METHOD:CANCEL) v1'de atlanır ve raporlanır.
+   */
+  async calendlyEmailSweep(ctx: RequestContext, days = 3): Promise<{
+    scanned: number; created: number; deduped: number; skipped: number;
+    details: Array<{ messageId: string; status: string; invitee?: string }>;
+  }> {
+    const safeDays = Math.max(1, Math.min(14, days));
+    const readers = await this.db.raw<{ id: string; email: string }>(
+      `SELECT id, email FROM users
+         WHERE tenant_id = $1 AND metadata ? 'googleOAuth' AND is_active = true AND deleted_at IS NULL
+         ORDER BY created_at ASC LIMIT 1`,
+      [ctx.tenantId],
+    );
+    if (readers.length === 0) {
+      return { scanned: 0, created: 0, deduped: 0, skipped: 0, details: [{ messageId: '-', status: 'no_gmail_user' }] };
+    }
+    const reader = readers[0];
+    const hostEmails = ['info@produality.com', 'onur.karatas@produality.com', reader.email].filter(Boolean);
+
+    const messages = await this.gmail.listMessagesWithIcs(
+      reader.id,
+      `from:calendly.com has:attachment newer_than:${safeDays}d`,
+      15,
+    );
+
+    const details: Array<{ messageId: string; status: string; invitee?: string }> = [];
+    let created = 0; let deduped = 0; let skipped = 0;
+
+    for (const msg of messages) {
+      try {
+        if (!msg.ics) { skipped++; details.push({ messageId: msg.messageId, status: 'no_ics' }); continue; }
+        const parsed = parseCalendlyIcs(msg.ics, hostEmails);
+        if (parsed.cancelled) { skipped++; details.push({ messageId: msg.messageId, status: 'cancelled_skipped', invitee: parsed.inviteeEmail ?? undefined }); continue; }
+        if (!parsed.start || !parsed.inviteeEmail) {
+          skipped++; details.push({ messageId: msg.messageId, status: 'parse_incomplete' }); continue;
+        }
+        const result = await this.recordMeeting(ctx, {
+          invitee_name: parsed.inviteeName ?? parsed.inviteeEmail.split('@')[0],
+          invitee_email: parsed.inviteeEmail,
+          start_time: parsed.start,
+          end_time: parsed.end ?? undefined,
+          event_name: parsed.summary ?? undefined,
+          join_url: parsed.joinUrl ?? undefined,
+          external_id: parsed.uid ?? `gmail-${msg.messageId}`,
+        });
+        if (result.deduped) { deduped++; details.push({ messageId: msg.messageId, status: 'deduped', invitee: parsed.inviteeEmail }); }
+        else { created++; details.push({ messageId: msg.messageId, status: 'created', invitee: parsed.inviteeEmail }); }
+      } catch (err) {
+        skipped++;
+        details.push({ messageId: msg.messageId, status: `error: ${(err as Error).message.slice(0, 120)}` });
+      }
+    }
+    return { scanned: messages.length, created, deduped, skipped, details };
   }
 
   private async findSession(c: PoolClient, ctx: RequestContext, normalized: string, channel: string): Promise<string | null> {
