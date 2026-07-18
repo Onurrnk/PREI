@@ -27,6 +27,10 @@ import type {
   FinancialsSummaryDTO,
   GoogleOAuthStatus,
   FinancialsTimeframe,
+  MarketingSummaryDTO,
+  MarketingTimeframe,
+  AdCampaignDTO,
+  CreateAdSpendInput,
   MeetingDTO,
   KPIDTO,
   LeadCommunicationDTO,
@@ -217,6 +221,16 @@ export const dashboardApi = {
 export const financialsApi = {
   summary: (timeframe: FinancialsTimeframe) =>
     api.get<FinancialsSummaryDTO>('/api/financials/summary', { params: { timeframe } }),
+};
+
+export const marketingApi = {
+  summary: (timeframe: MarketingTimeframe) =>
+    api.get<MarketingSummaryDTO>('/api/marketing/summary', { params: { timeframe } }),
+  campaigns: () => api.get<AdCampaignDTO[]>('/api/marketing/campaigns'),
+  create: (input: CreateAdSpendInput) => api.post<AdCampaignDTO>('/api/marketing/campaigns', input),
+  import: (rows: CreateAdSpendInput[]) =>
+    api.post<{ imported: number }>('/api/marketing/campaigns/import', { rows }),
+  remove: (id: string) => api.delete<{ deleted: true }>(`/api/marketing/campaigns/${id}`),
 };
 
 export const adminApi = {

@@ -65,6 +65,86 @@ export interface FinancialsSummaryDTO {
   purposeSplit: FinancialsSplitItemDTO[];
 }
 
+// =====================================================================
+// Marketing — GET /api/marketing/summary + kampanya (ad_spend) CRUD.
+// Harcama/gösterim/tıklama ad_spend'den (elle/CSV); funnel/CPL/ROAS gerçek
+// CRM'den. Atıf (CTWA) olmayan kampanya alanları null → UI "—".
+// =====================================================================
+export type MarketingTimeframe = '30D' | '90D' | 'YTD' | '1Y';
+
+export interface MarketingCampaignDTO {
+  id: string;
+  name: string;
+  market: string | null;
+  status: 'active' | 'paused';
+  spendEur: number;
+  leads: number | null;
+  qualified: number | null;
+  cpl: number | null;
+  closed: number | null;
+  roas: number | null;
+  attributed: boolean;
+}
+
+export interface MarketingConversationDTO {
+  id: string;
+  name: string;
+  market: string | null;
+  channel: string | null;
+  snippet: string | null;
+  score: number | null;
+  lastActivityAt: string | null;
+}
+
+export interface MarketingSummaryDTO {
+  hasSpendData: boolean;
+  kpis: {
+    adSpendEur: number; adSpendDeltaPct: number | null;
+    avgCplEur: number | null; avgCplDeltaPct: number | null;
+    convQualifiedPct: number; convQualifiedDeltaPct: number | null;
+    roas: number | null; roasDeltaPct: number | null;
+    spendSpark: number[]; cplSpark: number[]; qualifiedSpark: number[]; roasSpark: number[];
+  };
+  funnel: {
+    impressions: number; ctwaClicks: number; conversations: number;
+    qualified: number; meetings: number; closedWon: number;
+  };
+  weeklySpendCpl: { label: string; spendEur: number; cpl: number | null }[];
+  spendByMarket: FinancialsSplitItemDTO[];
+  campaigns: MarketingCampaignDTO[];
+  conversations: MarketingConversationDTO[];
+}
+
+// ad_spend yönetim satırı (GET /api/marketing/campaigns, POST/PATCH).
+export interface AdCampaignDTO {
+  id: string;
+  name: string;
+  campaignRef: string | null;
+  marketCode: string | null;
+  channel: string;
+  status: 'active' | 'paused';
+  periodStart: string;
+  periodEnd: string;
+  spend: number;
+  currency: string;
+  impressions: number;
+  clicks: number;
+}
+
+export interface CreateAdSpendInput {
+  name: string;
+  campaignRef?: string;
+  marketCode?: string;
+  channel?: string;
+  status?: string;
+  periodStart: string;
+  periodEnd: string;
+  spend: number;
+  currency?: string;
+  impressions?: number;
+  clicks?: number;
+}
+
 // GET/PATCH /api/admin/branding — tenant-seviyesi marka/komisyon ayarları.
 export interface BrandingSettingsDTO {
   companyName: string;

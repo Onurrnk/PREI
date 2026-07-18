@@ -20,6 +20,9 @@ import type {
   CreateTaskInput,
   DashboardSummaryDTO,
   FinancialsSummaryDTO,
+  MarketingSummaryDTO,
+  AdCampaignDTO,
+  CreateAdSpendInput,
   MeetingDTO,
   MeResponse,
   TeamMemberDTO,
@@ -327,6 +330,11 @@ let mockBranding: BrandingSettingsDTO = {
   offPlanCommissionPct: 50,
   secondaryCommissionPct: 60,
 };
+
+let mockCampaigns: AdCampaignDTO[] = [
+  { id: 'c1', name: 'Golden Visa · Dubai Off-Plan (TR)', campaignRef: '238401', marketCode: 'AE', channel: 'meta', status: 'active', periodStart: '2026-06-20', periodEnd: '2026-07-19', spend: 2_840, currency: 'EUR', impressions: 184_200, clicks: 1_620 },
+  { id: 'c3', name: 'İstanbul Yatırım Fırsatları (TR)', campaignRef: null, marketCode: 'TR', channel: 'meta', status: 'active', periodStart: '2026-06-20', periodEnd: '2026-07-19', spend: 1_620, currency: 'EUR', impressions: 96_400, clicks: 880 },
+];
 
 const mockDeveloperNames: Record<string, string> = {
   '1': 'Emaar Properties', '2': 'DAMAC Properties', '3': 'Nakheel', '4': 'Ellington Properties', '5': 'Sobha Realty',
@@ -782,6 +790,70 @@ export const handlers = [
         { code: 'holiday_home', name: 'Holiday Home', valueEur: 1_350_000 },
       ],
     });
+  }),
+
+  http.get('/api/marketing/summary', () => {
+    return HttpResponse.json<MarketingSummaryDTO>({
+      hasSpendData: true,
+      kpis: {
+        adSpendEur: 9_400, adSpendDeltaPct: 12.6,
+        avgCplEur: 98.4, avgCplDeltaPct: -8.2,
+        convQualifiedPct: 22.2, convQualifiedDeltaPct: 3.4,
+        roas: 4.1, roasDeltaPct: 6.8,
+        spendSpark: [620, 680, 650, 710, 740, 720, 790, 830, 810, 880, 910, 940],
+        cplSpark: [128, 121, 124, 116, 112, 115, 108, 104, 107, 101, 99, 98.4],
+        qualifiedSpark: [16, 17, 16.5, 18, 17.8, 19, 19.5, 20.2, 20.8, 21.4, 21.9, 22.2],
+        roasSpark: [2.9, 3.1, 3.0, 3.3, 3.4, 3.3, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1],
+      },
+      funnel: { impressions: 412_400, ctwaClicks: 3_840, conversations: 962, qualified: 214, meetings: 58, closedWon: 11 },
+      weeklySpendCpl: [
+        { label: 'W14', spendEur: 1_420, cpl: 128 }, { label: 'W15', spendEur: 1_560, cpl: 121 },
+        { label: 'W16', spendEur: 1_480, cpl: 124 }, { label: 'W17', spendEur: 1_720, cpl: 116 },
+        { label: 'W18', spendEur: 1_690, cpl: 112 }, { label: 'W19', spendEur: 1_840, cpl: 115 },
+        { label: 'W20', spendEur: 1_910, cpl: 108 }, { label: 'W21', spendEur: 2_050, cpl: 104 },
+        { label: 'W22', spendEur: 1_980, cpl: 107 }, { label: 'W23', spendEur: 2_140, cpl: 101 },
+        { label: 'W24', spendEur: 2_260, cpl: 99 }, { label: 'W25', spendEur: 2_310, cpl: 98 },
+      ],
+      spendByMarket: [
+        { code: 'AE', name: 'Dubai (UAE)', valueEur: 4_120 },
+        { code: 'TR', name: 'Türkiye', valueEur: 2_680 },
+        { code: 'ES', name: 'Spain', valueEur: 1_540 },
+        { code: 'GB', name: 'United Kingdom', valueEur: 1_060 },
+      ],
+      campaigns: [
+        { id: 'c1', name: 'Golden Visa · Dubai Off-Plan (TR)', market: 'AE', status: 'active', spendEur: 2_840, leads: 24, qualified: 11, cpl: 118.3, closed: 2, roas: 5.6, attributed: true },
+        { id: 'c2', name: 'Downtown Rental Yield (EN)', market: 'AE', status: 'active', spendEur: 1_280, leads: 14, qualified: 5, cpl: 91.4, closed: 1, roas: 3.9, attributed: true },
+        { id: 'c3', name: 'İstanbul Yatırım Fırsatları (TR)', market: 'TR', status: 'active', spendEur: 1_620, leads: null, qualified: null, cpl: null, closed: null, roas: null, attributed: false },
+      ],
+      conversations: [
+        { id: 'cv1', name: 'Khalid Al Mansoori', market: 'AE', channel: 'whatsapp', snippet: 'Golden Visa için minimum yatırım tutarını teyit edebilir misiniz?', score: 85, lastActivityAt: new Date(Date.now() - 12 * 60_000).toISOString() },
+        { id: 'cv2', name: 'Ayşe Demirok', market: 'TR', channel: 'telegram', snippet: 'Kadıköy projesinde 3+1 için ödeme planı nasıl işliyor?', score: 55, lastActivityAt: new Date(Date.now() - 3 * 3_600_000).toISOString() },
+      ],
+    });
+  }),
+
+  http.get('/api/marketing/campaigns', () => HttpResponse.json<AdCampaignDTO[]>(mockCampaigns)),
+
+  http.post('/api/marketing/campaigns', async ({ request }) => {
+    const b = (await request.json()) as CreateAdSpendInput;
+    const row: AdCampaignDTO = {
+      id: crypto.randomUUID(), name: b.name, campaignRef: b.campaignRef ?? null,
+      marketCode: b.marketCode ?? null, channel: b.channel ?? 'meta', status: (b.status as 'active' | 'paused') ?? 'active',
+      periodStart: b.periodStart, periodEnd: b.periodEnd, spend: b.spend, currency: b.currency ?? 'EUR',
+      impressions: b.impressions ?? 0, clicks: b.clicks ?? 0,
+    };
+    mockCampaigns = [row, ...mockCampaigns];
+    return HttpResponse.json<AdCampaignDTO>(row, { status: 201 });
+  }),
+
+  http.post('/api/marketing/campaigns/import', async ({ request }) => {
+    const { rows } = (await request.json()) as { rows: CreateAdSpendInput[] };
+    return HttpResponse.json({ imported: rows.length });
+  }),
+
+  http.delete('/api/marketing/campaigns/:id', ({ params }) => {
+    mockCampaigns = mockCampaigns.filter((c) => c.id !== params.id);
+    return HttpResponse.json({ deleted: true });
   }),
 
   http.get('/api/admin/branding', () => {
