@@ -15,7 +15,7 @@ import { Modal } from '../../core/components/Modal/Modal';
 import { Field, Input, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
-import { Plus, Copy, Trash, CheckCircle, XCircle, FilePdf, LinkSimple } from '@phosphor-icons/react';
+import { Plus, Copy, Trash, CheckCircle, XCircle, FilePdf, LinkSimple, MapPin } from '@phosphor-icons/react';
 import styles from './ProjectIntake.module.css';
 
 const fmtMoney = (v: number | null, cur: string) => (v == null ? '—' : `${v.toLocaleString('tr-TR')} ${cur}`);
@@ -245,11 +245,18 @@ export const ProjectIntake: React.FC = () => {
               <div><span className={styles.metaLabel}>{t('intake.form.unitTypes')}</span><span>{review.unitTypes.join(', ') || '—'}</span></div>
             </div>
             {review.description && <p className={styles.desc}>{review.description}</p>}
-            {review.brochureUrl && (
-              <a className={styles.brochure} href={review.brochureUrl} target="_blank" rel="noreferrer">
-                <FilePdf size={18} /> {t('intake.admin.viewBrochure')} <LinkSimple size={13} />
-              </a>
-            )}
+            <div className={styles.linkRow}>
+              {review.brochureUrl && (
+                <a className={styles.brochure} href={review.brochureUrl} target="_blank" rel="noreferrer">
+                  <FilePdf size={18} /> {t('intake.admin.viewBrochure')} <LinkSimple size={13} />
+                </a>
+              )}
+              {review.mapUrl && (
+                <a className={styles.brochure} href={review.mapUrl} target="_blank" rel="noreferrer">
+                  <MapPin size={18} /> {t('intake.admin.viewMap')} <LinkSimple size={13} />
+                </a>
+              )}
+            </div>
             {review.imageUrls.length > 0 && (
               <div className={styles.gallery}>
                 {review.imageUrls.map((u, i) => (

@@ -152,6 +152,9 @@ export interface ProjectSubmissionDTO {
   commissionPct: number | null;
   unitTypes: string[];
   description: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  mapUrl: string | null;
   imageUrls: string[];
   brochureUrl: string | null;
   createdPropertyId: string | null;

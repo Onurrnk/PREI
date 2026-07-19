@@ -13,6 +13,7 @@ import { Card } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { Field, Input, Textarea, Select, FormRow } from '../../core/components/Form/Form';
 import { CheckCircle, WarningCircle, UploadSimple } from '@phosphor-icons/react';
+import { MapPicker } from './MapPicker';
 import styles from './SubmitProject.module.css';
 
 const MARKETS = ['TR', 'AE', 'ES', 'GB', 'TH', 'DE'];
@@ -30,6 +31,7 @@ export const SubmitProject: React.FC = () => {
   const { data: info, loading, error } = useFetch<PublicInviteInfoDTO>(() => publicIntakeApi.info(token), [token]);
 
   const [form, setForm] = useState(emptyForm);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [brochure, setBrochure] = useState<File | null>(null);
   const [images, setImages] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -59,6 +61,7 @@ export const SubmitProject: React.FC = () => {
       if (form.unitTypes.trim()) fd.append('unitTypes', form.unitTypes.trim());
       if (form.description.trim()) fd.append('description', form.description.trim());
       if (form.completionDate) fd.append('completionDate', new Date(form.completionDate).toISOString());
+      if (coords) { fd.append('latitude', String(coords.lat)); fd.append('longitude', String(coords.lng)); }
       fd.append('brochure', brochure!);
       images.forEach((im) => fd.append('images', im));
       await publicIntakeApi.submit(token, fd);
@@ -154,6 +157,13 @@ export const SubmitProject: React.FC = () => {
           </Field>
           <Field label={t('intake.form.description')}>
             <Textarea rows={4} value={form.description} onChange={(e) => setF({ description: e.target.value })} />
+          </Field>
+
+          <Field
+            label={t('intake.form.location')}
+            hint={coords ? t('intake.form.locationPicked', { lat: coords.lat.toFixed(5), lng: coords.lng.toFixed(5) }) : t('intake.form.locationHint')}
+          >
+            <MapPicker lat={coords?.lat ?? null} lng={coords?.lng ?? null} onPick={(lat, lng) => setCoords({ lat, lng })} />
           </Field>
 
           <Field label={t('intake.form.brochure')} hint={t('intake.form.brochureHint')}>

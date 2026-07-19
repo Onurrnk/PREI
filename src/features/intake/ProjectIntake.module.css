@@ -46,6 +46,7 @@
 .reviewMeta > div { display: flex; flex-direction: column; gap: 2px; }
 .metaLabel { font: var(--text-label); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
 .desc { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5; }
+.linkRow { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 .brochure {
   display: inline-flex; align-items: center; gap: var(--sp-2); align-self: flex-start;
   padding: var(--sp-2) var(--sp-3); border: 1px solid var(--border-subtle);

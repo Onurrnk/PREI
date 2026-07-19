@@ -70,4 +70,10 @@ export class SubmitProjectDto {
 
   @IsOptional() @IsISO8601()
   completionDate?: string;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(-90) @Max(90)
+  latitude?: number;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(-180) @Max(180)
+  longitude?: number;
 }

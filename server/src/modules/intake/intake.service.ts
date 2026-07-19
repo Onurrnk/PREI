@@ -19,6 +19,17 @@ const MARKET_NAME: Record<string, string> = {
   TR: 'Türkiye', AE: 'Dubai (BAE)', ES: 'İspanya', GB: 'İngiltere', TH: 'Tayland', DE: 'Almanya',
 };
 const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const mapUrl = (lat: unknown, lng: unknown): string | null =>
+  lat != null && lng != null ? `https://www.google.com/maps?q=${Number(lat)},${Number(lng)}` : null;
+
+/** Telefonu maskeler: yalnız son 2 hane görünür, gerisi *. Ör. +90…05 → "+•• ••• ••• •• 05". */
+function maskPhone(phone: string | null): string | null {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length < 2) return '••';
+  const last2 = digits.slice(-2);
+  return `${'•'.repeat(Math.min(digits.length - 2, 12))} ${last2}`;
+}
 
 export interface NotifyCandidate {
   contactId: string;
@@ -150,6 +161,8 @@ export class IntakeService {
       commissionPct: dto.commissionPct ?? null,
       unitTypes,
       description: dto.description?.trim() || null,
+      latitude: dto.latitude ?? null,
+      longitude: dto.longitude ?? null,
       imageUrls,
       brochurePath,
       payload: {
@@ -210,7 +223,7 @@ export class IntakeService {
           ? `${min.toLocaleString('tr-TR')} – ${max.toLocaleString('tr-TR')} ${p.currency}`
           : (min || max ? `${(min || max)!.toLocaleString('tr-TR')} ${p.currency}` : '');
         const tail = [loc, range].filter(Boolean).join(' · ');
-        return { title: p.title, line: tail };
+        return { title: p.title, line: tail, map: mapUrl(p.latitude, p.longitude) };
       });
 
       const n = projects.length;
@@ -220,12 +233,13 @@ export class IntakeService {
 
       // Not: selamlama ("Merhaba {ad},") agent-mail.php markalı kabukta ekleniyor —
       // gövde selamla BAŞLAMAZ (çift selamlama olmasın).
-      const li = items.map((i) => `<li style="margin:0 0 8px 0;"><strong>${esc(i.title)}</strong>${i.line ? ` — ${esc(i.line)}` : ''}</li>`).join('');
+      const mapLabel = en ? 'View on map' : 'Haritada Gör';
+      const li = items.map((i) => `<li style="margin:0 0 8px 0;"><strong>${esc(i.title)}</strong>${i.line ? ` — ${esc(i.line)}` : ''}${i.map ? ` · <a href="${i.map}" style="color:#9B5BB3;">${mapLabel}</a>` : ''}</li>`).join('');
       const bodyHtml = en
         ? `<p style="margin:0 0 18px 0;">New project${n > 1 ? 's' : ''} matching your interests ${n > 1 ? 'have' : 'has'} just been added to our catalog:</p><ul style="margin:0 0 18px 0; padding-left:20px;">${li}</ul><p style="margin:0 0 18px 0;">Reply to this email for a tailored assessment and full details.</p>`
         : `<p style="margin:0 0 18px 0;">İlgi alanınıza uygun, kataloğumuza yeni eklenen proje${n > 1 ? 'ler' : ''}:</p><ul style="margin:0 0 18px 0; padding-left:20px;">${li}</ul><p style="margin:0 0 18px 0;">Size özel değerlendirme ve detaylı bilgi için bu e-postayı yanıtlamanız yeterli.</p>`;
 
-      const textLines = items.map((i) => `- ${i.title}${i.line ? ` — ${i.line}` : ''}`).join('\n');
+      const textLines = items.map((i) => `- ${i.title}${i.line ? ` — ${i.line}` : ''}${i.map ? ` (${i.map})` : ''}`).join('\n');
       const bodyText = en
         ? `New projects matching your interests:\n${textLines}\n\nReply for details.`
         : `İlgi alanınıza uygun yeni projeler:\n${textLines}\n\nDetaylar için yanıtlayın.`;
@@ -240,6 +254,57 @@ export class IntakeService {
 
   markNotified(ctx: RequestContext, contactId: string, propertyIds: string[]) {
     return this.repo.markNotified(ctx, contactId, propertyIds);
+  }
+
+  // ---- Geliştirici atıf bildirimi (komisyon/hak koruması) ----
+  async developerAttributions(ctx: RequestContext): Promise<Array<{
+    developerId: string; to: string; toName: string; subject: string;
+    bodyHtml: string; bodyText: string; pairs: Array<{ propertyId: string; contactId: string }>;
+  }>> {
+    const rows = await this.repo.developerAttributionCandidates(ctx);
+    const byDev = new Map<string, typeof rows>();
+    for (const r of rows) {
+      const arr = byDev.get(r.developer_id) ?? [];
+      arr.push(r);
+      byDev.set(r.developer_id, arr);
+    }
+
+    const out = [];
+    for (const [developerId, refs] of byDev) {
+      const first = refs[0];
+      const liRows = refs.map((r) => {
+        const inv = [r.investor_name || '—', r.investor_city ? `(${r.investor_city})` : ''].filter(Boolean).join(' ');
+        const tel = maskPhone(r.investor_phone);
+        const date = new Date(r.sent_at).toISOString().slice(0, 10);
+        const parts = [`Yatırımcı: ${esc(inv)}`, tel ? `Tel: ${tel}` : '', date].filter(Boolean).join(' · ');
+        return `<li style="margin:0 0 8px 0;"><strong>${esc(r.project_title)}</strong> → ${parts}</li>`;
+      }).join('');
+      const bodyHtml =
+        `<p style="margin:0 0 18px 0;">ProDuality olarak, aşağıdaki projeniz için bir yatırımcı yönlendirmesi yaptığımızı resmî olarak bilginize sunarız. Bu e-posta, ilgili yatırımcının tarafımızca tanıtıldığının kaydıdır.</p>` +
+        `<ul style="margin:0 0 18px 0; padding-left:20px;">${liRows}</ul>` +
+        `<p style="margin:0 0 18px 0;">Bu yatırımcılarla ilerleyen süreçte ProDuality'nin aracılık ve komisyon hakkı saklıdır. Sorularınız için bu e-postayı yanıtlayabilirsiniz.</p>`;
+      const textLines = refs.map((r) => {
+        const inv = [r.investor_name || '—', r.investor_city ? `(${r.investor_city})` : ''].filter(Boolean).join(' ');
+        const tel = maskPhone(r.investor_phone);
+        const date = new Date(r.sent_at).toISOString().slice(0, 10);
+        return `- ${r.project_title} -> ${inv}${tel ? ` · Tel: ${tel}` : ''} · ${date}`;
+      }).join('\n');
+      const bodyText = `ProDuality yatırımcı yönlendirme bildirimi:\n${textLines}\n\nProDuality'nin aracılık/komisyon hakkı saklıdır.`;
+
+      out.push({
+        developerId,
+        to: first.developer_email,
+        toName: first.developer_name || 'Yetkili',
+        subject: 'Yatırımcı yönlendirme bildirimi — ProDuality',
+        bodyHtml, bodyText,
+        pairs: refs.map((r) => ({ propertyId: r.property_id, contactId: r.contact_id })),
+      });
+    }
+    return out;
+  }
+
+  markDeveloperNotified(ctx: RequestContext, pairs: Array<{ propertyId: string; contactId: string }>) {
+    return this.repo.markDeveloperNotified(ctx, pairs);
   }
 
   reject(ctx: RequestContext, id: string, note: string | null) {
@@ -269,6 +334,9 @@ export class IntakeService {
       commissionPct: r.commission_pct != null ? Number(r.commission_pct) : null,
       unitTypes: r.unit_types,
       description: r.description,
+      latitude: r.latitude != null ? Number(r.latitude) : null,
+      longitude: r.longitude != null ? Number(r.longitude) : null,
+      mapUrl: mapUrl(r.latitude, r.longitude),
       imageUrls: r.image_urls,
       brochureUrl,
       createdPropertyId: r.created_property_id,

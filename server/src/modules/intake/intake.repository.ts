@@ -19,6 +19,7 @@ export interface SubmissionRow {
   id: string; status: string; title: string; city: string | null; district: string | null;
   market_code: string | null; price_min: string | null; price_max: string | null; currency: string;
   commission_pct: string | null; unit_types: string[]; description: string | null;
+  latitude: string | null; longitude: string | null;
   image_urls: string[]; brochure_path: string | null; payload: Record<string, unknown>;
   developer_id: string | null; developer_name: string | null;
   created_property_id: string | null; review_note: string | null; created_at: string;
@@ -27,7 +28,7 @@ export interface SubmissionRow {
 const SUBMISSION_SELECT = `
   SELECT s.id, s.status, s.title, s.city, s.district, s.market_code,
          s.price_min, s.price_max, s.currency, s.commission_pct, s.unit_types,
-         s.description, s.image_urls, s.brochure_path, s.payload,
+         s.description, s.latitude, s.longitude, s.image_urls, s.brochure_path, s.payload,
          s.developer_id, o.name AS developer_name,
          s.created_property_id, s.review_note, s.created_at
     FROM project_submissions s
@@ -105,6 +106,7 @@ export class IntakeRepository {
       city: string | null; district: string | null; marketCode: string | null;
       priceMin: number | null; priceMax: number | null; currency: string;
       commissionPct: number | null; unitTypes: string[]; description: string | null;
+      latitude: number | null; longitude: number | null;
       imageUrls: string[]; brochurePath: string | null; payload: Record<string, unknown>; ip: string | null;
     },
   ): Promise<void> {
@@ -113,12 +115,12 @@ export class IntakeRepository {
         `INSERT INTO project_submissions
            (id, tenant_id, invite_id, developer_id, status, title, city, district, market_code,
             price_min, price_max, currency, commission_pct, unit_types, description,
-            image_urls, brochure_path, payload, submitted_ip)
-         VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+            latitude, longitude, image_urls, brochure_path, payload, submitted_ip)
+         VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
         [
           s.id, ctx.tenantId, s.inviteId, s.developerId, s.title, s.city, s.district, s.marketCode,
           s.priceMin, s.priceMax, s.currency, s.commissionPct, s.unitTypes, s.description,
-          s.imageUrls, s.brochurePath, JSON.stringify(s.payload), s.ip,
+          s.latitude, s.longitude, s.imageUrls, s.brochurePath, JSON.stringify(s.payload), s.ip,
         ],
       );
     });
@@ -179,11 +181,14 @@ export class IntakeRepository {
 
       const { rows: prop } = await c.query<{ id: string }>(
         `INSERT INTO properties (tenant_id, developer_id, title, property_type, city, district,
-            market_code, price, currency, description, metadata, created_by, updated_by)
-         VALUES ($1,$2,$3,'apartment',$4,$5,$6,$7,$8,$9,$10,$11,$11) RETURNING id`,
+            market_code, price, currency, description, latitude, longitude, metadata, created_by, updated_by)
+         VALUES ($1,$2,$3,'apartment',$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13) RETURNING id`,
         [
           ctx.tenantId, s.developer_id, s.title, s.city, s.district, s.market_code,
-          priceMin ?? priceMax, s.currency, s.description, JSON.stringify(metadata), ctx.userId,
+          priceMin ?? priceMax, s.currency, s.description,
+          s.latitude != null ? Number(s.latitude) : null,
+          s.longitude != null ? Number(s.longitude) : null,
+          JSON.stringify(metadata), ctx.userId,
         ],
       );
       const propertyId = prop[0].id;
@@ -221,6 +226,7 @@ export class IntakeRepository {
     contact_id: string; name: string; email: string; lang: string;
     property_id: string; title: string; city: string | null; market_code: string | null;
     currency: string; price_min: string | null; price_max: string | null;
+    latitude: string | null; longitude: string | null;
   }>> {
     return this.db.withContext(ctx, async (c) => {
       const { rows } = await c.query(
@@ -229,7 +235,8 @@ export class IntakeRepository {
                 c.email, COALESCE(c.preferred_lang,'tr') AS lang,
                 p.id AS property_id, p.title, p.city, p.market_code, p.currency,
                 (p.metadata->>'price_min') AS price_min,
-                (p.metadata->>'price_max') AS price_max
+                (p.metadata->>'price_max') AS price_max,
+                p.latitude, p.longitude
            FROM properties p
            JOIN contacts c ON c.tenant_id = p.tenant_id
                           AND c.deleted_at IS NULL AND c.merged_into_id IS NULL
@@ -272,6 +279,56 @@ export class IntakeRepository {
           `INSERT INTO project_client_notifications (tenant_id, property_id, contact_id)
            VALUES ($1,$2,$3) ON CONFLICT (property_id, contact_id) DO NOTHING`,
           [ctx.tenantId, pid, contactId],
+        );
+        n += rowCount ?? 0;
+      }
+      return n;
+    });
+  }
+
+  // ---- Geliştirici atıf bildirimi (komisyon koruması) ----
+  async developerAttributionCandidates(ctx: RequestContext): Promise<Array<{
+    developer_id: string; developer_name: string | null; developer_email: string;
+    property_id: string; project_title: string; contact_id: string;
+    investor_name: string; investor_phone: string | null; investor_city: string | null;
+    sent_at: string;
+  }>> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query(
+        `SELECT o.id AS developer_id, o.name AS developer_name, o.email AS developer_email,
+                p.id AS property_id, p.title AS project_title,
+                c.id AS contact_id,
+                trim(c.first_name || ' ' || COALESCE(c.last_name,'')) AS investor_name,
+                c.phone AS investor_phone,
+                COALESCE(ll.pref_city, mk.name, p.city) AS investor_city,
+                n.sent_at
+           FROM project_client_notifications n
+           JOIN properties p ON p.id = n.property_id
+           JOIN organizations o ON o.id = p.developer_id
+                               AND o.email IS NOT NULL AND o.email <> ''
+           JOIN contacts c ON c.id = n.contact_id
+           LEFT JOIN LATERAL (
+             SELECT l.pref_city, l.target_market_code FROM leads l
+              WHERE l.contact_id = c.id AND l.deleted_at IS NULL
+              ORDER BY l.updated_at DESC LIMIT 1
+           ) ll ON true
+           LEFT JOIN markets mk ON mk.code = ll.target_market_code
+          WHERE n.developer_notified_at IS NULL
+          ORDER BY o.id, n.sent_at DESC`,
+      );
+      return rows as never;
+    });
+  }
+
+  async markDeveloperNotified(ctx: RequestContext, pairs: Array<{ propertyId: string; contactId: string }>): Promise<number> {
+    if (pairs.length === 0) return 0;
+    return this.db.withContext(ctx, async (c) => {
+      let n = 0;
+      for (const p of pairs) {
+        const { rowCount } = await c.query(
+          `UPDATE project_client_notifications SET developer_notified_at = now()
+            WHERE property_id = $1 AND contact_id = $2 AND developer_notified_at IS NULL`,
+          [p.propertyId, p.contactId],
         );
         n += rowCount ?? 0;
       }
