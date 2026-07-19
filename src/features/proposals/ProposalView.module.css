@@ -64,6 +64,13 @@
   min-height: 0;
 }
 
+.docCol {
+  flex: 2;
+  min-width: 0;
+  overflow-y: auto;
+  padding: var(--spacing-md) 0;
+}
+
 .mainCard {
   flex: 2;
   overflow-y: auto;

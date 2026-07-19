@@ -1,0 +1,173 @@
+/* =====================================================================
+   PREI | ProposalDocument — premium açık "yatırım sunumu" belgesi.
+   Ekranda: koyu uygulama üzerinde beyaz kağıt sayfa (gölge + radius).
+   Print (@media print): kağıt hissi, gölge/radius yok, bölüm sayfa
+   kırılımları, accent renkler korunur. Marka moru: #9B5BB3.
+   ===================================================================== */
+
+.sheet {
+  --ink: #1b1a18;
+  --muted: #6b6478;
+  --line: #e7e2ee;
+  --accent: #9b5bb3;
+  --paper: #ffffff;
+  --soft: #faf8fd;
+
+  max-width: 840px;
+  margin: 0 auto;
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  font-family: inherit;
+  line-height: 1.55;
+}
+
+/* ---- Kapak ---- */
+.cover {
+  position: relative;
+  min-height: 360px;
+  background: linear-gradient(135deg, #2a2033 0%, #4a2f57 55%, #6d3f80 100%);
+  background-size: cover;
+  background-position: center;
+}
+.coverScrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 28px 36px 32px;
+  background: linear-gradient(180deg, rgba(15, 10, 20, 0.35) 0%, rgba(15, 10, 20, 0.15) 40%, rgba(15, 10, 20, 0.78) 100%);
+}
+.coverBottom { max-width: 90%; }
+.tagline {
+  color: #e9d8f2;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.coverTitle {
+  color: #fff;
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+.coverLoc { color: #d9cfe4; font-size: 15px; margin-top: 8px; }
+
+/* ---- Wordmark ---- */
+.wordmark { display: inline-flex; align-items: center; gap: 9px; }
+.mark {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px;
+  background: var(--accent); color: #fff; font-weight: 800; font-size: 16px;
+}
+.brand { font-size: 17px; font-weight: 700; letter-spacing: 0.3px; color: var(--ink); }
+.wordmarkLight .brand { color: #fff; }
+
+/* ---- Meta şeridi ---- */
+.metaBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  padding: 16px 36px;
+  border-bottom: 1px solid var(--line);
+  background: var(--soft);
+}
+.metaBar > div { display: flex; flex-direction: column; }
+.metaK { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+.metaV { font-size: 14px; font-weight: 600; color: var(--ink); }
+
+/* ---- Gövde ---- */
+.body { padding: 8px 36px 4px; }
+.lede { font-size: 15px; color: var(--muted); margin: 18px 0 4px; }
+
+.section { padding: 22px 0; border-bottom: 1px solid var(--line); }
+.section:last-child { border-bottom: none; }
+.secLabel {
+  font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 14px;
+}
+
+/* ---- Mülk detay ---- */
+.detailGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 32px;
+}
+.detailRow {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px;
+}
+.dk { color: var(--muted); }
+.dv { color: var(--ink); font-weight: 600; text-align: right; }
+.para { font-size: 14px; color: #4a4550; margin: 12px 0 0; }
+
+.gallery { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.thumb {
+  width: 120px; height: 84px; border-radius: 8px;
+  background-size: cover; background-position: center; border: 1px solid var(--line);
+}
+
+/* ---- Finansal ---- */
+.priceBlock {
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+  background: var(--soft);
+}
+.priceMinor {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 18px; font-size: 14px; color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+.priceMinor s { color: var(--muted); }
+.priceMain {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 18px; background: #fff;
+}
+.priceMain span { font-size: 14px; font-weight: 700; color: var(--ink); }
+.priceMain strong { font-size: 26px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
+.accent { color: var(--accent); }
+.muted { color: var(--muted); font-weight: 500; }
+
+/* ---- Tablolar ---- */
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th {
+  text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--muted); font-weight: 600; padding: 8px 10px; border-bottom: 2px solid var(--line);
+}
+.table td { padding: 10px; border-bottom: 1px solid var(--line); color: var(--ink); }
+.tc { text-align: center; }
+.tr { text-align: right; }
+.totalRow td { border-bottom: none; border-top: 2px solid var(--line); }
+.fine { font-size: 11.5px; color: var(--muted); margin: 10px 0 0; line-height: 1.5; }
+
+/* ---- Footer ---- */
+.footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  padding: 20px 36px; background: var(--soft); border-top: 1px solid var(--line);
+}
+.footNote { font-size: 12px; color: var(--muted); margin: 0; text-align: right; }
+
+@media (max-width: 640px) {
+  .detailGrid { grid-template-columns: 1fr; }
+  .coverTitle { font-size: 26px; }
+  .body, .metaBar, .footer, .coverScrim { padding-left: 20px; padding-right: 20px; }
+}
+
+/* ---- PDF / PRINT ---- */
+@media print {
+  .sheet {
+    max-width: none; box-shadow: none; border-radius: 0; margin: 0;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .cover { min-height: 300px; }
+  /* Bölümler sayfa ortasından ikiye bölünmesin */
+  .section, .priceBlock, .table tr, .gallery, .thumb { page-break-inside: avoid; break-inside: avoid; }
+  .table thead { display: table-header-group; }
+  .footer { position: relative; }
+}

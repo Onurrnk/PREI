@@ -112,9 +112,10 @@ p, h1, h2, h3, h4, h5, h6 {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+  /* Not: metin rengini zorla düzleştirmiyoruz — ProposalDocument zaten açık
+     temalı ve kendi renklerini (mor accent dahil) print-color-adjust:exact ile
+     korur. Yalnız gölge sıfırlanır. */
   body.print-proposal [data-print-root] * {
-    color: #1B1A18 !important;
-    border-color: #E7E5E1 !important;
     box-shadow: none !important;
   }
 

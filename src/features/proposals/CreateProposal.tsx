@@ -7,13 +7,13 @@
 // etiketler bileşen-içi TX sözlüğünde (tr/en) — büyük locale dosyaları
 // riske girmesin diye.
 // =====================================================================
-import React, { useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import {
-  ArrowLeft, CheckCircle, Buildings, Calculator, PenNib,
+  ArrowLeft, CheckCircle, Calculator, PenNib,
   PaperPlaneTilt, DownloadSimple, User, House, ChartLineUp, Plus, Trash,
 } from '@phosphor-icons/react';
 import { Modal } from '../../core/components/Modal/Modal';
@@ -22,7 +22,9 @@ import { clientsApi, projectsApi, proposalsApi } from '../../core/api/resources'
 import { ApiError } from '../../core/api/client';
 import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
+import { AuthContext } from '../../core/auth/AuthContext';
 import { printProposal } from '../../core/utils/printProposal';
+import { ProposalDocument } from './ProposalDocument';
 import type {
   ClientDTO, ProjectDTO, ProposalRoiInputs, ProposalUnitDetails, CreateProposalInput,
 } from '../../core/types';
@@ -169,6 +171,9 @@ export const CreateProposal: React.FC = () => {
   const TX = i18n.language === 'tr' ? DICT.tr : DICT.en;
   const navigate = useNavigate();
   const toast = useToast();
+  // useContext (useAuth değil): AuthProvider yoksa (izole test) throw etmez.
+  const auth = useContext(AuthContext);
+  const consultantName = auth?.user?.name;
   const [params] = useSearchParams();
   const lockedClientId = params.get('clientId') || '';
 
@@ -290,7 +295,6 @@ export const CreateProposal: React.FC = () => {
 
   const closeModal = () => { setModal(''); navigate('/proposals'); };
   const dateLocale = i18n.language === 'tr' ? 'tr-TR' : 'en-GB';
-  const coverImage = selectedPhotos[0] ?? selectedProjectObj?.images[0] ?? '/images/exterior.png';
 
   const stepDefs = [
     { icon: <User size={14} />, def: TX.steps.target },
@@ -614,64 +618,27 @@ export const CreateProposal: React.FC = () => {
                     <textarea className={styles.textInput} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
                   </div>
 
-                  <div className={styles.digitalProposal} data-print-root>
-                    <div className={styles.proposalHeader}>
-                      <div className={styles.brandLogo}><Buildings size={28} /><span>ProDuality</span></div>
-                      <div className={styles.proposalMeta}>
-                        <div>{t('proposals.view.preparedFor', { name: selectedClientObj?.name ?? '—' })}</div>
-                        <div className={styles.metaDate}>{t('proposals.view.date', { date: new Date().toLocaleDateString(dateLocale) })}</div>
-                      </div>
-                    </div>
-
-                    <div className={styles.proposalCover}>
-                      <img src={coverImage} alt="Cover" className={styles.coverImage} />
-                      <div className={styles.coverText} data-print-cover>
-                        <h2>{t('proposals.view.coverTag')}</h2>
-                        <h1>{title || projectName || '—'}</h1>
-                        <p>{projectName}{selectedProjectObj?.location ? ` · ${selectedProjectObj.location}` : ''}</p>
-                      </div>
-                    </div>
-
-                    <div className={styles.proposalBody}>
-                      <UnitSection unit={unit} tx={TX} />
-
-                      <div className={styles.bodySection}>
-                        <h3>{t('proposals.view.financialSummary')}</h3>
-                        <div className={styles.financialSummary}>
-                          {(discountNum > 0 && listPrice) ? (
-                            <div className={styles.finBox}><span>{TX.listPrice}</span>
-                              <strong style={{ textDecoration: 'line-through', opacity: .7 }}>{formatMoney(listPrice, currency)}</strong></div>
-                          ) : null}
-                          <div className={styles.finBox}><span>{(discountNum > 0 && listPrice) ? TX.finalPrice : t('proposals.view.totalInvestment')}</span>
-                            <strong>{finalPrice !== undefined ? formatMoney(finalPrice, currency) : '—'}</strong></div>
-                          <div className={styles.finBox}><span>{t('proposals.view.handover')}</span>
-                            <strong>{selectedProjectObj?.completionDate ?? '—'}</strong></div>
-                        </div>
-                      </div>
-
-                      <div className={styles.bodySection}>
-                        <h3>{t('proposals.view.paymentPlan')}</h3>
-                        <table className={styles.previewTable}>
-                          <thead><tr><th>{t('proposals.view.milestone')}</th><th>{t('proposals.view.percentage')}</th><th>{t('proposals.view.planDate')}</th></tr></thead>
-                          <tbody>{paymentPlan.filter((r) => r.milestone.trim()).map((row, idx) => (
-                            <tr key={idx}><td>{row.milestone}</td><td>{row.percentage}%</td><td>{row.date}</td></tr>
-                          ))}</tbody>
-                        </table>
-                        {paymentPlanOnList && <p className={styles.hintText}>* {TX.onList}</p>}
-                      </div>
-
-                      {roiReport && (
-                        <div className={styles.bodySection}>
-                          <h3>{TX.steps.roi[0]}</h3>
-                          <RoiTable r={roiReport} currency={currency} tx={TX} />
-                        </div>
-                      )}
-
-                      {notes.trim() && (
-                        <div className={styles.bodySection}><h3>{TX.notes}</h3><p style={{ opacity: .85 }}>{notes}</p></div>
-                      )}
-                    </div>
-                  </div>
+                  <ProposalDocument doc={{
+                    title,
+                    clientName: selectedClientObj?.name ?? '—',
+                    consultantName,
+                    projectName,
+                    projectLocation: selectedProjectObj?.location,
+                    date: new Date().toLocaleDateString(dateLocale),
+                    currency,
+                    coverImage: selectedPhotos[0] ?? selectedProjectObj?.images[0],
+                    images: selectedPhotos,
+                    unit,
+                    listPrice,
+                    discountPct: discountNum > 0 ? discountNum : undefined,
+                    totalValue: finalPrice ?? 0,
+                    paymentPlan: paymentPlan.filter((r) => r.milestone.trim())
+                      .map((r) => ({ milestone: r.milestone, percentage: Number(r.percentage) || 0, date: r.date })),
+                    paymentPlanOnList,
+                    roi: roiReport,
+                    notes: notes.trim() || undefined,
+                    lang: i18n.language === 'tr' ? 'tr' : 'en',
+                  }} />
 
                   <div className={styles.previewActions}>
                     <Button variant="outline" onClick={() => printProposal()}><DownloadSimple size={16} style={{ marginRight: 6 }} /> {t('proposals.create.downloadAsPdf')}</Button>
@@ -721,29 +688,6 @@ export const CreateProposal: React.FC = () => {
 };
 
 type Tx = typeof DICT.tr;
-
-const UnitSection: React.FC<{ unit: ProposalUnitDetails; tx: Tx }> = ({ unit, tx }) => {
-  const rows: Array<[string, string]> = [];
-  const push = (k: string, v?: string | number, sfx = '') => {
-    if (v !== undefined && v !== null && v !== '') rows.push([k, `${v}${sfx}`]);
-  };
-  push(tx.unit.type, unit.type); push(tx.unit.unitNo, unit.unitNo);
-  push(tx.unit.area, unit.area, ' m²'); push(tx.unit.netArea, unit.netArea, ' m²');
-  push(tx.unit.floor, unit.floor); push(tx.unit.facade, unit.facade);
-  push(tx.unit.view, unit.view); push(tx.unit.beds, unit.bedrooms); push(tx.unit.baths, unit.bathrooms);
-  if (unit.titleDeed) push(tx.unit.titleDeed, tx.titleDeed[unit.titleDeed]);
-  if (rows.length === 0 && !unit.features && !unit.description) return null;
-  return (
-    <div className={styles.bodySection}>
-      <h3>{tx.steps.unit[0]}</h3>
-      {rows.length > 0 && (
-        <table className={styles.previewTable}><tbody>{rows.map(([k, v]) => <tr key={k}><td>{k}</td><td>{v}</td></tr>)}</tbody></table>
-      )}
-      {unit.features && <p style={{ marginTop: 8 }}><strong>{tx.unit.features}:</strong> {unit.features}</p>}
-      {unit.description && <p style={{ marginTop: 6, opacity: .85 }}>{unit.description}</p>}
-    </div>
-  );
-};
 
 const RoiTable: React.FC<{ r: import('../../core/types').ProposalRoiReport; currency: string; tx: Tx }> = ({ r, currency, tx }) => (
   <table className={styles.previewTable}>
