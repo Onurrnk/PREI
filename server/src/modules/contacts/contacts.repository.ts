@@ -69,30 +69,10 @@ export class ContactsRepository {
     return this.db.withContext(ctx, async (c) => {
       // Sistem-geneli duplicate kontrolü: E-POSTA VEYA TELEFON zaten sistemdeyse
       // yeni kayıt açılmaz; mevcut dosya döndürülür + görünür "mükerrer" notu düşülür.
-      const normalized = (dto.phone ?? '').replace(/[^0-9]/g, '');
-      const email = dto.email?.trim().toLowerCase() ?? '';
-      let match: ContactRow | null = null;
-      if (email) {
-        const { rows } = await c.query<ContactRow>(
-          `SELECT * FROM contacts
-             WHERE tenant_id = $1 AND lower(email) = $2
-               AND deleted_at IS NULL AND merged_into_id IS NULL LIMIT 1`,
-          [ctx.tenantId, email],
-        );
-        if (rows.length > 0) match = rows[0];
-      }
-      if (!match && normalized) {
-        const { rows } = await c.query<ContactRow>(
-          `SELECT * FROM contacts
-             WHERE tenant_id = $1 AND normalized_phone = $2
-               AND deleted_at IS NULL AND merged_into_id IS NULL LIMIT 1`,
-          [ctx.tenantId, normalized],
-        );
-        if (rows.length > 0) match = rows[0];
-      }
-      if (match) {
-        await this.flagDuplicate(c, ctx, match.id, 'manuel kayıt', email && match.email?.toLowerCase() === email ? 'e-posta' : 'telefon');
-        return match;
+      const found = await this.findByIdentityIn(c, ctx, { email: dto.email, phone: dto.phone });
+      if (found) {
+        await this.flagDuplicate(c, ctx, found.row.id, 'manuel kayıt', found.matchedBy);
+        return found.row;
       }
 
       const { rows } = await c.query<ContactRow>(
@@ -111,6 +91,40 @@ export class ContactsRepository {
       await this.writeAuditAndEvent(c, ctx, 'contact.created', contact.id, { after: contact });
       return contact;
     });
+  }
+
+  /** E-posta VEYA telefonla mevcut aktif kişiyi bul (dedup çekirdeği). Kayıttan
+   *  önce duplicate ön-kontrolü (GET /contacts/lookup) ve create bunu kullanır. */
+  async findByIdentity(
+    ctx: RequestContext, opts: { email?: string; phone?: string },
+  ): Promise<{ row: ContactRow; matchedBy: 'e-posta' | 'telefon' } | null> {
+    return this.db.withContext(ctx, (c) => this.findByIdentityIn(c, ctx, opts));
+  }
+
+  private async findByIdentityIn(
+    c: PoolClient, ctx: RequestContext, opts: { email?: string; phone?: string },
+  ): Promise<{ row: ContactRow; matchedBy: 'e-posta' | 'telefon' } | null> {
+    const email = opts.email?.trim().toLowerCase() ?? '';
+    const normalized = (opts.phone ?? '').replace(/[^0-9]/g, '');
+    if (email) {
+      const { rows } = await c.query<ContactRow>(
+        `SELECT * FROM contacts
+           WHERE tenant_id = $1 AND lower(email) = $2
+             AND deleted_at IS NULL AND merged_into_id IS NULL LIMIT 1`,
+        [ctx.tenantId, email],
+      );
+      if (rows.length > 0) return { row: rows[0], matchedBy: 'e-posta' };
+    }
+    if (normalized) {
+      const { rows } = await c.query<ContactRow>(
+        `SELECT * FROM contacts
+           WHERE tenant_id = $1 AND normalized_phone = $2
+             AND deleted_at IS NULL AND merged_into_id IS NULL LIMIT 1`,
+        [ctx.tenantId, normalized],
+      );
+      if (rows.length > 0) return { row: rows[0], matchedBy: 'telefon' };
+    }
+    return null;
   }
 
   /** Sistem-geneli mükerrer kayıt işareti: mevcut dosyaya görünür "🔁 Mükerrer

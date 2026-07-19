@@ -722,6 +722,25 @@ export const handlers = [
     return HttpResponse.json({ deleted: true });
   }),
 
+  // Duplicate ön-kontrolü (kayıttan önce e-posta/telefon eşleşmesi).
+  http.get('/api/contacts/lookup', ({ request }) => {
+    const url = new URL(request.url);
+    const email = (url.searchParams.get('email') || '').trim().toLowerCase();
+    const phone = (url.searchParams.get('phone') || '').replace(/\D/g, '');
+    if (!email && !phone) return HttpResponse.json({ match: null });
+    const hit = mockClients.find(
+      (c) => (email && c.email?.toLowerCase() === email) ||
+             (phone && (c.phone || '').replace(/\D/g, '') === phone),
+    );
+    if (!hit) return HttpResponse.json({ match: null });
+    return HttpResponse.json({
+      match: {
+        id: hit.id, fullName: hit.name, email: hit.email, phone: hit.phone,
+        matchedBy: email && hit.email?.toLowerCase() === email ? 'e-posta' : 'telefon',
+      },
+    });
+  }),
+
   // FAZ 1 create akışı — mock demoda hata vermesin diye plausible yanıt döner
   // (kalıcı değil; gerçek yazım VITE_USE_REAL_API=true backend'inde).
   http.post('/api/contacts', async ({ request }) => {

@@ -30,6 +30,17 @@ export class ContactsController {
     return this.contacts.list(ctx, search, Math.min(limit, 200), offset);
   }
 
+  /** Duplicate ön-kontrolü — kayıttan ÖNCE e-posta/telefonla eşleşen kişi.
+   *  ':id'den ÖNCE tanımlı (aksi halde 'lookup' UUID pipe'ına takılır). */
+  @Get('lookup')
+  lookup(
+    @Ctx() ctx: RequestContext,
+    @Query('email') email?: string,
+    @Query('phone') phone?: string,
+  ) {
+    return this.contacts.lookup(ctx, { email, phone });
+  }
+
   @Get(':id')
   findOne(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
     return this.contacts.findOne(ctx, id);

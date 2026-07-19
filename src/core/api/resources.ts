@@ -116,10 +116,21 @@ export interface CreateContactInput {
   notes?: string;
 }
 
+export interface DuplicateMatch {
+  id: string;
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  matchedBy: string; // 'e-posta' | 'telefon'
+}
+
 export const contactsApi = {
   list: (search?: string) => api.get<ContactDTO[]>('/api/contacts', { params: { search } }),
   get: (id: string) => api.get<ContactDTO>(`/api/contacts/${id}`),
   create: (input: CreateContactInput) => api.post<ContactDTO>('/api/contacts', input),
+  // Duplicate ön-kontrolü: kayıttan önce e-posta/telefonla eşleşen kişi.
+  lookup: (email?: string, phone?: string) =>
+    api.get<{ match: DuplicateMatch | null }>('/api/contacts/lookup', { params: { email, phone } }),
 };
 
 export const leadsApi = {

@@ -222,7 +222,7 @@ export const ClientsList: React.FC = () => {
         }
       >
         {modalKind === 'addClient' && (
-          <ClientForm value={form} onChange={setForm} />
+          <ClientForm value={form} onChange={setForm} duplicateCheck />
         )}
         {modalKind === 'export' && (
           <div className={styles.exportState}>

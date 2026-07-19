@@ -19,6 +19,18 @@ export class ContactsService {
     return toContactResponse(row);
   }
 
+  /** Duplicate ön-kontrolü: e-posta/telefonla mevcut kişi var mı (kayıttan önce). */
+  async lookup(
+    ctx: RequestContext, opts: { email?: string; phone?: string },
+  ): Promise<{ match: { id: string; fullName: string; email: string | null; phone: string | null; matchedBy: string } | null }> {
+    if (!opts.email?.trim() && !opts.phone?.trim()) return { match: null };
+    const found = await this.repo.findByIdentity(ctx, opts);
+    if (!found) return { match: null };
+    const r = found.row;
+    const fullName = [r.first_name, r.last_name].filter(Boolean).join(' ').trim() || '—';
+    return { match: { id: r.id, fullName, email: r.email, phone: r.phone, matchedBy: found.matchedBy } };
+  }
+
   async create(ctx: RequestContext, dto: CreateContactDto): Promise<ContactResponse> {
     const row = await this.repo.create(ctx, dto);
     return toContactResponse(row);

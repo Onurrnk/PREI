@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { EnvelopeSimple, BuildingOffice, CurrencyDollar, MapPin } from '@phosphor-icons/react';
 import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
+import { contactsApi, type DuplicateMatch } from '../../core/api/resources';
 import styles from './ClientProfile.module.css';
 
 export const UNIT_TYPE_OPTIONS = ['Studio', '1+1', '2+1', '3+1', '4+1+', 'Penthouse', 'Villa'];
@@ -87,14 +88,48 @@ export const RegionsChipEditor: React.FC<{
 export const ClientForm: React.FC<{
   value: ClientFormValue;
   onChange: (v: ClientFormValue) => void;
-}> = ({ value, onChange }) => {
-  const { t } = useTranslation();
+  /** Yeni kayıt modunda (ClientsList "Yeni Müşteri Ekle") duplicate ön-kontrolü
+   *  aç: e-posta/telefon girilince "bu kişi zaten kayıtlı" uyarısı. Düzenlemede
+   *  kapalı (kendini eşleştirmesin). */
+  duplicateCheck?: boolean;
+}> = ({ value, onChange, duplicateCheck }) => {
+  const { t, i18n } = useTranslation();
+  const tr = i18n.language === 'tr';
   const set = (patch: Partial<ClientFormValue>) => onChange({ ...value, ...patch });
+
+  const [dupMatch, setDupMatch] = React.useState<DuplicateMatch | null>(null);
+  // Debounce: kullanıcı yazmayı bıraktıktan ~500ms sonra e-posta/telefonla
+  // duplicate ön-kontrolü. Effect deps'ten hep GÜNCEL değeri okur (blur'ın
+  // stale-closure sorunu yok). Yalnız yeni-kayıt modunda (duplicateCheck).
+  React.useEffect(() => {
+    if (!duplicateCheck) return;
+    const email = value.email.trim();
+    const phone = value.phone.trim();
+    if (!email && !phone) { setDupMatch(null); return; }
+    const id = setTimeout(async () => {
+      try {
+        const res = await contactsApi.lookup(email || undefined, phone || undefined);
+        setDupMatch(res.match);
+      } catch { /* sessiz — uyarı best-effort */ }
+    }, 500);
+    return () => clearTimeout(id);
+  }, [duplicateCheck, value.email, value.phone]);
 
   return (
     <div className={styles.editSections}>
       <section className={styles.editSection}>
         <h4 className={styles.editSectionTitle}><EnvelopeSimple size={13} /> {t('clients.profile.sections.identity')}</h4>
+        {dupMatch && (
+          <div style={{
+            padding: '10px 12px', borderRadius: 8, marginBottom: 12, fontSize: '0.8125rem',
+            background: 'color-mix(in srgb, var(--data-warning) 13%, transparent)',
+            color: 'var(--data-warning)', border: '1px solid color-mix(in srgb, var(--data-warning) 35%, transparent)',
+          }}>
+            {tr
+              ? <>⚠ Bu {dupMatch.matchedBy} zaten kayıtlı: <strong>{dupMatch.fullName}</strong>. Kaydedersen yeni kayıt açılmaz, mevcut dosyaya eklenir.</>
+              : <>⚠ This {dupMatch.matchedBy === 'e-posta' ? 'email' : 'phone'} already exists: <strong>{dupMatch.fullName}</strong>. Saving will attach to the existing file, not create a new one.</>}
+          </div>
+        )}
         <Field label={t('clients.profile.fields.fullName')}>
           <Input value={value.name} onChange={(e) => set({ name: e.target.value })} />
         </Field>
