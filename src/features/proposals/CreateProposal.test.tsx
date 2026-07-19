@@ -13,17 +13,17 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
-const renderPage = () =>
+const renderPage = (entry = '/proposals/new') =>
   render(
     <ToastProvider>
-      <MemoryRouter initialEntries={['/proposals/new']}>
+      <MemoryRouter initialEntries={[entry]}>
         <CreateProposal />
       </MemoryRouter>
     </ToastProvider>,
   );
 
-describe('CreateProposal — gerçek POST /proposals', () => {
-  it('müşteri+proje seçilip 4 adım tamamlanınca gerçek proposalsApi.create çağrılır', async () => {
+describe('CreateProposal — 5 adımlı gerçek akış', () => {
+  it('müşteri+proje seçilip son adımda taslak kaydedilince gerçek proposalsApi.create çağrılır', async () => {
     renderPage();
 
     const clientSelect = await screen.findByRole('combobox', { name: 'Select Client' });
@@ -34,30 +34,24 @@ describe('CreateProposal — gerçek POST /proposals', () => {
     fireEvent.click(projectSelect);
     fireEvent.click(await screen.findByRole('option', { name: /Beachfront Residences/i }));
 
-    // Proje seçilince başlık otomatik dolduruldu (kullanıcı henüz yazmadıysa).
+    // Proje seçilince başlık otomatik dolduruldu.
     expect(screen.getByDisplayValue(/Exclusive Investment Opportunity: Beachfront Residences/)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Next Step' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Next Step' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Next Step' }));
+    // 5 adım: Hedef → Mülk → Finansal → Getiri → Önizleme (4 kez Next).
+    const next = () => fireEvent.click(screen.getByRole('button', { name: 'Next Step' }));
+    next(); next(); next(); next();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Send Proposal to Client' }));
-
-    expect(await screen.findByText('Proposal Saved')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Save Draft' }));
+    expect(await screen.findByText('Draft Saved')).toBeInTheDocument();
   });
 
-  it('müşteri/proje seçilmeden Send butonu ilk adıma döner ve hata gösterir', async () => {
+  it('müşteri/proje seçilmeden ilerleme engellenir (Next devre dışı)', async () => {
     renderPage();
     await screen.findByRole('combobox', { name: 'Select Client' });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Next Step' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Next Step' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Next Step' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Send Proposal to Client' }));
-
-    await waitFor(() =>
-      expect(screen.getByText('Please select a client, a project, and enter a title before sending.')).toBeInTheDocument(),
-    );
-    expect(screen.getByRole('combobox', { name: 'Select Client' })).toBeInTheDocument();
+    // Hiçbir seçim yokken bir sonraki adıma geçilemez.
+    expect(screen.getByRole('button', { name: 'Next Step' })).toBeDisabled();
+    // Başlıktaki "Send Proposal" (son adım + e-posta gerektirir) da devre dışı.
+    expect(screen.getByRole('button', { name: /Send Proposal/i })).toBeDisabled();
   });
 });

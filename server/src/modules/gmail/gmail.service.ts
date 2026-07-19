@@ -203,6 +203,30 @@ export class GmailService {
     return { id: res.data.id ?? '', threadId: res.data.threadId ?? '' };
   }
 
+  /** Tam sayfa markalı HTML gönderir (teklif). Composer sanitizer'ından
+   *  geçmez — teklif şablonu kendi markasını taşır (logo, tablolar). From
+   *  başlığı danışmanın profilinden gelir; müşteri "Gönderilenler"e düşer. */
+  async sendHtmlEmail(
+    userId: string,
+    args: { to: string; subject: string; html: string },
+  ): Promise<{ id: string; threadId: string }> {
+    const gmail = await this.client(userId);
+    const sender = await this.senderProfile(userId);
+    const headers = [
+      `To: ${args.to}`,
+      `From: ${sender.name} <${sender.email}>`,
+      `Subject: ${this.encodeSubject(args.subject)}`,
+      'MIME-Version: 1.0',
+      'Content-Type: text/html; charset="UTF-8"',
+      'Content-Transfer-Encoding: base64',
+    ];
+    const body = Buffer.from(args.html, 'utf-8').toString('base64');
+    const message = `${headers.join('\r\n')}\r\n\r\n${body}`;
+    const raw = Buffer.from(message, 'utf-8').toString('base64url');
+    const res = await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
+    return { id: res.data.id ?? '', threadId: res.data.threadId ?? '' };
+  }
+
   /** Build a base64url-encoded RFC822 message: multipart/related wrapping
    *  a multipart/alternative (text+html) part plus the inline logo image
    *  (referenced from the HTML template via `cid:`), so the real

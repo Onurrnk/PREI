@@ -6,6 +6,7 @@
 // eski kayıtlarda alan yoksa hiç gönderilmez (frontend bölümü gizler).
 // =====================================================================
 import type { ProposalRow } from '../proposals.repository';
+import type { RoiReport } from '../roi.util';
 
 export interface ProposalPaymentPlanItem {
   milestone: string;
@@ -17,17 +18,27 @@ export interface ProposalResponse {
   id: string;
   /** Müşteri bağı — ClientProfile "Teklifler" sekmesi bu id ile filtreler. */
   contactId: string | null;
+  clientEmail: string | null;
+  propertyId: string | null;
   title: string;
   clientName: string;
   projectName: string;
   status: string; // Draft | Sent | Viewed | Accepted | Rejected
   projectLocation?: string;
   totalValue: number;
+  listPrice?: number;
+  discountPct?: number;
   currency: string;
+  paymentPlanOnList?: boolean;
   createdAt: string;
+  sentAt?: string;
   lastViewed?: string;
   viewCount: number;
   paymentPlan?: ProposalPaymentPlanItem[];
+  unit?: Record<string, unknown>;
+  roi?: RoiReport;
+  roiInputs?: Record<string, unknown>;
+  notes?: string;
   includeBrochurePdf?: boolean;
   includeFloorPlans?: boolean;
   includeRoiSheet?: boolean;
@@ -68,6 +79,8 @@ export function toProposalResponse(row: ProposalRow): ProposalResponse {
   const res: ProposalResponse = {
     id: row.id,
     contactId: row.contact_id ?? null,
+    clientEmail: row.contact_email ?? null,
+    propertyId: row.property_id ?? null,
     title: row.title,
     clientName,
     projectName,
@@ -78,6 +91,21 @@ export function toProposalResponse(row: ProposalRow): ProposalResponse {
     viewCount: row.view_count,
   };
   if (row.last_viewed_at) res.lastViewed = row.last_viewed_at;
+  if (row.sent_at) res.sentAt = row.sent_at;
+
+  if (typeof m.listPrice === 'number') res.listPrice = m.listPrice;
+  if (typeof m.discountPercent === 'number') res.discountPct = m.discountPercent;
+  if (typeof m.paymentPlanOnList === 'boolean') res.paymentPlanOnList = m.paymentPlanOnList;
+  if (m.unit && typeof m.unit === 'object' && !Array.isArray(m.unit)) {
+    res.unit = m.unit as Record<string, unknown>;
+  }
+  if (m.roiReport && typeof m.roiReport === 'object' && !Array.isArray(m.roiReport)) {
+    res.roi = m.roiReport as unknown as RoiReport;
+  }
+  if (m.roi && typeof m.roi === 'object' && !Array.isArray(m.roi)) {
+    res.roiInputs = m.roi as Record<string, unknown>;
+  }
+  if (str(m.notes)) res.notes = str(m.notes);
 
   const location = [row.project_district, row.project_city, row.project_country]
     .filter(Boolean).join(', ');

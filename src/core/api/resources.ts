@@ -21,6 +21,7 @@ import type {
   CreateMeetingInput,
   CreateProjectInput,
   CreateProposalInput,
+  UpdateProposalInput,
   CreateTaskInput,
   DashboardSummaryDTO,
   DeveloperDTO,
@@ -166,7 +167,11 @@ export const projectsApi = {
 
 export const proposalsApi = {
   list: () => api.get<ProposalDTO[]>('/api/proposals'),
+  get: (id: string) => api.get<ProposalDTO>(`/api/proposals/${id}`),
   create: (input: CreateProposalInput) => api.post<ProposalDTO>('/api/proposals', input),
+  update: (id: string, input: UpdateProposalInput) =>
+    api.patch<ProposalDTO>(`/api/proposals/${id}`, input),
+  send: (id: string) => api.post<ProposalDTO>(`/api/proposals/${id}/send`),
 };
 
 export const contractsApi = {

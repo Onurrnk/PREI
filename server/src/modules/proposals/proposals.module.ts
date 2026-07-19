@@ -4,8 +4,10 @@ import { ProposalsService } from './proposals.service';
 import { ProposalsRepository } from './proposals.repository';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RbacGuard } from '../../common/rbac.guard';
+import { GmailModule } from '../gmail/gmail.module';
 
 @Module({
+  imports: [GmailModule],
   controllers: [ProposalsController],
   providers: [ProposalsService, ProposalsRepository, JwtAuthGuard, RbacGuard],
 })

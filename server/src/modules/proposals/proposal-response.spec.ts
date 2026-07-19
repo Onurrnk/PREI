@@ -7,9 +7,11 @@ import { toProposalResponse } from './dto/proposal-response.dto';
 import type { ProposalRow } from './proposals.repository';
 
 const row = (over: Partial<ProposalRow> = {}): ProposalRow => ({
-  id: 'p1', contact_id: 'c1', title: 'Teklif', status: 'sent', total_value: '2800000', currency: 'USD',
-  view_count: 3, last_viewed_at: null, created_at: '2026-06-15',
+  id: 'p1', contact_id: 'c1', property_id: null, title: 'Teklif', status: 'sent',
+  total_value: '2800000', currency: 'USD',
+  view_count: 3, last_viewed_at: null, sent_at: null, created_at: '2026-06-15',
   metadata: null, contact_first_name: 'Ahmet', contact_last_name: 'Yılmaz',
+  contact_email: 'ahmet@example.com',
   project_title: 'Marina', project_city: 'Dubai', project_district: 'Marina', project_country: 'BAE',
   ...over,
 });
@@ -62,5 +64,29 @@ describe('toProposalResponse', () => {
   it('kişi adı yoksa clientName için — kullanır', () => {
     const r = toProposalResponse(row({ contact_first_name: null, contact_last_name: null, metadata: null }));
     expect(r.clientName).toBe('—');
+  });
+
+  it('zengin metadata (liste/indirim, daire, roi raporu, not) dışa açılır', () => {
+    const r = toProposalResponse(row({
+      metadata: {
+        listPrice: 3000000, discountPercent: 10, paymentPlanOnList: true,
+        unit: { type: '2+1', area: 95, facade: 'Deniz' },
+        roi: { rentalType: 'longterm', monthlyRent: 8000, years: 8 },
+        roiReport: { totalRoiPct: 62, netYieldPct: 5.1, years: 8 },
+        notes: 'VIP müşteri',
+      },
+    }));
+    expect(r.listPrice).toBe(3000000);
+    expect(r.discountPct).toBe(10);
+    expect(r.paymentPlanOnList).toBe(true);
+    expect(r.unit).toEqual({ type: '2+1', area: 95, facade: 'Deniz' });
+    expect((r.roi as { totalRoiPct: number }).totalRoiPct).toBe(62);
+    expect(r.roiInputs).toBeDefined();
+    expect(r.notes).toBe('VIP müşteri');
+  });
+
+  it('müşteri e-postasını dışa açar (send doğrulaması buna dayanır)', () => {
+    expect(toProposalResponse(row()).clientEmail).toBe('ahmet@example.com');
+    expect(toProposalResponse(row({ contact_email: null })).clientEmail).toBeNull();
   });
 });

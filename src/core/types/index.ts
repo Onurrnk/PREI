@@ -485,20 +485,79 @@ export interface CreateDeveloperInput {
 
 export type UpdateDeveloperInput = Partial<CreateDeveloperInput>;
 
+export interface ProposalUnitDetails {
+  type?: string;      // daire tipi (2+1)
+  area?: number;      // brüt m²
+  netArea?: number;   // net m²
+  facade?: string;    // cephe / yön
+  floor?: string;     // kat
+  view?: string;      // manzara
+  bedrooms?: number;
+  bathrooms?: number;
+  unitNo?: string;    // daire no / blok
+  features?: string;  // özellikler (serbest)
+  description?: string;
+}
+
+export interface ProposalRoiInputs {
+  propertyStatus?: 'ready' | 'offplan';
+  rentalType?: 'longterm' | 'airbnb';
+  monthlyRent?: number;
+  occupancyRate?: number;
+  adr?: number;
+  airbnbOccupancy?: number;
+  airbnbExpensesPercent?: number;
+  years?: number;
+  appreciationPercent?: number;
+  rentGrowthPercent?: number;
+  maintenancePercent?: number;
+  mgmtFeePercent?: number;
+  purchaseTaxPercent?: number;
+  annualTaxPercent?: number;
+}
+
+export interface ProposalRoiReport {
+  price: number;
+  years: number;
+  rentalType: 'longterm' | 'airbnb';
+  investedCapital: number;
+  annualGrossRentY1: number;
+  annualNetCashflowY1: number;
+  grossYieldPct: number;
+  netYieldPct: number;
+  totalNetCashflow: number;
+  futureValue: number;
+  capitalAppreciation: number;
+  totalProfit: number;
+  totalRoiPct: number;
+  annualizedRoiPct: number;
+  equityMultiple: number;
+}
+
 export interface ProposalDTO {
   id: string;
   contactId?: string | null;
+  clientEmail?: string | null;
+  propertyId?: string | null;
   title: string;
   clientName: string;
   projectName: string;
   status: 'Draft' | 'Sent' | 'Viewed' | 'Accepted' | 'Rejected';
   projectLocation?: string;
   totalValue: number;
+  listPrice?: number;
+  discountPct?: number;
   currency: string;
+  paymentPlanOnList?: boolean;
   createdAt: string;
+  sentAt?: string;
   lastViewed?: string;
   viewCount: number;
   paymentPlan?: PaymentPlanDTO[];
+  unit?: ProposalUnitDetails;
+  roi?: ProposalRoiReport;
+  roiInputs?: ProposalRoiInputs;
+  notes?: string;
   includeBrochurePdf?: boolean;
   includeFloorPlans?: boolean;
   includeRoiSheet?: boolean;
@@ -511,6 +570,16 @@ export interface CreateProposalInput {
   propertyId?: string;
   totalValue?: number;
   currency?: string;
+  status?: 'draft' | 'sent';
+  metadata?: Record<string, unknown>;
+}
+
+export interface UpdateProposalInput {
+  title?: string;
+  propertyId?: string;
+  totalValue?: number;
+  currency?: string;
+  status?: string;
   metadata?: Record<string, unknown>;
 }
 

@@ -290,7 +290,8 @@ export const ClientProfile: React.FC = () => {
       return;
     }
     if (actionName === 'Create Proposal') {
-      navigate('/proposals/new');
+      // Müşteriyi kilitleyerek aç — teklif yalnız bu müşteriye hedeflenir.
+      if (client) navigate(`/proposals/new?clientId=${client.id}`);
       return;
     }
     if (actionName === 'Log Call') {

@@ -20,6 +20,9 @@ export class CreateProposalDto {
   @IsOptional() @IsIn(CURRENCIES)
   currency?: string;
 
+  @IsOptional() @IsIn(['draft', 'sent'])
+  status?: string;
+
   @IsOptional() @IsObject()
   metadata?: Record<string, unknown>;
 }

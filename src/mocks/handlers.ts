@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw';
+import { computeRoi } from '../features/proposals/roi';
 import type {
   ClientNoteDTO,
   ClientTimelineEntryDTO,
@@ -34,6 +35,7 @@ import type {
   ProjectDTO,
   DeveloperDTO,
   ProposalDTO,
+  ProposalRoiInputs,
   UpdateDeveloperInput,
   UpdateMeInput,
   VaultDocumentDTO,
@@ -422,6 +424,50 @@ let mockProjects: ProjectDTO[] = [
   }
 ];
 
+// Teklif oluşturma/güncelleme mock'u — zengin metadata (daire, ROI, liste/
+// indirim) alanlarını backend mapper'ıyla aynı şekilde ProposalDTO'ya çıkarır.
+function buildMockProposal(
+  id: string,
+  input: CreateProposalInput,
+  existing: ProposalDTO | undefined,
+): ProposalDTO {
+  const project = mockProjects.find((p) => p.id === input.propertyId);
+  const client = mockClients.find((c) => c.id === input.contactId);
+  const meta = (input.metadata ?? {}) as Record<string, unknown>;
+  const paymentPlan = Array.isArray(meta.paymentPlan) ? (meta.paymentPlan as ProposalDTO['paymentPlan']) : undefined;
+  const selectedPhotos = Array.isArray(meta.selectedPhotos) ? (meta.selectedPhotos as string[]) : [];
+  const roiInputs = (meta.roi ?? undefined) as ProposalRoiInputs | undefined;
+  const totalValue = input.totalValue ?? existing?.totalValue ?? 0;
+  const roi = roiInputs && totalValue > 0 ? computeRoi(roiInputs, totalValue) : undefined;
+  return {
+    id,
+    contactId: input.contactId ?? existing?.contactId ?? null,
+    clientEmail: client?.email ?? existing?.clientEmail ?? null,
+    propertyId: input.propertyId ?? existing?.propertyId ?? null,
+    title: input.title ?? existing?.title ?? '—',
+    clientName: client?.name ?? existing?.clientName ?? '—',
+    projectName: project?.name ?? (typeof meta.project_name === 'string' ? meta.project_name : existing?.projectName) ?? '—',
+    projectLocation: project?.location ?? existing?.projectLocation,
+    status: (input.status === 'sent' ? 'Sent' : 'Draft'),
+    totalValue,
+    listPrice: typeof meta.listPrice === 'number' ? meta.listPrice : existing?.listPrice,
+    discountPct: typeof meta.discountPercent === 'number' ? meta.discountPercent : existing?.discountPct,
+    currency: input.currency ?? existing?.currency ?? 'EUR',
+    paymentPlanOnList: typeof meta.paymentPlanOnList === 'boolean' ? meta.paymentPlanOnList : existing?.paymentPlanOnList,
+    createdAt: existing?.createdAt ?? new Date().toISOString(),
+    viewCount: existing?.viewCount ?? 0,
+    paymentPlan: paymentPlan && paymentPlan.length > 0 ? paymentPlan : existing?.paymentPlan,
+    unit: (meta.unit as ProposalDTO['unit']) ?? existing?.unit,
+    roi: roi ?? existing?.roi,
+    roiInputs: roiInputs ?? existing?.roiInputs,
+    notes: typeof meta.notes === 'string' ? meta.notes : existing?.notes,
+    includeBrochurePdf: meta.includeBrochurePdf as boolean | undefined,
+    includeFloorPlans: meta.includeFloorPlans as boolean | undefined,
+    includeRoiSheet: meta.includeRoiSheet as boolean | undefined,
+    coverImage: selectedPhotos[0] ?? existing?.coverImage,
+  };
+}
+
 export const handlers = [
   // ---- Auth ----
   http.post('/api/auth/login', async ({ request }) => {
@@ -582,30 +628,32 @@ export const handlers = [
 
   http.post('/api/proposals', async ({ request }) => {
     const input = (await request.json()) as CreateProposalInput;
-    const project = mockProjects.find((p) => p.id === input.propertyId);
-    const clientName = mockClients.find((c) => c.id === input.contactId)?.name ?? '—';
-    const meta = (input.metadata ?? {}) as Record<string, unknown>;
-    const paymentPlan = Array.isArray(meta.paymentPlan) ? (meta.paymentPlan as ProposalDTO['paymentPlan']) : undefined;
-    const selectedPhotos = Array.isArray(meta.selectedPhotos) ? (meta.selectedPhotos as string[]) : [];
-    const newProposal: ProposalDTO = {
-      id: `prop${Date.now()}`,
-      title: input.title,
-      clientName,
-      projectName: project?.name ?? '—',
-      projectLocation: project?.location,
-      status: 'Sent',
-      totalValue: input.totalValue ?? 0,
-      currency: input.currency ?? 'EUR',
-      createdAt: new Date().toISOString(),
-      viewCount: 0,
-      paymentPlan: paymentPlan && paymentPlan.length > 0 ? paymentPlan : undefined,
-      includeBrochurePdf: meta.includeBrochurePdf as boolean | undefined,
-      includeFloorPlans: meta.includeFloorPlans as boolean | undefined,
-      includeRoiSheet: meta.includeRoiSheet as boolean | undefined,
-      coverImage: selectedPhotos[0],
-    };
-    mockProposals = [...mockProposals, newProposal];
-    return HttpResponse.json<ProposalDTO>(newProposal, { status: 201 });
+    const dto = buildMockProposal(`prop${Date.now()}`, input, undefined);
+    mockProposals = [...mockProposals, dto];
+    return HttpResponse.json<ProposalDTO>(dto, { status: 201 });
+  }),
+
+  http.get('/api/proposals/:id', ({ params }) => {
+    const found = mockProposals.find((p) => p.id === params.id);
+    if (!found) return HttpResponse.json({ message: 'not found' }, { status: 404 });
+    return HttpResponse.json<ProposalDTO>(found);
+  }),
+
+  http.patch('/api/proposals/:id', async ({ request, params }) => {
+    const input = (await request.json()) as CreateProposalInput;
+    const existing = mockProposals.find((p) => p.id === params.id);
+    if (!existing) return HttpResponse.json({ message: 'not found' }, { status: 404 });
+    const merged = buildMockProposal(existing.id, input, existing);
+    mockProposals = mockProposals.map((p) => (p.id === existing.id ? merged : p));
+    return HttpResponse.json<ProposalDTO>(merged);
+  }),
+
+  http.post('/api/proposals/:id/send', ({ params }) => {
+    const existing = mockProposals.find((p) => p.id === params.id);
+    if (!existing) return HttpResponse.json({ message: 'not found' }, { status: 404 });
+    const sent: ProposalDTO = { ...existing, status: 'Sent', sentAt: new Date().toISOString() };
+    mockProposals = mockProposals.map((p) => (p.id === existing.id ? sent : p));
+    return HttpResponse.json<ProposalDTO>(sent);
   }),
 
   http.get('/api/kpi/dashboard', () => {
