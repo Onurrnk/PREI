@@ -171,6 +171,7 @@ export interface ProjectSubmissionDTO {
     refTitle: string;
     matchedBy: string;
   } | null;
+  checks: { code: string; level: 'warn' | 'info' }[];
   createdAt: string;
 }
 

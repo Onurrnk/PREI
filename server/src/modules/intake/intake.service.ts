@@ -53,6 +53,33 @@ function safeName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80) || 'file';
 }
 
+// --- Onay öncesi otomatik ön-kontrol (deterministik) ---
+export type SubmissionCheckLevel = 'warn' | 'info';
+export interface SubmissionCheck { code: string; level: SubmissionCheckLevel }
+
+/**
+ * Gönderiyi kural tabanlı tarar; onay kuyruğunda Onur'a "dikkat" işaretleri
+ * üretir (kayıt engellenmez). 'warn' = kritik boşluk (komisyon/fiyat/konum),
+ * 'info' = eksik olabilir (görsel/açıklama/daire tipi). Mesaj metni frontend'de
+ * i18n ile (code → çeviri) verilir; backend yalnız kod + seviye döndürür.
+ */
+export function buildSubmissionChecks(s: {
+  commissionPct: number | null; priceMin: number | null; priceMax: number | null;
+  imageCount: number; unitTypes: string[]; description: string | null;
+  city: string | null; marketCode: string | null;
+}): SubmissionCheck[] {
+  const out: SubmissionCheck[] = [];
+  if (s.commissionPct == null) out.push({ code: 'no_commission', level: 'warn' });
+  else if (s.commissionPct > 10) out.push({ code: 'high_commission', level: 'warn' });
+  if (s.priceMin == null && s.priceMax == null) out.push({ code: 'no_price', level: 'warn' });
+  else if (s.priceMin != null && s.priceMax != null && s.priceMin > s.priceMax) out.push({ code: 'price_inverted', level: 'warn' });
+  if (!s.city && !s.marketCode) out.push({ code: 'no_location', level: 'warn' });
+  if (s.imageCount < 3) out.push({ code: 'few_images', level: 'info' });
+  if (s.unitTypes.length === 0) out.push({ code: 'no_unit_types', level: 'info' });
+  if (!s.description || s.description.trim().length < 30) out.push({ code: 'short_description', level: 'info' });
+  return out;
+}
+
 @Injectable()
 export class IntakeService {
   private readonly logger = new Logger(IntakeService.name);
@@ -387,6 +414,16 @@ export class IntakeService {
       neighborhood: ((r.payload as Record<string, unknown>)?.neighborhood ?? null) as string | null,
       listingUrl: ((r.payload as Record<string, unknown>)?.listingUrl ?? null) as string | null,
       duplicate: ((r.payload as Record<string, unknown>)?.duplicate ?? null) as DuplicateProjectMatch | null,
+      checks: buildSubmissionChecks({
+        commissionPct: r.commission_pct != null ? Number(r.commission_pct) : null,
+        priceMin: r.price_min != null ? Number(r.price_min) : null,
+        priceMax: r.price_max != null ? Number(r.price_max) : null,
+        imageCount: r.image_urls?.length ?? 0,
+        unitTypes: r.unit_types ?? [],
+        description: r.description,
+        city: r.city,
+        marketCode: r.market_code,
+      }),
       brochureUrl,
       createdPropertyId: r.created_property_id,
       reviewNote: r.review_note,

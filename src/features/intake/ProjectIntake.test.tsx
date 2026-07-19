@@ -27,6 +27,7 @@ const dupSubmission = {
   downPaymentPct: 20, installmentMonths: 36, paymentNote: null, neighborhood: 'Marina',
   listingUrl: null, brochureUrl: null, createdPropertyId: null, reviewNote: null,
   duplicate: { refType: 'property', refId: 'p1', refTitle: 'Emaar Beachfront', matchedBy: 'aynı geliştirici' },
+  checks: [],
   createdAt: '2026-07-19T00:00:00.000Z',
 };
 
@@ -70,6 +71,23 @@ describe('ProjectIntake — mükerrer proje işareti', () => {
     fireEvent.click(await screen.findByText('Emaar Beachfront'));
     await screen.findByRole('button', { name: /Mevcut projeyi güncelle/i });
     expect(screen.getByRole('button', { name: /Yeni olarak ekle/i })).toBeInTheDocument();
+  });
+
+  it('ön-kontrol bayrakları kuyruk sayacında ve review modalında görünür', async () => {
+    const flagged = {
+      ...dupSubmission, id: 'sub-flag', duplicate: null,
+      checks: [
+        { code: 'no_commission', level: 'warn' as const },
+        { code: 'few_images', level: 'info' as const },
+      ],
+    };
+    server.use(http.get('/api/intake/queue', () => HttpResponse.json([flagged])));
+    renderPage();
+    await screen.findByText('Emaar Beachfront');
+    fireEvent.click(screen.getByText('Emaar Beachfront'));
+    await screen.findByText('Otomatik ön-kontrol');
+    expect(screen.getByText('Komisyon oranı belirtilmemiş')).toBeInTheDocument();
+    expect(screen.getByText('Az görsel (3’ten az)')).toBeInTheDocument();
   });
 
   it('güncelle onayı update modunda çağrılır ve güncellendi mesajı çıkar', async () => {

@@ -19,6 +19,7 @@ import { Plus, Copy, Trash, CheckCircle, XCircle, FilePdf, LinkSimple, MapPin, W
 import { ProjectsHubTabs } from '../projects/ProjectsHubTabs';
 import styles from './ProjectIntake.module.css';
 
+const warnCount = (s: ProjectSubmissionDTO) => (s.checks ?? []).filter((c) => c.level === 'warn').length;
 const fmtMoney = (v: number | null, cur: string) => (v == null ? '—' : `${v.toLocaleString('tr-TR')} ${cur}`);
 const priceRange = (s: ProjectSubmissionDTO) =>
   s.priceMin != null && s.priceMax != null && s.priceMin !== s.priceMax
@@ -146,6 +147,9 @@ export const ProjectIntake: React.FC = () => {
                         {s.duplicate && (
                           <span className={styles.dupChip}><Warning size={12} weight="fill" /> {t('intake.admin.dupChip')}</span>
                         )}
+                        {warnCount(s) > 0 && (
+                          <span className={styles.warnChip}><Warning size={12} weight="fill" /> {warnCount(s)}</span>
+                        )}
                       </span>
                     </TableCell>
                     <TableCell>{s.developerName ?? '—'}</TableCell>
@@ -265,6 +269,21 @@ export const ProjectIntake: React.FC = () => {
                 </span>
               </div>
             )}
+            <div className={styles.checksBox}>
+              <span className={styles.checksTitle}>{t('intake.admin.checksTitle')}</span>
+              {(review.checks ?? []).length === 0 ? (
+                <span className={styles.checksClean}><CheckCircle size={14} weight="fill" /> {t('intake.admin.checksClean')}</span>
+              ) : (
+                <ul className={styles.checksList}>
+                  {review.checks.map((c) => (
+                    <li key={c.code} className={c.level === 'warn' ? styles.checkWarn : styles.checkInfo}>
+                      <Warning size={13} weight={c.level === 'warn' ? 'fill' : 'regular'} />
+                      {t(`intake.admin.check.${c.code}`, c.code)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <div className={styles.reviewMeta}>
               <div><span className={styles.metaLabel}>{t('intake.admin.col.developer')}</span><span>{review.developerName ?? '—'}</span></div>
               <div><span className={styles.metaLabel}>{t('intake.admin.col.location')}</span><span>{[review.neighborhood, review.district, review.city, review.marketCode].filter(Boolean).join(', ') || '—'}</span></div>

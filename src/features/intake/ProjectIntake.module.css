@@ -70,6 +70,26 @@
 }
 .dupBanner svg { flex-shrink: 0; margin-top: 1px; }
 
+/* Otomatik ön-kontrol — kuyruk uyarı sayacı + modal listesi */
+.warnChip {
+  display: inline-flex; align-items: center; gap: 3px;
+  font: var(--text-label); padding: 2px 7px; border-radius: var(--radius-control);
+  color: var(--data-warning); background: color-mix(in srgb, var(--data-warning) 13%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+.checksBox {
+  display: flex; flex-direction: column; gap: var(--sp-2);
+  padding: var(--sp-3); border-radius: var(--radius-control);
+  background: var(--bg-inset); border: 1px solid var(--border-subtle);
+}
+.checksTitle { font: var(--text-label); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.checksClean { display: inline-flex; align-items: center; gap: var(--sp-2); color: var(--data-positive); font: var(--text-body-sm); }
+.checksList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.checksList li { display: flex; align-items: center; gap: var(--sp-2); font: var(--text-body-sm); }
+.checksList li svg { flex-shrink: 0; }
+.checkWarn { color: var(--data-warning); }
+.checkInfo { color: var(--text-muted); }
+
 /* İnceleme modalı */
 .review { display: flex; flex-direction: column; gap: var(--sp-4); }
 .reviewMeta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
