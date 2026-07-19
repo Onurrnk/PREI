@@ -60,4 +60,10 @@ export class MarketingController {
     if (!ok) throw new NotFoundException('Kampanya bulunamadı');
     return { deleted: true as const };
   }
+
+  /** Manuel Meta senkronu (UI "Meta'dan Çek" butonu) — kullanıcı yetkisiyle. */
+  @Post('meta-sync')
+  metaSync(@Ctx() ctx: RequestContext, @Query('datePreset') datePreset?: string) {
+    return this.marketing.syncMeta(ctx, datePreset || 'last_30d');
+  }
 }

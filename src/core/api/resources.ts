@@ -231,6 +231,10 @@ export const marketingApi = {
   import: (rows: CreateAdSpendInput[]) =>
     api.post<{ imported: number }>('/api/marketing/campaigns/import', { rows }),
   remove: (id: string) => api.delete<{ deleted: true }>(`/api/marketing/campaigns/${id}`),
+  syncMeta: () =>
+    api.post<{ ok: boolean; configured: boolean; rows: number; campaigns: number; spendTotal: number; currency: string | null }>(
+      '/api/marketing/meta-sync', {},
+    ),
 };
 
 export const adminApi = {

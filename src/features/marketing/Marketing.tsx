@@ -12,7 +12,7 @@ import { marketingApi } from '../../core/api/resources';
 import type { MarketingSummaryDTO, MarketingTimeframe, CreateAdSpendInput } from '../../core/types';
 import {
   TrendUp, TrendDown, ChatCircle, WhatsappLogo, TelegramLogo, InstagramLogo,
-  Plus, UploadSimple, Trash, Info,
+  Plus, UploadSimple, Trash, Info, ArrowsClockwise,
 } from '@phosphor-icons/react';
 import { FunnelSteps, ComboSpend, DonutMetric, Sparkline, fmtEUR } from '../../core/charts';
 import { parseAdSpendCsv } from './marketing-csv';
@@ -64,6 +64,7 @@ export const Marketing: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<CreateAdSpendInput>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const kpis = useMemo(() => {
@@ -140,6 +141,23 @@ export const Marketing: React.FC = () => {
     }
   };
 
+  const handleMetaSync = async () => {
+    setSyncing(true);
+    try {
+      const r = await marketingApi.syncMeta();
+      if (!r.configured) {
+        toast.error(t('marketing.meta.notConfigured'));
+      } else {
+        toast.success(t('marketing.meta.synced', { campaigns: r.campaigns, rows: r.rows }));
+        refetch();
+      }
+    } catch (e) {
+      toast.error(`${t('marketing.meta.error')}: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     try {
       await marketingApi.remove(id);
@@ -171,6 +189,9 @@ export const Marketing: React.FC = () => {
               ]}
             />
           </div>
+          <Button variant="outline" onClick={handleMetaSync} disabled={syncing}>
+            <ArrowsClockwise size={16} /> {syncing ? t('marketing.meta.syncing') : t('marketing.toolbar.metaSync')}
+          </Button>
           <Button variant="outline" onClick={() => fileRef.current?.click()}>
             <UploadSimple size={16} /> {t('marketing.toolbar.importCsv')}
           </Button>

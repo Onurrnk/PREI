@@ -9,6 +9,7 @@ import { DatabaseService } from '../../database/database.service';
 import type { RequestContext } from '../../common/request-context';
 import type { CreateAdSpendDto, UpdateAdSpendDto } from './dto/ad-spend.dto';
 import type { AdCampaign } from './marketing.types';
+import type { MetaSpendRow } from './meta-ads';
 
 const QUALIFIED_SCORE = 50; // "nitelikli" eşiği (skor önbelleği)
 
@@ -303,6 +304,41 @@ export class MarketingRepository {
           patch.spend ?? null, patch.currency ?? null, patch.impressions ?? null, patch.clicks ?? null, ctx.userId],
       );
       return rows[0] ? mapCampaign(rows[0]) : null;
+    });
+  }
+
+  /** Meta Insights günlük satırlarını idempotent upsert eder (kaynak='meta').
+   *  Çakışma anahtarı: (tenant_id, campaign_ref, period_start) — 002n indeksi. */
+  async upsertMetaDaily(ctx: RequestContext, rows: MetaSpendRow[], currency: string): Promise<number> {
+    if (rows.length === 0) return 0;
+    return this.db.withContext(ctx, async (c) => {
+      let n = 0;
+      for (const r of rows) {
+        await c.query(
+          `INSERT INTO ad_spend
+             (tenant_id, name, campaign_ref, market_code, channel, status,
+              period_start, period_end, spend, currency, impressions, clicks,
+              metadata, created_by, updated_by)
+           VALUES ($1,$2,$3,$4,'meta','active',$5,$6,$7,$8,$9,$10,
+                   '{"source":"meta"}'::jsonb,$11,$11)
+           ON CONFLICT (tenant_id, campaign_ref, period_start)
+             WHERE deleted_at IS NULL AND campaign_ref IS NOT NULL
+               AND (metadata->>'source') = 'meta'
+           DO UPDATE SET
+             name        = EXCLUDED.name,
+             market_code = COALESCE(EXCLUDED.market_code, ad_spend.market_code),
+             spend       = EXCLUDED.spend,
+             currency    = EXCLUDED.currency,
+             impressions = EXCLUDED.impressions,
+             clicks      = EXCLUDED.clicks,
+             period_end  = EXCLUDED.period_end,
+             updated_by  = EXCLUDED.updated_by`,
+          [ctx.tenantId, r.name, r.campaignRef, r.marketCode, r.periodStart, r.periodEnd,
+            r.spend, currency, r.impressions, r.clicks, ctx.userId],
+        );
+        n++;
+      }
+      return n;
     });
   }
 

@@ -906,7 +906,13 @@ export const en = {
       aiQualifier: 'Eylül · AI qualifier',
       sourceNote: 'Spend is entered manually/via CSV while Meta Ads approval is pending; the funnel, CPL and ROAS are computed from your real CRM data.',
       timeframeSel: { d30: 'Last 30 days', d90: 'Last 90 days', ytd: 'Year to date', y1: 'Last 12 months' },
-      toolbar: { addCampaign: 'Add Campaign', importCsv: 'Import CSV' },
+      toolbar: { addCampaign: 'Add Campaign', importCsv: 'Import CSV', metaSync: 'Pull from Meta' },
+      meta: {
+        syncing: 'Pulling…',
+        synced: 'Meta sync: {{campaigns}} campaigns · {{rows}} rows updated.',
+        notConfigured: 'Meta connection not configured yet (token not set on server).',
+        error: 'Meta sync failed',
+      },
       empty: {
         title: 'No ad spend entered yet',
         body: 'Export a CSV from Meta Ads Manager and import it, or add a campaign manually. The funnel, CPL and ROAS are computed automatically from your real CRM data.',

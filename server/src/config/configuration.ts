@@ -38,6 +38,13 @@ export interface AppConfig {
   // AES-256-GCM key (32 raw bytes, hex-encoded = 64 chars) for encrypting
   // OAuth tokens at rest in users.metadata (DEBT-GMAIL-001).
   tokenEncryptionKey: string;
+  // Meta (Facebook/Instagram) Ads — Marketing API Insights senkronu.
+  // System User token (ads_read); yalnız sunucuda tutulur, n8n'e verilmez.
+  metaAds: {
+    accessToken: string;
+    accountId: string;   // 'act_123...' veya sade '123...'
+    apiVersion: string;  // ör. 'v21.0'
+  };
 }
 
 export default (): AppConfig => ({
@@ -68,4 +75,9 @@ export default (): AppConfig => ({
     ],
   },
   tokenEncryptionKey: process.env.TOKEN_ENCRYPTION_KEY ?? '',
+  metaAds: {
+    accessToken: process.env.META_ADS_ACCESS_TOKEN ?? '',
+    accountId: process.env.META_ADS_ACCOUNT_ID ?? '',
+    apiVersion: process.env.META_API_VERSION ?? 'v21.0',
+  },
 });

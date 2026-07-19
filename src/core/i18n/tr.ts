@@ -905,7 +905,13 @@ export const tr = {
       aiQualifier: 'Eylül · AI niteleyici',
       sourceNote: 'Harcama, Meta Ads onayı beklenirken elle/CSV ile girilir; huni, CPL ve ROAS gerçek CRM verinizden hesaplanır.',
       timeframeSel: { d30: 'Son 30 gün', d90: 'Son 90 gün', ytd: 'Yıl başından', y1: 'Son 12 ay' },
-      toolbar: { addCampaign: 'Kampanya Ekle', importCsv: 'CSV İçe Aktar' },
+      toolbar: { addCampaign: 'Kampanya Ekle', importCsv: 'CSV İçe Aktar', metaSync: 'Meta\'dan Çek' },
+      meta: {
+        syncing: 'Çekiliyor…',
+        synced: 'Meta senkronu: {{campaigns}} kampanya · {{rows}} satır güncellendi.',
+        notConfigured: 'Meta bağlantısı henüz yapılandırılmadı (token sunucuda tanımlı değil).',
+        error: 'Meta senkronu başarısız',
+      },
       empty: {
         title: 'Henüz reklam harcaması girilmedi',
         body: "Meta Ads Manager'dan CSV dışa aktarıp içe aktarın ya da elle bir kampanya ekleyin. Huni, CPL ve ROAS gerçek CRM verinizden otomatik hesaplanır.",

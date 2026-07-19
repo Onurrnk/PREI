@@ -4,11 +4,25 @@
 // girilir; funnel/CPL/ROAS/pazar dağılımı GERÇEK CRM verisinden hesaplanır.
 // Meta bağlanınca aynı ad_spend tablosu otomatik beslenir (şema değişmez).
 // =====================================================================
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { RequestContext } from '../../common/request-context';
+import type { AppConfig } from '../../config/configuration';
 import { MarketingRepository } from './marketing.repository';
+import { fetchAccountCurrency, fetchInsights } from './meta-ads';
 import type { CreateAdSpendDto, UpdateAdSpendDto } from './dto/ad-spend.dto';
 import type { AdCampaign, MarketingSummary, MarketingWeeklyPoint } from './marketing.types';
+
+export interface MetaSyncResult {
+  ok: boolean;
+  configured: boolean;
+  rows: number;
+  campaigns: number;
+  spendTotal: number;
+  currency: string | null;
+  datePreset: string;
+  message?: string;
+}
 import {
   MARKET_NAME, lastNWeeks, mondayOf, pctDelta, safeCpl, safeRoas, timeframeRange,
   type MarketingTimeframe,
@@ -18,7 +32,35 @@ const WEEKS = 12;
 
 @Injectable()
 export class MarketingService {
-  constructor(private readonly repo: MarketingRepository) {}
+  private readonly logger = new Logger(MarketingService.name);
+  constructor(
+    private readonly repo: MarketingRepository,
+    private readonly config: ConfigService<AppConfig, true>,
+  ) {}
+
+  /** Meta Marketing API Insights → ad_spend günlük senkron (idempotent).
+   *  Token/hesap yalnız sunucu env'inde (config.metaAds); asla loglanmaz. */
+  async syncMeta(ctx: RequestContext, datePreset = 'last_30d'): Promise<MetaSyncResult> {
+    const meta = this.config.get('metaAds', { infer: true });
+    if (!meta.accessToken || !meta.accountId) {
+      return { ok: false, configured: false, rows: 0, campaigns: 0, spendTotal: 0, currency: null, datePreset, message: 'META_ADS_ACCESS_TOKEN/ACCOUNT_ID tanımlı değil' };
+    }
+    try {
+      const [currency, rows] = await Promise.all([
+        fetchAccountCurrency(meta.accessToken, meta.accountId, meta.apiVersion),
+        fetchInsights(meta.accessToken, meta.accountId, meta.apiVersion, datePreset),
+      ]);
+      const n = await this.repo.upsertMetaDaily(ctx, rows, currency);
+      const campaigns = new Set(rows.map((r) => r.campaignRef)).size;
+      const spendTotal = rows.reduce((s, r) => s + r.spend, 0);
+      this.logger.log(`Meta senkron: ${n} satır, ${campaigns} kampanya, ${spendTotal} ${currency} (${datePreset})`);
+      return { ok: true, configured: true, rows: n, campaigns, spendTotal, currency, datePreset };
+    } catch (e) {
+      // Token'ı asla loglama; yalnız hata mesajı.
+      this.logger.error(`Meta senkron hatası: ${e instanceof Error ? e.message : String(e)}`);
+      throw e;
+    }
+  }
 
   async summary(ctx: RequestContext, timeframe: MarketingTimeframe): Promise<MarketingSummary> {
     const now = new Date();
