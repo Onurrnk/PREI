@@ -11,6 +11,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import type { AppConfig } from '../../config/configuration';
 import type { RequestContext } from '../../common/request-context';
 import { IntakeRepository, type InviteRow, type SubmissionRow, type DuplicateProjectMatch } from './intake.repository';
+import { verifyUnsubscribe, unsubscribeUrl } from './unsubscribe.util';
 import { StorageService, MEDIA_BUCKET, VAULT_BUCKET } from '../documents/storage.service';
 import type { CreateInviteDto, SubmitProjectDto } from './dto/intake.dto';
 import type { InviteContext } from './submission-token.guard';
@@ -334,9 +335,17 @@ export class IntakeService {
         ? `New projects matching your interests:\n${textLines}\n\nReply for details.`
         : `İlgi alanınıza uygun yeni projeler:\n${textLines}\n\nDetaylar için yanıtlayın.`;
 
+      // KVKK: toplu/eşleşme maili → izinli alıcıya abonelikten-çık linki (imzalı).
+      const unsubUrl = unsubscribeUrl(contactId) + (en ? '&lang=en' : '');
+      const unsubHtml = en
+        ? `<p style="margin:24px 0 0; font-size:12px; color:#8a8a8a;">You are receiving this because you consented to project match updates. <a href="${unsubUrl}" style="color:#8a8a8a;">Unsubscribe</a>.</p>`
+        : `<p style="margin:24px 0 0; font-size:12px; color:#8a8a8a;">Bu e-postayı, proje eşleşme bildirimlerine izin verdiğiniz için alıyorsunuz. <a href="${unsubUrl}" style="color:#8a8a8a;">Abonelikten çık</a>.</p>`;
+      const unsubText = en ? `\n\nUnsubscribe: ${unsubUrl}` : `\n\nAbonelikten çık: ${unsubUrl}`;
+
       out.push({
         contactId, to: first.email, toName: name, lang: en ? 'en' : 'tr',
-        subject, bodyHtml, bodyText, propertyIds: projects.map((p) => p.property_id),
+        subject, bodyHtml: bodyHtml + unsubHtml, bodyText: bodyText + unsubText,
+        propertyIds: projects.map((p) => p.property_id),
       });
     }
     return out;
@@ -344,6 +353,16 @@ export class IntakeService {
 
   markNotified(ctx: RequestContext, contactId: string, propertyIds: string[]) {
     return this.repo.markNotified(ctx, contactId, propertyIds);
+  }
+
+  /** Abonelikten çıkma (public, tokenli). Geçersiz token/kayıt → ok:false. */
+  async unsubscribe(contactId: string, token: string): Promise<{ ok: boolean; name?: string }> {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(contactId);
+    if (!isUuid || !verifyUnsubscribe(contactId, token)) return { ok: false };
+    const res = await this.repo.unsubscribeMarketing(contactId);
+    if (!res) return { ok: false };
+    this.logger.log(`Abonelikten çıkıldı: ${contactId}`);
+    return { ok: true, name: res.name };
   }
 
   // ---- Geliştirici atıf bildirimi (komisyon/hak koruması) ----

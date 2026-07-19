@@ -160,6 +160,25 @@ export class IntakeRepository {
     };
   }
 
+  /**
+   * Abonelikten çıkma (KVKK) — public, bağlamsız. Token HMAC ile zaten
+   * doğrulandığı için sistem sorgusuyla (prei_bootstrap, BYPASSRLS + kolon
+   * grant'i) marketing_consent=false yapılır. Silinmiş/yok kayıtta null döner;
+   * zaten kapalıysa da sorun değil (idempotent). Kişinin adını döndürür.
+   */
+  async unsubscribeMarketing(contactId: string): Promise<{ tenantId: string; name: string } | null> {
+    const rows = await this.db.raw<{ tenant_id: string; first_name: string | null; last_name: string | null }>(
+      `UPDATE contacts
+          SET marketing_consent = false
+        WHERE id = $1 AND deleted_at IS NULL
+        RETURNING tenant_id, first_name, last_name`,
+      [contactId],
+    );
+    const r = rows[0];
+    if (!r) return null;
+    return { tenantId: r.tenant_id, name: [r.first_name, r.last_name].filter(Boolean).join(' ').trim() };
+  }
+
   // ---- Gönderi (public submit — service_agent bağlamı) ----
   async insertSubmission(
     ctx: RequestContext,
