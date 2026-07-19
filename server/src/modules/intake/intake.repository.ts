@@ -216,37 +216,37 @@ export class IntakeRepository {
     });
   }
 
-  /** Onayla → gerçek properties satırı + broşür documents_vault kaydı; gönderiyi işaretle. */
-  async approve(ctx: RequestContext, id: string): Promise<{ propertyId: string } | null> {
-    return this.db.withContext(ctx, async (c) => {
-      const { rows: subs } = await c.query<SubmissionRow>(
-        `${SUBMISSION_SELECT} WHERE s.id = $1 AND s.status = 'pending'`,
-        [id],
-      );
-      const s = subs[0];
-      if (!s) return null;
+  /** Gönderi → properties satırının alan seti (INSERT + UPDATE ortak). */
+  private submissionToProperty(s: SubmissionRow): {
+    priceMin: number | null; priceMax: number | null; neighborhood: string | null;
+    metadata: Record<string, unknown>; brochureName: string; brochureSize: number;
+  } {
+    const priceMin = s.price_min != null ? Number(s.price_min) : null;
+    const priceMax = s.price_max != null ? Number(s.price_max) : null;
+    const payload = (s.payload ?? {}) as Record<string, unknown>;
 
-      const priceMin = s.price_min != null ? Number(s.price_min) : null;
-      const priceMax = s.price_max != null ? Number(s.price_max) : null;
-      const payload = (s.payload ?? {}) as Record<string, unknown>;
-
-      // Ödeme planı → katalogun kendi şemasına (PaymentPlanRowDto: milestone/
-      // percentage/date) çevrilir; ProjectProfile bunu doğal olarak gösterir.
-      const dp = payload.downPaymentPct != null ? Number(payload.downPaymentPct) : null;
-      const months = payload.installmentMonths != null ? Number(payload.installmentMonths) : null;
-      const paymentPlan: Array<{ milestone: string; percentage: number; date: string }> = [];
-      if (dp != null && dp > 0) {
-        paymentPlan.push({ milestone: 'Ön Ödeme', percentage: dp, date: '' });
-        if (dp < 100) {
-          paymentPlan.push({
-            milestone: months && months > 0 ? `Taksit (${months} ay)` : 'Kalan',
-            percentage: Math.round((100 - dp) * 100) / 100,
-            date: '',
-          });
-        }
+    // Ödeme planı → katalogun kendi şemasına (PaymentPlanRowDto: milestone/
+    // percentage/date) çevrilir; ProjectProfile bunu doğal olarak gösterir.
+    const dp = payload.downPaymentPct != null ? Number(payload.downPaymentPct) : null;
+    const months = payload.installmentMonths != null ? Number(payload.installmentMonths) : null;
+    const paymentPlan: Array<{ milestone: string; percentage: number; date: string }> = [];
+    if (dp != null && dp > 0) {
+      paymentPlan.push({ milestone: 'Ön Ödeme', percentage: dp, date: '' });
+      if (dp < 100) {
+        paymentPlan.push({
+          milestone: months && months > 0 ? `Taksit (${months} ay)` : 'Kalan',
+          percentage: Math.round((100 - dp) * 100) / 100,
+          date: '',
+        });
       }
+    }
 
-      const metadata: Record<string, unknown> = {
+    return {
+      priceMin, priceMax,
+      neighborhood: (payload.neighborhood as string) ?? null,
+      brochureName: (payload.brochureName as string) ?? `${s.title} broşür.pdf`,
+      brochureSize: Number(payload.brochureSize ?? 0),
+      metadata: {
         project_status: 'Off-plan',
         images: s.image_urls,
         images_by_category: payload.imagesByCategory ?? {},
@@ -261,33 +261,81 @@ export class IntakeRepository {
         developer_name: s.developer_name,
         completion_date: payload.completionDate ?? null,
         listing_url: payload.listingUrl ?? null,
-      };
+      },
+    };
+  }
 
-      const { rows: prop } = await c.query<{ id: string }>(
-        `INSERT INTO properties (tenant_id, developer_id, title, property_type, city, district, address,
-            market_code, price, currency, description, latitude, longitude, metadata, created_by, updated_by)
-         VALUES ($1,$2,$3,'apartment',$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14) RETURNING id`,
-        [
-          ctx.tenantId, s.developer_id, s.title, s.city, s.district,
-          (payload.neighborhood as string) ?? null,
-          s.market_code, priceMin ?? priceMax, s.currency, s.description,
-          s.latitude != null ? Number(s.latitude) : null,
-          s.longitude != null ? Number(s.longitude) : null,
-          JSON.stringify(metadata), ctx.userId,
-        ],
+  /**
+   * Onayla → katalog satırı + broşür documents_vault kaydı; gönderiyi işaretle.
+   * Faz 1.5: mode='update' + payload.duplicate.refType='property' ise YENİ satır
+   * açmak yerine eşleşen mevcut projeyi tazeler (fiyat/açıklama/görsel/ödeme
+   * planı/broşür). Eşleşme yoksa/geçersizse güvenli biçimde 'new'e düşer.
+   */
+  async approve(ctx: RequestContext, id: string, mode: 'new' | 'update' = 'new'): Promise<{ propertyId: string; updated: boolean } | null> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows: subs } = await c.query<SubmissionRow>(
+        `${SUBMISSION_SELECT} WHERE s.id = $1 AND s.status = 'pending'`,
+        [id],
       );
-      const propertyId = prop[0].id;
+      const s = subs[0];
+      if (!s) return null;
 
-      // Broşür → documents_vault (proje ile ilişkili). Boyut/isim payload'dan.
+      const f = this.submissionToProperty(s);
+
+      // Güncelleme hedefi: yalnız property eşleşmesi + hedef hâlâ canlıysa.
+      const dup = (s.payload as Record<string, unknown>)?.duplicate as
+        | { refType?: string; refId?: string } | null | undefined;
+      let targetPropertyId: string | null = null;
+      if (mode === 'update' && dup?.refType === 'property' && dup.refId) {
+        const { rows: exist } = await c.query<{ id: string }>(
+          `SELECT id FROM properties WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`,
+          [dup.refId, ctx.tenantId],
+        );
+        targetPropertyId = exist[0]?.id ?? null;
+      }
+      const doUpdate = targetPropertyId != null;
+
+      let propertyId: string;
+      if (doUpdate) {
+        await c.query(
+          `UPDATE properties
+              SET developer_id = $2, title = $3, city = $4, district = $5, address = $6,
+                  market_code = $7, price = $8, currency = $9, description = $10,
+                  latitude = $11, longitude = $12,
+                  metadata = COALESCE(metadata, '{}'::jsonb) || $13::jsonb,
+                  updated_by = $14, updated_at = now()
+            WHERE id = $1`,
+          [
+            targetPropertyId, s.developer_id, s.title, s.city, s.district, f.neighborhood,
+            s.market_code, f.priceMin ?? f.priceMax, s.currency, s.description,
+            s.latitude != null ? Number(s.latitude) : null,
+            s.longitude != null ? Number(s.longitude) : null,
+            JSON.stringify(f.metadata), ctx.userId,
+          ],
+        );
+        propertyId = targetPropertyId!;
+      } else {
+        const { rows: prop } = await c.query<{ id: string }>(
+          `INSERT INTO properties (tenant_id, developer_id, title, property_type, city, district, address,
+              market_code, price, currency, description, latitude, longitude, metadata, created_by, updated_by)
+           VALUES ($1,$2,$3,'apartment',$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14) RETURNING id`,
+          [
+            ctx.tenantId, s.developer_id, s.title, s.city, s.district, f.neighborhood,
+            s.market_code, f.priceMin ?? f.priceMax, s.currency, s.description,
+            s.latitude != null ? Number(s.latitude) : null,
+            s.longitude != null ? Number(s.longitude) : null,
+            JSON.stringify(f.metadata), ctx.userId,
+          ],
+        );
+        propertyId = prop[0].id;
+      }
+
+      // Broşür → documents_vault (yeni gönderinin broşürü; güncellemede de eklenir).
       if (s.brochure_path) {
-        const p = payload as Record<string, unknown>;
         await c.query(
           `INSERT INTO documents_vault (tenant_id, name, folder, mime_type, size_bytes, storage_path, related_type, related_id, uploaded_by)
            VALUES ($1,$2,'Developer Agreements','application/pdf',$3,$4,'project',$5,$6)`,
-          [
-            ctx.tenantId, (p.brochureName as string) ?? `${s.title} broşür.pdf`,
-            Number(p.brochureSize ?? 0), s.brochure_path, propertyId, ctx.userId,
-          ],
+          [ctx.tenantId, f.brochureName, f.brochureSize, s.brochure_path, propertyId, ctx.userId],
         );
       }
 
@@ -299,10 +347,13 @@ export class IntakeRepository {
       );
       await c.query(
         `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
-         VALUES ($1,$2,'project_submission.approved','project_submission',$3,$4,$5)`,
-        [ctx.tenantId, ctx.userId, id, JSON.stringify({ propertyId }), ctx.correlationId],
+         VALUES ($1,$2,$6,'project_submission',$3,$4,$5)`,
+        [
+          ctx.tenantId, ctx.userId, id, JSON.stringify({ propertyId, updated: doUpdate }), ctx.correlationId,
+          doUpdate ? 'project_submission.approved_as_update' : 'project_submission.approved',
+        ],
       );
-      return { propertyId };
+      return { propertyId, updated: doUpdate };
     });
   }
 

@@ -236,8 +236,8 @@ export class IntakeService {
     return row ? this.toSubmission(row) : null;
   }
 
-  approve(ctx: RequestContext, id: string) {
-    return this.repo.approve(ctx, id);
+  approve(ctx: RequestContext, id: string, mode: 'new' | 'update' = 'new') {
+    return this.repo.approve(ctx, id, mode);
   }
 
   // ---- Faz 2: kriter-eşleşmeli müşteri bildirimi (n8n digest) ----

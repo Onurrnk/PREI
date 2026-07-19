@@ -56,10 +56,10 @@ export class IntakeController {
   }
 
   @Post('queue/:id/approve')
-  async approve(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
-    const res = await this.intake.approve(ctx, id);
+  async approve(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string, @Body() dto: ReviewSubmissionDto) {
+    const res = await this.intake.approve(ctx, id, dto.mode ?? 'new');
     if (!res) throw new NotFoundException('Bekleyen gönderi bulunamadı');
-    return { approved: true as const, propertyId: res.propertyId };
+    return { approved: true as const, propertyId: res.propertyId, updated: res.updated };
   }
 
   @Post('queue/:id/reject')

@@ -1025,6 +1025,8 @@ export const en = {
         queueTab: 'Approval Queue', invitesTab: 'Invite Links',
         queueEmpty: 'No pending submissions.', invitesEmpty: 'No invite links yet.',
         reviewBtn: 'Review', approve: 'Approve', reject: 'Reject',
+        approveAsNew: 'Add as new', approveAsUpdate: 'Update existing project',
+        updatedOk: 'Existing project updated.',
         approved: 'Project approved and added to the catalog.', rejected: 'Submission rejected.',
         dupChip: 'Possible duplicate',
         dupBy: { 'aynı geliştirici': 'same developer', 'aynı şehir': 'same city' },

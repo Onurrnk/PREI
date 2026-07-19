@@ -937,7 +937,10 @@ export const handlers = [
     }, { status: 201 });
   }),
   http.delete('/api/intake/invites/:id', () => HttpResponse.json({ revoked: true })),
-  http.post('/api/intake/queue/:id/approve', () => HttpResponse.json({ approved: true, propertyId: crypto.randomUUID() })),
+  http.post('/api/intake/queue/:id/approve', async ({ request }) => {
+    const b = (await request.json().catch(() => ({}))) as { mode?: 'new' | 'update' };
+    return HttpResponse.json({ approved: true, propertyId: crypto.randomUUID(), updated: b.mode === 'update' });
+  }),
   http.post('/api/intake/queue/:id/reject', () => HttpResponse.json({ rejected: true })),
   http.get('/api/public/intake/:token', () => HttpResponse.json({ valid: true, developerName: 'Demo Developer', label: 'Demo' })),
   http.post('/api/public/intake/:token/submit', () => HttpResponse.json({ ok: true, submissionId: crypto.randomUUID() }, { status: 201 })),

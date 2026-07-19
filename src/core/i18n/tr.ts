@@ -1024,6 +1024,8 @@ export const tr = {
         queueTab: 'Onay Kuyruğu', invitesTab: 'Davet Linkleri',
         queueEmpty: 'Bekleyen gönderi yok.', invitesEmpty: 'Henüz davet linki yok.',
         reviewBtn: 'İncele', approve: 'Onayla', reject: 'Reddet',
+        approveAsNew: 'Yeni olarak ekle', approveAsUpdate: 'Mevcut projeyi güncelle',
+        updatedOk: 'Mevcut proje güncellendi.',
         approved: 'Proje onaylandı ve kataloğa eklendi.', rejected: 'Gönderi reddedildi.',
         dupChip: 'Olası mükerrer',
         dupBy: { 'aynı geliştirici': 'aynı geliştirici', 'aynı şehir': 'aynı şehir' },

@@ -63,4 +63,27 @@ describe('ProjectIntake — mükerrer proje işareti', () => {
     await screen.findByText('Emaar Beachfront');
     expect(screen.queryByText('Olası mükerrer')).not.toBeInTheDocument();
   });
+
+  it('property eşleşmesinde incele modalı "Güncelle" + "Yeni ekle" butonlarını sunar', async () => {
+    server.use(http.get('/api/intake/queue', () => HttpResponse.json([dupSubmission])));
+    renderPage();
+    fireEvent.click(await screen.findByText('Emaar Beachfront'));
+    await screen.findByRole('button', { name: /Mevcut projeyi güncelle/i });
+    expect(screen.getByRole('button', { name: /Yeni olarak ekle/i })).toBeInTheDocument();
+  });
+
+  it('güncelle onayı update modunda çağrılır ve güncellendi mesajı çıkar', async () => {
+    server.use(http.get('/api/intake/queue', () => HttpResponse.json([dupSubmission])));
+    let sentMode: string | null = null;
+    server.use(http.post('/api/intake/queue/:id/approve', async ({ request }) => {
+      const b = (await request.json()) as { mode?: string };
+      sentMode = b.mode ?? null;
+      return HttpResponse.json({ approved: true, propertyId: 'p1', updated: b.mode === 'update' });
+    }));
+    renderPage();
+    fireEvent.click(await screen.findByText('Emaar Beachfront'));
+    fireEvent.click(await screen.findByRole('button', { name: /Mevcut projeyi güncelle/i }));
+    await waitFor(() => expect(sentMode).toBe('update'));
+    await screen.findByText(/Mevcut proje güncellendi/i);
+  });
 });

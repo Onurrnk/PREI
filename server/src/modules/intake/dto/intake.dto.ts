@@ -33,6 +33,15 @@ export class CreateInviteDto {
 export class ReviewSubmissionDto {
   @IsOptional() @IsString() @MaxLength(1000)
   note?: string;
+
+  /**
+   * Onay modu (Faz 1.5): 'new' = yeni katalog satırı (varsayılan);
+   * 'update' = mükerrer eşleşen mevcut projeyi (payload.duplicate.refType
+   * === 'property') güncelle, yeni satır açma. Yalnız property eşleşmesi
+   * varsa geçerli; yoksa 'new'e düşer.
+   */
+  @IsOptional() @IsIn(['new', 'update'])
+  mode?: 'new' | 'update';
 }
 
 // --- Public: geliştirici proje gönderimi (multipart metin alanları) ---

@@ -38,11 +38,11 @@ export const ProjectIntake: React.FC = () => {
   const [review, setReview] = useState<ProjectSubmissionDTO | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const doApprove = async (id: string) => {
+  const doApprove = async (id: string, mode: 'new' | 'update' = 'new') => {
     setBusy(true);
     try {
-      await intakeApi.approve(id);
-      toast.success(t('intake.admin.approved'));
+      const res = await intakeApi.approve(id, mode);
+      toast.success(res.updated ? t('intake.admin.updatedOk') : t('intake.admin.approved'));
       setReview(null);
       refetchQueue();
     } catch (e) {
@@ -241,7 +241,14 @@ export const ProjectIntake: React.FC = () => {
         footer={review && (
           <>
             <Button variant="outline" disabled={busy} onClick={() => doReject(review.id)}><XCircle size={16} /> {t('intake.admin.reject')}</Button>
-            <Button variant="primary" disabled={busy} onClick={() => doApprove(review.id)}><CheckCircle size={16} /> {t('intake.admin.approve')}</Button>
+            {review.duplicate?.refType === 'property' ? (
+              <>
+                <Button variant="outline" disabled={busy} onClick={() => doApprove(review.id, 'new')}><CheckCircle size={16} /> {t('intake.admin.approveAsNew')}</Button>
+                <Button variant="primary" disabled={busy} onClick={() => doApprove(review.id, 'update')}><CheckCircle size={16} /> {t('intake.admin.approveAsUpdate')}</Button>
+              </>
+            ) : (
+              <Button variant="primary" disabled={busy} onClick={() => doApprove(review.id, 'new')}><CheckCircle size={16} /> {t('intake.admin.approve')}</Button>
+            )}
           </>
         )}
       >

@@ -266,7 +266,8 @@ export const intakeApi = {
   queue: () => api.get<ProjectSubmissionDTO[]>('/api/intake/queue'),
   queueCount: () => api.get<{ count: number }>('/api/intake/queue/count'),
   review: (id: string) => api.get<ProjectSubmissionDTO>(`/api/intake/queue/${id}`),
-  approve: (id: string) => api.post<{ approved: true; propertyId: string }>(`/api/intake/queue/${id}/approve`, {}),
+  approve: (id: string, mode: 'new' | 'update' = 'new') =>
+    api.post<{ approved: true; propertyId: string; updated: boolean }>(`/api/intake/queue/${id}/approve`, { mode }),
   reject: (id: string, note?: string) => api.post<{ rejected: true }>(`/api/intake/queue/${id}/reject`, { note }),
 };
 
