@@ -25,10 +25,12 @@
 }
 
 /* ---- Kapak ---- */
+/* Görsel yoksa düz koyu mürekkep zemin (PREI DS §2 "sessiz lüks": gradyan
+   gösterisi yok). Fotoğraf varsa üstündeki scrim okunurluk içindir, kalır. */
 .cover {
   position: relative;
   min-height: 360px;
-  background: linear-gradient(135deg, #2a2033 0%, #4a2f57 55%, #6d3f80 100%);
+  background: #17131e;
   background-size: cover;
   background-position: center;
 }
