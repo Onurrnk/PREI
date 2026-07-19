@@ -80,6 +80,20 @@ export function buildSubmissionChecks(s: {
   return out;
 }
 
+/** Admin Telegram bildirimi metni (test edilebilir pür fonksiyon). */
+export function buildSubmissionNotifyText(info: {
+  title: string; developerName: string | null; location: string | null; isDuplicate: boolean;
+}): string {
+  const lines = [
+    `📥 Yeni proje gönderimi: ${info.title}`,
+    `Geliştirici: ${info.developerName || '—'}`,
+  ];
+  if (info.location) lines.push(`Konum: ${info.location}`);
+  if (info.isDuplicate) lines.push('⚠️ Olası mükerrer/güncelleme — kuyrukta kontrol et.');
+  lines.push('https://prei.produality.com/projects/intake');
+  return lines.join('\n');
+}
+
 @Injectable()
 export class IntakeService {
   private readonly logger = new Logger(IntakeService.name);
@@ -243,6 +257,13 @@ export class IntakeService {
 
     await this.repo.incrementInviteUse(invite.inviteId);
     this.logger.log(`Yeni proje gönderimi: ${submissionId} (davet ${invite.inviteId})`);
+    // Admin'e anlık bildirim (fire-and-forget) — kuyruğu açık tutmaya gerek yok.
+    this.notifyAdminNewSubmission({
+      title: dto.title.trim(),
+      developerName: invite.developerName,
+      location: [dto.city?.trim(), dto.marketCode].filter(Boolean).join(' · ') || null,
+      isDuplicate: !!duplicate,
+    });
     // Not: mükerrer bilgisi dış geliştiriciye DÖNÜLMEZ (katalog sızıntısı olmasın);
     // yalnız dahili onay kuyruğunda not/rozet olarak görünür.
     return { ok: true as const, submissionId };
@@ -378,6 +399,27 @@ export class IntakeService {
 
   reject(ctx: RequestContext, id: string, note: string | null) {
     return this.repo.reject(ctx, id, note);
+  }
+
+  /**
+   * Yeni gönderi düşünce admin'e Telegram bildirimi — fire-and-forget:
+   * bildirim çökse bile submit asla etkilenmez. TELEGRAM_BOT_TOKEN +
+   * ADMIN_TELEGRAM_CHAT_ID env yoksa sessizce atlar (notifyAdminNewLead deseni).
+   */
+  private notifyAdminNewSubmission(info: {
+    title: string; developerName: string | null; location: string | null; isDuplicate: boolean;
+  }): void {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.ADMIN_TELEGRAM_CHAT_ID;
+    if (!token || !chatId) return;
+    const text = buildSubmissionNotifyText(info);
+    void fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    }).then((r) => {
+      if (!r.ok) this.logger.warn(`Yeni-gönderi bildirimi gönderilemedi: HTTP ${r.status}`);
+    }).catch((e) => this.logger.warn(`Yeni-gönderi bildirimi hatası: ${(e as Error).message}`));
   }
 
   private async toSubmission(r: SubmissionRow) {
