@@ -27,7 +27,7 @@ export class ProposalsService {
   }
 
   async create(ctx: RequestContext, dto: CreateProposalDto): Promise<ProposalResponse> {
-    const metadata = this.withRoiReport(dto.metadata ?? {}, dto.totalValue ?? null);
+    const metadata = this.withRoiReport(dto.metadata ?? {}, dto.totalValue ?? null, dto.currency ?? 'EUR');
     const row = await this.repo.create(ctx, {
       title: dto.title.trim(),
       contactId: dto.contactId,
@@ -50,8 +50,9 @@ export class ProposalsService {
         : existing.total_value !== null ? Number(existing.total_value) : null;
 
     // Gelen metadata parçasını ROI raporuyla zenginleştir (fiyat/roi girdisi değişmişse).
+    const currency = dto.currency ?? existing.currency;
     const mergedForRoi = { ...(existing.metadata ?? {}), ...(dto.metadata ?? {}) };
-    const metadataPatch = this.withRoiReport(dto.metadata ?? {}, totalValue, mergedForRoi);
+    const metadataPatch = this.withRoiReport(dto.metadata ?? {}, totalValue, currency, mergedForRoi);
 
     const row = await this.repo.update(ctx, id, {
       title: dto.title,
@@ -84,12 +85,13 @@ export class ProposalsService {
   private withRoiReport(
     metadata: Record<string, unknown>,
     totalValue: number | null,
+    currency: string,
     roiSource?: Record<string, unknown>,
   ): Record<string, unknown> {
     const src = roiSource ?? metadata;
     const roiInputs = src.roi as RoiInputs | undefined;
     if (roiInputs && typeof roiInputs === 'object' && totalValue && totalValue > 0) {
-      return { ...metadata, roiReport: computeRoi(roiInputs, totalValue) };
+      return { ...metadata, roiReport: computeRoi(roiInputs, totalValue, currency) };
     }
     return metadata;
   }

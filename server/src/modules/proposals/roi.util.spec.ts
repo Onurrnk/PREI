@@ -1,55 +1,64 @@
 import { describe, it, expect } from 'vitest';
-import { computeRoi } from './roi.util';
+import { computeRoi, fxRate } from './roi.util';
 
-// Web sitesi roi-calculator.html özet modeliyle aynı çekirdek. Bilinen
-// girdilerle beklenen büyüklükleri (yön + oran) doğrular.
-describe('computeRoi', () => {
-  it('uzun dönem kira + değer artışını doğru toplar', () => {
+// Yıllık-odaklı model: brüt/net getiri, yıllık değer artışı, yıllık toplam getiri.
+describe('computeRoi (yıllık model)', () => {
+  it('uzun dönemde doluluk uygulanmaz (100%)', () => {
     const r = computeRoi(
-      {
-        rentalType: 'longterm', monthlyRent: 2000, occupancyRate: 100, years: 1,
-        appreciationPercent: 10, rentGrowthPercent: 0, maintenancePercent: 0,
-        mgmtFeePercent: 0, purchaseTaxPercent: 0, annualTaxPercent: 0,
-      },
-      300000,
+      { rentalType: 'longterm', monthlyRent: 2000, appreciationPercent: 5,
+        maintenancePercent: 0, mgmtFeePercent: 0, aidatMonthly: 0 },
+      300000, 'USD',
     );
-    expect(r.annualGrossRentY1).toBe(24000);
-    expect(r.annualNetCashflowY1).toBe(24000);
+    // 2000×12 = 24.000 (doluluk yok)
+    expect(r.annualGrossRent).toBe(24000);
     expect(r.grossYieldPct).toBe(8);
-    expect(r.capitalAppreciation).toBe(30000);
-    expect(r.totalProfit).toBe(54000);
-    expect(r.totalRoiPct).toBe(18);
+    // Gider yok → net = brüt
+    expect(r.annualNetRent).toBe(24000);
+    expect(r.netYieldPct).toBe(8);
+    // Yıllık değer artışı = 300000×5% = 15.000
+    expect(r.annualAppreciation).toBe(15000);
+    // Toplam getiri = net getiri + değer artışı = 8 + 5 = 13
+    expect(r.annualTotalReturnPct).toBe(13);
   });
 
-  it('giderler net getiriyi brütün altına indirir', () => {
+  it('kısa dönemde doluluk brüt kirayı düşürür', () => {
     const r = computeRoi(
-      {
-        rentalType: 'longterm', monthlyRent: 1000, occupancyRate: 100, years: 5,
-        maintenancePercent: 1, mgmtFeePercent: 10, annualTaxPercent: 0,
-        appreciationPercent: 5, rentGrowthPercent: 0, purchaseTaxPercent: 4,
-      },
-      200000,
+      { rentalType: 'shortterm', monthlyRent: 2000, occupancyRate: 50,
+        appreciationPercent: 0, maintenancePercent: 0, mgmtFeePercent: 0, aidatMonthly: 0 },
+      300000, 'USD',
     );
+    // 2000×12×0.5 = 12.000
+    expect(r.annualGrossRent).toBe(12000);
+  });
+
+  it('bakım + aidat + yönetim giderleri net getiriyi düşürür', () => {
+    const r = computeRoi(
+      { rentalType: 'longterm', monthlyRent: 1000, maintenancePercent: 1,
+        mgmtFeePercent: 10, aidatMonthly: 100, appreciationPercent: 0 },
+      200000, 'USD',
+    );
+    // brüt = 12.000; bakım = 2.000; aidat = 1.200; yönetim = 1.200 → gider 4.400
+    expect(r.annualGrossRent).toBe(12000);
+    expect(r.annualCosts).toBe(4400);
+    expect(r.annualNetRent).toBe(7600);
     expect(r.netYieldPct).toBeLessThan(r.grossYieldPct);
-    expect(r.investedCapital).toBe(208000);
-    expect(r.equityMultiple).toBeGreaterThan(1);
   });
 
-  it('airbnb modu ADR × 365 × doluluk kullanır', () => {
+  it('kira para birimi farklıysa çapraz kurla fiyat para birimine çevrilir', () => {
+    // TRY kira, USD fiyat: monthlyRent 100.000 TRY → USD'ye çevrilir.
     const r = computeRoi(
-      {
-        rentalType: 'airbnb', adr: 100, airbnbOccupancy: 50, airbnbExpensesPercent: 0,
-        years: 1, maintenancePercent: 0, annualTaxPercent: 0,
-        appreciationPercent: 0, purchaseTaxPercent: 0,
-      },
-      500000,
+      { rentalType: 'longterm', monthlyRent: 100000, rentCurrency: 'TRY',
+        maintenancePercent: 0, mgmtFeePercent: 0, aidatMonthly: 0 },
+      1000000, 'USD',
     );
-    expect(r.annualGrossRentY1).toBe(18250);
+    const expectedMonthlyUsd = 100000 * fxRate('TRY', 'USD');
+    expect(r.monthlyRentInPriceCcy).toBeCloseTo(Math.round(expectedMonthlyUsd * 100) / 100, 0);
+    expect(r.annualGrossRent).toBeGreaterThan(0);
   });
 
   it('sıfır fiyatta bölme hatası vermez', () => {
-    const r = computeRoi({ monthlyRent: 1000, years: 3 }, 0);
-    expect(Number.isFinite(r.totalRoiPct)).toBe(true);
+    const r = computeRoi({ monthlyRent: 1000 }, 0, 'USD');
+    expect(Number.isFinite(r.netYieldPct)).toBe(true);
     expect(r.grossYieldPct).toBe(0);
   });
 });

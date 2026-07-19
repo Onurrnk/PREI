@@ -1,63 +1,56 @@
 // =====================================================================
-// PREI | ROI hesap motoru (frontend) — canlı önizleme için. Backend
+// PREI | ROI hesap motoru (frontend) — yıllık-odaklı. Backend
 // server/src/modules/proposals/roi.util.ts ile BİREBİR aynı formül;
-// kaydedince yetkili çıktı backend'de yeniden hesaplanır. İki tarafın
-// eşit kalması şart (değişiklik ikisine birden uygulanmalı).
+// kaydedince yetkili çıktı backend'de yeniden hesaplanır. İki taraf
+// eşit kalmalı (değişiklik ikisine birden uygulanmalı).
+// Aylık kira kendi para biriminde girilir; hesapta statik USD-bazlı
+// çapraz kurla fiyat para birimine çevrilir (web calc yedek kurları).
 // =====================================================================
 import type { ProposalRoiInputs, ProposalRoiReport } from '../../core/types';
 
 const n = (v: number | undefined, d = 0): number =>
   typeof v === 'number' && Number.isFinite(v) ? v : d;
 
-export function computeRoi(inputs: ProposalRoiInputs, price: number): ProposalRoiReport {
+// 1 birim = x USD (web roi-calculator.html statik yedek kurları).
+const USD_RATES: Record<string, number> = { USD: 1.0, AED: 0.2723, EUR: 1.16, GBP: 1.34, TRY: 0.0233 };
+export function fxRate(from: string, to: string): number {
+  if (from === to) return 1;
+  const f = USD_RATES[from], t = USD_RATES[to];
+  return f && t ? f / t : 1;
+}
+
+export function computeRoi(
+  inputs: ProposalRoiInputs,
+  price: number,
+  priceCurrency = 'USD',
+): ProposalRoiReport {
   const p = Math.max(0, n(price));
-  const years = Math.max(1, Math.min(40, n(inputs.years, 8)));
-  const rentalType = inputs.rentalType === 'airbnb' ? 'airbnb' : 'longterm';
+  const rentalType = inputs.rentalType === 'shortterm' ? 'shortterm' : 'longterm';
+  const rentCurrency = inputs.rentCurrency || priceCurrency;
 
   const apprPct = n(inputs.appreciationPercent, 5);
-  const rentGrowthPct = n(inputs.rentGrowthPercent, 2.5);
   const maintPct = n(inputs.maintenancePercent, 1);
-  const mgmtPct = n(inputs.mgmtFeePercent, rentalType === 'airbnb' ? 0 : 5);
-  const purchaseTaxPct = n(inputs.purchaseTaxPercent, 4);
-  const annualTaxPct = n(inputs.annualTaxPercent, 0);
+  const mgmtPct = n(inputs.mgmtFeePercent, 5);
+  const aidatMonthly = n(inputs.aidatMonthly); // fiyat para biriminde
 
-  let grossY1: number;
-  if (rentalType === 'airbnb') {
-    const adr = n(inputs.adr);
-    const occ = Math.min(100, Math.max(0, n(inputs.airbnbOccupancy, 65))) / 100;
-    grossY1 = adr * 365 * occ;
-  } else {
-    const rent = n(inputs.monthlyRent);
-    const occ = Math.min(100, Math.max(0, n(inputs.occupancyRate, 92))) / 100;
-    grossY1 = rent * 12 * occ;
-  }
+  // Aylık kirayı fiyat para birimine çevir.
+  const monthlyRentInPriceCcy = n(inputs.monthlyRent) * fxRate(rentCurrency, priceCurrency);
+  // Kısa dönem: doluluk uygulanır; uzun dönem: 100%.
+  const occ = rentalType === 'shortterm'
+    ? Math.min(100, Math.max(0, n(inputs.occupancyRate, 60))) / 100
+    : 1;
 
-  const expenseOnRentPct =
-    rentalType === 'airbnb' ? n(inputs.airbnbExpensesPercent, 25) : mgmtPct;
-  const annualPropertyCost = p * (maintPct / 100) + p * (annualTaxPct / 100);
+  const annualGrossRent = monthlyRentInPriceCcy * 12 * occ;
+  const maintenanceCost = p * (maintPct / 100);
+  const aidatAnnual = aidatMonthly * 12;
+  const mgmtCost = annualGrossRent * (mgmtPct / 100);
+  const annualCosts = maintenanceCost + aidatAnnual + mgmtCost;
+  const annualNetRent = annualGrossRent - annualCosts;
 
-  let totalNetCashflow = 0;
-  let netY1 = 0;
-  for (let y = 1; y <= years; y++) {
-    const gross = grossY1 * Math.pow(1 + rentGrowthPct / 100, y - 1);
-    const rentExpense = gross * (expenseOnRentPct / 100);
-    const net = gross - rentExpense - annualPropertyCost;
-    if (y === 1) netY1 = net;
-    totalNetCashflow += net;
-  }
-
-  const futureValue = p * Math.pow(1 + apprPct / 100, years);
-  const capitalAppreciation = futureValue - p;
-  const investedCapital = p + p * (purchaseTaxPct / 100);
-  const totalProfit = totalNetCashflow + capitalAppreciation;
-
-  const totalRoiPct = investedCapital > 0 ? (totalProfit / investedCapital) * 100 : 0;
-  const equityMultiple =
-    investedCapital > 0 ? (investedCapital + totalProfit) / investedCapital : 0;
-  const annualizedRoiPct =
-    investedCapital > 0 && equityMultiple > 0
-      ? (Math.pow(equityMultiple, 1 / years) - 1) * 100
-      : 0;
+  const grossYieldPct = p > 0 ? (annualGrossRent / p) * 100 : 0;
+  const netYieldPct = p > 0 ? (annualNetRent / p) * 100 : 0;
+  const annualAppreciation = p * (apprPct / 100);
+  const annualTotalReturnPct = netYieldPct + apprPct;
 
   const round = (v: number, d = 2) => {
     const f = Math.pow(10, d);
@@ -66,20 +59,18 @@ export function computeRoi(inputs: ProposalRoiInputs, price: number): ProposalRo
 
   return {
     price: round(p),
-    years,
+    currency: priceCurrency,
     rentalType,
-    investedCapital: round(investedCapital),
-    annualGrossRentY1: round(grossY1),
-    annualNetCashflowY1: round(netY1),
-    grossYieldPct: round(p > 0 ? (grossY1 / p) * 100 : 0),
-    netYieldPct: round(p > 0 ? (netY1 / p) * 100 : 0),
-    totalNetCashflow: round(totalNetCashflow),
-    futureValue: round(futureValue),
-    capitalAppreciation: round(capitalAppreciation),
-    totalProfit: round(totalProfit),
-    totalRoiPct: round(totalRoiPct),
-    annualizedRoiPct: round(annualizedRoiPct),
-    equityMultiple: round(equityMultiple, 2),
+    rentCurrency,
+    monthlyRentInPriceCcy: round(monthlyRentInPriceCcy),
+    annualGrossRent: round(annualGrossRent),
+    annualCosts: round(annualCosts),
+    annualNetRent: round(annualNetRent),
+    grossYieldPct: round(grossYieldPct),
+    netYieldPct: round(netYieldPct),
+    annualAppreciation: round(annualAppreciation),
+    appreciationPct: round(apprPct),
+    annualTotalReturnPct: round(annualTotalReturnPct),
   };
 }
 

@@ -70,17 +70,17 @@ describe('toProposalResponse', () => {
     const r = toProposalResponse(row({
       metadata: {
         listPrice: 3000000, discountPercent: 10, paymentPlanOnList: true,
-        unit: { type: '2+1', area: 95, facade: 'Deniz' },
-        roi: { rentalType: 'longterm', monthlyRent: 8000, years: 8 },
-        roiReport: { totalRoiPct: 62, netYieldPct: 5.1, years: 8 },
+        unit: { type: '2+1', area: 95, facade: 'Deniz', titleDeed: 'kat_mulkiyeti' },
+        roi: { rentalType: 'longterm', monthlyRent: 8000 },
+        roiReport: { netYieldPct: 5.1, annualTotalReturnPct: 10.1 },
         notes: 'VIP müşteri',
       },
     }));
     expect(r.listPrice).toBe(3000000);
     expect(r.discountPct).toBe(10);
     expect(r.paymentPlanOnList).toBe(true);
-    expect(r.unit).toEqual({ type: '2+1', area: 95, facade: 'Deniz' });
-    expect((r.roi as { totalRoiPct: number }).totalRoiPct).toBe(62);
+    expect(r.unit).toEqual({ type: '2+1', area: 95, facade: 'Deniz', titleDeed: 'kat_mulkiyeti' });
+    expect((r.roi as { netYieldPct: number }).netYieldPct).toBe(5.1);
     expect(r.roiInputs).toBeDefined();
     expect(r.notes).toBe('VIP müşteri');
   });

@@ -438,7 +438,8 @@ function buildMockProposal(
   const selectedPhotos = Array.isArray(meta.selectedPhotos) ? (meta.selectedPhotos as string[]) : [];
   const roiInputs = (meta.roi ?? undefined) as ProposalRoiInputs | undefined;
   const totalValue = input.totalValue ?? existing?.totalValue ?? 0;
-  const roi = roiInputs && totalValue > 0 ? computeRoi(roiInputs, totalValue) : undefined;
+  const ccy = input.currency ?? existing?.currency ?? 'EUR';
+  const roi = roiInputs && totalValue > 0 ? computeRoi(roiInputs, totalValue, ccy) : undefined;
   return {
     id,
     contactId: input.contactId ?? existing?.contactId ?? null,

@@ -35,14 +35,12 @@ const LX = (tr: boolean) => ({
   sent: tr ? 'Teklif müşteriye gönderildi.' : 'Proposal sent to the client.',
   sentAt: tr ? 'Gönderildi' : 'Sent',
   recipient: tr ? 'Alıcı' : 'Recipient',
-  grossYield: tr ? 'Brüt Kira Getirisi (yıl-1)' : 'Gross Yield (yr-1)',
-  netYield: tr ? 'Net Kira Getirisi (yıl-1)' : 'Net Yield (yr-1)',
-  totalNet: tr ? 'Toplam Net Kira' : 'Total Net Rent',
-  appr: tr ? 'Tahmini Değer Artışı' : 'Est. Capital Appreciation',
-  profit: tr ? 'Toplam Kâr' : 'Total Profit',
-  totalRoi: tr ? 'Toplam ROI' : 'Total ROI',
-  annual: tr ? 'Yıllık Ortalama Getiri' : 'Annualized Return',
-  equity: tr ? 'Sermaye Çarpanı' : 'Equity Multiple',
+  grossYield: tr ? 'Brüt Kira Getirisi (yıllık)' : 'Gross Yield (annual)',
+  netYield: tr ? 'Net Kira Getirisi (yıllık)' : 'Net Yield (annual)',
+  annualNet: tr ? 'Yıllık Net Kira Geliri' : 'Annual Net Rent',
+  annualAppr: tr ? 'Yıllık Değer Artışı' : 'Annual Appreciation',
+  totalReturn: tr ? 'Yıllık Toplam Getiri' : 'Annual Total Return',
+  titleDeed: tr ? 'Tapu Durumu' : 'Title Deed',
   u: {
     type: tr ? 'Daire Tipi' : 'Unit Type', unitNo: tr ? 'Daire / Blok' : 'Unit / Block',
     area: tr ? 'Brüt Alan' : 'Gross Area', netArea: tr ? 'Net Alan' : 'Net Area',
@@ -51,7 +49,15 @@ const LX = (tr: boolean) => ({
   },
 });
 
-function unitRows(unit: ProposalUnitDetails, u: ReturnType<typeof LX>['u']): Array<[string, string]> {
+const TITLE_DEED_LABEL: Record<string, { tr: string; en: string }> = {
+  kat_mulkiyeti: { tr: 'Kat Mülkiyeti', en: 'Condominium (Kat Mülkiyeti)' },
+  kat_irtifaki: { tr: 'Kat İrtifakı', en: 'Construction Servitude (Kat İrtifakı)' },
+  mustakil: { tr: 'Müstakil Tapu', en: 'Freehold (Müstakil)' },
+  arsa: { tr: 'Arsa', en: 'Land (Arsa)' },
+};
+
+function unitRows(unit: ProposalUnitDetails, L: ReturnType<typeof LX>, tr: boolean): Array<[string, string]> {
+  const u = L.u;
   const rows: Array<[string, string]> = [];
   const push = (k: string, v?: string | number, sfx = '') => {
     if (v !== undefined && v !== null && v !== '') rows.push([k, `${v}${sfx}`]);
@@ -60,6 +66,9 @@ function unitRows(unit: ProposalUnitDetails, u: ReturnType<typeof LX>['u']): Arr
   push(u.area, unit.area, ' m²'); push(u.netArea, unit.netArea, ' m²');
   push(u.floor, unit.floor); push(u.facade, unit.facade); push(u.view, unit.view);
   push(u.beds, unit.bedrooms); push(u.baths, unit.bathrooms);
+  if (unit.titleDeed && TITLE_DEED_LABEL[unit.titleDeed]) {
+    push(L.titleDeed, tr ? TITLE_DEED_LABEL[unit.titleDeed].tr : TITLE_DEED_LABEL[unit.titleDeed].en);
+  }
   return rows;
 }
 
@@ -83,7 +92,7 @@ export const ProposalView: React.FC<ProposalViewProps> = ({ proposalId, onClose 
   const hasDiscount = proposal.listPrice !== undefined && (proposal.discountPct ?? 0) > 0;
   const unit = proposal.unit ?? {};
   const roi = proposal.roi;
-  const rows = unitRows(unit, L.u);
+  const rows = unitRows(unit, L, tr);
   const coverImage = proposal.coverImage || '/images/exterior.png';
   const attachmentLabels = [
     proposal.includeBrochurePdf ? t('proposals.create.brochurePdf') : null,
@@ -194,12 +203,9 @@ export const ProposalView: React.FC<ProposalViewProps> = ({ proposalId, onClose 
                     <tbody>
                       <tr><td>{L.grossYield}</td><td>%{roi.grossYieldPct}</td></tr>
                       <tr><td>{L.netYield}</td><td>%{roi.netYieldPct}</td></tr>
-                      <tr><td>{roi.years} · {L.totalNet}</td><td>{formatMoney(roi.totalNetCashflow, currency)}</td></tr>
-                      <tr><td>{L.appr}</td><td>{formatMoney(roi.capitalAppreciation, currency)}</td></tr>
-                      <tr><td><strong>{L.profit}</strong></td><td><strong>{formatMoney(roi.totalProfit, currency)}</strong></td></tr>
-                      <tr><td><strong>{L.totalRoi}</strong></td><td><strong>%{roi.totalRoiPct}</strong></td></tr>
-                      <tr><td>{L.annual}</td><td>%{roi.annualizedRoiPct}</td></tr>
-                      <tr><td>{L.equity}</td><td>{roi.equityMultiple}x</td></tr>
+                      <tr><td>{L.annualNet}</td><td>{formatMoney(roi.annualNetRent, currency)}</td></tr>
+                      <tr><td>{L.annualAppr}</td><td>{formatMoney(roi.annualAppreciation, currency)} (%{roi.appreciationPct})</td></tr>
+                      <tr><td><strong>{L.totalReturn}</strong></td><td><strong>%{roi.annualTotalReturnPct}</strong></td></tr>
                     </tbody>
                   </table>
                 </div>

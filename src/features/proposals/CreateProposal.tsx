@@ -43,6 +43,8 @@ const DEFAULT_PAYMENT_PLAN: PaymentPlanRow[] = [
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'AED', 'TRY'];
 const UNIT_TYPES = ['Stüdyo', '1+1', '2+1', '3+1', '4+1', '4+2', '5+1', 'Dubleks', 'Villa'];
+const PROPERTY_STATUSES = ['under_construction', 'offplan', 'ready', 'resale'] as const;
+const TITLE_DEEDS = ['kat_mulkiyeti', 'kat_irtifaki', 'mustakil', 'arsa'] as const;
 const TOTAL_STEPS = 5;
 
 // Bileşen-içi iki dilli sözlük (yalnız yeni eklenen alanlar).
@@ -73,19 +75,25 @@ const DICT = {
     unit: {
       type: 'Daire Tipi', unitNo: 'Daire / Blok No', area: 'Brüt Alan (m²)', netArea: 'Net Alan (m²)',
       floor: 'Kat', facade: 'Cephe / Yön', view: 'Manzara', beds: 'Yatak Odası', baths: 'Banyo',
+      titleDeed: 'Tapu Durumu',
       features: 'Özellikler', featuresPh: 'Örn: Akıllı ev, kapalı otopark, 7/24 güvenlik, havuz',
       desc: 'Açıklama',
     },
+    titleDeed: {
+      kat_mulkiyeti: 'Kat Mülkiyeti', kat_irtifaki: 'Kat İrtifakı', mustakil: 'Müstakil Tapu', arsa: 'Arsa',
+    },
+    propertyStatus: {
+      under_construction: 'İnşaat Halinde', offplan: 'Off-Plan', ready: 'Hazır', resale: '2. El',
+    },
     roi: {
-      status: 'Mülk Durumu', ready: 'Hazır', offplan: 'Proje aşamasında',
-      model: 'Kira Modeli', longterm: 'Uzun Dönem', airbnb: 'Günlük (Airbnb)',
-      monthlyRent: 'Aylık Kira', adr: 'Gecelik Fiyat (ADR)', occupancy: 'Doluluk (%)',
-      appreciation: 'Yıllık Değer Artışı (%)', years: 'Elde Tutma (yıl)',
-      maintenance: 'Bakım (%/yıl)', mgmt: 'Yönetim (% kira)', airbnbExp: 'İşletme Gideri (% kira)',
+      status: 'Mülk Durumu',
+      model: 'Kira Modeli', longterm: 'Uzun Dönem', shortterm: 'Kısa Dönem',
+      monthlyRent: 'Aylık Kira', rentCurrency: 'Kira Para Birimi', occupancy: 'Doluluk (%)',
+      appreciation: 'Yıllık Değer Artışı (%)',
+      maintenance: 'Bakım (%/yıl)', aidat: 'Aidat (aylık)', mgmt: 'Yönetim (% kira)',
       needPrice: 'ROI hesabı için önce Finansal adımda bir fiyat girin.',
-      grossYield: 'Brüt Kira Getirisi (yıl-1)', netYield: 'Net Kira Getirisi (yıl-1)',
-      totalNet: 'Toplam Net Kira', appr: 'Tahmini Değer Artışı', profit: 'Toplam Kâr',
-      totalRoi: 'Toplam ROI', annual: 'Yıllık Ortalama Getiri', equity: 'Sermaye Çarpanı',
+      grossYield: 'Brüt Kira Getirisi (yıllık)', netYield: 'Net Kira Getirisi (yıllık)',
+      annualNet: 'Yıllık Net Kira Geliri', annualAppr: 'Yıllık Değer Artışı', totalReturn: 'Yıllık Toplam Getiri',
     },
     notes: 'Notlar (opsiyonel)',
     materials: 'Materyaller',
@@ -121,19 +129,26 @@ const DICT = {
     unit: {
       type: 'Unit Type', unitNo: 'Unit / Block No', area: 'Gross Area (m²)', netArea: 'Net Area (m²)',
       floor: 'Floor', facade: 'Facade / Aspect', view: 'View', beds: 'Bedrooms', baths: 'Bathrooms',
+      titleDeed: 'Title Deed',
       features: 'Features', featuresPh: 'e.g. Smart home, covered parking, 24/7 security, pool',
       desc: 'Description',
     },
+    titleDeed: {
+      kat_mulkiyeti: 'Condominium (Kat Mülkiyeti)', kat_irtifaki: 'Construction Servitude (Kat İrtifakı)',
+      mustakil: 'Freehold (Müstakil)', arsa: 'Land (Arsa)',
+    },
+    propertyStatus: {
+      under_construction: 'Under Construction', offplan: 'Off-Plan', ready: 'Ready', resale: 'Resale',
+    },
     roi: {
-      status: 'Property Status', ready: 'Ready', offplan: 'Off-plan',
-      model: 'Rental Model', longterm: 'Long-term', airbnb: 'Short-stay (Airbnb)',
-      monthlyRent: 'Monthly Rent', adr: 'Nightly Rate (ADR)', occupancy: 'Occupancy (%)',
-      appreciation: 'Annual Appreciation (%)', years: 'Holding Period (yrs)',
-      maintenance: 'Maintenance (%/yr)', mgmt: 'Management (% rent)', airbnbExp: 'Operating Cost (% rent)',
+      status: 'Property Status',
+      model: 'Rental Model', longterm: 'Long-term', shortterm: 'Short-term',
+      monthlyRent: 'Monthly Rent', rentCurrency: 'Rent Currency', occupancy: 'Occupancy (%)',
+      appreciation: 'Annual Appreciation (%)',
+      maintenance: 'Maintenance (%/yr)', aidat: 'Dues (monthly)', mgmt: 'Management (% rent)',
       needPrice: 'Enter a price in the Financial step first to compute ROI.',
-      grossYield: 'Gross Rental Yield (yr-1)', netYield: 'Net Rental Yield (yr-1)',
-      totalNet: 'Total Net Rent', appr: 'Est. Capital Appreciation', profit: 'Total Profit',
-      totalRoi: 'Total ROI', annual: 'Annualized Return', equity: 'Equity Multiple',
+      grossYield: 'Gross Rental Yield (annual)', netYield: 'Net Rental Yield (annual)',
+      annualNet: 'Annual Net Rent', annualAppr: 'Annual Appreciation', totalReturn: 'Annual Total Return',
     },
     notes: 'Notes (optional)',
     materials: 'Materials',
@@ -174,9 +189,8 @@ export const CreateProposal: React.FC = () => {
 
   const [unit, setUnit] = useState<ProposalUnitDetails>({});
   const [roi, setRoi] = useState<ProposalRoiInputs>({
-    propertyStatus: 'ready', rentalType: 'longterm', occupancyRate: 92, years: 8,
-    appreciationPercent: 5, rentGrowthPercent: 2.5, maintenancePercent: 1,
-    mgmtFeePercent: 5, purchaseTaxPercent: 4, annualTaxPercent: 0,
+    propertyStatus: 'ready', rentalType: 'longterm', occupancyRate: 60,
+    appreciationPercent: 5, maintenancePercent: 1, mgmtFeePercent: 5,
   });
 
   const [includeBrochurePdf, setIncludeBrochurePdf] = useState(true);
@@ -199,7 +213,7 @@ export const CreateProposal: React.FC = () => {
     () => (listPrice ? Math.round(listPrice * (1 - Math.min(100, Math.max(0, discountNum)) / 100)) : undefined),
     [listPrice, discountNum],
   );
-  const roiReport = useMemo(() => (finalPrice ? computeRoi(roi, finalPrice) : undefined), [roi, finalPrice]);
+  const roiReport = useMemo(() => (finalPrice ? computeRoi(roi, finalPrice, currency) : undefined), [roi, finalPrice, currency]);
 
   const handleProjectChange = (projectId: string) => {
     setSelectedProject(projectId);
@@ -411,6 +425,14 @@ export const CreateProposal: React.FC = () => {
                         onChange={(e) => setUnit({ ...unit, bathrooms: e.target.value ? Number(e.target.value) : undefined })} />
                     </div>
                   </div>
+                  <div className={styles.formGroup}>
+                    <label>{TX.unit.titleDeed}</label>
+                    <select className={styles.textInput} value={unit.titleDeed ?? ''}
+                      onChange={(e) => setUnit({ ...unit, titleDeed: (e.target.value || undefined) as ProposalUnitDetails['titleDeed'] })}>
+                      <option value="">—</option>
+                      {TITLE_DEEDS.map((d) => <option key={d} value={d}>{TX.titleDeed[d]}</option>)}
+                    </select>
+                  </div>
                   <div className={styles.formGroup} style={{ gridColumn: 'span 2' }}>
                     <label>{TX.unit.features}</label>
                     <input className={styles.textInput} placeholder={TX.unit.featuresPh} value={unit.features ?? ''}
@@ -483,47 +505,38 @@ export const CreateProposal: React.FC = () => {
                   <div className={styles.formGroup}>
                     <label>{TX.roi.status}</label>
                     <select className={styles.textInput} value={roi.propertyStatus}
-                      onChange={(e) => setRoi({ ...roi, propertyStatus: e.target.value as 'ready' | 'offplan' })}>
-                      <option value="ready">{TX.roi.ready}</option>
-                      <option value="offplan">{TX.roi.offplan}</option>
+                      onChange={(e) => setRoi({ ...roi, propertyStatus: e.target.value as ProposalRoiInputs['propertyStatus'] })}>
+                      {PROPERTY_STATUSES.map((s) => <option key={s} value={s}>{TX.propertyStatus[s]}</option>)}
                     </select>
                   </div>
                   <div className={styles.formGroup}>
                     <label>{TX.roi.model}</label>
                     <select className={styles.textInput} value={roi.rentalType}
-                      onChange={(e) => setRoi({ ...roi, rentalType: e.target.value as 'longterm' | 'airbnb' })}>
+                      onChange={(e) => setRoi({ ...roi, rentalType: e.target.value as 'longterm' | 'shortterm' })}>
                       <option value="longterm">{TX.roi.longterm}</option>
-                      <option value="airbnb">{TX.roi.airbnb}</option>
+                      <option value="shortterm">{TX.roi.shortterm}</option>
                     </select>
                   </div>
 
-                  {roi.rentalType === 'longterm' ? (
-                    <>
-                      <div className={styles.formGroup}>
-                        <label>{TX.roi.monthlyRent} ({currency})</label>
-                        <input className={styles.textInput} inputMode="numeric" value={groupThousands(roi.monthlyRent)}
-                          onChange={(e) => setRoi({ ...roi, monthlyRent: parseNumeric(e.target.value) })} />
-                      </div>
-                      <div className={styles.formGroup}>
-                        <label>{TX.roi.occupancy}</label>
-                        <input type="number" className={styles.textInput} value={roi.occupancyRate ?? ''}
-                          onChange={(e) => setRoi({ ...roi, occupancyRate: Number(e.target.value) })} />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className={styles.formGroup}>
-                        <label>{TX.roi.adr} ({currency})</label>
-                        <input className={styles.textInput} inputMode="numeric" value={groupThousands(roi.adr)}
-                          onChange={(e) => setRoi({ ...roi, adr: parseNumeric(e.target.value) })} />
-                      </div>
-                      <div className={styles.formGroup}>
-                        <label>{TX.roi.occupancy}</label>
-                        <input type="number" className={styles.textInput} value={roi.airbnbOccupancy ?? ''}
-                          onChange={(e) => setRoi({ ...roi, airbnbOccupancy: Number(e.target.value) })} />
-                      </div>
-                    </>
-                  )}
+                  <div className={styles.formGroup}>
+                    <label>{TX.roi.monthlyRent}</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input className={styles.textInput} inputMode="numeric" value={groupThousands(roi.monthlyRent)}
+                        onChange={(e) => setRoi({ ...roi, monthlyRent: parseNumeric(e.target.value) })} />
+                      <select className={styles.textInput} style={{ maxWidth: 90 }}
+                        value={roi.rentCurrency ?? currency}
+                        onChange={(e) => setRoi({ ...roi, rentCurrency: e.target.value })}>
+                        {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  {roi.rentalType === 'shortterm' ? (
+                    <div className={styles.formGroup}>
+                      <label>{TX.roi.occupancy}</label>
+                      <input type="number" className={styles.textInput} value={roi.occupancyRate ?? ''}
+                        onChange={(e) => setRoi({ ...roi, occupancyRate: Number(e.target.value) })} />
+                    </div>
+                  ) : <div className={styles.formGroup} aria-hidden="true" />}
 
                   <div className={styles.formGroup}>
                     <label>{TX.roi.appreciation}</label>
@@ -531,22 +544,19 @@ export const CreateProposal: React.FC = () => {
                       onChange={(e) => setRoi({ ...roi, appreciationPercent: Number(e.target.value) })} />
                   </div>
                   <div className={styles.formGroup}>
-                    <label>{TX.roi.years}</label>
-                    <input type="number" className={styles.textInput} value={roi.years ?? ''}
-                      onChange={(e) => setRoi({ ...roi, years: Number(e.target.value) })} />
-                  </div>
-                  <div className={styles.formGroup}>
                     <label>{TX.roi.maintenance}</label>
                     <input type="number" className={styles.textInput} value={roi.maintenancePercent ?? ''}
                       onChange={(e) => setRoi({ ...roi, maintenancePercent: Number(e.target.value) })} />
                   </div>
                   <div className={styles.formGroup}>
-                    <label>{roi.rentalType === 'airbnb' ? TX.roi.airbnbExp : TX.roi.mgmt}</label>
-                    <input type="number" className={styles.textInput}
-                      value={(roi.rentalType === 'airbnb' ? roi.airbnbExpensesPercent : roi.mgmtFeePercent) ?? ''}
-                      onChange={(e) => setRoi(roi.rentalType === 'airbnb'
-                        ? { ...roi, airbnbExpensesPercent: Number(e.target.value) }
-                        : { ...roi, mgmtFeePercent: Number(e.target.value) })} />
+                    <label>{TX.roi.aidat} ({currency})</label>
+                    <input className={styles.textInput} inputMode="numeric" value={groupThousands(roi.aidatMonthly)}
+                      onChange={(e) => setRoi({ ...roi, aidatMonthly: parseNumeric(e.target.value) })} />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label>{TX.roi.mgmt}</label>
+                    <input type="number" className={styles.textInput} value={roi.mgmtFeePercent ?? ''}
+                      onChange={(e) => setRoi({ ...roi, mgmtFeePercent: Number(e.target.value) })} />
                   </div>
 
                   <div style={{ gridColumn: 'span 2', marginTop: 8 }}>
@@ -704,6 +714,7 @@ const UnitSection: React.FC<{ unit: ProposalUnitDetails; tx: Tx }> = ({ unit, tx
   push(tx.unit.area, unit.area, ' m²'); push(tx.unit.netArea, unit.netArea, ' m²');
   push(tx.unit.floor, unit.floor); push(tx.unit.facade, unit.facade);
   push(tx.unit.view, unit.view); push(tx.unit.beds, unit.bedrooms); push(tx.unit.baths, unit.bathrooms);
+  if (unit.titleDeed) push(tx.unit.titleDeed, tx.titleDeed[unit.titleDeed]);
   if (rows.length === 0 && !unit.features && !unit.description) return null;
   return (
     <div className={styles.bodySection}>
@@ -722,12 +733,9 @@ const RoiTable: React.FC<{ r: import('../../core/types').ProposalRoiReport; curr
     <tbody>
       <tr><td>{tx.roi.grossYield}</td><td>%{r.grossYieldPct}</td></tr>
       <tr><td>{tx.roi.netYield}</td><td>%{r.netYieldPct}</td></tr>
-      <tr><td>{r.years} {tx.roi.years.replace(/\s*\(.*\)/, '')} · {tx.roi.totalNet}</td><td>{formatMoney(r.totalNetCashflow, currency)}</td></tr>
-      <tr><td>{tx.roi.appr}</td><td>{formatMoney(r.capitalAppreciation, currency)}</td></tr>
-      <tr><td><strong>{tx.roi.profit}</strong></td><td><strong>{formatMoney(r.totalProfit, currency)}</strong></td></tr>
-      <tr><td><strong>{tx.roi.totalRoi}</strong></td><td><strong style={{ color: '#9B5BB3' }}>%{r.totalRoiPct}</strong></td></tr>
-      <tr><td>{tx.roi.annual}</td><td>%{r.annualizedRoiPct}</td></tr>
-      <tr><td>{tx.roi.equity}</td><td>{r.equityMultiple}x</td></tr>
+      <tr><td>{tx.roi.annualNet}</td><td>{formatMoney(r.annualNetRent, currency)}</td></tr>
+      <tr><td>{tx.roi.annualAppr}</td><td>{formatMoney(r.annualAppreciation, currency)} (%{r.appreciationPct})</td></tr>
+      <tr><td><strong>{tx.roi.totalReturn}</strong></td><td><strong style={{ color: '#9B5BB3' }}>%{r.annualTotalReturnPct}</strong></td></tr>
     </tbody>
   </table>
 );

@@ -485,6 +485,9 @@ export interface CreateDeveloperInput {
 
 export type UpdateDeveloperInput = Partial<CreateDeveloperInput>;
 
+export type PropertyStatus = 'under_construction' | 'offplan' | 'ready' | 'resale';
+export type TitleDeedStatus = 'kat_mulkiyeti' | 'kat_irtifaki' | 'mustakil' | 'arsa';
+
 export interface ProposalUnitDetails {
   type?: string;      // daire tipi (2+1)
   area?: number;      // brüt m²
@@ -495,43 +498,40 @@ export interface ProposalUnitDetails {
   bedrooms?: number;
   bathrooms?: number;
   unitNo?: string;    // daire no / blok
+  titleDeed?: TitleDeedStatus; // tapu durumu
   features?: string;  // özellikler (serbest)
   description?: string;
 }
 
+// ROI girdileri — yıllık-odaklı model (elde tutma yok). Aylık kira kendi
+// para biriminde girilebilir; hesapta statik çapraz kurla fiyat para
+// birimine çevrilir. Kısa dönemde doluluk uygulanır, uzun dönemde 100%.
 export interface ProposalRoiInputs {
-  propertyStatus?: 'ready' | 'offplan';
-  rentalType?: 'longterm' | 'airbnb';
+  propertyStatus?: PropertyStatus;
+  rentalType?: 'longterm' | 'shortterm';
   monthlyRent?: number;
-  occupancyRate?: number;
-  adr?: number;
-  airbnbOccupancy?: number;
-  airbnbExpensesPercent?: number;
-  years?: number;
-  appreciationPercent?: number;
-  rentGrowthPercent?: number;
-  maintenancePercent?: number;
-  mgmtFeePercent?: number;
-  purchaseTaxPercent?: number;
-  annualTaxPercent?: number;
+  rentCurrency?: string;          // aylık kira para birimi (varsayılan: fiyat para birimi)
+  occupancyRate?: number;         // % — yalnız kısa dönem
+  appreciationPercent?: number;   // yıllık değer artışı %
+  maintenancePercent?: number;    // % fiyat / yıl (bakım)
+  aidatMonthly?: number;          // aylık aidat tutarı (fiyat para biriminde)
+  mgmtFeePercent?: number;        // % kira (yönetim)
 }
 
 export interface ProposalRoiReport {
   price: number;
-  years: number;
-  rentalType: 'longterm' | 'airbnb';
-  investedCapital: number;
-  annualGrossRentY1: number;
-  annualNetCashflowY1: number;
-  grossYieldPct: number;
-  netYieldPct: number;
-  totalNetCashflow: number;
-  futureValue: number;
-  capitalAppreciation: number;
-  totalProfit: number;
-  totalRoiPct: number;
-  annualizedRoiPct: number;
-  equityMultiple: number;
+  currency: string;
+  rentalType: 'longterm' | 'shortterm';
+  rentCurrency: string;
+  monthlyRentInPriceCcy: number;  // fiyat para birimine çevrilmiş aylık kira
+  annualGrossRent: number;
+  annualCosts: number;
+  annualNetRent: number;
+  grossYieldPct: number;          // yıllık brüt getiri
+  netYieldPct: number;            // yıllık net getiri
+  annualAppreciation: number;     // yıllık değer artışı (tutar)
+  appreciationPct: number;
+  annualTotalReturnPct: number;   // net getiri + değer artışı %
 }
 
 export interface ProposalDTO {

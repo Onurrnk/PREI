@@ -22,6 +22,11 @@ function esc(s: unknown): string {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+const TITLE_DEED_TR: Record<string, string> = {
+  kat_mulkiyeti: 'Kat Mülkiyeti', kat_irtifaki: 'Kat İrtifakı',
+  mustakil: 'Müstakil Tapu', arsa: 'Arsa',
+};
+
 function unitRows(unit: Record<string, unknown>): string {
   const map: Array<[string, string, string]> = [
     ['type', 'Daire Tipi', ''], ['unitNo', 'Daire / Blok', ''],
@@ -29,13 +34,20 @@ function unitRows(unit: Record<string, unknown>): string {
     ['floor', 'Kat', ''], ['facade', 'Cephe / Yön', ''], ['view', 'Manzara', ''],
     ['bedrooms', 'Yatak Odası', ''], ['bathrooms', 'Banyo', ''],
   ];
-  return map
+  const rows = map
     .filter(([k]) => unit[k] !== undefined && unit[k] !== null && unit[k] !== '')
     .map(([k, label, sfx]) => `<tr>
         <td style="padding:6px 12px;color:${MUTED};font-size:13px;border-bottom:1px solid ${LINE};">${label}</td>
         <td style="padding:6px 12px;color:${INK};font-size:13px;font-weight:600;border-bottom:1px solid ${LINE};text-align:right;">${esc(unit[k])}${sfx}</td>
-      </tr>`)
-    .join('');
+      </tr>`);
+  const deed = typeof unit.titleDeed === 'string' ? TITLE_DEED_TR[unit.titleDeed] : undefined;
+  if (deed) {
+    rows.push(`<tr>
+        <td style="padding:6px 12px;color:${MUTED};font-size:13px;border-bottom:1px solid ${LINE};">Tapu Durumu</td>
+        <td style="padding:6px 12px;color:${INK};font-size:13px;font-weight:600;border-bottom:1px solid ${LINE};text-align:right;">${esc(deed)}</td>
+      </tr>`);
+  }
+  return rows.join('');
 }
 
 export function buildProposalEmail(p: ProposalResponse, consultantName: string): {
@@ -57,14 +69,11 @@ export function buildProposalEmail(p: ProposalResponse, consultantName: string):
 
   const roi = p.roi;
   const roiRows = roi ? [
-    ['Brüt Kira Getirisi (yıl-1)', fmtPct(roi.grossYieldPct)],
-    ['Net Kira Getirisi (yıl-1)', fmtPct(roi.netYieldPct)],
-    [`${roi.years} Yıl Toplam Net Kira`, fmtMoney(roi.totalNetCashflow, currency)],
-    ['Tahmini Değer Artışı', fmtMoney(roi.capitalAppreciation, currency)],
-    ['Toplam Kâr', fmtMoney(roi.totalProfit, currency)],
-    ['Toplam ROI', fmtPct(roi.totalRoiPct)],
-    ['Yıllık Ortalama Getiri', fmtPct(roi.annualizedRoiPct)],
-    ['Sermaye Çarpanı', `${roi.equityMultiple}x`],
+    ['Brüt Kira Getirisi (yıllık)', fmtPct(roi.grossYieldPct)],
+    ['Net Kira Getirisi (yıllık)', fmtPct(roi.netYieldPct)],
+    ['Yıllık Net Kira Geliri', fmtMoney(roi.annualNetRent, currency)],
+    ['Yıllık Değer Artışı', `${fmtMoney(roi.annualAppreciation, currency)} (${fmtPct(roi.appreciationPct)})`],
+    ['Yıllık Toplam Getiri', fmtPct(roi.annualTotalReturnPct)],
   ].map(([k, v], i) => `<tr>
       <td style="padding:8px 12px;font-size:13px;color:${MUTED};border-bottom:1px solid ${LINE};">${k}</td>
       <td style="padding:8px 12px;font-size:14px;color:${i >= 4 ? PURPLE : INK};font-weight:700;text-align:right;border-bottom:1px solid ${LINE};">${v}</td>
@@ -127,7 +136,7 @@ export function buildProposalEmail(p: ProposalResponse, consultantName: string):
       ${roiRows ? `<div style="padding:0 28px 24px;">
         <h3 style="color:${INK};font-size:15px;margin:0 0 8px;">Yatırım Getiri Analizi (ROI)</h3>
         <table style="width:100%;border-collapse:collapse;border:1px solid ${LINE};border-radius:8px;overflow:hidden;">${roiRows}</table>
-        <p style="margin:8px 0 0;color:${MUTED};font-size:11px;line-height:1.5;">Bu projeksiyon ${roi!.years} yıllık elde tutma ve girilen kira/değer artışı varsayımlarına dayanır. Gerçek getiriler piyasa koşullarına göre değişebilir; yatırım tavsiyesi değildir.</p>
+        <p style="margin:8px 0 0;color:${MUTED};font-size:11px;line-height:1.5;">Yıllık getiri projeksiyonu, girilen kira ve değer artışı varsayımlarına dayanır. Gerçek getiriler piyasa koşullarına göre değişebilir; yatırım tavsiyesi değildir.</p>
       </div>` : ''}
 
       ${p.notes ? `<div style="padding:0 28px 24px;">
