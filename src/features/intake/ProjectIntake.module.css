@@ -32,6 +32,19 @@
 }
 .iconBtn:hover { color: var(--text-primary); background: var(--bg-inset); }
 
+.langCopyBtn {
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px;
+  font-family: var(--font-mono); font-size: 0.6875rem;
+  background: none; border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control); color: var(--text-secondary); cursor: pointer;
+}
+.langCopyBtn:hover { border-color: var(--accent); color: var(--accent); }
+
+.galleryLabel {
+  font: var(--text-label); text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-muted); margin-bottom: var(--sp-2);
+}
+
 .statusChip {
   font: var(--text-label); padding: 3px 8px; border-radius: var(--radius-control);
   background: var(--bg-inset); color: var(--text-muted);

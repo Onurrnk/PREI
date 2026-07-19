@@ -76,4 +76,16 @@ export class SubmitProjectDto {
 
   @IsOptional() @Type(() => Number) @IsNumber() @Min(-180) @Max(180)
   longitude?: number;
+
+  /** Ön ödeme yüzdesi (ör. 40 = %40 peşin). */
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(100)
+  downPaymentPct?: number;
+
+  /** Taksit süresi (ay). */
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(360)
+  installmentMonths?: number;
+
+  /** Ödeme planı serbest notu (ör. "60/40 teslimde, faizsiz"). */
+  @IsOptional() @IsString() @MaxLength(500)
+  paymentNote?: string;
 }

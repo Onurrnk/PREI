@@ -1,10 +1,12 @@
 // =====================================================================
 // PREI | SubmitProject — geliştirici self-servis proje gönderimi (PUBLIC).
 // /submit/:token — RequireAuth DIŞINDA; kimlik doğrulaması yok, token guard
-// backend'de. Minimal markalı layout (sidebar yok).
+// backend'de. Minimal markalı layout (gerçek logo, sidebar yok).
+// ?lang=tr|en ile dil seçilir; sayfada TR/EN düğmesi de var (Onur: TR ve EN
+// için ayrı link verilebilsin).
 // =====================================================================
-import React, { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../../core/hooks/useFetch';
 import { publicIntakeApi } from '../../core/api/resources';
@@ -18,52 +20,87 @@ import styles from './SubmitProject.module.css';
 
 const MARKETS = ['TR', 'AE', 'ES', 'GB', 'TH', 'DE'];
 const CURRENCIES = ['EUR', 'USD', 'GBP', 'AED', 'TRY'];
+const UNIT_OPTIONS = ['Studio', '1+1', '2+1', '3+1', '4+1', '5+1', 'Villa', 'Penthouse'];
+const LOGO_URL = 'https://produality.com/assets/images/logo-transparent.png';
+
+// Fiyat girişi: yalnız rakam tut, binlik ayracıyla göster (1.250.000).
+const digitsOnly = (s: string): string => s.replace(/\D/g, '');
+const fmtThousands = (s: string): string =>
+  s === '' ? '' : Number(s).toLocaleString('tr-TR');
 
 const emptyForm = {
   title: '', city: '', district: '', marketCode: 'AE',
   priceMin: '', priceMax: '', currency: 'EUR', commissionPct: '',
-  unitTypes: '', description: '', completionDate: '',
+  customUnits: '', description: '', completionDate: '',
+  downPaymentPct: '', installmentMonths: '', paymentNote: '',
 };
 
 export const SubmitProject: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { token = '' } = useParams();
+  const [params] = useSearchParams();
   const { data: info, loading, error } = useFetch<PublicInviteInfoDTO>(() => publicIntakeApi.info(token), [token]);
 
+  // ?lang=tr|en → sayfa dili (yalnız bu public sayfa için; davet linki dile göre verilebilir).
+  useEffect(() => {
+    const lang = params.get('lang');
+    if (lang === 'en' || lang === 'tr') void i18n.changeLanguage(lang);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const [form, setForm] = useState(emptyForm);
+  const [units, setUnits] = useState<string[]>([]);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [brochure, setBrochure] = useState<File | null>(null);
-  const [images, setImages] = useState<File[]>([]);
+  const [imgInterior, setImgInterior] = useState<File[]>([]);
+  const [imgExterior, setImgExterior] = useState<File[]>([]);
+  const [imgSocial, setImgSocial] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const setF = (patch: Partial<typeof emptyForm>) => setForm((f) => ({ ...f, ...patch }));
+  const toggleUnit = (u: string) =>
+    setUnits((prev) => (prev.includes(u) ? prev.filter((x) => x !== u) : [...prev, u]));
+
+  const totalImages = imgInterior.length + imgExterior.length + imgSocial.length;
   const canSubmit = useMemo(
-    () => form.title.trim().length >= 2 && !!brochure && images.length > 0,
-    [form.title, brochure, images],
+    () => form.title.trim().length >= 2 && !!brochure && totalImages > 0,
+    [form.title, brochure, totalImages],
   );
+
+  const pickFiles = (setter: (f: File[]) => void) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setter(Array.from(e.target.files ?? []).slice(0, 8));
 
   const handleSubmit = async () => {
     setErr(null);
     if (!canSubmit) { setErr(t('intake.public.missing')); return; }
     setSubmitting(true);
     try {
+      const allUnits = [
+        ...units,
+        ...form.customUnits.split(',').map((s) => s.trim()).filter(Boolean),
+      ];
       const fd = new FormData();
       fd.append('title', form.title.trim());
       if (form.city.trim()) fd.append('city', form.city.trim());
       if (form.district.trim()) fd.append('district', form.district.trim());
       fd.append('marketCode', form.marketCode);
-      if (form.priceMin) fd.append('priceMin', form.priceMin);
-      if (form.priceMax) fd.append('priceMax', form.priceMax);
+      if (form.priceMin) fd.append('priceMin', digitsOnly(form.priceMin));
+      if (form.priceMax) fd.append('priceMax', digitsOnly(form.priceMax));
       fd.append('currency', form.currency);
       if (form.commissionPct) fd.append('commissionPct', form.commissionPct);
-      if (form.unitTypes.trim()) fd.append('unitTypes', form.unitTypes.trim());
+      if (allUnits.length) fd.append('unitTypes', allUnits.join(', '));
       if (form.description.trim()) fd.append('description', form.description.trim());
       if (form.completionDate) fd.append('completionDate', new Date(form.completionDate).toISOString());
       if (coords) { fd.append('latitude', String(coords.lat)); fd.append('longitude', String(coords.lng)); }
+      if (form.downPaymentPct) fd.append('downPaymentPct', form.downPaymentPct);
+      if (form.installmentMonths) fd.append('installmentMonths', form.installmentMonths);
+      if (form.paymentNote.trim()) fd.append('paymentNote', form.paymentNote.trim());
       fd.append('brochure', brochure!);
-      images.forEach((im) => fd.append('images', im));
+      imgInterior.forEach((f) => fd.append('imagesInterior', f));
+      imgExterior.forEach((f) => fd.append('imagesExterior', f));
+      imgSocial.forEach((f) => fd.append('imagesSocial', f));
       await publicIntakeApi.submit(token, fd);
       setDone(true);
     } catch (e) {
@@ -72,6 +109,13 @@ export const SubmitProject: React.FC = () => {
       setSubmitting(false);
     }
   };
+
+  const langSwitch = (
+    <div className={styles.langSwitch}>
+      <button className={i18n.language === 'tr' ? styles.langActive : styles.langBtn} onClick={() => void i18n.changeLanguage('tr')}>TR</button>
+      <button className={i18n.language?.startsWith('en') ? styles.langActive : styles.langBtn} onClick={() => void i18n.changeLanguage('en')}>EN</button>
+    </div>
+  );
 
   if (loading) {
     return <div className={styles.page}><div className={styles.center}>{t('common.loading')}</div></div>;
@@ -106,7 +150,8 @@ export const SubmitProject: React.FC = () => {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <span className={styles.brand}>ProDuality</span>
+        {langSwitch}
+        <img src={LOGO_URL} alt="ProDuality" className={styles.logo} />
         <h1 className={styles.title}>{t('intake.public.title')}</h1>
         <p className={styles.subtitle}>
           {info.developerName ? t('intake.public.forDeveloper', { name: info.developerName }) : t('intake.public.subtitle')}
@@ -133,10 +178,12 @@ export const SubmitProject: React.FC = () => {
           </FormRow>
           <FormRow>
             <Field label={t('intake.form.priceMin')}>
-              <Input type="number" min={0} value={form.priceMin} onChange={(e) => setF({ priceMin: e.target.value })} />
+              <Input inputMode="numeric" value={fmtThousands(digitsOnly(form.priceMin))}
+                onChange={(e) => setF({ priceMin: digitsOnly(e.target.value) })} placeholder="500.000" />
             </Field>
             <Field label={t('intake.form.priceMax')}>
-              <Input type="number" min={0} value={form.priceMax} onChange={(e) => setF({ priceMax: e.target.value })} />
+              <Input inputMode="numeric" value={fmtThousands(digitsOnly(form.priceMax))}
+                onChange={(e) => setF({ priceMax: digitsOnly(e.target.value) })} placeholder="1.250.000" />
             </Field>
             <Field label={t('intake.form.currency')}>
               <Select value={form.currency} onChange={(e) => setF({ currency: e.target.value })}>
@@ -152,11 +199,42 @@ export const SubmitProject: React.FC = () => {
               <Input type="date" value={form.completionDate} onChange={(e) => setF({ completionDate: e.target.value })} />
             </Field>
           </FormRow>
-          <Field label={t('intake.form.unitTypes')} hint={t('intake.form.unitTypesPh')}>
-            <Input value={form.unitTypes} onChange={(e) => setF({ unitTypes: e.target.value })} placeholder="1+1, 2+1, Villa" />
+
+          {/* Ödeme planı */}
+          <div className={styles.sectionTitle}>{t('intake.form.paymentSection')}</div>
+          <FormRow>
+            <Field label={t('intake.form.downPayment')}>
+              <Input type="number" min={0} max={100} value={form.downPaymentPct}
+                onChange={(e) => setF({ downPaymentPct: e.target.value })} placeholder="40" />
+            </Field>
+            <Field label={t('intake.form.installment')}>
+              <Input type="number" min={0} max={360} value={form.installmentMonths}
+                onChange={(e) => setF({ installmentMonths: e.target.value })} placeholder="24" />
+            </Field>
+          </FormRow>
+          <Field label={t('intake.form.paymentNote')}>
+            <Input value={form.paymentNote} onChange={(e) => setF({ paymentNote: e.target.value })}
+              placeholder={t('intake.form.paymentNotePh')} />
           </Field>
-          <Field label={t('intake.form.description')}>
-            <Textarea rows={4} value={form.description} onChange={(e) => setF({ description: e.target.value })} />
+
+          {/* Daire tipleri — çip seçimi + manuel ek */}
+          <Field label={t('intake.form.unitTypes')} hint={t('intake.form.unitTypesHint')}>
+            <div className={styles.chips}>
+              {UNIT_OPTIONS.map((u) => (
+                <button key={u} type="button"
+                  className={units.includes(u) ? styles.chipActive : styles.chip}
+                  onClick={() => toggleUnit(u)}>
+                  {u}
+                </button>
+              ))}
+            </div>
+            <Input value={form.customUnits} onChange={(e) => setF({ customUnits: e.target.value })}
+              placeholder={t('intake.form.unitTypesCustomPh')} />
+          </Field>
+
+          <Field label={t('intake.form.description')} hint={t('intake.form.descriptionHint')}>
+            <Textarea rows={5} value={form.description} onChange={(e) => setF({ description: e.target.value })}
+              placeholder={t('intake.form.descriptionPh')} />
           </Field>
 
           <Field
@@ -171,10 +249,20 @@ export const SubmitProject: React.FC = () => {
               onChange={(e) => setBrochure(e.target.files?.[0] ?? null)} />
             {brochure && <span className={styles.fileName}>{brochure.name}</span>}
           </Field>
-          <Field label={t('intake.form.images')} hint={t('intake.form.imagesHint')}>
-            <input type="file" accept="image/jpeg,image/png,image/webp" multiple
-              onChange={(e) => setImages(Array.from(e.target.files ?? []).slice(0, 8))} />
-            {images.length > 0 && <span className={styles.fileName}>{t('intake.form.imagesCount', { count: images.length })}</span>}
+
+          {/* Görseller — iç / dış / sosyal alanlar ayrı */}
+          <div className={styles.sectionTitle}>{t('intake.form.imagesSection')}</div>
+          <Field label={t('intake.form.imagesExterior')} hint={t('intake.form.imagesHint')}>
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={pickFiles(setImgExterior)} />
+            {imgExterior.length > 0 && <span className={styles.fileName}>{t('intake.form.imagesCount', { count: imgExterior.length })}</span>}
+          </Field>
+          <Field label={t('intake.form.imagesInterior')} hint={t('intake.form.imagesHint')}>
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={pickFiles(setImgInterior)} />
+            {imgInterior.length > 0 && <span className={styles.fileName}>{t('intake.form.imagesCount', { count: imgInterior.length })}</span>}
+          </Field>
+          <Field label={t('intake.form.imagesSocial')} hint={t('intake.form.imagesHint')}>
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={pickFiles(setImgSocial)} />
+            {imgSocial.length > 0 && <span className={styles.fileName}>{t('intake.form.imagesCount', { count: imgSocial.length })}</span>}
           </Field>
 
           {err && <div className={styles.errorBox}>{err}</div>}

@@ -35,7 +35,13 @@ export class PublicIntakeController {
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @UseInterceptors(
     FileFieldsInterceptor(
-      [{ name: 'brochure', maxCount: 1 }, { name: 'images', maxCount: 8 }],
+      [
+        { name: 'brochure', maxCount: 1 },
+        { name: 'images', maxCount: 8 },          // eski istemci uyumu (genel)
+        { name: 'imagesInterior', maxCount: 8 },  // iç mekan
+        { name: 'imagesExterior', maxCount: 8 },  // dış mekan
+        { name: 'imagesSocial', maxCount: 8 },    // sosyal alanlar
+      ],
       { limits: { fileSize: 15 * 1024 * 1024 } },
     ),
   )
@@ -43,7 +49,10 @@ export class PublicIntakeController {
     @Ctx() ctx: RequestContext,
     @Req() req: Request & WithInvite,
     @Body() dto: SubmitProjectDto,
-    @UploadedFiles() files: { brochure?: MulterFile[]; images?: MulterFile[] },
+    @UploadedFiles() files: {
+      brochure?: MulterFile[]; images?: MulterFile[];
+      imagesInterior?: MulterFile[]; imagesExterior?: MulterFile[]; imagesSocial?: MulterFile[];
+    },
   ) {
     const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
       ?? req.socket?.remoteAddress ?? null;

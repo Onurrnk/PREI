@@ -40,9 +40,11 @@ export const MapPicker: React.FC<MapPickerProps> = ({ lat, lng, onPick }) => {
       style={{ height: 300, width: '100%', borderRadius: 8, zIndex: 0 }}
       scrollWheelZoom
     >
+      {/* Carto Voyager: etiketler Latin/uluslararası (OSM varsayılanı yerel
+          alfabe gösteriyordu — BAE'de Arapça çıkıyordu, Onur istemedi). */}
       <TileLayer
-        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; OpenStreetMap'
+        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+        attribution='&copy; OpenStreetMap &copy; CARTO'
       />
       <ClickHandler onPick={onPick} />
       {hasPin && <Marker position={[lat!, lng!]} />}

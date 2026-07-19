@@ -165,10 +165,30 @@ export class IntakeRepository {
 
       const priceMin = s.price_min != null ? Number(s.price_min) : null;
       const priceMax = s.price_max != null ? Number(s.price_max) : null;
-      const payload = s.payload ?? {};
+      const payload = (s.payload ?? {}) as Record<string, unknown>;
+
+      // Ödeme planı → katalogun kendi şemasına (PaymentPlanRowDto: milestone/
+      // percentage/date) çevrilir; ProjectProfile bunu doğal olarak gösterir.
+      const dp = payload.downPaymentPct != null ? Number(payload.downPaymentPct) : null;
+      const months = payload.installmentMonths != null ? Number(payload.installmentMonths) : null;
+      const paymentPlan: Array<{ milestone: string; percentage: number; date: string }> = [];
+      if (dp != null && dp > 0) {
+        paymentPlan.push({ milestone: 'Ön Ödeme', percentage: dp, date: '' });
+        if (dp < 100) {
+          paymentPlan.push({
+            milestone: months && months > 0 ? `Taksit (${months} ay)` : 'Kalan',
+            percentage: Math.round((100 - dp) * 100) / 100,
+            date: '',
+          });
+        }
+      }
+
       const metadata: Record<string, unknown> = {
         project_status: 'Off-plan',
         images: s.image_urls,
+        images_by_category: payload.imagesByCategory ?? {},
+        payment_plan: paymentPlan,
+        payment_note: payload.paymentNote ?? null,
         price_min: priceMin,
         price_max: priceMax,
         commission_pct: s.commission_pct != null ? Number(s.commission_pct) : null,
@@ -176,7 +196,7 @@ export class IntakeRepository {
         source: 'developer_submission',
         submission_id: s.id,
         developer_name: s.developer_name,
-        completion_date: (payload as Record<string, unknown>).completionDate ?? null,
+        completion_date: payload.completionDate ?? null,
       };
 
       const { rows: prop } = await c.query<{ id: string }>(

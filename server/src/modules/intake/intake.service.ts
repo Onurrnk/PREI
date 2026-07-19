@@ -114,30 +114,47 @@ export class IntakeService {
     ctx: RequestContext,
     invite: InviteContext,
     dto: SubmitProjectDto,
-    files: { brochure?: UploadFile[]; images?: UploadFile[] },
+    files: {
+      brochure?: UploadFile[]; images?: UploadFile[];
+      imagesInterior?: UploadFile[]; imagesExterior?: UploadFile[]; imagesSocial?: UploadFile[];
+    },
     ip: string | null,
   ) {
     const brochure = files.brochure?.[0];
-    const images = files.images ?? [];
+    // Kategorili görseller (iç/dış/sosyal) + eski istemci uyumu için 'images' (genel).
+    const categories: Array<[string, UploadFile[]]> = [
+      ['interior', files.imagesInterior ?? []],
+      ['exterior', files.imagesExterior ?? []],
+      ['social', files.imagesSocial ?? []],
+      ['general', files.images ?? []],
+    ];
+    const totalImages = categories.reduce((s, [, arr]) => s + arr.length, 0);
 
     if (!brochure) throw new BadRequestException('Broşür (PDF) zorunludur.');
     if (brochure.mimetype !== 'application/pdf') throw new BadRequestException('Broşür yalnız PDF olabilir.');
     if (brochure.size > MAX_BROCHURE) throw new BadRequestException('Broşür 15MB sınırını aşıyor.');
-    if (images.length === 0) throw new BadRequestException('En az 1 görsel gereklidir.');
-    if (images.length > MAX_IMAGES) throw new BadRequestException(`En fazla ${MAX_IMAGES} görsel.`);
-    for (const im of images) {
-      if (!IMAGE_MIMES.includes(im.mimetype)) throw new BadRequestException('Görseller yalnız JPEG/PNG/WEBP olabilir.');
-      if (im.size > MAX_IMAGE) throw new BadRequestException('Bir görsel 10MB sınırını aşıyor.');
+    if (totalImages === 0) throw new BadRequestException('En az 1 görsel gereklidir.');
+    if (totalImages > MAX_IMAGES * 3) throw new BadRequestException('Görsel sayısı sınırı aşıyor.');
+    for (const [, arr] of categories) {
+      for (const im of arr) {
+        if (!IMAGE_MIMES.includes(im.mimetype)) throw new BadRequestException('Görseller yalnız JPEG/PNG/WEBP olabilir.');
+        if (im.size > MAX_IMAGE) throw new BadRequestException('Bir görsel 10MB sınırını aşıyor.');
+      }
     }
 
     const submissionId = randomUUID();
 
-    // Görseller → media (public URL)
+    // Görseller → media (public URL); kategori yol ön ekiyle + kategori haritası.
     const imageUrls: string[] = [];
-    for (const im of images) {
-      const path = `submissions/${submissionId}/${randomUUID()}-${safeName(im.originalname)}`;
-      await this.storage.upload(path, im.buffer, im.mimetype, MEDIA_BUCKET);
-      imageUrls.push(this.storage.publicUrl(path, MEDIA_BUCKET));
+    const imagesByCategory: Record<string, string[]> = {};
+    for (const [cat, arr] of categories) {
+      for (const im of arr) {
+        const path = `submissions/${submissionId}/${cat}-${randomUUID()}-${safeName(im.originalname)}`;
+        await this.storage.upload(path, im.buffer, im.mimetype, MEDIA_BUCKET);
+        const url = this.storage.publicUrl(path, MEDIA_BUCKET);
+        imageUrls.push(url);
+        (imagesByCategory[cat] ??= []).push(url);
+      }
     }
 
     // Broşür → vault (imzalı URL ile sunulur)
@@ -170,6 +187,10 @@ export class IntakeService {
         brochureSize: brochure.size,
         completionDate: dto.completionDate ?? null,
         developerName: invite.developerName,
+        imagesByCategory,
+        downPaymentPct: dto.downPaymentPct ?? null,
+        installmentMonths: dto.installmentMonths ?? null,
+        paymentNote: dto.paymentNote?.trim() || null,
       },
       ip,
     });
@@ -338,6 +359,10 @@ export class IntakeService {
       longitude: r.longitude != null ? Number(r.longitude) : null,
       mapUrl: mapUrl(r.latitude, r.longitude),
       imageUrls: r.image_urls,
+      imagesByCategory: ((r.payload as Record<string, unknown>)?.imagesByCategory ?? {}) as Record<string, string[]>,
+      downPaymentPct: ((r.payload as Record<string, unknown>)?.downPaymentPct ?? null) as number | null,
+      installmentMonths: ((r.payload as Record<string, unknown>)?.installmentMonths ?? null) as number | null,
+      paymentNote: ((r.payload as Record<string, unknown>)?.paymentNote ?? null) as string | null,
       brochureUrl,
       createdPropertyId: r.created_property_id,
       reviewNote: r.review_note,

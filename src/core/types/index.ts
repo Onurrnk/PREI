@@ -156,6 +156,10 @@ export interface ProjectSubmissionDTO {
   longitude: number | null;
   mapUrl: string | null;
   imageUrls: string[];
+  imagesByCategory: Record<string, string[]>;
+  downPaymentPct: number | null;
+  installmentMonths: number | null;
+  paymentNote: string | null;
   brochureUrl: string | null;
   createdPropertyId: string | null;
   reviewNote: string | null;

@@ -206,7 +206,8 @@ export const ProjectIntake: React.FC = () => {
                       <TableCell align="right"><span className={styles.mono}>{i.usedCount}{i.maxUses != null ? `/${i.maxUses}` : ''}</span></TableCell>
                       <TableCell align="right">
                         <div className={styles.rowActions}>
-                          <button className={styles.iconBtn} title={t('intake.admin.copyLink')} onClick={() => copyLink(i.url)}><Copy size={16} /></button>
+                          <button className={styles.langCopyBtn} title={t('intake.admin.copyLinkTr')} onClick={() => copyLink(`${i.url}?lang=tr`)}><Copy size={13} /> TR</button>
+                          <button className={styles.langCopyBtn} title={t('intake.admin.copyLinkEn')} onClick={() => copyLink(`${i.url}?lang=en`)}><Copy size={13} /> EN</button>
                           {i.status === 'active' && (
                             <button className={styles.iconBtn} title={t('common.delete')} onClick={() => revoke(i.id)}><Trash size={16} /></button>
                           )}
@@ -245,6 +246,18 @@ export const ProjectIntake: React.FC = () => {
               <div><span className={styles.metaLabel}>{t('intake.admin.col.price')}</span><span className={styles.mono}>{priceRange(review)}</span></div>
               <div><span className={styles.metaLabel}>{t('intake.admin.col.commission')}</span><span className={styles.mono}>{review.commissionPct != null ? `%${review.commissionPct}` : '—'}</span></div>
               <div><span className={styles.metaLabel}>{t('intake.form.unitTypes')}</span><span>{review.unitTypes.join(', ') || '—'}</span></div>
+              <div>
+                <span className={styles.metaLabel}>{t('intake.form.paymentSection')}</span>
+                <span>
+                  {review.downPaymentPct != null || review.installmentMonths != null || review.paymentNote
+                    ? [
+                        review.downPaymentPct != null ? `%${review.downPaymentPct} ${t('intake.admin.downShort')}` : null,
+                        review.installmentMonths != null ? `${review.installmentMonths} ${t('intake.admin.monthsShort')}` : null,
+                        review.paymentNote,
+                      ].filter(Boolean).join(' · ')
+                    : '—'}
+                </span>
+              </div>
             </div>
             {review.description && <p className={styles.desc}>{review.description}</p>}
             <div className={styles.linkRow}>
@@ -260,13 +273,30 @@ export const ProjectIntake: React.FC = () => {
               )}
             </div>
             {review.imageUrls.length > 0 && (
-              <div className={styles.gallery}>
-                {review.imageUrls.map((u, i) => (
-                  <a key={i} href={u} target="_blank" rel="noreferrer" className={styles.thumb}>
-                    <img src={u} alt="" />
-                  </a>
-                ))}
-              </div>
+              Object.keys(review.imagesByCategory ?? {}).length > 0 ? (
+                (['exterior', 'interior', 'social', 'general'] as const)
+                  .filter((cat) => (review.imagesByCategory[cat] ?? []).length > 0)
+                  .map((cat) => (
+                    <div key={cat}>
+                      <div className={styles.galleryLabel}>{t(`intake.admin.imgCat.${cat}`)}</div>
+                      <div className={styles.gallery}>
+                        {review.imagesByCategory[cat].map((u, i) => (
+                          <a key={i} href={u} target="_blank" rel="noreferrer" className={styles.thumb}>
+                            <img src={u} alt="" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                <div className={styles.gallery}>
+                  {review.imageUrls.map((u, i) => (
+                    <a key={i} href={u} target="_blank" rel="noreferrer" className={styles.thumb}>
+                      <img src={u} alt="" />
+                    </a>
+                  ))}
+                </div>
+              )
             )}
           </div>
         )}
