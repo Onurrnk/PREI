@@ -4,9 +4,7 @@ import {
   SquaresFour,
   Funnel,
   UsersThree,
-  Buildings,
   Briefcase,
-  Tray,
   PenNib,
   ShieldCheck,
   Vault,
@@ -34,9 +32,9 @@ const navItems: NavItem[] = [
   { path: '/', labelKey: 'nav.dashboard', icon: SquaresFour, permission: 'dashboard' },
   { path: '/leads', labelKey: 'nav.leads', icon: Funnel, permission: 'leads' },
   { path: '/clients', labelKey: 'nav.clients', icon: UsersThree, permission: 'clients' },
-  { path: '/developers', labelKey: 'nav.developers', icon: Buildings, permission: 'developers' },
+  // Proje Zekâsı tek çatı: Projeler / Geliştiriciler / Proje Girişi sayfa içi
+  // sekmelerle (ProjectsHubTabs) gezilir — yan menü kalabalığı istenmedi.
   { path: '/projects', labelKey: 'nav.projects', icon: Briefcase, permission: 'projects' },
-  { path: '/projects/intake', labelKey: 'nav.projectIntake', icon: Tray, permission: 'projects' },
   { path: '/proposals', labelKey: 'nav.proposals', icon: PenNib, permission: 'proposals' },
   { path: '/documents', labelKey: 'nav.documents', icon: Vault, permission: 'documents' },
   { path: '/meetings', labelKey: 'nav.meetings', icon: CalendarBlank, permission: 'meetings' },

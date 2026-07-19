@@ -12,6 +12,7 @@ import { Field, Input, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { Plus, DotsThree, DownloadSimple, MagnifyingGlass, Buildings, MapPin } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
+import { ProjectsHubTabs } from '../projects/ProjectsHubTabs';
 import styles from './Developers.module.css';
 
 const EMPTY_FORM: CreateDeveloperInput = {
@@ -86,6 +87,7 @@ export const DevelopersList: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      <ProjectsHubTabs />
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>{t('developers.title')}</h1>

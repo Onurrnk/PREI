@@ -16,6 +16,7 @@ import { Field, Input, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
 import { Plus, Copy, Trash, CheckCircle, XCircle, FilePdf, LinkSimple, MapPin } from '@phosphor-icons/react';
+import { ProjectsHubTabs } from '../projects/ProjectsHubTabs';
 import styles from './ProjectIntake.module.css';
 
 const fmtMoney = (v: number | null, cur: string) => (v == null ? '—' : `${v.toLocaleString('tr-TR')} ${cur}`);
@@ -105,6 +106,7 @@ export const ProjectIntake: React.FC = () => {
 
   return (
     <div className={styles.page}>
+      <ProjectsHubTabs />
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>{t('intake.admin.title')}</h1>

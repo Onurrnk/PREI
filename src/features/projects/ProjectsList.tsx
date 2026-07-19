@@ -7,6 +7,7 @@ import { useFetch } from '../../core/hooks/useFetch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
 import { Button } from '../../core/components/Button/Button';
 import { Plus, MagnifyingGlass, Buildings } from '@phosphor-icons/react';
+import { ProjectsHubTabs } from './ProjectsHubTabs';
 import styles from './ProjectsList.module.css';
 
 export const ProjectsList: React.FC = () => {
@@ -26,6 +27,7 @@ export const ProjectsList: React.FC = () => {
 
   return (
     <div className={styles.container}>
+      <ProjectsHubTabs />
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>{t('projects.title')}</h1>

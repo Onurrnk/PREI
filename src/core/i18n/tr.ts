@@ -26,6 +26,11 @@ export const tr = {
       settings: 'Ayarlar',
       logout: 'Çıkış Yap',
     },
+    projectsHub: {
+      projects: 'Projeler',
+      developers: 'Geliştiriciler',
+      intake: 'Proje Girişi',
+    },
     common: {
       save: 'Kaydet',
       saving: 'Kaydediliyor…',

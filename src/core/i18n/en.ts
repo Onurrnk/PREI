@@ -27,6 +27,11 @@ export const en = {
       settings: 'Settings',
       logout: 'Log Out',
     },
+    projectsHub: {
+      projects: 'Projects',
+      developers: 'Developers',
+      intake: 'Project Intake',
+    },
     common: {
       save: 'Save',
       saving: 'Saving…',
