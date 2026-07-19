@@ -82,9 +82,8 @@ export function buildProposalEmail(p: ProposalResponse, consultantName: string):
   const html = `<!doctype html><html><body style="margin:0;padding:0;background:#f4f1f9;font-family:'Segoe UI',Arial,sans-serif;">
   <div style="max-width:640px;margin:0 auto;padding:24px;">
     <div style="background:#fff;border-radius:16px;overflow:hidden;border:1px solid ${LINE};">
-      <div style="background:${INK};padding:24px 28px;">
-        <span style="display:inline-block;width:34px;height:34px;border-radius:9px;background:${PURPLE};color:#fff;font-weight:800;font-size:18px;line-height:34px;text-align:center;vertical-align:middle;">P</span>
-        <span style="color:#fff;font-size:18px;font-weight:700;letter-spacing:.5px;margin-left:10px;vertical-align:middle;">ProDuality</span>
+      <div style="background:#ffffff;padding:22px 28px;border-bottom:1px solid ${LINE};">
+        <img src="https://produality.com/assets/images/logo-email.png" alt="ProDuality" height="40" style="height:40px;width:auto;display:block;" />
       </div>
 
       <div style="padding:28px;">

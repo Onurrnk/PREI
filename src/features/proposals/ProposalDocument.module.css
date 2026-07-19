@@ -41,10 +41,11 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  align-items: flex-start; /* logo yatayda esnemesin (aspect korunur) */
   padding: 28px 36px 32px;
   background: linear-gradient(180deg, rgba(15, 10, 20, 0.35) 0%, rgba(15, 10, 20, 0.15) 40%, rgba(15, 10, 20, 0.78) 100%);
 }
-.coverBottom { max-width: 90%; }
+.coverBottom { width: 100%; max-width: 90%; }
 .tagline {
   color: #e9d8f2;
   font-size: 11px;
@@ -63,15 +64,11 @@
 }
 .coverLoc { color: #d9cfe4; font-size: 15px; margin-top: 8px; }
 
-/* ---- Wordmark ---- */
-.wordmark { display: inline-flex; align-items: center; gap: 9px; }
-.mark {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px; border-radius: 8px;
-  background: var(--accent); color: #fff; font-weight: 800; font-size: 16px;
-}
-.brand { font-size: 17px; font-weight: 700; letter-spacing: 0.3px; color: var(--ink); }
-.wordmarkLight .brand { color: #fff; }
+/* ---- Logo (gerçek ProDuality logosu) ---- */
+.logo { height: 40px; width: auto; display: block; }
+/* Koyu kapakta beyaza çevrilir (renkli logo koyu zeminde okunmaz). */
+.logoLight { filter: brightness(0) invert(1); }
+.footer .logo { height: 34px; }
 
 /* ---- Meta şeridi ---- */
 .metaBar {

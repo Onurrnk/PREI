@@ -77,12 +77,15 @@ const L = (tr: boolean) => ({
   } as Record<string, string>,
 });
 
-function Wordmark({ light }: { light?: boolean }) {
+// Gerçek ProDuality logosu (public/produality-logo.svg). Kapakta (koyu) beyaza
+// çevrilir, footer'da (açık) tam renkli.
+function Logo({ light }: { light?: boolean }) {
   return (
-    <div className={`${styles.wordmark} ${light ? styles.wordmarkLight : ''}`}>
-      <span className={styles.mark}>P</span>
-      <span className={styles.brand}>ProDuality</span>
-    </div>
+    <img
+      src="/produality-logo.svg"
+      alt="ProDuality"
+      className={`${styles.logo} ${light ? styles.logoLight : ''}`}
+    />
   );
 }
 
@@ -114,7 +117,7 @@ export const ProposalDocument: React.FC<{ doc: ProposalDocData }> = ({ doc }) =>
       {/* KAPAK */}
       <header className={styles.cover} style={doc.coverImage ? { backgroundImage: `url(${doc.coverImage})` } : undefined}>
         <div className={styles.coverScrim} data-print-cover>
-          <Wordmark light />
+          <Logo light />
           <div className={styles.coverBottom}>
             <div className={styles.tagline}>{t.tagline}</div>
             <h1 className={styles.coverTitle}>{doc.projectName && doc.projectName !== '—' ? doc.projectName : doc.title}</h1>
@@ -224,7 +227,7 @@ export const ProposalDocument: React.FC<{ doc: ProposalDocData }> = ({ doc }) =>
       </div>
 
       <footer className={styles.footer}>
-        <Wordmark />
+        <Logo />
         <p className={styles.footNote}>{t.footer}</p>
       </footer>
     </article>
