@@ -2,7 +2,9 @@
 // PREI | UpdateClientDto — profil düzenleme sözleşmesi (tüm alanlar opsiyonel;
 // yalnız gönderilenler yazılır). Frontend EditableProfile ile hizalı.
 // =====================================================================
-import { IsArray, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsArray, IsIn, IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+
+const CURRENCIES = ['EUR', 'USD', 'GBP', 'AED', 'TRY'];
 
 export class UpdateClientDto {
   @IsOptional() @IsString() @MaxLength(200)
@@ -43,6 +45,16 @@ export class UpdateClientDto {
 
   @IsOptional() @IsString() @MaxLength(120)
   budgetRange?: string;
+
+  /** Yapılandırılmış bütçe — min/max ayrı, döviz seçilebilir (Onur talebi). */
+  @IsOptional() @IsNumber() @Min(0)
+  budgetMin?: number;
+
+  @IsOptional() @IsNumber() @Min(0)
+  budgetMax?: number;
+
+  @IsOptional() @IsIn(CURRENCIES)
+  budgetCurrency?: string;
 
   @IsOptional() @IsString() @MaxLength(2000)
   requirements?: string;

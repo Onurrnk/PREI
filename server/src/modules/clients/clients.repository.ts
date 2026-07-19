@@ -139,6 +139,9 @@ export class ClientsRepository {
       if (dto.unitTypes !== undefined) meta.unit_types = dto.unitTypes;
       if (dto.purpose !== undefined) meta.purpose = dto.purpose;
       if (dto.budgetRange !== undefined) meta.budget_range = dto.budgetRange;
+      if (dto.budgetMin !== undefined) meta.budget_min = dto.budgetMin;
+      if (dto.budgetMax !== undefined) meta.budget_max = dto.budgetMax;
+      if (dto.budgetCurrency !== undefined) meta.budget_currency = dto.budgetCurrency;
       if (dto.requirements !== undefined) meta.requirements = dto.requirements;
 
       const { rows } = await c.query<{ id: string }>(
@@ -226,13 +229,17 @@ export class ClientsRepository {
 
   async createNote(
     ctx: RequestContext, contactId: string, text: string, tag: string,
+    interaction: Record<string, unknown> = {},
   ): Promise<NoteRow> {
     return this.db.withContext(ctx, async (c) => {
+      // interaction: görüşme detayları (channel/occurred_at/location/purpose) —
+      // null değerler metadata'ya yazılmaz (temiz jsonb).
+      const extra = Object.fromEntries(Object.entries(interaction).filter(([, v]) => v != null && v !== ''));
       const { rows } = await c.query<{ id: string }>(
         `INSERT INTO meeting_notes (tenant_id, contact_id, source_type, raw_content, metadata, created_by)
          VALUES ($1, $2, 'text', $3, $4::jsonb, $5)
          RETURNING id`,
-        [ctx.tenantId, contactId, text, JSON.stringify({ tag, channel: 'internal' }), ctx.userId],
+        [ctx.tenantId, contactId, text, JSON.stringify({ tag, source: 'internal', ...extra }), ctx.userId],
       );
       const noteId = rows[0].id;
       await this.writeAuditAndEvent(c, ctx, 'client.note_created', contactId, { noteId, tag });

@@ -9,38 +9,29 @@ import { Button } from '../../core/components/Button/Button';
 import { Plus, DotsThree, FunnelSimple, DownloadSimple, MagnifyingGlass, CheckCircle } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../core/components/Modal/Modal';
-import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form';
-import { SelectMenu } from '../../core/components/Form/SelectMenu';
+import { ClientForm, emptyClientForm, clientFormToPatch, type ClientFormValue } from './ClientForm';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import styles from './Clients.module.css';
 
 type ModalKind = 'addClient' | 'export' | 'filter' | 'rowActions' | null;
-
-const emptyForm = {
-  fullName: '', nationality: '', email: '', phone: '',
-  preferredRegions: '', unitTypes: '', budgetRange: '', requirements: '',
-};
 
 export const ClientsList: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { data, loading, refetch } = useFetch<ClientDTO[]>(() => clientsApi.list(), []);
   const clients = data ?? [];
   const [searchQuery, setSearchQuery] = useState('');
-  const [newClientType, setNewClientType] = useState('investor');
-  const [newClientSource, setNewClientSource] = useState('website');
-  const [form, setForm] = useState(emptyForm);
+  // Yeni kayıt formu = Profil Düzenle formu (ortak ClientForm — tutarlılık).
+  const [form, setForm] = useState<ClientFormValue>(emptyClientForm);
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
-
-  const setF = (patch: Partial<typeof emptyForm>) => setForm((f) => ({ ...f, ...patch }));
 
   const [showModal, setShowModal] = useState(false);
   const [modalKind, setModalKind] = useState<ModalKind>(null);
   const [rowActionsFor, setRowActionsFor] = useState('');
 
   const handleSaveClient = async () => {
-    const name = form.fullName.trim();
+    const name = form.name.trim();
     if (!name) {
       toast.error(t('clients.form.nameRequired'));
       return;
@@ -57,27 +48,14 @@ export const ClientsList: React.FC = () => {
         last_name,
         email: form.email.trim() || undefined,
         phone: form.phone.trim() || undefined,
-        notes: form.requirements.trim() || undefined,
       });
 
-      // Müşteriye özgü profil alanları → metadata (clientsApi.update).
-      // Not: patch gevşek tipli — 'type' form değerleri (investor/end-user/...)
-      // ClientDTO'nun dar union'ıyla birebir örtüşmez, backend metadata'ya string yazar.
-      const regions = form.preferredRegions.split(',').map((s) => s.trim()).filter(Boolean);
-      const units = form.unitTypes.split(',').map((s) => s.trim()).filter(Boolean);
-      const patch: Record<string, unknown> = { type: newClientType, source: newClientSource };
-      if (form.nationality.trim()) patch.nationality = form.nationality.trim();
-      if (regions.length) patch.preferredRegions = regions;
-      if (units.length) patch.unitTypes = units;
-      if (form.budgetRange.trim()) patch.budgetRange = form.budgetRange.trim();
-      if (form.requirements.trim()) patch.requirements = form.requirements.trim();
-      await clientsApi.update(contact.id, patch as Partial<ClientDTO>);
+      // Profil alanları (tip/bütçe/kriter/bölge…) → aynı PATCH sözleşmesi.
+      await clientsApi.update(contact.id, clientFormToPatch(form) as Partial<ClientDTO>);
 
       toast.success(t('clients.clientSaved'));
       setShowModal(false);
-      setForm(emptyForm);
-      setNewClientType('investor');
-      setNewClientSource('website');
+      setForm(emptyClientForm);
       refetch();
     } catch (e) {
       toast.error(`${t('clients.saveError')}: ${e instanceof Error ? e.message : String(e)}`);
@@ -244,78 +222,7 @@ export const ClientsList: React.FC = () => {
         }
       >
         {modalKind === 'addClient' && (
-          <div className={styles.formStack}>
-            <FormRow>
-              <Field label={t('clients.form.fullName')}>
-                <Input type="text" placeholder={t('clients.form.fullNamePh')}
-                  value={form.fullName} onChange={(e) => setF({ fullName: e.target.value })} />
-              </Field>
-              <Field label={t('clients.form.nationality')}>
-                <Input type="text" placeholder={t('clients.form.nationalityPh')}
-                  value={form.nationality} onChange={(e) => setF({ nationality: e.target.value })} />
-              </Field>
-            </FormRow>
-
-            <FormRow>
-              <Field label={t('clients.form.email')}>
-                <Input type="email" placeholder="beatriz.almeida@atlanticocapital.pt"
-                  value={form.email} onChange={(e) => setF({ email: e.target.value })} />
-              </Field>
-              <Field label={t('clients.form.phone')}>
-                <Input type="tel" placeholder="+351 912 384 706"
-                  value={form.phone} onChange={(e) => setF({ phone: e.target.value })} />
-              </Field>
-            </FormRow>
-
-            <FormRow>
-              <Field label={t('clients.form.clientType')}>
-                <SelectMenu
-                  aria-label={t('clients.form.clientType')}
-                  value={newClientType}
-                  onChange={setNewClientType}
-                  options={[
-                    { value: 'investor', label: t('clients.form.types.investor') },
-                    { value: 'end-user', label: t('clients.form.types.endUser') },
-                    { value: 'corporate', label: t('clients.form.types.corporate') },
-                  ]}
-                />
-              </Field>
-              <Field label={t('clients.form.leadSource')}>
-                <SelectMenu
-                  aria-label={t('clients.form.leadSource')}
-                  value={newClientSource}
-                  onChange={setNewClientSource}
-                  options={[
-                    { value: 'website', label: t('clients.form.sources.website') },
-                    { value: 'referral', label: t('clients.form.sources.referral') },
-                    { value: 'event', label: t('clients.form.sources.event') },
-                    { value: 'campaign', label: t('clients.form.sources.campaign') },
-                  ]}
-                />
-              </Field>
-            </FormRow>
-
-            <FormRow>
-              <Field label={t('clients.form.unitTypes')} hint={t('clients.form.unitTypesPh')}>
-                <Input type="text" placeholder={t('clients.form.unitTypesPh')}
-                  value={form.unitTypes} onChange={(e) => setF({ unitTypes: e.target.value })} />
-              </Field>
-              <Field label={t('clients.form.budgetRange')}>
-                <Input type="text" placeholder={t('clients.form.budgetRangePh')}
-                  value={form.budgetRange} onChange={(e) => setF({ budgetRange: e.target.value })} />
-              </Field>
-            </FormRow>
-
-            <Field label={t('clients.form.preferredRegions')}>
-              <Input type="text" placeholder={t('clients.form.preferredRegionsPh')}
-                value={form.preferredRegions} onChange={(e) => setF({ preferredRegions: e.target.value })} />
-            </Field>
-
-            <Field label={t('clients.form.requirements')}>
-              <Textarea rows={3} placeholder={t('clients.form.requirementsPh')}
-                value={form.requirements} onChange={(e) => setF({ requirements: e.target.value })} />
-            </Field>
-          </div>
+          <ClientForm value={form} onChange={setForm} />
         )}
         {modalKind === 'export' && (
           <div className={styles.exportState}>

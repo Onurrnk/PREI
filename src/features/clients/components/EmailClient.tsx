@@ -72,10 +72,24 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
     return () => clearTimeout(id);
   }, [search]);
 
-  const gmailQuery = debouncedSearch ? `${clientEmail} ${debouncedSearch}` : clientEmail;
-  const { data: threadList, loading: threadsLoading, error: threadsError } =
-    useFetch<ThreadSummaryDTO[]>(() => gmailApi.threads(gmailQuery), [gmailQuery]);
+  // Müşteri-360 (Onur talebi): YALNIZ bu müşteriyle yapılan yazışmalar.
+  // from:/to: filtresi tüm inbox sızıntısını keser; e-posta yoksa hiç sorgu
+  // atılmaz (aksi hâlde boş q tüm kutuyu listelerdi).
+  const emailValid = /\S+@\S+\.\S+/.test(clientEmail);
+  const clientFilter = `(from:${clientEmail} OR to:${clientEmail})`;
+  const gmailQuery = debouncedSearch ? `${clientFilter} ${debouncedSearch}` : clientFilter;
+  const { data: threadList, loading: threadsLoading, error: threadsError, refetch: refetchThreads } =
+    useFetch<ThreadSummaryDTO[]>(
+      () => (emailValid ? gmailApi.threads(gmailQuery) : Promise.resolve([])),
+      [gmailQuery, emailValid],
+    );
   const threads = threadList ?? [];
+
+  // Yeni e-posta kompozörü — yazışma geçmişi olmasa da mail başlatılabilir
+  // (önceden kompozör yalnız mevcut thread seçiliyken açılıyordu → "mail
+  // gönderemiyorum" sorunu).
+  const [composingNew, setComposingNew] = useState(false);
+  const [newSubject, setNewSubject] = useState('');
 
   // İmza önizlemesi: gönderilen maile sunucu tarafında otomatik eklenen
   // markalı imzanın (ad/unvan/e-posta) kompozördeki görünür karşılığı.
@@ -188,10 +202,17 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
   const handleSend = async () => {
     const bodyText = editorText();
     const bodyHtml = editorRef.current?.innerHTML ?? '';
-    if (!bodyText || !selectedThread) return;
+    const isNew = composingNew || !selectedThread;
+    if (!bodyText) return;
+    if (isNew && !newSubject.trim()) {
+      toast.error(t('clients.email.subjectRequired'));
+      return;
+    }
     setSending(true);
     try {
-      const subject = selectedThread.subject.startsWith('Re:') ? selectedThread.subject : `Re: ${selectedThread.subject}`;
+      const subject = isNew
+        ? newSubject.trim()
+        : (selectedThread!.subject.startsWith('Re:') ? selectedThread!.subject : `Re: ${selectedThread!.subject}`);
       const result = await gmailApi.send({
         to: clientEmail,
         subject,
@@ -200,34 +221,57 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
         attachments: attachments.length > 0
           ? attachments.map(({ filename, mimeType, dataBase64 }) => ({ filename, mimeType, dataBase64 }))
           : undefined,
-        threadId: selectedThread.id,
+        threadId: isNew ? undefined : selectedThread!.id,
         recipientName: clientName,
       });
-      const sentMessage: EmailMessageDTO = {
-        id: result.id,
-        threadId: result.threadId,
-        from: 'ProDuality',
-        fromEmail: 'info@produality.com',
-        to: [clientEmail],
-        subject,
-        date: new Date().toISOString(),
-        snippet: bodyText.slice(0, 120),
-        bodyText,
-        bodyHtml: null,
-      };
-      setSentByThread((prev) => ({
-        ...prev,
-        [selectedThread.id]: [...(prev[selectedThread.id] ?? []), sentMessage],
-      }));
-      toast.success(t('clients.email.emailSent'));
-      resetComposer();
-      refetchThread();
+      if (isNew) {
+        toast.success(t('clients.email.emailSent'));
+        resetComposer();
+        setComposingNew(false);
+        setNewSubject('');
+        refetchThreads(); // yeni thread listede görünsün
+      } else {
+        const sentMessage: EmailMessageDTO = {
+          id: result.id,
+          threadId: result.threadId,
+          from: 'ProDuality',
+          fromEmail: 'info@produality.com',
+          to: [clientEmail],
+          subject,
+          date: new Date().toISOString(),
+          snippet: bodyText.slice(0, 120),
+          bodyText,
+          bodyHtml: null,
+        };
+        setSentByThread((prev) => ({
+          ...prev,
+          [selectedThread!.id]: [...(prev[selectedThread!.id] ?? []), sentMessage],
+        }));
+        toast.success(t('clients.email.emailSent'));
+        resetComposer();
+        refetchThread();
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('clients.email.sendFailed'));
     } finally {
       setSending(false);
     }
   };
+
+  // E-posta adresi yoksa: inbox sızdırmak yerine net yönlendirme göster.
+  if (!emailValid) {
+    return (
+      <Card className={styles.emailContainer}>
+        <CardBody>
+          <div className={styles.messageEmpty} style={{ padding: 40 }}>
+            <EnvelopeSimple size={32} weight="duotone" />
+            <p style={{ fontWeight: 600 }}>{t('clients.email.noEmailTitle')}</p>
+            <p>{t('clients.email.noEmailBody')}</p>
+          </div>
+        </CardBody>
+      </Card>
+    );
+  }
 
   return (
     <div className={styles.emailWrapper}>
@@ -238,7 +282,12 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
             <img src="https://cdn.simpleicons.org/gmail/EA4335" alt="Gmail" className={styles.googleIcon} />
             <span>{t('clients.email.gmailConnected')}</span>
           </div>
-          <span className={styles.threadCount}>{t('clients.email.threadCount', { count: threads.length })}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className={styles.threadCount}>{t('clients.email.threadCount', { count: threads.length })}</span>
+            <Button variant="primary" onClick={() => { setComposingNew(true); setSelectedId(null); focusComposer(); }}>
+              <PaperPlaneTilt size={14} /> {t('clients.email.newEmail')}
+            </Button>
+          </div>
         </div>
         <div className={styles.searchBar}>
           <MagnifyingGlass size={14} className={styles.searchIcon} />
@@ -330,10 +379,29 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
       </CardBody>
     </Card>
 
-      {/* Kompozör — okuma kartının DIŞINDA, altında ayrı blok. Büyüyünce
-          maili ezmez; sayfa aşağı doğru uzar. */}
-      {selectedThread && (
+      {/* Kompozör — okuma kartının DIŞINDA, altında ayrı blok. Yanıt modunda
+          thread'e cevap yazar; "Yeni E-posta" modunda konu satırıyla sıfırdan
+          mail başlatır (yazışma geçmişi olmayan müşteride de çalışır). */}
+      {(selectedThread || composingNew) && (
               <div className={styles.replyBox}>
+                {(composingNew || !selectedThread) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <input
+                      style={{
+                        flex: 1, padding: '8px 12px', fontSize: 14,
+                        color: 'var(--text-primary)', background: 'var(--bg-inset)',
+                        border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-control, 6px)',
+                      }}
+                      value={newSubject}
+                      placeholder={t('clients.email.subjectPh')}
+                      onChange={(e) => setNewSubject(e.target.value)}
+                    />
+                    <button type="button" className={styles.iconBtn} title={t('clients.cancel')}
+                      onClick={() => { setComposingNew(false); setNewSubject(''); }}>
+                      <X size={16} />
+                    </button>
+                  </div>
+                )}
                 <div className={styles.composerToolbar}>
                   <div className={styles.formatButtons}>
                     <button type="button" className={styles.formatBtn} title={t('clients.email.bold')} onMouseDown={(e) => e.preventDefault()} onClick={() => exec('bold')}>

@@ -7,7 +7,7 @@ import { toProposalResponse } from './dto/proposal-response.dto';
 import type { ProposalRow } from './proposals.repository';
 
 const row = (over: Partial<ProposalRow> = {}): ProposalRow => ({
-  id: 'p1', title: 'Teklif', status: 'sent', total_value: '2800000', currency: 'USD',
+  id: 'p1', contact_id: 'c1', title: 'Teklif', status: 'sent', total_value: '2800000', currency: 'USD',
   view_count: 3, last_viewed_at: null, created_at: '2026-06-15',
   metadata: null, contact_first_name: 'Ahmet', contact_last_name: 'Yılmaz',
   project_title: 'Marina', project_city: 'Dubai', project_district: 'Marina', project_country: 'BAE',

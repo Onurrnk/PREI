@@ -15,6 +15,8 @@ export interface ProposalPaymentPlanItem {
 
 export interface ProposalResponse {
   id: string;
+  /** Müşteri bağı — ClientProfile "Teklifler" sekmesi bu id ile filtreler. */
+  contactId: string | null;
   title: string;
   clientName: string;
   projectName: string;
@@ -65,6 +67,7 @@ export function toProposalResponse(row: ProposalRow): ProposalResponse {
   const projectName = row.project_title || str(m.project_name) || '—';
   const res: ProposalResponse = {
     id: row.id,
+    contactId: row.contact_id ?? null,
     title: row.title,
     clientName,
     projectName,

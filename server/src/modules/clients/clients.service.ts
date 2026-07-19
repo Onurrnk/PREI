@@ -33,7 +33,12 @@ export class ClientsService {
   }
 
   async createNote(ctx: RequestContext, contactId: string, dto: CreateClientNoteDto): Promise<ClientNoteResponse> {
-    const row = await this.repo.createNote(ctx, contactId, dto.text.trim(), dto.tag);
+    const row = await this.repo.createNote(ctx, contactId, dto.text.trim(), dto.tag, {
+      channel: dto.channel ?? null,
+      occurred_at: dto.occurredAt ?? null,
+      location: dto.location?.trim() || null,
+      purpose: dto.purpose?.trim() || null,
+    });
     return toClientNoteResponse(row);
   }
 

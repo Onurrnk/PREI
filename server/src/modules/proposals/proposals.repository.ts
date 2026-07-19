@@ -8,6 +8,7 @@ import type { RequestContext } from '../../common/request-context';
 
 export interface ProposalRow {
   id: string;
+  contact_id: string | null;
   title: string;
   status: string;
   total_value: string | null;
@@ -25,7 +26,7 @@ export interface ProposalRow {
 }
 
 const PROPOSAL_SELECT = `
-  SELECT p.id, p.title, p.status, p.total_value, p.currency, p.view_count,
+  SELECT p.id, p.contact_id, p.title, p.status, p.total_value, p.currency, p.view_count,
          p.last_viewed_at, p.created_at, p.metadata,
          ct.first_name AS contact_first_name,
          ct.last_name  AS contact_last_name,

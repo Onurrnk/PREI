@@ -20,7 +20,9 @@ interface AuthContextValue {
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+// Dışa açık: provider'sız (test/izole) kullanımlarda useContext ile güvenli
+// okuma yapılabilsin (useAuth provider yoksa throw eder — bkz. ProjectsHubTabs).
+export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserDTO | null>(null);

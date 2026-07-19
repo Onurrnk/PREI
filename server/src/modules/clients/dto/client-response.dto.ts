@@ -24,6 +24,10 @@ export interface ClientResponse {
   unitTypes?: string[];
   purpose?: string;
   budgetRange?: string;
+  /** Yapılandırılmış bütçe (form prefill) — metadata.budget_min/max/currency. */
+  budgetMin?: number | null;
+  budgetMax?: number | null;
+  budgetCurrency?: string | null;
   requirements?: string;
   /** Hoş geldiniz maili gönderim zamanı (contacts.metadata) — null = gönderilmedi. */
   welcomeEmailSentAt: string | null;
@@ -68,7 +72,22 @@ export function toClientResponse(row: ClientRow): ClientResponse {
   const leadBudget = min && max
     ? (min === max ? `${min} ${cur}`.trim() : `${min} – ${max} ${cur}`.trim())
     : ((min ?? max) ? `${min ?? max} ${cur}`.trim() : null);
-  const budgetRange = str(m.budget_range) || leadBudget;
+
+  // Yapılandırılmış manuel bütçe (Edit Profile min/max/döviz) görüntü metnini
+  // üretir; yoksa legacy serbest metin (budget_range), o da yoksa Eylül'ün
+  // lead çıkarımı kullanılır.
+  const num = (v: unknown): number | null =>
+    typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null;
+  const budgetMin = num(m.budget_min);
+  const budgetMax = num(m.budget_max);
+  const budgetCurrency = str(m.budget_currency) || null;
+  const fmtB = (v: number) => Math.round(v).toLocaleString('tr-TR');
+  const structuredBudget = budgetMin || budgetMax
+    ? (budgetMin && budgetMax && budgetMin !== budgetMax
+        ? `${fmtB(budgetMin)} – ${fmtB(budgetMax)} ${budgetCurrency ?? ''}`.trim()
+        : `${fmtB((budgetMin ?? budgetMax)!)} ${budgetCurrency ?? ''}`.trim())
+    : null;
+  const budgetRange = structuredBudget || str(m.budget_range) || leadBudget;
 
   const manualRegions = arr(m.preferred_regions);
   const leadRegions = [str(cr.market), str(cr.city), str(cr.district)].filter(Boolean);
@@ -82,7 +101,8 @@ export function toClientResponse(row: ClientRow): ClientResponse {
 
   const manualHasProfile = Boolean(
     (manualUnitTypes && manualUnitTypes.length > 0) || str(m.purpose)
-    || str(m.budget_range) || manualRegions.length > 0 || str(m.requirements),
+    || str(m.budget_range) || budgetMin || budgetMax
+    || manualRegions.length > 0 || str(m.requirements),
   );
   const eylulHasProfile = Boolean(leadUnitType || str(cr.purpose) || leadBudget || leadRegions.length > 0 || leadReq);
   const profileSource: ClientResponse['profileSource'] =
@@ -107,6 +127,9 @@ export function toClientResponse(row: ClientRow): ClientResponse {
     ...(unitTypes ? { unitTypes } : {}),
     ...(purpose ? { purpose } : {}),
     ...(budgetRange ? { budgetRange } : {}),
+    budgetMin,
+    budgetMax,
+    budgetCurrency,
     ...(requirements ? { requirements } : {}),
     welcomeEmailSentAt: str(m.welcome_email_sent_at) || null,
     aiScore: typeof row.lead_score === 'number' ? row.lead_score : null,

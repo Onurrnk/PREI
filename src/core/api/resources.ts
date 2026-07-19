@@ -12,6 +12,7 @@ import type {
   BrandingSettingsDTO,
   ClientDTO,
   ClientNoteDTO,
+  CreateClientNoteInput,
   ClientAnalysisDTO,
   ClientTimelineEntryDTO,
   ContactDTO,
@@ -135,7 +136,7 @@ export const clientsApi = {
   list: () => api.get<ClientDTO[]>('/api/clients'),
   update: (id: string, patch: Partial<ClientDTO>) => api.patch<ClientDTO>(`/api/clients/${id}`, patch),
   notes: (id: string) => api.get<ClientNoteDTO[]>(`/api/clients/${id}/notes`),
-  addNote: (id: string, body: { text: string; tag: ClientNoteDTO['tag'] }) =>
+  addNote: (id: string, body: CreateClientNoteInput) =>
     api.post<ClientNoteDTO>(`/api/clients/${id}/notes`, body),
   timeline: (id: string) => api.get<ClientTimelineEntryDTO[]>(`/api/clients/${id}/timeline`),
   analyses: (id: string) => api.get<ClientAnalysisDTO[]>(`/api/clients/${id}/analyses`),

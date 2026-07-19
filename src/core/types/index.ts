@@ -351,6 +351,9 @@ export interface ClientDTO {
   assignedConsultant: string;
   lastContactDate: string;
   /* Yatırım kriterleri (opsiyonel — manuel giriş VEYA Eylül'ün konuşma çıkarımı) */
+  budgetMin?: number | null;         // yapılandırılmış bütçe (form prefill)
+  budgetMax?: number | null;
+  budgetCurrency?: string | null;
   unitTypes?: string[];              // aranan daire tipleri: Studio, 1+1, 2+1...
   purpose?: string;                  // 'Investment' vb. veya Eylül'ün serbest metni ('kira getirisi')
   budgetRange?: string;              // örn. '€1.5M – €3.0M' veya '2.500.000 – 3.200.000 AED'
@@ -376,6 +379,20 @@ export interface ClientNoteDTO {
   tag: 'Meeting' | 'Call' | 'General';
   createdAt: string;
   text: string;
+  /** Yapılandırılmış görüşme kaydı — ne zaman/kanal/yer/amaç (opsiyonel). */
+  channel?: string | null;
+  occurredAt?: string | null;
+  location?: string | null;
+  purpose?: string | null;
+}
+
+export interface CreateClientNoteInput {
+  text: string;
+  tag: ClientNoteDTO['tag'];
+  channel?: string;
+  occurredAt?: string;
+  location?: string;
+  purpose?: string;
 }
 
 export interface ClientTimelineEntryDTO {
@@ -470,6 +487,7 @@ export type UpdateDeveloperInput = Partial<CreateDeveloperInput>;
 
 export interface ProposalDTO {
   id: string;
+  contactId?: string | null;
   title: string;
   clientName: string;
   projectName: string;
