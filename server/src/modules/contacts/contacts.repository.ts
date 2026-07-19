@@ -67,17 +67,32 @@ export class ContactsRepository {
 
   async create(ctx: RequestContext, dto: CreateContactDto): Promise<ContactRow> {
     return this.db.withContext(ctx, async (c) => {
-      // Dedup: telefon verildiyse aynı normalized_phone'lu aktif kişiyi döndür.
+      // Sistem-geneli duplicate kontrolü: E-POSTA VEYA TELEFON zaten sistemdeyse
+      // yeni kayıt açılmaz; mevcut dosya döndürülür + görünür "mükerrer" notu düşülür.
       const normalized = (dto.phone ?? '').replace(/[^0-9]/g, '');
-      if (normalized) {
-        const { rows: existing } = await c.query<ContactRow>(
+      const email = dto.email?.trim().toLowerCase() ?? '';
+      let match: ContactRow | null = null;
+      if (email) {
+        const { rows } = await c.query<ContactRow>(
+          `SELECT * FROM contacts
+             WHERE tenant_id = $1 AND lower(email) = $2
+               AND deleted_at IS NULL AND merged_into_id IS NULL LIMIT 1`,
+          [ctx.tenantId, email],
+        );
+        if (rows.length > 0) match = rows[0];
+      }
+      if (!match && normalized) {
+        const { rows } = await c.query<ContactRow>(
           `SELECT * FROM contacts
              WHERE tenant_id = $1 AND normalized_phone = $2
-               AND deleted_at IS NULL AND merged_into_id IS NULL
-             LIMIT 1`,
+               AND deleted_at IS NULL AND merged_into_id IS NULL LIMIT 1`,
           [ctx.tenantId, normalized],
         );
-        if (existing.length > 0) return existing[0];
+        if (rows.length > 0) match = rows[0];
+      }
+      if (match) {
+        await this.flagDuplicate(c, ctx, match.id, 'manuel kayıt', email && match.email?.toLowerCase() === email ? 'e-posta' : 'telefon');
+        return match;
       }
 
       const { rows } = await c.query<ContactRow>(
@@ -96,6 +111,25 @@ export class ContactsRepository {
       await this.writeAuditAndEvent(c, ctx, 'contact.created', contact.id, { after: contact });
       return contact;
     });
+  }
+
+  /** Sistem-geneli mükerrer kayıt işareti: mevcut dosyaya görünür "🔁 Mükerrer
+   *  kayıt" notu (meeting_notes) düşer — ClientProfile notlar sekmesinde görünür. */
+  private async flagDuplicate(
+    c: PoolClient, ctx: RequestContext, contactId: string, source: string, matchedBy: string,
+  ): Promise<void> {
+    const { rows } = await c.query<{ n: string }>(
+      `SELECT count(*)::text AS n FROM communications WHERE contact_id = $1`, [contactId],
+    );
+    const total = rows[0]?.n ?? '0';
+    const body = `🔁 Mükerrer kayıt tespit edildi (${source}): Bu kişi ${matchedBy} eşleşmesiyle sistemde zaten var. Yeni kayıt açılmadı, mevcut dosya kullanıldı. Toplam ${total} temas kaydı.`;
+    await c.query(
+      `INSERT INTO meeting_notes (tenant_id, contact_id, source_type, raw_content, metadata, created_by)
+       VALUES ($1,$2,'text',$3,$4::jsonb,$5)`,
+      [ctx.tenantId, contactId, body,
+       JSON.stringify({ kind: 'duplicate_inquiry', tag: 'General', subject: 'Mükerrer kayıt', source }),
+       ctx.userId],
+    );
   }
 
   /**
