@@ -172,6 +172,7 @@ export interface ProjectSubmissionDTO {
     matchedBy: string;
   } | null;
   checks: { code: string; level: 'warn' | 'info' }[];
+  source: string; // 'developer_submission' | 'email_intake'
   createdAt: string;
 }
 

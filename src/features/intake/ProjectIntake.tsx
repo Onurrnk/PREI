@@ -15,7 +15,7 @@ import { Modal } from '../../core/components/Modal/Modal';
 import { Field, Input, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
-import { Plus, Copy, Trash, CheckCircle, XCircle, FilePdf, LinkSimple, MapPin, Warning } from '@phosphor-icons/react';
+import { Plus, Copy, Trash, CheckCircle, XCircle, FilePdf, LinkSimple, MapPin, Warning, Envelope } from '@phosphor-icons/react';
 import { ProjectsHubTabs } from '../projects/ProjectsHubTabs';
 import styles from './ProjectIntake.module.css';
 
@@ -144,6 +144,9 @@ export const ProjectIntake: React.FC = () => {
                     <TableCell style={{ fontWeight: 600 }}>
                       <span className={styles.titleCell}>
                         {s.title}
+                        {s.source === 'email_intake' && (
+                          <span className={styles.emailChip}><Envelope size={12} weight="fill" /> {t('intake.admin.emailDraft')}</span>
+                        )}
                         {s.duplicate && (
                           <span className={styles.dupChip}><Warning size={12} weight="fill" /> {t('intake.admin.dupChip')}</span>
                         )}

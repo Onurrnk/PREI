@@ -183,7 +183,7 @@ export class IntakeRepository {
   async insertSubmission(
     ctx: RequestContext,
     s: {
-      id: string; inviteId: string; developerId: string | null; title: string;
+      id: string; inviteId: string | null; developerId: string | null; title: string;
       city: string | null; district: string | null; marketCode: string | null;
       priceMin: number | null; priceMax: number | null; currency: string;
       commissionPct: number | null; unitTypes: string[]; description: string | null;

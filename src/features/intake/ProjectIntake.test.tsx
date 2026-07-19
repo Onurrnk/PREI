@@ -28,6 +28,7 @@ const dupSubmission = {
   listingUrl: null, brochureUrl: null, createdPropertyId: null, reviewNote: null,
   duplicate: { refType: 'property', refId: 'p1', refTitle: 'Emaar Beachfront', matchedBy: 'aynı geliştirici' },
   checks: [],
+  source: 'developer_submission',
   createdAt: '2026-07-19T00:00:00.000Z',
 };
 
@@ -63,6 +64,14 @@ describe('ProjectIntake — mükerrer proje işareti', () => {
     renderPage();
     await screen.findByText('Emaar Beachfront');
     expect(screen.queryByText('Olası mükerrer')).not.toBeInTheDocument();
+  });
+
+  it('e-posta kaynaklı gönderide kuyrukta "E-posta taslağı" rozeti çıkar', async () => {
+    const email = { ...dupSubmission, id: 'sub-email', duplicate: null, source: 'email_intake' };
+    server.use(http.get('/api/intake/queue', () => HttpResponse.json([email])));
+    renderPage();
+    await screen.findByText('Emaar Beachfront');
+    expect(screen.getByText('E-posta taslağı')).toBeInTheDocument();
   });
 
   it('property eşleşmesinde incele modalı "Güncelle" + "Yeni ekle" butonlarını sunar', async () => {

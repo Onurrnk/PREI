@@ -3,6 +3,7 @@ import { IntakeController } from './intake.controller';
 import { PublicIntakeController } from './public-intake.controller';
 import { PublicUnsubscribeController } from './public-unsubscribe.controller';
 import { IntakeNotifyController } from './intake-notify.controller';
+import { IntakeIngestController } from './intake-ingest.controller';
 import { IntakeService } from './intake.service';
 import { IntakeRepository } from './intake.repository';
 import { SubmissionTokenGuard } from './submission-token.guard';
@@ -12,7 +13,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RbacGuard } from '../../common/rbac.guard';
 
 @Module({
-  controllers: [IntakeController, PublicIntakeController, PublicUnsubscribeController, IntakeNotifyController],
+  controllers: [IntakeController, PublicIntakeController, PublicUnsubscribeController, IntakeNotifyController, IntakeIngestController],
   providers: [IntakeService, IntakeRepository, StorageService, SubmissionTokenGuard, AgentKeyGuard, JwtAuthGuard, RbacGuard],
 })
 export class IntakeModule {}

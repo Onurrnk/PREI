@@ -13,7 +13,7 @@ import type { RequestContext } from '../../common/request-context';
 import { IntakeRepository, type InviteRow, type SubmissionRow, type DuplicateProjectMatch } from './intake.repository';
 import { verifyUnsubscribe, unsubscribeUrl } from './unsubscribe.util';
 import { StorageService, MEDIA_BUCKET, VAULT_BUCKET } from '../documents/storage.service';
-import type { CreateInviteDto, SubmitProjectDto } from './dto/intake.dto';
+import type { CreateInviteDto, SubmitProjectDto, EmailDraftDto } from './dto/intake.dto';
 import type { InviteContext } from './submission-token.guard';
 
 const MARKET_NAME: Record<string, string> = {
@@ -270,6 +270,62 @@ export class IntakeService {
     return { ok: true as const, submissionId };
   }
 
+  // ---- Faz 3: e-posta intake (n8n LLM taslağı → onay kuyruğu) ----
+  async createEmailDraft(ctx: RequestContext, dto: EmailDraftDto): Promise<{ ok: true; submissionId: string }> {
+    const submissionId = randomUUID();
+    const unitTypes = (dto.unitTypes ?? '')
+      .split(',').map((s) => s.trim()).filter(Boolean).slice(0, 30);
+
+    // Aynı mükerrer kontrolü (kaynak bağımsız) — e-posta taslağı da kuyrukta işaretlenir.
+    const duplicate = await this.repo.findDuplicateProject(ctx.tenantId, {
+      title: dto.title, developerId: null, city: dto.city ?? null,
+    });
+    const dupNote = duplicate
+      ? `🔁 Olası mükerrer proje: "${duplicate.refTitle}" (${duplicate.matchedBy}) kaydıyla eşleşiyor. Onaylamadan önce kontrol edin.`
+      : null;
+    // E-posta taslağı: kaynağı + mail üst-verisi Onur'un incelemesi için notta.
+    const emailNote = `✉️ E-posta ile gelen taslak${dto.sourceEmail ? ` — gönderen: ${dto.sourceEmail}` : ''}${dto.sourceSubject ? ` · konu: ${dto.sourceSubject}` : ''}. Bilgileri doğrulayıp onaylayın.`;
+    const reviewNote = [dupNote, emailNote].filter(Boolean).join('\n');
+
+    await this.repo.insertSubmission(ctx, {
+      id: submissionId,
+      inviteId: null,
+      developerId: null,
+      title: dto.title.trim(),
+      city: dto.city?.trim() || null,
+      district: dto.district?.trim() || null,
+      marketCode: dto.marketCode ?? null,
+      priceMin: dto.priceMin ?? null,
+      priceMax: dto.priceMax ?? null,
+      currency: dto.currency ?? 'EUR',
+      commissionPct: dto.commissionPct ?? null,
+      unitTypes,
+      description: dto.description?.trim() || null,
+      latitude: null,
+      longitude: null,
+      imageUrls: [],
+      brochurePath: null,
+      payload: {
+        source: 'email_intake',
+        developerName: dto.developerName?.trim() || null,
+        sourceEmail: dto.sourceEmail?.trim() || null,
+        sourceSubject: dto.sourceSubject?.trim() || null,
+        duplicate: duplicate ?? null,
+      },
+      reviewNote,
+      ip: null,
+    });
+
+    this.logger.log(`E-posta taslağı gönderimi: ${submissionId}`);
+    this.notifyAdminNewSubmission({
+      title: dto.title.trim(),
+      developerName: dto.developerName?.trim() || null,
+      location: [dto.city?.trim(), dto.marketCode].filter(Boolean).join(' · ') || null,
+      isDuplicate: !!duplicate,
+    });
+    return { ok: true as const, submissionId };
+  }
+
   // ---- Onay kuyruğu ----
   async listQueue(ctx: RequestContext) {
     const rows = await this.repo.listSubmissions(ctx, 'pending');
@@ -475,6 +531,7 @@ export class IntakeService {
       neighborhood: ((r.payload as Record<string, unknown>)?.neighborhood ?? null) as string | null,
       listingUrl: ((r.payload as Record<string, unknown>)?.listingUrl ?? null) as string | null,
       duplicate: ((r.payload as Record<string, unknown>)?.duplicate ?? null) as DuplicateProjectMatch | null,
+      source: (((r.payload as Record<string, unknown>)?.source as string) ?? 'developer_submission'),
       checks: buildSubmissionChecks({
         commissionPct: r.commission_pct != null ? Number(r.commission_pct) : null,
         priceMin: r.price_min != null ? Number(r.price_min) : null,

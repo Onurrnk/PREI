@@ -61,6 +61,12 @@
   color: var(--data-warning); background: color-mix(in srgb, var(--data-warning) 13%, transparent);
   white-space: nowrap;
 }
+.emailChip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font: var(--text-label); padding: 2px 7px; border-radius: var(--radius-control);
+  color: var(--brand-primary); background: color-mix(in srgb, var(--brand-primary) 13%, transparent);
+  white-space: nowrap;
+}
 .dupBanner {
   display: flex; align-items: flex-start; gap: var(--sp-2);
   padding: var(--sp-3); border-radius: var(--radius-control);

@@ -1028,6 +1028,7 @@ export const tr = {
         updatedOk: 'Mevcut proje güncellendi.',
         approved: 'Proje onaylandı ve kataloğa eklendi.', rejected: 'Gönderi reddedildi.',
         dupChip: 'Olası mükerrer',
+        emailDraft: 'E-posta taslağı',
         dupBy: { 'aynı geliştirici': 'aynı geliştirici', 'aynı şehir': 'aynı şehir' },
         checksTitle: 'Otomatik ön-kontrol',
         checksClean: 'Belirgin eksik yok.',

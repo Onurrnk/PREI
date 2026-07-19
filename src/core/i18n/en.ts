@@ -1029,6 +1029,7 @@ export const en = {
         updatedOk: 'Existing project updated.',
         approved: 'Project approved and added to the catalog.', rejected: 'Submission rejected.',
         dupChip: 'Possible duplicate',
+        emailDraft: 'Email draft',
         dupBy: { 'aynı geliştirici': 'same developer', 'aynı şehir': 'same city' },
         checksTitle: 'Automatic pre-check',
         checksClean: 'No notable gaps.',

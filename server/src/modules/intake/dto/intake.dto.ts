@@ -44,6 +44,53 @@ export class ReviewSubmissionDto {
   mode?: 'new' | 'update';
 }
 
+// --- Faz 3: e-posta intake (n8n LLM ayrıştırması → taslak gönderi) ---
+// n8n info@ kutusundan gelen maili LLM ile bu alanlara çevirir; dosya yok,
+// geliştirici/davet yok. Backend taslak (pending) gönderi üretir → aynı onay
+// kuyruğu (mükerrer + ön-kontrol dahil). Onur inceler, onaylar/reddeder.
+export class EmailDraftDto {
+  @IsString() @MinLength(2) @MaxLength(200)
+  title!: string;
+
+  @IsOptional() @IsString() @MaxLength(120)
+  city?: string;
+
+  @IsOptional() @IsString() @MaxLength(120)
+  district?: string;
+
+  @IsOptional() @IsIn(MARKETS)
+  marketCode?: string;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0)
+  priceMin?: number;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0)
+  priceMax?: number;
+
+  @IsOptional() @IsIn(CURRENCIES)
+  currency?: string;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(100)
+  commissionPct?: number;
+
+  @IsOptional() @IsString() @MaxLength(400)
+  unitTypes?: string;
+
+  @IsOptional() @IsString() @MaxLength(5000)
+  description?: string;
+
+  /** LLM'in çıkardığı geliştirici adı (ipucu; onayda Onur eşler/atar). */
+  @IsOptional() @IsString() @MaxLength(200)
+  developerName?: string;
+
+  /** Kaynak mail üst-verisi — Onur'un referansı için payload'da saklanır. */
+  @IsOptional() @IsString() @MaxLength(320)
+  sourceEmail?: string;
+
+  @IsOptional() @IsString() @MaxLength(300)
+  sourceSubject?: string;
+}
+
 // --- Public: geliştirici proje gönderimi (multipart metin alanları) ---
 export class SubmitProjectDto {
   @IsString() @MinLength(2) @MaxLength(200)
