@@ -115,6 +115,56 @@ export interface MarketingSummaryDTO {
   conversations: MarketingConversationDTO[];
 }
 
+// =====================================================================
+// Proje Girişi (intake) — davet linkleri + onay kuyruğu.
+// =====================================================================
+export interface ProjectInviteDTO {
+  id: string;
+  developerId: string | null;
+  developerName: string | null;
+  label: string | null;
+  url: string;
+  expiresAt: string | null;
+  maxUses: number | null;
+  usedCount: number;
+  status: 'active' | 'revoked' | 'expired' | 'exhausted';
+  createdAt: string;
+}
+
+export interface CreateInviteInput {
+  developerId?: string;
+  label?: string;
+  expiresInDays?: number;
+  maxUses?: number;
+}
+
+export interface ProjectSubmissionDTO {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  title: string;
+  developerName: string | null;
+  city: string | null;
+  district: string | null;
+  marketCode: string | null;
+  priceMin: number | null;
+  priceMax: number | null;
+  currency: string;
+  commissionPct: number | null;
+  unitTypes: string[];
+  description: string | null;
+  imageUrls: string[];
+  brochureUrl: string | null;
+  createdPropertyId: string | null;
+  reviewNote: string | null;
+  createdAt: string;
+}
+
+export interface PublicInviteInfoDTO {
+  valid: boolean;
+  developerName: string | null;
+  label: string | null;
+}
+
 // ad_spend yönetim satırı (GET /api/marketing/campaigns, POST/PATCH).
 export interface AdCampaignDTO {
   id: string;

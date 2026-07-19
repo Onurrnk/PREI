@@ -1,0 +1,236 @@
+// =====================================================================
+// PREI | IntakeRepository — davet linkleri + gönderi (onay kuyruğu).
+// Davet yönetimi + onay kuyruğu ayrıcalıklı bağlamda (RLS: app_is_privileged).
+// Public submit service_agent bağlamında INSERT (RLS: service_insert).
+// Token doğrulama/kullanım sayacı DatabaseService.raw (sistem, RLS-bypass).
+// Onay → gerçek `properties` satırı + broşür için documents_vault kaydı.
+// =====================================================================
+import { Injectable } from '@nestjs/common';
+import { DatabaseService } from '../../database/database.service';
+import type { RequestContext } from '../../common/request-context';
+
+export interface InviteRow {
+  id: string; developer_id: string | null; developer_name: string | null;
+  token: string; label: string | null; expires_at: string | null;
+  revoked_at: string | null; max_uses: number | null; used_count: number; created_at: string;
+}
+
+export interface SubmissionRow {
+  id: string; status: string; title: string; city: string | null; district: string | null;
+  market_code: string | null; price_min: string | null; price_max: string | null; currency: string;
+  commission_pct: string | null; unit_types: string[]; description: string | null;
+  image_urls: string[]; brochure_path: string | null; payload: Record<string, unknown>;
+  developer_id: string | null; developer_name: string | null;
+  created_property_id: string | null; review_note: string | null; created_at: string;
+}
+
+const SUBMISSION_SELECT = `
+  SELECT s.id, s.status, s.title, s.city, s.district, s.market_code,
+         s.price_min, s.price_max, s.currency, s.commission_pct, s.unit_types,
+         s.description, s.image_urls, s.brochure_path, s.payload,
+         s.developer_id, o.name AS developer_name,
+         s.created_property_id, s.review_note, s.created_at
+    FROM project_submissions s
+    LEFT JOIN organizations o ON o.id = s.developer_id`;
+
+@Injectable()
+export class IntakeRepository {
+  constructor(private readonly db: DatabaseService) {}
+
+  // ---- Davet linkleri (ayrıcalıklı) ----
+  async createInvite(
+    ctx: RequestContext,
+    input: { developerId: string | null; label: string | null; token: string; expiresAt: string | null; maxUses: number | null },
+  ): Promise<InviteRow> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `INSERT INTO project_invites (tenant_id, developer_id, label, token, expires_at, max_uses, created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+        [ctx.tenantId, input.developerId, input.label, input.token, input.expiresAt, input.maxUses, ctx.userId],
+      );
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'project_invite.created','project_invite',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, rows[0].id, JSON.stringify({ developerId: input.developerId }), ctx.correlationId],
+      );
+      return this.getInvite(ctx, rows[0].id) as Promise<InviteRow>;
+    });
+  }
+
+  async getInvite(ctx: RequestContext, id: string): Promise<InviteRow | null> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<InviteRow>(
+        `SELECT i.id, i.developer_id, o.name AS developer_name, i.token, i.label,
+                i.expires_at, i.revoked_at, i.max_uses, i.used_count, i.created_at
+           FROM project_invites i LEFT JOIN organizations o ON o.id = i.developer_id
+          WHERE i.id = $1`,
+        [id],
+      );
+      return rows[0] ?? null;
+    });
+  }
+
+  async listInvites(ctx: RequestContext): Promise<InviteRow[]> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<InviteRow>(
+        `SELECT i.id, i.developer_id, o.name AS developer_name, i.token, i.label,
+                i.expires_at, i.revoked_at, i.max_uses, i.used_count, i.created_at
+           FROM project_invites i LEFT JOIN organizations o ON o.id = i.developer_id
+          ORDER BY i.created_at DESC LIMIT 200`,
+      );
+      return rows;
+    });
+  }
+
+  async revokeInvite(ctx: RequestContext, id: string): Promise<boolean> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `UPDATE project_invites SET revoked_at = now() WHERE id = $1 AND revoked_at IS NULL RETURNING id`,
+        [id],
+      );
+      return !!rows[0];
+    });
+  }
+
+  /** Token kullanım sayacı — sistem sorgusu (submit service_agent'ın invites'a yetkisi yok). */
+  async incrementInviteUse(inviteId: string): Promise<void> {
+    await this.db.raw(`UPDATE project_invites SET used_count = used_count + 1 WHERE id = $1`, [inviteId]);
+  }
+
+  // ---- Gönderi (public submit — service_agent bağlamı) ----
+  async insertSubmission(
+    ctx: RequestContext,
+    s: {
+      id: string; inviteId: string; developerId: string | null; title: string;
+      city: string | null; district: string | null; marketCode: string | null;
+      priceMin: number | null; priceMax: number | null; currency: string;
+      commissionPct: number | null; unitTypes: string[]; description: string | null;
+      imageUrls: string[]; brochurePath: string | null; payload: Record<string, unknown>; ip: string | null;
+    },
+  ): Promise<void> {
+    await this.db.withContext(ctx, async (c) => {
+      await c.query(
+        `INSERT INTO project_submissions
+           (id, tenant_id, invite_id, developer_id, status, title, city, district, market_code,
+            price_min, price_max, currency, commission_pct, unit_types, description,
+            image_urls, brochure_path, payload, submitted_ip)
+         VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)`,
+        [
+          s.id, ctx.tenantId, s.inviteId, s.developerId, s.title, s.city, s.district, s.marketCode,
+          s.priceMin, s.priceMax, s.currency, s.commissionPct, s.unitTypes, s.description,
+          s.imageUrls, s.brochurePath, JSON.stringify(s.payload), s.ip,
+        ],
+      );
+    });
+  }
+
+  // ---- Onay kuyruğu (ayrıcalıklı) ----
+  async listSubmissions(ctx: RequestContext, status = 'pending'): Promise<SubmissionRow[]> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<SubmissionRow>(
+        `${SUBMISSION_SELECT} WHERE s.status = $1 ORDER BY s.created_at DESC LIMIT 200`,
+        [status],
+      );
+      return rows;
+    });
+  }
+
+  async getSubmission(ctx: RequestContext, id: string): Promise<SubmissionRow | null> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<SubmissionRow>(`${SUBMISSION_SELECT} WHERE s.id = $1`, [id]);
+      return rows[0] ?? null;
+    });
+  }
+
+  async pendingCount(ctx: RequestContext): Promise<number> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM project_submissions WHERE status = 'pending'`,
+      );
+      return Number(rows[0].n);
+    });
+  }
+
+  /** Onayla → gerçek properties satırı + broşür documents_vault kaydı; gönderiyi işaretle. */
+  async approve(ctx: RequestContext, id: string): Promise<{ propertyId: string } | null> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows: subs } = await c.query<SubmissionRow>(
+        `${SUBMISSION_SELECT} WHERE s.id = $1 AND s.status = 'pending'`,
+        [id],
+      );
+      const s = subs[0];
+      if (!s) return null;
+
+      const priceMin = s.price_min != null ? Number(s.price_min) : null;
+      const priceMax = s.price_max != null ? Number(s.price_max) : null;
+      const payload = s.payload ?? {};
+      const metadata: Record<string, unknown> = {
+        project_status: 'Off-plan',
+        images: s.image_urls,
+        price_min: priceMin,
+        price_max: priceMax,
+        commission_pct: s.commission_pct != null ? Number(s.commission_pct) : null,
+        unit_types: s.unit_types,
+        source: 'developer_submission',
+        submission_id: s.id,
+        developer_name: s.developer_name,
+        completion_date: (payload as Record<string, unknown>).completionDate ?? null,
+      };
+
+      const { rows: prop } = await c.query<{ id: string }>(
+        `INSERT INTO properties (tenant_id, developer_id, title, property_type, city, district,
+            market_code, price, currency, description, metadata, created_by, updated_by)
+         VALUES ($1,$2,$3,'apartment',$4,$5,$6,$7,$8,$9,$10,$11,$11) RETURNING id`,
+        [
+          ctx.tenantId, s.developer_id, s.title, s.city, s.district, s.market_code,
+          priceMin ?? priceMax, s.currency, s.description, JSON.stringify(metadata), ctx.userId,
+        ],
+      );
+      const propertyId = prop[0].id;
+
+      // Broşür → documents_vault (proje ile ilişkili). Boyut/isim payload'dan.
+      if (s.brochure_path) {
+        const p = payload as Record<string, unknown>;
+        await c.query(
+          `INSERT INTO documents_vault (tenant_id, name, folder, mime_type, size_bytes, storage_path, related_type, related_id, uploaded_by)
+           VALUES ($1,$2,'Developer Agreements','application/pdf',$3,$4,'project',$5,$6)`,
+          [
+            ctx.tenantId, (p.brochureName as string) ?? `${s.title} broşür.pdf`,
+            Number(p.brochureSize ?? 0), s.brochure_path, propertyId, ctx.userId,
+          ],
+        );
+      }
+
+      await c.query(
+        `UPDATE project_submissions
+            SET status = 'approved', created_property_id = $2, reviewed_by = $3, reviewed_at = now()
+          WHERE id = $1`,
+        [id, propertyId, ctx.userId],
+      );
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'project_submission.approved','project_submission',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, id, JSON.stringify({ propertyId }), ctx.correlationId],
+      );
+      return { propertyId };
+    });
+  }
+
+  async reject(ctx: RequestContext, id: string, note: string | null): Promise<boolean> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `UPDATE project_submissions
+            SET status = 'rejected', review_note = $2, reviewed_by = $3, reviewed_at = now()
+          WHERE id = $1 AND status = 'pending' RETURNING id`,
+        [id, note, ctx.userId],
+      );
+      if (!rows[0]) return false;
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'project_submission.rejected','project_submission',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, id, JSON.stringify({ note }), ctx.correlationId],
+      );
+      return true;
+    });
+  }
+}

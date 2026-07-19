@@ -31,6 +31,10 @@ import type {
   MarketingTimeframe,
   AdCampaignDTO,
   CreateAdSpendInput,
+  ProjectInviteDTO,
+  CreateInviteInput,
+  ProjectSubmissionDTO,
+  PublicInviteInfoDTO,
   MeetingDTO,
   KPIDTO,
   LeadCommunicationDTO,
@@ -235,6 +239,25 @@ export const marketingApi = {
     api.post<{ ok: boolean; configured: boolean; rows: number; campaigns: number; spendTotal: number; currency: string | null }>(
       '/api/marketing/meta-sync', {},
     ),
+};
+
+// Proje Girişi — admin (davet linki + onay kuyruğu).
+export const intakeApi = {
+  listInvites: () => api.get<ProjectInviteDTO[]>('/api/intake/invites'),
+  createInvite: (input: CreateInviteInput) => api.post<ProjectInviteDTO>('/api/intake/invites', input),
+  revokeInvite: (id: string) => api.delete<{ revoked: true }>(`/api/intake/invites/${id}`),
+  queue: () => api.get<ProjectSubmissionDTO[]>('/api/intake/queue'),
+  queueCount: () => api.get<{ count: number }>('/api/intake/queue/count'),
+  review: (id: string) => api.get<ProjectSubmissionDTO>(`/api/intake/queue/${id}`),
+  approve: (id: string) => api.post<{ approved: true; propertyId: string }>(`/api/intake/queue/${id}/approve`, {}),
+  reject: (id: string, note?: string) => api.post<{ rejected: true }>(`/api/intake/queue/${id}/reject`, { note }),
+};
+
+// Proje Girişi — public (geliştirici, tokenli, auth'suz).
+export const publicIntakeApi = {
+  info: (token: string) => api.get<PublicInviteInfoDTO>(`/api/public/intake/${token}`),
+  submit: (token: string, form: FormData) =>
+    api.post<{ ok: boolean; submissionId: string }>(`/api/public/intake/${token}/submit`, form),
 };
 
 export const adminApi = {

@@ -22,11 +22,18 @@ import { ContractsList } from '../../features/contracts/ContractsList';
 import { Marketing } from '../../features/marketing/Marketing';
 import { Tasks } from '../../features/tasks/Tasks';
 import { Login } from '../../features/auth/Login';
+import { ProjectIntake } from '../../features/intake/ProjectIntake';
+import { SubmitProject } from '../../features/intake/SubmitProject';
 import { RequireAuth } from '../auth/RequireAuth';
 const router = createBrowserRouter([
   {
     path: '/login',
     element: <Login />,
+  },
+  {
+    // PUBLIC — geliştirici proje gönderimi (auth yok; token guard backend'de).
+    path: '/submit/:token',
+    element: <SubmitProject />,
   },
   {
     path: '/',
@@ -71,6 +78,14 @@ const router = createBrowserRouter([
       {
         path: 'projects/add',
         element: <AddProject />,
+      },
+      {
+        path: 'projects/intake',
+        element: (
+          <RequireAuth permission="projects">
+            <ProjectIntake />
+          </RequireAuth>
+        ),
       },
       {
         path: 'projects/:id',

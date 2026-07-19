@@ -856,6 +856,24 @@ export const handlers = [
     return HttpResponse.json({ deleted: true });
   }),
 
+  // --- Proje Girişi (intake) — demo modda boş/stub ---
+  http.get('/api/intake/queue', () => HttpResponse.json([])),
+  http.get('/api/intake/queue/count', () => HttpResponse.json({ count: 0 })),
+  http.get('/api/intake/invites', () => HttpResponse.json([])),
+  http.post('/api/intake/invites', async ({ request }) => {
+    const b = (await request.json()) as { label?: string; developerId?: string };
+    return HttpResponse.json({
+      id: crypto.randomUUID(), developerId: b.developerId ?? null, developerName: null,
+      label: b.label ?? null, url: `${location.origin}/submit/demotoken1234567890abcd`,
+      expiresAt: null, maxUses: null, usedCount: 0, status: 'active', createdAt: new Date().toISOString(),
+    }, { status: 201 });
+  }),
+  http.delete('/api/intake/invites/:id', () => HttpResponse.json({ revoked: true })),
+  http.post('/api/intake/queue/:id/approve', () => HttpResponse.json({ approved: true, propertyId: crypto.randomUUID() })),
+  http.post('/api/intake/queue/:id/reject', () => HttpResponse.json({ rejected: true })),
+  http.get('/api/public/intake/:token', () => HttpResponse.json({ valid: true, developerName: 'Demo Developer', label: 'Demo' })),
+  http.post('/api/public/intake/:token/submit', () => HttpResponse.json({ ok: true, submissionId: crypto.randomUUID() }, { status: 201 })),
+
   http.get('/api/admin/branding', () => {
     return HttpResponse.json<BrandingSettingsDTO>(mockBranding);
   }),

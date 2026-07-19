@@ -1,0 +1,62 @@
+/* PREI | ProjectIntake — onay kuyruğu + davet linkleri */
+
+.page { display: flex; flex-direction: column; gap: var(--sp-4); }
+.header { display: flex; justify-content: space-between; align-items: flex-end; }
+.title { font: var(--text-display); color: var(--text-primary); margin-bottom: var(--sp-1); }
+.subtitle { font: var(--text-body); color: var(--text-secondary); }
+
+.tabs { display: flex; gap: var(--sp-1); border-bottom: 1px solid var(--border-subtle); }
+.tab {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3); background: none; border: none;
+  border-bottom: 2px solid transparent; color: var(--text-secondary);
+  font-size: 0.875rem; cursor: pointer;
+}
+.tabActive { color: var(--text-primary); border-bottom-color: var(--accent); }
+.badge {
+  font-family: var(--font-mono); font-size: 0.6875rem; padding: 1px 6px;
+  border-radius: 999px; background: var(--accent); color: #fff;
+}
+
+.cardTitle { font: var(--text-title); font-size: 0.9375rem; color: var(--text-primary); margin-bottom: var(--sp-3); }
+.actions { display: flex; justify-content: flex-end; padding-top: var(--sp-2); }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.empty { display: block; padding: var(--sp-4); text-align: center; color: var(--text-muted); font-size: 0.8125rem; }
+.clickRow { cursor: pointer; }
+
+.rowActions { display: inline-flex; gap: var(--sp-1); justify-content: flex-end; }
+.iconBtn {
+  display: inline-flex; align-items: center; justify-content: center; padding: 5px;
+  background: none; border: none; border-radius: var(--radius-control);
+  color: var(--text-muted); cursor: pointer;
+}
+.iconBtn:hover { color: var(--text-primary); background: var(--bg-inset); }
+
+.statusChip {
+  font: var(--text-label); padding: 3px 8px; border-radius: var(--radius-control);
+  background: var(--bg-inset); color: var(--text-muted);
+}
+.st_active { color: var(--data-positive); background: color-mix(in srgb, var(--data-positive) 12%, transparent); }
+.st_revoked { color: var(--data-negative); background: color-mix(in srgb, var(--data-negative) 12%, transparent); }
+.st_expired, .st_exhausted { color: var(--data-warning); background: color-mix(in srgb, var(--data-warning) 12%, transparent); }
+
+/* İnceleme modalı */
+.review { display: flex; flex-direction: column; gap: var(--sp-4); }
+.reviewMeta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+.reviewMeta > div { display: flex; flex-direction: column; gap: 2px; }
+.metaLabel { font: var(--text-label); text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.desc { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5; }
+.brochure {
+  display: inline-flex; align-items: center; gap: var(--sp-2); align-self: flex-start;
+  padding: var(--sp-2) var(--sp-3); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control); color: var(--text-primary);
+  font-size: 0.8125rem; text-decoration: none;
+}
+.brochure:hover { border-color: var(--accent); color: var(--accent); }
+
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--sp-2); }
+.thumb {
+  aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--radius-control);
+  border: 1px solid var(--border-subtle);
+}
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
