@@ -197,15 +197,17 @@ export class IntakeRepository {
         submission_id: s.id,
         developer_name: s.developer_name,
         completion_date: payload.completionDate ?? null,
+        listing_url: payload.listingUrl ?? null,
       };
 
       const { rows: prop } = await c.query<{ id: string }>(
-        `INSERT INTO properties (tenant_id, developer_id, title, property_type, city, district,
+        `INSERT INTO properties (tenant_id, developer_id, title, property_type, city, district, address,
             market_code, price, currency, description, latitude, longitude, metadata, created_by, updated_by)
-         VALUES ($1,$2,$3,'apartment',$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13) RETURNING id`,
+         VALUES ($1,$2,$3,'apartment',$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14) RETURNING id`,
         [
-          ctx.tenantId, s.developer_id, s.title, s.city, s.district, s.market_code,
-          priceMin ?? priceMax, s.currency, s.description,
+          ctx.tenantId, s.developer_id, s.title, s.city, s.district,
+          (payload.neighborhood as string) ?? null,
+          s.market_code, priceMin ?? priceMax, s.currency, s.description,
           s.latitude != null ? Number(s.latitude) : null,
           s.longitude != null ? Number(s.longitude) : null,
           JSON.stringify(metadata), ctx.userId,

@@ -160,6 +160,8 @@ export interface ProjectSubmissionDTO {
   downPaymentPct: number | null;
   installmentMonths: number | null;
   paymentNote: string | null;
+  neighborhood: string | null;
+  listingUrl: string | null;
   brochureUrl: string | null;
   createdPropertyId: string | null;
   reviewNote: string | null;

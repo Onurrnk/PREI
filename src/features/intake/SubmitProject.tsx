@@ -15,7 +15,7 @@ import { Card } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { Field, Input, Textarea, Select, FormRow } from '../../core/components/Form/Form';
 import { CheckCircle, WarningCircle, UploadSimple } from '@phosphor-icons/react';
-import { MapPicker } from './MapPicker';
+import { MapPicker, geocode, type MapFocus } from './MapPicker';
 import styles from './SubmitProject.module.css';
 
 const MARKETS = ['TR', 'AE', 'ES', 'GB', 'TH', 'DE'];
@@ -29,10 +29,15 @@ const fmtThousands = (s: string): string =>
   s === '' ? '' : Number(s).toLocaleString('tr-TR');
 
 const emptyForm = {
-  title: '', city: '', district: '', marketCode: 'AE',
+  title: '', city: '', district: '', neighborhood: '', marketCode: 'AE',
   priceMin: '', priceMax: '', currency: 'EUR', commissionPct: '',
   customUnits: '', description: '', completionDate: '',
-  downPaymentPct: '', installmentMonths: '', paymentNote: '',
+  downPaymentPct: '', installmentMonths: '', paymentNote: '', listingUrl: '',
+};
+
+// Pazar kodu → geocode sorgusuna ülke adı (mahalle/ilçe tek başına belirsiz olmasın).
+const MARKET_COUNTRY: Record<string, string> = {
+  TR: 'Türkiye', AE: 'United Arab Emirates', ES: 'España', GB: 'United Kingdom', TH: 'Thailand', DE: 'Deutschland',
 };
 
 export const SubmitProject: React.FC = () => {
@@ -51,6 +56,20 @@ export const SubmitProject: React.FC = () => {
   const [form, setForm] = useState(emptyForm);
   const [units, setUnits] = useState<string[]>([]);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapFocus, setMapFocus] = useState<MapFocus | null>(null);
+
+  // Şehir/ilçe/mahalle alanından çıkınca haritayı o bölgeye odakla —
+  // kişi haritada gezinmeden doğrudan pin bırakabilsin.
+  const focusMapFromFields = async () => {
+    const parts = [form.neighborhood, form.district, form.city, MARKET_COUNTRY[form.marketCode]]
+      .map((s) => s?.trim()).filter(Boolean);
+    if (parts.length < 2) return; // ülke tek başına yeterince spesifik değil
+    const res = await geocode(parts.join(', '), i18n.language?.startsWith('en') ? 'en' : 'tr');
+    if (res[0]) {
+      const zoom = form.neighborhood.trim() ? 15 : form.district.trim() ? 13 : 11;
+      setMapFocus({ lat: Number(res[0].lat), lng: Number(res[0].lon), zoom });
+    }
+  };
   const [brochure, setBrochure] = useState<File | null>(null);
   const [imgInterior, setImgInterior] = useState<File[]>([]);
   const [imgExterior, setImgExterior] = useState<File[]>([]);
@@ -85,6 +104,8 @@ export const SubmitProject: React.FC = () => {
       fd.append('title', form.title.trim());
       if (form.city.trim()) fd.append('city', form.city.trim());
       if (form.district.trim()) fd.append('district', form.district.trim());
+      if (form.neighborhood.trim()) fd.append('neighborhood', form.neighborhood.trim());
+      if (form.listingUrl.trim()) fd.append('listingUrl', form.listingUrl.trim());
       fd.append('marketCode', form.marketCode);
       if (form.priceMin) fd.append('priceMin', digitsOnly(form.priceMin));
       if (form.priceMax) fd.append('priceMax', digitsOnly(form.priceMax));
@@ -165,11 +186,19 @@ export const SubmitProject: React.FC = () => {
           </Field>
           <FormRow>
             <Field label={t('intake.form.city')}>
-              <Input value={form.city} onChange={(e) => setF({ city: e.target.value })} />
+              <Input value={form.city} onChange={(e) => setF({ city: e.target.value })}
+                onBlur={() => void focusMapFromFields()} />
             </Field>
             <Field label={t('intake.form.district')}>
-              <Input value={form.district} onChange={(e) => setF({ district: e.target.value })} />
+              <Input value={form.district} onChange={(e) => setF({ district: e.target.value })}
+                onBlur={() => void focusMapFromFields()} />
             </Field>
+            <Field label={t('intake.form.neighborhood')} hint={t('intake.form.neighborhoodHint')}>
+              <Input value={form.neighborhood} onChange={(e) => setF({ neighborhood: e.target.value })}
+                onBlur={() => void focusMapFromFields()} />
+            </Field>
+          </FormRow>
+          <FormRow>
             <Field label={t('intake.form.market')}>
               <Select value={form.marketCode} onChange={(e) => setF({ marketCode: e.target.value })}>
                 {MARKETS.map((m) => <option key={m} value={m}>{m}</option>)}
@@ -237,11 +266,17 @@ export const SubmitProject: React.FC = () => {
               placeholder={t('intake.form.descriptionPh')} />
           </Field>
 
+          <Field label={t('intake.form.listingUrl')} hint={t('intake.form.listingUrlHint')}>
+            <Input type="url" value={form.listingUrl} onChange={(e) => setF({ listingUrl: e.target.value })}
+              placeholder="https://www.sahibinden.com/ilan/…" />
+          </Field>
+
           <Field
             label={t('intake.form.location')}
             hint={coords ? t('intake.form.locationPicked', { lat: coords.lat.toFixed(5), lng: coords.lng.toFixed(5) }) : t('intake.form.locationHint')}
           >
-            <MapPicker lat={coords?.lat ?? null} lng={coords?.lng ?? null} onPick={(lat, lng) => setCoords({ lat, lng })} />
+            <MapPicker lat={coords?.lat ?? null} lng={coords?.lng ?? null} focus={mapFocus}
+              onPick={(lat, lng) => setCoords({ lat, lng })} />
           </Field>
 
           <Field label={t('intake.form.brochure')} hint={t('intake.form.brochureHint')}>

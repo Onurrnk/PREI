@@ -6,7 +6,7 @@
 // =====================================================================
 import { Type } from 'class-transformer';
 import {
-  IsIn, IsInt, IsISO8601, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength,
+  IsIn, IsInt, IsISO8601, IsNumber, IsOptional, IsString, IsUrl, IsUUID, Max, MaxLength, Min, MinLength,
 } from 'class-validator';
 
 const CURRENCIES = ['EUR', 'USD', 'GBP', 'AED', 'TRY'];
@@ -45,6 +45,14 @@ export class SubmitProjectDto {
 
   @IsOptional() @IsString() @MaxLength(120)
   district?: string;
+
+  /** Mahalle — harita odaklama + adres alanı. */
+  @IsOptional() @IsString() @MaxLength(120)
+  neighborhood?: string;
+
+  /** Opsiyonel ilan linki (sahibinden vb.) — 2. el / emlakçı ürünleri. */
+  @IsOptional() @IsUrl({ require_protocol: true }) @MaxLength(500)
+  listingUrl?: string;
 
   @IsOptional() @IsIn(MARKETS)
   marketCode?: string;

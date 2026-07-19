@@ -191,6 +191,8 @@ export class IntakeService {
         downPaymentPct: dto.downPaymentPct ?? null,
         installmentMonths: dto.installmentMonths ?? null,
         paymentNote: dto.paymentNote?.trim() || null,
+        neighborhood: dto.neighborhood?.trim() || null,
+        listingUrl: dto.listingUrl?.trim() || null,
       },
       ip,
     });
@@ -363,6 +365,8 @@ export class IntakeService {
       downPaymentPct: ((r.payload as Record<string, unknown>)?.downPaymentPct ?? null) as number | null,
       installmentMonths: ((r.payload as Record<string, unknown>)?.installmentMonths ?? null) as number | null,
       paymentNote: ((r.payload as Record<string, unknown>)?.paymentNote ?? null) as string | null,
+      neighborhood: ((r.payload as Record<string, unknown>)?.neighborhood ?? null) as string | null,
+      listingUrl: ((r.payload as Record<string, unknown>)?.listingUrl ?? null) as string | null,
       brochureUrl,
       createdPropertyId: r.created_property_id,
       reviewNote: r.review_note,

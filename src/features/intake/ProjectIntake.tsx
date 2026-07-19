@@ -242,7 +242,7 @@ export const ProjectIntake: React.FC = () => {
           <div className={styles.review}>
             <div className={styles.reviewMeta}>
               <div><span className={styles.metaLabel}>{t('intake.admin.col.developer')}</span><span>{review.developerName ?? '—'}</span></div>
-              <div><span className={styles.metaLabel}>{t('intake.admin.col.location')}</span><span>{[review.district, review.city, review.marketCode].filter(Boolean).join(', ') || '—'}</span></div>
+              <div><span className={styles.metaLabel}>{t('intake.admin.col.location')}</span><span>{[review.neighborhood, review.district, review.city, review.marketCode].filter(Boolean).join(', ') || '—'}</span></div>
               <div><span className={styles.metaLabel}>{t('intake.admin.col.price')}</span><span className={styles.mono}>{priceRange(review)}</span></div>
               <div><span className={styles.metaLabel}>{t('intake.admin.col.commission')}</span><span className={styles.mono}>{review.commissionPct != null ? `%${review.commissionPct}` : '—'}</span></div>
               <div><span className={styles.metaLabel}>{t('intake.form.unitTypes')}</span><span>{review.unitTypes.join(', ') || '—'}</span></div>
@@ -269,6 +269,11 @@ export const ProjectIntake: React.FC = () => {
               {review.mapUrl && (
                 <a className={styles.brochure} href={review.mapUrl} target="_blank" rel="noreferrer">
                   <MapPin size={18} /> {t('intake.admin.viewMap')} <LinkSimple size={13} />
+                </a>
+              )}
+              {review.listingUrl && (
+                <a className={styles.brochure} href={review.listingUrl} target="_blank" rel="noreferrer">
+                  <LinkSimple size={18} /> {t('intake.admin.viewListing')}
                 </a>
               )}
             </div>
