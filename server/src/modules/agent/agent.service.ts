@@ -66,7 +66,7 @@ export interface ActiveClientEmail {
 export interface WebLeadResult {
   contact_id: string;
   lead_id: string;
-  welcome_email: 'sent' | 'already_sent' | 'no_phone' | 'no_sender' | 'failed';
+  welcome_email: 'sent' | 'already_sent' | 'no_phone' | 'no_sender' | 'failed' | 'skipped';
 }
 
 export interface WelcomeFollowUpCandidate {
@@ -199,7 +199,14 @@ export class AgentService {
       return { contactId, leadId };
     });
 
-    const welcome = await this.maybeSendWelcome(ctx, contactId, lang, dto.source === 'roi_report' ? 'roi_report' : 'contact');
+    // ROI Calculator lead'inde hoş geldiniz maili GÖNDERİLMEZ: kullanıcıya tek
+    // mail gitsin diye (rapor maili contact.php'de PDF talep edilince atılır).
+    // Lead yine de yukarıda CRM'e kaydedildi (sessiz kayıt). Diğer formlarda
+    // markalı hoş geldiniz maili aynen gider.
+    const welcome: WebLeadResult['welcome_email'] =
+      dto.source === 'roi_report'
+        ? 'skipped'
+        : await this.maybeSendWelcome(ctx, contactId, lang, 'contact');
     return { contact_id: contactId, lead_id: leadId, welcome_email: welcome };
   }
 
