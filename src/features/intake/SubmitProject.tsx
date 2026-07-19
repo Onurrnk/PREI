@@ -193,15 +193,20 @@ export const SubmitProject: React.FC = () => {
               <Input value={form.district} onChange={(e) => setF({ district: e.target.value })}
                 onBlur={() => void focusMapFromFields()} />
             </Field>
-            <Field label={t('intake.form.neighborhood')} hint={t('intake.form.neighborhoodHint')}>
-              <Input value={form.neighborhood} onChange={(e) => setF({ neighborhood: e.target.value })}
-                onBlur={() => void focusMapFromFields()} />
-            </Field>
           </FormRow>
+          <Field label={t('intake.form.neighborhood')} hint={t('intake.form.neighborhoodHint')}>
+            <Input value={form.neighborhood} onChange={(e) => setF({ neighborhood: e.target.value })}
+              onBlur={() => void focusMapFromFields()} />
+          </Field>
           <FormRow>
             <Field label={t('intake.form.market')}>
               <Select value={form.marketCode} onChange={(e) => setF({ marketCode: e.target.value })}>
                 {MARKETS.map((m) => <option key={m} value={m}>{m}</option>)}
+              </Select>
+            </Field>
+            <Field label={t('intake.form.currency')}>
+              <Select value={form.currency} onChange={(e) => setF({ currency: e.target.value })}>
+                {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </Select>
             </Field>
           </FormRow>
@@ -213,11 +218,6 @@ export const SubmitProject: React.FC = () => {
             <Field label={t('intake.form.priceMax')}>
               <Input inputMode="numeric" value={fmtThousands(digitsOnly(form.priceMax))}
                 onChange={(e) => setF({ priceMax: digitsOnly(e.target.value) })} placeholder="1.250.000" />
-            </Field>
-            <Field label={t('intake.form.currency')}>
-              <Select value={form.currency} onChange={(e) => setF({ currency: e.target.value })}>
-                {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </Select>
             </Field>
           </FormRow>
           <FormRow>

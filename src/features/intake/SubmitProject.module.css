@@ -24,10 +24,15 @@
   position: relative;
 }
 
+/* Renkli logo koyu zeminde okunur olsun: beyaz plaka üstünde (proposal kapağıyla tutarlı). */
 .logo {
-  height: 56px;
+  height: 44px;
   width: auto;
   object-fit: contain;
+  background: #fff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
 }
 
 .langSwitch {
