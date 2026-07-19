@@ -125,6 +125,10 @@ export class AgentService {
         if (byPhone.length > 0) contactId = byPhone[0].id;
       }
 
+      // Duplicate kontrolü: e-posta/telefon zaten sistemdeyse bu bir TEKRAR
+      // başvurudur → yeni talep mevcut dosyaya eklenir + not düşülür (aşağıda).
+      const existedBefore = contactId !== null;
+
       if (contactId) {
         // Yalnız BOŞ alanları doldur — danışmanın girdiği veri ezilmez.
         await c.query(
@@ -195,6 +199,40 @@ export class AgentService {
         [ctx.tenantId, leadId, contactId, subject, body, ctx.userId],
       );
       await this.writeEvent(c, ctx, 'lead', leadId, 'lead.web_form', { contactId, source: dto.source, page: dto.page ?? null });
+
+      // Tekrar başvuru → mevcut dosyaya görünür bir NOT düş (Onur isteği:
+      // duplicate PREI tarafından not olarak bildirilsin). Lead'e de son-başvuru
+      // damgası + sayaç işlenir ki liste/kartta "geri dönen aday" belli olsun.
+      if (existedBefore) {
+        const { rows: cnt } = await c.query<{ n: string }>(
+          `SELECT count(*)::text AS n FROM communications WHERE contact_id = $1`,
+          [contactId],
+        );
+        const total = cnt[0]?.n ?? '?';
+        const noteBody = [
+          '🔁 Tekrar başvuru (mükerrer kayıt): Bu kişi sistemde zaten kayıtlı; yeni talep mevcut dosyasına eklendi.',
+          `Kaynak: ${sourceName}${dto.page ? ' · Sayfa: ' + dto.page : ''}`,
+          dto.message?.trim() ? `Talep: ${dto.message.trim()}` : null,
+          `Bu kişiden toplam ${total} temas kaydı var.`,
+        ].filter(Boolean).join('\n');
+        await c.query(
+          `INSERT INTO meeting_notes (tenant_id, contact_id, lead_id, source_type, raw_content, metadata, created_by)
+           VALUES ($1,$2,$3,'text',$4,$5::jsonb,$6)`,
+          [ctx.tenantId, contactId, leadId, noteBody,
+           JSON.stringify({ kind: 'duplicate_inquiry', tag: 'General', subject: 'Tekrar başvuru', source: dto.source }),
+           ctx.userId],
+        );
+        await c.query(
+          `UPDATE leads SET
+             metadata = metadata || jsonb_build_object(
+               'last_inquiry_at', now()::text,
+               'inquiry_count', COALESCE((metadata->>'inquiry_count')::int, 1) + 1),
+             updated_by = $2
+           WHERE id = $1`,
+          [leadId, ctx.userId],
+        );
+        this.notifyAdminNewLead(`${name} (tekrar başvuru)`, `web (${sourceName})`, leadId);
+      }
 
       return { contactId, leadId };
     });
