@@ -22,6 +22,12 @@ describe('toProjectResponse', () => {
     expect(r.location).toBe('Marina, Dubai');
     expect(r.startingPrice).toBe(1240000);
     expect(r.status).toBe('Off-plan'); // metadata yoksa varsayılan
+    expect(r.lifecycleStatus).toBe('active'); // metadata yoksa varsayılan
+  });
+
+  it('lifecycle_status metadata\'dan okunur', () => {
+    expect(toProjectResponse(row({ metadata: { lifecycle_status: 'sold' } })).lifecycleStatus).toBe('sold');
+    expect(toProjectResponse(row({ metadata: { lifecycle_status: 'paused' } })).lifecycleStatus).toBe('paused');
   });
 
   it('metadata görsel/olanak/ödeme planı/status\'u türetir', () => {

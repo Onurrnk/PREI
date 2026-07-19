@@ -105,3 +105,14 @@
   background-color: rgba(46, 139, 87, 0.1);
   color: var(--color-success);
 }
+
+.lifecycleTag {
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-size: 0.68rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.lifecycleTag.lc_sold { background-color: rgba(46, 139, 87, 0.12); color: var(--color-success); }
+.lifecycleTag.lc_paused { background-color: rgba(214, 162, 42, 0.12); color: var(--color-warning); }
+.lifecycleTag.lc_archived { background-color: rgba(120, 120, 130, 0.14); color: var(--text-muted); }

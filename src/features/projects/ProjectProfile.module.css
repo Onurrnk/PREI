@@ -68,6 +68,37 @@
   color: var(--color-success);
 }
 
+.lifecycleBadge {
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.lifecycleBadge.lc_sold {
+  background-color: rgba(46, 139, 87, 0.12);
+  color: var(--color-success);
+}
+.lifecycleBadge.lc_paused {
+  background-color: rgba(214, 162, 42, 0.12);
+  color: var(--color-warning);
+}
+.lifecycleBadge.lc_archived {
+  background-color: rgba(120, 120, 130, 0.14);
+  color: var(--text-muted);
+}
+
+.lifecycleControl {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.lifecycleLabel {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
 .subtitle {
   color: var(--text-muted);
   font-size: 0.875rem;

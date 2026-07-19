@@ -71,6 +71,11 @@ export const ProjectsList: React.FC = () => {
                   <div className={styles.projectNameCell}>
                     <Buildings size={16} className={styles.iconMuted} />
                     <span className={styles.projectName}>{proj.name}</span>
+                    {proj.lifecycleStatus !== 'active' && (
+                      <span className={`${styles.lifecycleTag} ${styles[`lc_${proj.lifecycleStatus}`]}`}>
+                        {t(`projects.lifecycle.status.${proj.lifecycleStatus}`)}
+                      </span>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>{proj.developerName}</TableCell>

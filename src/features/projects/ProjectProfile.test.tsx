@@ -48,4 +48,17 @@ describe('ProjectProfile — Send Email to Client composer', () => {
     const sendBtn = screen.getByRole('button', { name: /send email/i });
     expect(sendBtn).toBeDisabled();
   });
+
+  it('yaşam döngüsü "Sold" seçilince setLifecycle çağrılır, mesaj + rozet çıkar', async () => {
+    renderProjectProfile();
+    await screen.findByText('Beachfront Residences');
+
+    const lc = screen.getByRole('combobox', { name: /lifecycle/i });
+    fireEvent.click(lc);
+    fireEvent.click(await screen.findByRole('option', { name: /^Sold$/i }));
+
+    expect(await screen.findByText('Project status updated.')).toBeInTheDocument();
+    // Değişim sonrası refetch → rozet + combobox değeri "Sold" (en az 1 eşleşme)
+    expect((await screen.findAllByText('Sold')).length).toBeGreaterThanOrEqual(1);
+  });
 });

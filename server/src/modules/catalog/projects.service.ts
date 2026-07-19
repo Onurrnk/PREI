@@ -59,6 +59,13 @@ export class ProjectsService {
     return toProjectResponse(row);
   }
 
+  /** Yaşam döngüsü durumunu değiştirir (aktif/satıldı/duraklat/arşiv). */
+  async setLifecycle(ctx: RequestContext, id: string, status: string): Promise<ProjectResponse> {
+    const row = await this.repo.setLifecycleStatus(ctx, id, status);
+    if (!row) throw new NotFoundException();
+    return toProjectResponse(row);
+  }
+
   /** Proje görsellerini media bucket'ına yükler, public URL'leri metadata'ya ekler. */
   async uploadImages(ctx: RequestContext, id: string, files: UploadedImageLike[]): Promise<ProjectResponse> {
     if (!files || files.length === 0) throw new BadRequestException('Görsel dosyası gelmedi.');

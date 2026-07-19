@@ -365,7 +365,7 @@ let mockDevelopers: Omit<DeveloperDTO, 'projects'>[] = [
   },
 ];
 
-let mockProjects: ProjectDTO[] = [
+let mockProjects: ProjectDTO[] = ([
   {
     id: 'p1', developerId: '1', developerName: 'Emaar Properties', name: 'Beachfront Residences', location: 'Dubai Marina', status: 'Off-plan',
     totalUnits: 350, availableUnits: 42, startingPrice: 2500000, currency: 'AED', completionDate: 'Q4 2027',
@@ -422,7 +422,7 @@ let mockProjects: ProjectDTO[] = [
     ],
     documents: []
   }
-];
+] as Omit<ProjectDTO, 'lifecycleStatus'>[]).map((p) => ({ ...p, lifecycleStatus: 'active' as const }));
 
 // Teklif oluşturma/güncelleme mock'u — zengin metadata (daire, ROI, liste/
 // indirim) alanlarını backend mapper'ıyla aynı şekilde ProposalDTO'ya çıkarır.
@@ -1161,6 +1161,14 @@ export const handlers = [
     return HttpResponse.json<ProjectDTO>(mockProjects[idx]);
   }),
 
+  http.patch('/api/projects/:id/lifecycle', async ({ params, request }) => {
+    const idx = mockProjects.findIndex((p) => p.id === params.id);
+    if (idx === -1) return new HttpResponse(null, { status: 404 });
+    const b = (await request.json()) as { status: ProjectDTO['lifecycleStatus'] };
+    mockProjects[idx] = { ...mockProjects[idx], lifecycleStatus: b.status };
+    return HttpResponse.json<ProjectDTO>(mockProjects[idx]);
+  }),
+
   http.post('/api/projects', async ({ request }) => {
     const input = (await request.json()) as CreateProjectInput;
     const newProject: ProjectDTO = {
@@ -1170,6 +1178,7 @@ export const handlers = [
       name: input.title,
       location: [input.district, input.city].filter(Boolean).join(', ') || '—',
       status: input.status ?? 'Off-plan',
+      lifecycleStatus: 'active',
       totalUnits: input.totalUnits ?? 0,
       availableUnits: input.availableUnits ?? 0,
       startingPrice: input.price ?? 0,

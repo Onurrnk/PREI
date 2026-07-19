@@ -128,6 +128,28 @@ export class CatalogRepository {
     });
   }
 
+  /** Proje yaşam döngüsü durumunu (metadata.lifecycle_status) değiştirir. */
+  async setLifecycleStatus(ctx: RequestContext, id: string, status: string): Promise<ProjectRow | null> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `UPDATE properties
+            SET metadata = jsonb_set(COALESCE(metadata, '{}'::jsonb), '{lifecycle_status}', to_jsonb($2::text)),
+                updated_by = $3, updated_at = now()
+          WHERE id = $1 AND deleted_at IS NULL
+          RETURNING id`,
+        [id, status, ctx.userId],
+      );
+      if (!rows[0]) return null;
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'project.lifecycle_changed','property',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, id, JSON.stringify({ lifecycle_status: status }), ctx.correlationId],
+      );
+      const { rows: full } = await c.query<ProjectRow>(`${PROJECT_SELECT} WHERE p.id = $1`, [id]);
+      return full[0];
+    });
+  }
+
   /** Vault'a related_type='project' ile bağlanmış gerçek dosyalar. */
   async documentsByProjectIds(ctx: RequestContext, ids: string[]): Promise<ProjectDocRow[]> {
     if (ids.length === 0) return [];

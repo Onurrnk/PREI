@@ -385,6 +385,7 @@ export class IntakeRepository {
               ORDER BY l.updated_at DESC LIMIT 1
            ) ll ON true
           WHERE p.deleted_at IS NULL
+            AND COALESCE(p.metadata->>'lifecycle_status','active') = 'active'
             AND (p.metadata->>'source') = 'developer_submission'
             AND p.created_at > now() - interval '30 days'
             AND p.market_code IS NOT NULL

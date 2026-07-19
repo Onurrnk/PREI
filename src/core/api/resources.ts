@@ -174,6 +174,8 @@ export const projectsApi = {
     files.forEach((f) => form.append('files', f));
     return api.post<ProjectDTO>(`/api/projects/${id}/images`, form);
   },
+  setLifecycle: (id: string, status: ProjectDTO['lifecycleStatus']) =>
+    api.patch<ProjectDTO>(`/api/projects/${id}/lifecycle`, { status }),
 };
 
 export const proposalsApi = {

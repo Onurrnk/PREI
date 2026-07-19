@@ -15,7 +15,8 @@ export interface ProjectResponse {
   developerName: string;
   name: string;
   location: string;
-  status: string; // 'Off-plan' | 'Under Construction' | 'Completed'
+  status: string; // 'Off-plan' | 'Under Construction' | 'Completed' (yapım aşaması)
+  lifecycleStatus: string; // 'active' | 'sold' | 'paused' | 'archived' (yaşam döngüsü)
   totalUnits: number;
   availableUnits: number;
   startingPrice: number;
@@ -63,6 +64,7 @@ export function toProjectResponse(row: ProjectRow, docs: ProjectDocRow[] = []): 
     name: row.title,
     location,
     status: str(m.project_status) || 'Off-plan',
+    lifecycleStatus: str(m.lifecycle_status) || 'active',
     totalUnits: num(m.total_units),
     availableUnits: num(m.available_units),
     startingPrice: num(row.price),

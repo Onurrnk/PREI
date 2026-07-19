@@ -1152,6 +1152,12 @@ export const en = {
       by: 'By {{developer}}',
       mediaKit: 'Media Kit',
       reserveUnit: 'Reserve Unit',
+      lifecycle: {
+        label: 'Lifecycle',
+        saved: 'Project status updated.',
+        saveError: 'Could not update status',
+        status: { active: 'Active', sold: 'Sold', paused: 'Paused', archived: 'Archived' },
+      },
       overview: 'Project Overview',
       startingPrice: 'Starting Price',
       availability: 'Availability',

@@ -1151,6 +1151,12 @@ export const tr = {
       by: '{{developer}} tarafından',
       mediaKit: 'Medya Kiti',
       reserveUnit: 'Ünite Rezerve Et',
+      lifecycle: {
+        label: 'Yaşam döngüsü',
+        saved: 'Proje durumu güncellendi.',
+        saveError: 'Durum güncellenemedi',
+        status: { active: 'Aktif', sold: 'Satıldı', paused: 'Duraklatıldı', archived: 'Kaldırıldı' },
+      },
       overview: 'Proje Özeti',
       startingPrice: 'Başlangıç Fiyatı',
       availability: 'Uygunluk',

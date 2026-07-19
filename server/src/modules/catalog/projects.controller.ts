@@ -2,7 +2,7 @@
 // PREI | ProjectsController — /api/projects (properties tabanlı, list/detail/create).
 // =====================================================================
 import {
-  Body, Controller, Get, Param, ParseUUIDPipe, Post, Query,
+  Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query,
   DefaultValuePipe, ParseIntPipe, UploadedFiles, UseGuards, UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -13,6 +13,7 @@ import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { ProjectsService, type UploadedImageLike } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { SetLifecycleDto } from './dto/lifecycle.dto';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard, RbacGuard)
@@ -37,6 +38,15 @@ export class ProjectsController {
   @Post()
   create(@Ctx() ctx: RequestContext, @Body() dto: CreateProjectDto) {
     return this.projects.create(ctx, dto);
+  }
+
+  @Patch(':id/lifecycle')
+  setLifecycle(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SetLifecycleDto,
+  ) {
+    return this.projects.setLifecycle(ctx, id, dto.status);
   }
 
   @Post(':id/images')

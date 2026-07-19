@@ -15,8 +15,9 @@ export const ProjectProfile: React.FC = () => {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data, loading } = useFetch<ProjectDTO[]>(() => projectsApi.list(), [id]);
+  const { data, loading, refetch } = useFetch<ProjectDTO[]>(() => projectsApi.list(), [id]);
   const project = (data ?? []).find(p => p.id === id) ?? null;
+  const [lifecycleSaving, setLifecycleSaving] = useState(false);
   const { data: clientsData } = useFetch<ClientDTO[]>(() => clientsApi.list(), []);
   const clients = clientsData ?? [];
   const [selectedImage, setSelectedImage] = useState(0);
@@ -29,6 +30,18 @@ export const ProjectProfile: React.FC = () => {
 
   const handleActionClick = (actionName: string) => {
     toast.info(actionName);
+  };
+
+  const handleLifecycleChange = async (status: string) => {
+    if (!project || status === project.lifecycleStatus) return;
+    setLifecycleSaving(true);
+    try {
+      await projectsApi.setLifecycle(project.id, status as ProjectDTO['lifecycleStatus']);
+      toast.success(t('projects.lifecycle.saved'));
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('projects.lifecycle.saveError'));
+    } finally { setLifecycleSaving(false); }
   };
 
   const handleDownloadDoc = async (docId: string) => {
@@ -74,6 +87,11 @@ export const ProjectProfile: React.FC = () => {
               <span className={`${styles.statusBadge} ${styles[project.status.toLowerCase().replace(/ /g, '-')]}`}>
                 {project.status}
               </span>
+              {project.lifecycleStatus !== 'active' && (
+                <span className={`${styles.lifecycleBadge} ${styles[`lc_${project.lifecycleStatus}`]}`}>
+                  {t(`projects.lifecycle.status.${project.lifecycleStatus}`)}
+                </span>
+              )}
             </div>
             <p className={styles.subtitle}>
               <Buildings size={14} className={styles.inlineIcon} /> {t('projects.by', { developer: project.developerName })} &bull;
@@ -82,6 +100,18 @@ export const ProjectProfile: React.FC = () => {
           </div>
         </div>
         <div className={styles.headerActions}>
+          <div className={styles.lifecycleControl}>
+            <span className={styles.lifecycleLabel}>{t('projects.lifecycle.label')}</span>
+            <SelectMenu
+              aria-label={t('projects.lifecycle.label')}
+              value={project.lifecycleStatus}
+              disabled={lifecycleSaving}
+              onChange={handleLifecycleChange}
+              options={(['active', 'sold', 'paused', 'archived'] as const).map((s) => ({
+                value: s, label: t(`projects.lifecycle.status.${s}`),
+              }))}
+            />
+          </div>
           <Button variant="outline" onClick={() => handleActionClick('Download Full Media Kit')}><FileText size={16} /> {t('projects.mediaKit')}</Button>
           <Button variant="primary" onClick={() => handleActionClick('Reserve Unit')}>{t('projects.reserveUnit')}</Button>
         </div>

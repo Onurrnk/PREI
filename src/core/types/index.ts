@@ -431,6 +431,7 @@ export interface ProjectDTO {
   name: string;
   location: string;
   status: 'Off-plan' | 'Under Construction' | 'Completed';
+  lifecycleStatus: 'active' | 'sold' | 'paused' | 'archived';
   totalUnits: number;
   availableUnits: number;
   startingPrice: number;
