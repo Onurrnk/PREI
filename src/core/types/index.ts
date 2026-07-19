@@ -165,6 +165,12 @@ export interface ProjectSubmissionDTO {
   brochureUrl: string | null;
   createdPropertyId: string | null;
   reviewNote: string | null;
+  duplicate: {
+    refType: 'property' | 'submission';
+    refId: string;
+    refTitle: string;
+    matchedBy: string;
+  } | null;
   createdAt: string;
 }
 

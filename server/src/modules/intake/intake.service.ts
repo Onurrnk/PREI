@@ -10,7 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { AppConfig } from '../../config/configuration';
 import type { RequestContext } from '../../common/request-context';
-import { IntakeRepository, type InviteRow, type SubmissionRow } from './intake.repository';
+import { IntakeRepository, type InviteRow, type SubmissionRow, type DuplicateProjectMatch } from './intake.repository';
 import { StorageService, MEDIA_BUCKET, VAULT_BUCKET } from '../documents/storage.service';
 import type { CreateInviteDto, SubmitProjectDto } from './dto/intake.dto';
 import type { InviteContext } from './submission-token.guard';
@@ -164,6 +164,21 @@ export class IntakeService {
     const unitTypes = (dto.unitTypes ?? '')
       .split(',').map((s) => s.trim()).filter(Boolean).slice(0, 30);
 
+    // Mükerrer proje ön-kontrolü (kaynak bağımsız): aynı başlıklı proje daha önce
+    // gönderilmiş/onaylanmış mı? Bulunursa gönderiye görünür bir not düşer ve
+    // onay kuyruğunda "olası mükerrer" rozetiyle işaretlenir (kayıt engellenmez).
+    const duplicate = await this.repo.findDuplicateProject(ctx.tenantId, {
+      title: dto.title,
+      developerId: invite.developerId,
+      city: dto.city ?? null,
+    });
+    const reviewNote = duplicate
+      ? `🔁 Olası mükerrer proje: "${duplicate.refTitle}" (${duplicate.matchedBy}) kaydıyla eşleşiyor. Onaylamadan önce kontrol edin.`
+      : null;
+    if (duplicate) {
+      this.logger.warn(`Olası mükerrer proje gönderimi: ${submissionId} ↔ ${duplicate.refType}:${duplicate.refId}`);
+    }
+
     await this.repo.insertSubmission(ctx, {
       id: submissionId,
       inviteId: invite.inviteId,
@@ -193,12 +208,16 @@ export class IntakeService {
         paymentNote: dto.paymentNote?.trim() || null,
         neighborhood: dto.neighborhood?.trim() || null,
         listingUrl: dto.listingUrl?.trim() || null,
+        duplicate: duplicate ?? null,
       },
+      reviewNote,
       ip,
     });
 
     await this.repo.incrementInviteUse(invite.inviteId);
     this.logger.log(`Yeni proje gönderimi: ${submissionId} (davet ${invite.inviteId})`);
+    // Not: mükerrer bilgisi dış geliştiriciye DÖNÜLMEZ (katalog sızıntısı olmasın);
+    // yalnız dahili onay kuyruğunda not/rozet olarak görünür.
     return { ok: true as const, submissionId };
   }
 
@@ -367,6 +386,7 @@ export class IntakeService {
       paymentNote: ((r.payload as Record<string, unknown>)?.paymentNote ?? null) as string | null,
       neighborhood: ((r.payload as Record<string, unknown>)?.neighborhood ?? null) as string | null,
       listingUrl: ((r.payload as Record<string, unknown>)?.listingUrl ?? null) as string | null,
+      duplicate: ((r.payload as Record<string, unknown>)?.duplicate ?? null) as DuplicateProjectMatch | null,
       brochureUrl,
       createdPropertyId: r.created_property_id,
       reviewNote: r.review_note,

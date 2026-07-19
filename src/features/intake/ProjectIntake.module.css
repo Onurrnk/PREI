@@ -53,6 +53,23 @@
 .st_revoked { color: var(--data-negative); background: color-mix(in srgb, var(--data-negative) 12%, transparent); }
 .st_expired, .st_exhausted { color: var(--data-warning); background: color-mix(in srgb, var(--data-warning) 12%, transparent); }
 
+/* Mükerrer proje işareti — kuyruk rozeti + modal bandı (data-warning) */
+.titleCell { display: inline-flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.dupChip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font: var(--text-label); padding: 2px 7px; border-radius: var(--radius-control);
+  color: var(--data-warning); background: color-mix(in srgb, var(--data-warning) 13%, transparent);
+  white-space: nowrap;
+}
+.dupBanner {
+  display: flex; align-items: flex-start; gap: var(--sp-2);
+  padding: var(--sp-3); border-radius: var(--radius-control);
+  color: var(--data-warning); background: color-mix(in srgb, var(--data-warning) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--data-warning) 30%, transparent);
+  font: var(--text-body-sm);
+}
+.dupBanner svg { flex-shrink: 0; margin-top: 1px; }
+
 /* İnceleme modalı */
 .review { display: flex; flex-direction: column; gap: var(--sp-4); }
 .reviewMeta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }

@@ -25,6 +25,13 @@ export interface SubmissionRow {
   created_property_id: string | null; review_note: string | null; created_at: string;
 }
 
+export interface DuplicateProjectMatch {
+  refType: 'property' | 'submission';
+  refId: string;
+  refTitle: string;
+  matchedBy: 'aynı geliştirici' | 'aynı şehir';
+}
+
 const SUBMISSION_SELECT = `
   SELECT s.id, s.status, s.title, s.city, s.district, s.market_code,
          s.price_min, s.price_max, s.currency, s.commission_pct, s.unit_types,
@@ -98,6 +105,61 @@ export class IntakeRepository {
     await this.db.raw(`UPDATE project_invites SET used_count = used_count + 1 WHERE id = $1`, [inviteId]);
   }
 
+  /**
+   * Mükerrer proje ön-kontrolü — KAYNAK BAĞIMSIZ. Public submit service_agent
+   * bağlamında çalışır ve properties/project_submissions'a SELECT yetkisi yoktur;
+   * bu yüzden sistem sorgusu (bootstrap, RLS-bypass) kullanılır, tenant elle
+   * süzülür. Başlık normalize edilir (küçük harf + boşluk sıkıştırma); aynı
+   * geliştirici VEYA aynı şehir eşleşmesi mükerrer sayılır. Onaylı katalog
+   * (properties) önce, sonra reddedilmemiş bekleyen gönderiler taranır.
+   */
+  async findDuplicateProject(
+    tenantId: string | null,
+    opts: { title: string; developerId: string | null; city: string | null; excludeSubmissionId?: string | null },
+  ): Promise<DuplicateProjectMatch | null> {
+    if (!tenantId) return null;
+    const norm = (v: string | null): string => (v ?? '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const nt = norm(opts.title);
+    if (!nt) return null;
+    const city = opts.city ? norm(opts.city) : null;
+    const rows = await this.db.raw<{ ref_type: string; ref_id: string; ref_title: string; matched_by: string }>(
+      `
+      SELECT ref_type, ref_id, ref_title, matched_by FROM (
+        SELECT 'property'::text AS ref_type, p.id::text AS ref_id, p.title AS ref_title,
+               CASE WHEN $2::uuid IS NOT NULL AND p.developer_id IS NOT DISTINCT FROM $2::uuid
+                    THEN 'aynı geliştirici' ELSE 'aynı şehir' END AS matched_by,
+               0 AS prio
+          FROM properties p
+         WHERE p.tenant_id = $1 AND p.deleted_at IS NULL
+           AND lower(regexp_replace(btrim(p.title), '\\s+', ' ', 'g')) = $3
+           AND ( ($2::uuid IS NOT NULL AND p.developer_id IS NOT DISTINCT FROM $2::uuid)
+                 OR ($4 IS NOT NULL AND lower(regexp_replace(btrim(coalesce(p.city,'')), '\\s+', ' ', 'g')) = $4) )
+        UNION ALL
+        SELECT 'submission'::text, s.id::text, s.title,
+               CASE WHEN $2::uuid IS NOT NULL AND s.developer_id IS NOT DISTINCT FROM $2::uuid
+                    THEN 'aynı geliştirici' ELSE 'aynı şehir' END,
+               1 AS prio
+          FROM project_submissions s
+         WHERE s.tenant_id = $1 AND s.status <> 'rejected'
+           AND ($5::uuid IS NULL OR s.id <> $5::uuid)
+           AND lower(regexp_replace(btrim(s.title), '\\s+', ' ', 'g')) = $3
+           AND ( ($2::uuid IS NOT NULL AND s.developer_id IS NOT DISTINCT FROM $2::uuid)
+                 OR ($4 IS NOT NULL AND lower(regexp_replace(btrim(coalesce(s.city,'')), '\\s+', ' ', 'g')) = $4) )
+      ) m
+      ORDER BY prio ASC
+      LIMIT 1`,
+      [tenantId, opts.developerId, nt, city, opts.excludeSubmissionId ?? null],
+    );
+    const r = rows[0];
+    if (!r) return null;
+    return {
+      refType: r.ref_type as 'property' | 'submission',
+      refId: r.ref_id,
+      refTitle: r.ref_title,
+      matchedBy: r.matched_by as 'aynı geliştirici' | 'aynı şehir',
+    };
+  }
+
   // ---- Gönderi (public submit — service_agent bağlamı) ----
   async insertSubmission(
     ctx: RequestContext,
@@ -107,7 +169,8 @@ export class IntakeRepository {
       priceMin: number | null; priceMax: number | null; currency: string;
       commissionPct: number | null; unitTypes: string[]; description: string | null;
       latitude: number | null; longitude: number | null;
-      imageUrls: string[]; brochurePath: string | null; payload: Record<string, unknown>; ip: string | null;
+      imageUrls: string[]; brochurePath: string | null; payload: Record<string, unknown>;
+      reviewNote: string | null; ip: string | null;
     },
   ): Promise<void> {
     await this.db.withContext(ctx, async (c) => {
@@ -115,12 +178,12 @@ export class IntakeRepository {
         `INSERT INTO project_submissions
            (id, tenant_id, invite_id, developer_id, status, title, city, district, market_code,
             price_min, price_max, currency, commission_pct, unit_types, description,
-            latitude, longitude, image_urls, brochure_path, payload, submitted_ip)
-         VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
+            latitude, longitude, image_urls, brochure_path, payload, review_note, submitted_ip)
+         VALUES ($1,$2,$3,$4,'pending',$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
         [
           s.id, ctx.tenantId, s.inviteId, s.developerId, s.title, s.city, s.district, s.marketCode,
           s.priceMin, s.priceMax, s.currency, s.commissionPct, s.unitTypes, s.description,
-          s.latitude, s.longitude, s.imageUrls, s.brochurePath, JSON.stringify(s.payload), s.ip,
+          s.latitude, s.longitude, s.imageUrls, s.brochurePath, JSON.stringify(s.payload), s.reviewNote, s.ip,
         ],
       );
     });

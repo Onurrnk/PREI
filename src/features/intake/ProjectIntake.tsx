@@ -15,7 +15,7 @@ import { Modal } from '../../core/components/Modal/Modal';
 import { Field, Input, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
-import { Plus, Copy, Trash, CheckCircle, XCircle, FilePdf, LinkSimple, MapPin } from '@phosphor-icons/react';
+import { Plus, Copy, Trash, CheckCircle, XCircle, FilePdf, LinkSimple, MapPin, Warning } from '@phosphor-icons/react';
 import { ProjectsHubTabs } from '../projects/ProjectsHubTabs';
 import styles from './ProjectIntake.module.css';
 
@@ -140,7 +140,14 @@ export const ProjectIntake: React.FC = () => {
               <TableBody>
                 {pending.map((s) => (
                   <TableRow key={s.id} className={styles.clickRow} onClick={() => setReview(s)}>
-                    <TableCell style={{ fontWeight: 600 }}>{s.title}</TableCell>
+                    <TableCell style={{ fontWeight: 600 }}>
+                      <span className={styles.titleCell}>
+                        {s.title}
+                        {s.duplicate && (
+                          <span className={styles.dupChip}><Warning size={12} weight="fill" /> {t('intake.admin.dupChip')}</span>
+                        )}
+                      </span>
+                    </TableCell>
                     <TableCell>{s.developerName ?? '—'}</TableCell>
                     <TableCell>{[s.city, s.marketCode].filter(Boolean).join(' · ') || '—'}</TableCell>
                     <TableCell align="right"><span className={styles.mono}>{priceRange(s)}</span></TableCell>
@@ -240,6 +247,17 @@ export const ProjectIntake: React.FC = () => {
       >
         {review && (
           <div className={styles.review}>
+            {review.duplicate && (
+              <div className={styles.dupBanner}>
+                <Warning size={18} weight="fill" />
+                <span>
+                  {t(review.duplicate.refType === 'property' ? 'intake.admin.dupBannerProperty' : 'intake.admin.dupBannerSubmission', {
+                    title: review.duplicate.refTitle,
+                    by: t(`intake.admin.dupBy.${review.duplicate.matchedBy}`, review.duplicate.matchedBy),
+                  })}
+                </span>
+              </div>
+            )}
             <div className={styles.reviewMeta}>
               <div><span className={styles.metaLabel}>{t('intake.admin.col.developer')}</span><span>{review.developerName ?? '—'}</span></div>
               <div><span className={styles.metaLabel}>{t('intake.admin.col.location')}</span><span>{[review.neighborhood, review.district, review.city, review.marketCode].filter(Boolean).join(', ') || '—'}</span></div>
