@@ -9,7 +9,8 @@
   --ink: #1b1a18;
   --muted: #6b6478;
   --line: #e7e2ee;
-  --accent: #9b5bb3;
+  --accent: #9b5bb3;        /* logo moru — büyük marka öğeleri (26px fiyat, wordmark) */
+  --accent-text: #8a4da1;   /* küçük metin vurgusu — beyaz üstünde AA (~4.6:1) */
   --paper: #ffffff;
   --soft: #faf8fd;
 
@@ -93,7 +94,7 @@
 .section:last-child { border-bottom: none; }
 .secLabel {
   font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
-  color: var(--accent); margin-bottom: 14px;
+  color: var(--accent-text); margin-bottom: 14px;
 }
 
 /* ---- Mülk detay ---- */
@@ -134,7 +135,7 @@
 }
 .priceMain span { font-size: 14px; font-weight: 700; color: var(--ink); }
 .priceMain strong { font-size: 26px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; font-family: var(--font-mono, 'Geist Mono', monospace); font-variant-numeric: tabular-nums; }
-.accent { color: var(--accent); }
+.accent { color: var(--accent-text); }
 .muted { color: var(--muted); font-weight: 500; }
 
 /* ---- Tablolar ---- */
