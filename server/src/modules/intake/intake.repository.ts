@@ -216,6 +216,69 @@ export class IntakeRepository {
     });
   }
 
+  // ---- Faz 2: proje→müşteri bildirim eşleşmesi (n8n digest, service_agent) ----
+  async notificationCandidates(ctx: RequestContext): Promise<Array<{
+    contact_id: string; name: string; email: string; lang: string;
+    property_id: string; title: string; city: string | null; market_code: string | null;
+    currency: string; price_min: string | null; price_max: string | null;
+  }>> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query(
+        `SELECT c.id AS contact_id,
+                trim(c.first_name || ' ' || COALESCE(c.last_name,'')) AS name,
+                c.email, COALESCE(c.preferred_lang,'tr') AS lang,
+                p.id AS property_id, p.title, p.city, p.market_code, p.currency,
+                (p.metadata->>'price_min') AS price_min,
+                (p.metadata->>'price_max') AS price_max
+           FROM properties p
+           JOIN contacts c ON c.tenant_id = p.tenant_id
+                          AND c.deleted_at IS NULL AND c.merged_into_id IS NULL
+                          AND c.marketing_consent = true
+                          AND c.email IS NOT NULL AND c.email <> ''
+           JOIN LATERAL (
+             SELECT l.target_market_code, l.budget_min, l.budget_max, l.currency AS lead_currency
+               FROM leads l
+              WHERE l.contact_id = c.id AND l.deleted_at IS NULL
+              ORDER BY l.updated_at DESC LIMIT 1
+           ) ll ON true
+          WHERE p.deleted_at IS NULL
+            AND (p.metadata->>'source') = 'developer_submission'
+            AND p.created_at > now() - interval '30 days'
+            AND p.market_code IS NOT NULL
+            AND ll.target_market_code = p.market_code
+            AND (
+              ll.lead_currency IS DISTINCT FROM p.currency
+              OR (
+                (ll.budget_max IS NULL OR (p.metadata->>'price_min') IS NULL OR ll.budget_max >= (p.metadata->>'price_min')::numeric)
+                AND (ll.budget_min IS NULL OR (p.metadata->>'price_max') IS NULL OR ll.budget_min <= (p.metadata->>'price_max')::numeric)
+              )
+            )
+            AND NOT EXISTS (
+              SELECT 1 FROM project_client_notifications n
+               WHERE n.property_id = p.id AND n.contact_id = c.id
+            )
+          ORDER BY c.id, p.created_at DESC`,
+      );
+      return rows as never;
+    });
+  }
+
+  async markNotified(ctx: RequestContext, contactId: string, propertyIds: string[]): Promise<number> {
+    if (propertyIds.length === 0) return 0;
+    return this.db.withContext(ctx, async (c) => {
+      let n = 0;
+      for (const pid of propertyIds) {
+        const { rowCount } = await c.query(
+          `INSERT INTO project_client_notifications (tenant_id, property_id, contact_id)
+           VALUES ($1,$2,$3) ON CONFLICT (property_id, contact_id) DO NOTHING`,
+          [ctx.tenantId, pid, contactId],
+        );
+        n += rowCount ?? 0;
+      }
+      return n;
+    });
+  }
+
   async reject(ctx: RequestContext, id: string, note: string | null): Promise<boolean> {
     return this.db.withContext(ctx, async (c) => {
       const { rows } = await c.query<{ id: string }>(

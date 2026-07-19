@@ -15,6 +15,22 @@ import { StorageService, MEDIA_BUCKET, VAULT_BUCKET } from '../documents/storage
 import type { CreateInviteDto, SubmitProjectDto } from './dto/intake.dto';
 import type { InviteContext } from './submission-token.guard';
 
+const MARKET_NAME: Record<string, string> = {
+  TR: 'Türkiye', AE: 'Dubai (BAE)', ES: 'İspanya', GB: 'İngiltere', TH: 'Tayland', DE: 'Almanya',
+};
+const esc = (s: string): string => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+export interface NotifyCandidate {
+  contactId: string;
+  to: string;
+  toName: string;
+  lang: string;
+  subject: string;
+  bodyHtml: string;
+  bodyText: string;
+  propertyIds: string[];
+}
+
 const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_IMAGE = 10 * 1024 * 1024;
 const MAX_BROCHURE = 15 * 1024 * 1024;
@@ -167,6 +183,63 @@ export class IntakeService {
 
   approve(ctx: RequestContext, id: string) {
     return this.repo.approve(ctx, id);
+  }
+
+  // ---- Faz 2: kriter-eşleşmeli müşteri bildirimi (n8n digest) ----
+  async notifyCandidates(ctx: RequestContext): Promise<NotifyCandidate[]> {
+    const rows = await this.repo.notificationCandidates(ctx);
+    const byClient = new Map<string, typeof rows>();
+    for (const r of rows) {
+      const arr = byClient.get(r.contact_id) ?? [];
+      arr.push(r);
+      byClient.set(r.contact_id, arr);
+    }
+
+    const out: NotifyCandidate[] = [];
+    for (const [contactId, projects] of byClient) {
+      const first = projects[0];
+      const en = first.lang === 'en';
+      const name = first.name || (en ? 'there' : 'Yatırımcımız');
+
+      const items = projects.map((p) => {
+        const market = p.market_code ? (MARKET_NAME[p.market_code] ?? p.market_code) : '';
+        const loc = [p.city, market].filter(Boolean).join(', ');
+        const min = p.price_min ? Number(p.price_min) : null;
+        const max = p.price_max ? Number(p.price_max) : null;
+        const range = min && max && min !== max
+          ? `${min.toLocaleString('tr-TR')} – ${max.toLocaleString('tr-TR')} ${p.currency}`
+          : (min || max ? `${(min || max)!.toLocaleString('tr-TR')} ${p.currency}` : '');
+        const tail = [loc, range].filter(Boolean).join(' · ');
+        return { title: p.title, line: tail };
+      });
+
+      const n = projects.length;
+      const subject = en
+        ? (n === 1 ? `A new project that matches you: ${first.title}` : `${n} new investment opportunities for you`)
+        : (n === 1 ? `Size uygun yeni proje: ${first.title}` : `Size uygun ${n} yeni yatırım fırsatı`);
+
+      // Not: selamlama ("Merhaba {ad},") agent-mail.php markalı kabukta ekleniyor —
+      // gövde selamla BAŞLAMAZ (çift selamlama olmasın).
+      const li = items.map((i) => `<li style="margin:0 0 8px 0;"><strong>${esc(i.title)}</strong>${i.line ? ` — ${esc(i.line)}` : ''}</li>`).join('');
+      const bodyHtml = en
+        ? `<p style="margin:0 0 18px 0;">New project${n > 1 ? 's' : ''} matching your interests ${n > 1 ? 'have' : 'has'} just been added to our catalog:</p><ul style="margin:0 0 18px 0; padding-left:20px;">${li}</ul><p style="margin:0 0 18px 0;">Reply to this email for a tailored assessment and full details.</p>`
+        : `<p style="margin:0 0 18px 0;">İlgi alanınıza uygun, kataloğumuza yeni eklenen proje${n > 1 ? 'ler' : ''}:</p><ul style="margin:0 0 18px 0; padding-left:20px;">${li}</ul><p style="margin:0 0 18px 0;">Size özel değerlendirme ve detaylı bilgi için bu e-postayı yanıtlamanız yeterli.</p>`;
+
+      const textLines = items.map((i) => `- ${i.title}${i.line ? ` — ${i.line}` : ''}`).join('\n');
+      const bodyText = en
+        ? `New projects matching your interests:\n${textLines}\n\nReply for details.`
+        : `İlgi alanınıza uygun yeni projeler:\n${textLines}\n\nDetaylar için yanıtlayın.`;
+
+      out.push({
+        contactId, to: first.email, toName: name, lang: en ? 'en' : 'tr',
+        subject, bodyHtml, bodyText, propertyIds: projects.map((p) => p.property_id),
+      });
+    }
+    return out;
+  }
+
+  markNotified(ctx: RequestContext, contactId: string, propertyIds: string[]) {
+    return this.repo.markNotified(ctx, contactId, propertyIds);
   }
 
   reject(ctx: RequestContext, id: string, note: string | null) {
