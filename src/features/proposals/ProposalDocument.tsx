@@ -60,8 +60,8 @@ const L = (tr: boolean) => ({
     ? 'Yıllık getiri projeksiyonu, girilen kira ve değer artışı varsayımlarına dayanır. Gerçek getiriler piyasa koşullarına göre değişebilir; yatırım tavsiyesi değildir.'
     : 'Annual return projection is based on the entered rent and appreciation assumptions. Actual returns may vary with market conditions; this is not investment advice.',
   footer: tr
-    ? 'ProDuality · Türkiye & Dubai Gayrimenkul Danışmanlığı · info@produality.com'
-    : 'ProDuality · Türkiye & Dubai Real Estate Advisory · info@produality.com',
+    ? 'ProDuality · Türkiye · Birleşik Arap Emirlikleri · İngiltere · Gayrimenkul & Yatırım Danışmanlığı · info@produality.com'
+    : 'ProDuality · Türkiye · UAE · United Kingdom · Real Estate & Investment Advisory · info@produality.com',
   u: {
     type: tr ? 'Daire Tipi' : 'Unit Type', unitNo: tr ? 'Daire / Blok' : 'Unit / Block',
     area: tr ? 'Brüt Alan' : 'Gross Area', netArea: tr ? 'Net Alan' : 'Net Area',
@@ -77,16 +77,10 @@ const L = (tr: boolean) => ({
   } as Record<string, string>,
 });
 
-// Gerçek ProDuality logosu (public/produality-logo.svg). Kapakta (koyu) beyaza
-// çevrilir, footer'da (açık) tam renkli.
-function Logo({ light }: { light?: boolean }) {
-  return (
-    <img
-      src="/produality-logo.svg"
-      alt="ProDuality"
-      className={`${styles.logo} ${light ? styles.logoLight : ''}`}
-    />
-  );
+// Gerçek ProDuality logosu (public/produality-logo.svg). Kapakta beyaz plaka
+// üstünde renkli (belirgin), footer'da açık zeminde tam renkli.
+function Logo() {
+  return <img src="/produality-logo.svg" alt="ProDuality" className={styles.logo} />;
 }
 
 function unitRows(unit: ProposalUnitDetails, t: ReturnType<typeof L>): Array<[string, string]> {
@@ -117,7 +111,7 @@ export const ProposalDocument: React.FC<{ doc: ProposalDocData }> = ({ doc }) =>
       {/* KAPAK */}
       <header className={styles.cover} style={doc.coverImage ? { backgroundImage: `url(${doc.coverImage})` } : undefined}>
         <div className={styles.coverScrim} data-print-cover>
-          <Logo light />
+          <div className={styles.logoPlate}><Logo /></div>
           <div className={styles.coverBottom}>
             <div className={styles.tagline}>{t.tagline}</div>
             <h1 className={styles.coverTitle}>{doc.projectName && doc.projectName !== '—' ? doc.projectName : doc.title}</h1>

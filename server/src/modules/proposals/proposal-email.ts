@@ -144,7 +144,7 @@ export function buildProposalEmail(p: ProposalResponse, consultantName: string):
       </div>` : ''}
 
       <div style="background:#faf8fd;padding:20px 28px;border-top:1px solid ${LINE};">
-        <p style="margin:0;color:${MUTED};font-size:12px;line-height:1.6;">Detaylı görüşme ve site ziyareti için bize dönebilirsiniz.<br/>ProDuality · Türkiye & Dubai Gayrimenkul Danışmanlığı · info@produality.com</p>
+        <p style="margin:0;color:${MUTED};font-size:12px;line-height:1.6;">Detaylı görüşme ve site ziyareti için bize dönebilirsiniz.<br/>ProDuality · Türkiye · Birleşik Arap Emirlikleri · İngiltere · info@produality.com</p>
       </div>
     </div>
   </div>

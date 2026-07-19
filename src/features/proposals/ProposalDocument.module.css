@@ -66,8 +66,15 @@
 
 /* ---- Logo (gerçek ProDuality logosu) ---- */
 .logo { height: 40px; width: auto; display: block; }
-/* Koyu kapakta beyaza çevrilir (renkli logo koyu zeminde okunmaz). */
-.logoLight { filter: brightness(0) invert(1); }
+/* Koyu kapakta renkli logoyu beyaz plaka üstünde göster (belirgin + okunur). */
+.logoPlate {
+  display: inline-block;
+  background: #fff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+.logoPlate .logo { height: 44px; }
 .footer .logo { height: 34px; }
 
 /* ---- Meta şeridi ---- */
