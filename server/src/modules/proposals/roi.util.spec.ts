@@ -56,6 +56,23 @@ describe('computeRoi (yıllık model)', () => {
     expect(r.annualGrossRent).toBeGreaterThan(0);
   });
 
+  it('aidat kendi para biriminde girilip fiyat para birimine çevrilir', () => {
+    // Fiyat USD, aidat TRY: aidat gideri USD karşılığına çevrilir.
+    const usdAidat = computeRoi(
+      { rentalType: 'longterm', monthlyRent: 1000, maintenancePercent: 0, mgmtFeePercent: 0,
+        aidatMonthly: 30000, aidatCurrency: 'TRY', appreciationPercent: 0 },
+      200000, 'USD',
+    );
+    const sameCcy = computeRoi(
+      { rentalType: 'longterm', monthlyRent: 1000, maintenancePercent: 0, mgmtFeePercent: 0,
+        aidatMonthly: 30000, appreciationPercent: 0 },
+      200000, 'USD',
+    );
+    // TRY aidat çok daha küçük USD gideri → net kira daha yüksek olmalı.
+    expect(usdAidat.annualNetRent).toBeGreaterThan(sameCcy.annualNetRent);
+    expect(usdAidat.annualCosts).toBeLessThan(sameCcy.annualCosts);
+  });
+
   it('sıfır fiyatta bölme hatası vermez', () => {
     const r = computeRoi({ monthlyRent: 1000 }, 0, 'USD');
     expect(Number.isFinite(r.netYieldPct)).toBe(true);

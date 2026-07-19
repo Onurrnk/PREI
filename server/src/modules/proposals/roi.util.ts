@@ -15,6 +15,7 @@ export interface RoiInputs {
   appreciationPercent?: number;
   maintenancePercent?: number;
   aidatMonthly?: number;
+  aidatCurrency?: string;
   mgmtFeePercent?: number;
 }
 
@@ -52,7 +53,8 @@ export function computeRoi(inputs: RoiInputs, price: number, priceCurrency = 'US
   const apprPct = n(inputs.appreciationPercent, 5);
   const maintPct = n(inputs.maintenancePercent, 1);
   const mgmtPct = n(inputs.mgmtFeePercent, 5);
-  const aidatMonthly = n(inputs.aidatMonthly);
+  // Aidat kendi para biriminde girilebilir; fiyat para birimine çevrilir.
+  const aidatMonthly = n(inputs.aidatMonthly) * fxRate(inputs.aidatCurrency || priceCurrency, priceCurrency);
 
   const monthlyRentInPriceCcy = n(inputs.monthlyRent) * fxRate(rentCurrency, priceCurrency);
   const occ = rentalType === 'shortterm'

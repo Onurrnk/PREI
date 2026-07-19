@@ -72,6 +72,8 @@ const DICT = {
     onList: 'Ödeme planı oranları liste fiyatı üzerinden hesaplanmıştır (teklife not düşülür)',
     addStage: 'Aşama Ekle',
     total: 'Toplam',
+    pay: { stage: 'Aşama', pct: 'Oran (%)', note: 'Açıklama / Tarih',
+      stagePh: 'Örn: Peşinat', notePh: 'Örn: Rezervasyonda / Q4 2026' },
     unit: {
       type: 'Daire Tipi', unitNo: 'Daire / Blok No', area: 'Brüt Alan (m²)', netArea: 'Net Alan (m²)',
       floor: 'Kat', facade: 'Cephe / Yön', view: 'Manzara', beds: 'Yatak Odası', baths: 'Banyo',
@@ -126,6 +128,8 @@ const DICT = {
     onList: 'Payment plan percentages are calculated on the list price (noted on the proposal)',
     addStage: 'Add Stage',
     total: 'Total',
+    pay: { stage: 'Milestone', pct: 'Rate (%)', note: 'Note / Date',
+      stagePh: 'e.g. Down Payment', notePh: 'e.g. On Booking / Q4 2026' },
     unit: {
       type: 'Unit Type', unitNo: 'Unit / Block No', area: 'Gross Area (m²)', netArea: 'Net Area (m²)',
       floor: 'Floor', facade: 'Facade / Aspect', view: 'View', beds: 'Bedrooms', baths: 'Bathrooms',
@@ -476,15 +480,21 @@ export const CreateProposal: React.FC = () => {
                   </div>
 
                   <div className={styles.paymentPlanBuilder} style={{ gridColumn: 'span 2' }}>
+                    <div className={styles.paymentRowForm} style={{ marginBottom: 2 }}>
+                      <span className={styles.hintText} style={{ margin: 0, flex: 1 }}>{TX.pay.stage}</span>
+                      <span className={styles.hintText} style={{ margin: 0, width: 90, textAlign: 'center' }}>{TX.pay.pct}</span>
+                      <span className={styles.hintText} style={{ margin: 0, flex: 1 }}>{TX.pay.note}</span>
+                      <span style={{ width: 28, flexShrink: 0 }} />
+                    </div>
                     {paymentPlan.map((row, idx) => (
                       <div className={styles.paymentRowForm} key={idx}>
-                        <input type="text" className={styles.textInput} value={row.milestone}
+                        <input type="text" className={styles.textInput} style={{ flex: 1 }} placeholder={TX.pay.stagePh} value={row.milestone}
                           onChange={(e) => updatePaymentRow(idx, { milestone: e.target.value })} />
-                        <input type="number" className={styles.textInput} value={row.percentage} style={{ width: 90 }}
+                        <input type="number" className={styles.textInput} value={row.percentage} placeholder="%" style={{ width: 90, textAlign: 'center' }}
                           onChange={(e) => updatePaymentRow(idx, { percentage: e.target.value })} />
-                        <input type="text" className={styles.textInput} value={row.date}
+                        <input type="text" className={styles.textInput} style={{ flex: 1 }} placeholder={TX.pay.notePh} value={row.date}
                           onChange={(e) => updatePaymentRow(idx, { date: e.target.value })} />
-                        <button className={styles.backButton} onClick={() => removePaymentRow(idx)} title="Sil"><Trash size={16} /></button>
+                        <button className={styles.backButton} style={{ width: 28, flexShrink: 0 }} onClick={() => removePaymentRow(idx)} title="Sil"><Trash size={16} /></button>
                       </div>
                     ))}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
@@ -549,9 +559,16 @@ export const CreateProposal: React.FC = () => {
                       onChange={(e) => setRoi({ ...roi, maintenancePercent: Number(e.target.value) })} />
                   </div>
                   <div className={styles.formGroup}>
-                    <label>{TX.roi.aidat} ({currency})</label>
-                    <input className={styles.textInput} inputMode="numeric" value={groupThousands(roi.aidatMonthly)}
-                      onChange={(e) => setRoi({ ...roi, aidatMonthly: parseNumeric(e.target.value) })} />
+                    <label>{TX.roi.aidat}</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input className={styles.textInput} style={{ flex: 1 }} inputMode="numeric" value={groupThousands(roi.aidatMonthly)}
+                        onChange={(e) => setRoi({ ...roi, aidatMonthly: parseNumeric(e.target.value) })} />
+                      <select className={styles.textInput} style={{ maxWidth: 90 }}
+                        value={roi.aidatCurrency ?? currency}
+                        onChange={(e) => setRoi({ ...roi, aidatCurrency: e.target.value })}>
+                        {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
                   </div>
                   <div className={styles.formGroup}>
                     <label>{TX.roi.mgmt}</label>

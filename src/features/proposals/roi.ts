@@ -31,7 +31,8 @@ export function computeRoi(
   const apprPct = n(inputs.appreciationPercent, 5);
   const maintPct = n(inputs.maintenancePercent, 1);
   const mgmtPct = n(inputs.mgmtFeePercent, 5);
-  const aidatMonthly = n(inputs.aidatMonthly); // fiyat para biriminde
+  // Aidat kendi para biriminde girilebilir; fiyat para birimine çevrilir.
+  const aidatMonthly = n(inputs.aidatMonthly) * fxRate(inputs.aidatCurrency || priceCurrency, priceCurrency);
 
   // Aylık kirayı fiyat para birimine çevir.
   const monthlyRentInPriceCcy = n(inputs.monthlyRent) * fxRate(rentCurrency, priceCurrency);

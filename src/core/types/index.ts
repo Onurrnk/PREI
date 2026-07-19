@@ -514,7 +514,8 @@ export interface ProposalRoiInputs {
   occupancyRate?: number;         // % — yalnız kısa dönem
   appreciationPercent?: number;   // yıllık değer artışı %
   maintenancePercent?: number;    // % fiyat / yıl (bakım)
-  aidatMonthly?: number;          // aylık aidat tutarı (fiyat para biriminde)
+  aidatMonthly?: number;          // aylık aidat tutarı
+  aidatCurrency?: string;         // aidat para birimi (varsayılan: fiyat para birimi)
   mgmtFeePercent?: number;        // % kira (yönetim)
 }
 
