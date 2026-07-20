@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import type { ClientAnalysisDTO, ClientDTO, ClientNoteDTO, ClientTimelineEntryDTO, ProposalDTO } from '../../core/types';
+import type { ClientAnalysisDTO, ClientDTO, ClientNoteDTO, ClientTimelineEntryDTO, ProposalDTO, UserDTO } from '../../core/types';
 import { formatRelativeTime } from './timelineFormat';
-import { clientsApi, proposalsApi } from '../../core/api/resources';
+import { clientsApi, proposalsApi, usersApi } from '../../core/api/resources';
 import { ClientForm, emptyClientForm, clientFormToPatch, type ClientFormValue } from './ClientForm';
 import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
@@ -12,7 +12,7 @@ import { Button } from '../../core/components/Button/Button';
 import { EmailClient } from './components/EmailClient';
 import { DocumentVault } from '../documents/DocumentVault';
 import { Modal } from '../../core/components/Modal/Modal';
-import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo, TelegramLogo, PencilSimple, NotePencil, Trash, Sparkle } from '@phosphor-icons/react';
+import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo, TelegramLogo, PencilSimple, NotePencil, Trash, Sparkle, DotsThreeVertical, UserPlus } from '@phosphor-icons/react';
 import { useAuth } from '../../core/auth/AuthContext';
 import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
@@ -273,6 +273,24 @@ export const ClientProfile: React.FC = () => {
   const [activityNote, setActivityNote] = useState('');
   const [actInter, setActInter] = useState<InteractionValue>(emptyInteraction);
 
+  // Daha Fazla (kebab) menüsü + danışmana atama
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assignSel, setAssignSel] = useState('');
+  const [assigning, setAssigning] = useState(false);
+  const { data: consultants } = useFetch<UserDTO[]>(() => usersApi.list(), []);
+
+  // Kebab menüsü dışına tıklanınca kapat
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [moreOpen]);
+
   const toast = useToast();
 
   const activityTypeLabel = (type: 'Call' | 'Meeting' | 'Note') =>
@@ -334,6 +352,56 @@ export const ClientProfile: React.FC = () => {
       .catch(() => toast.error(t('clients.profile.noteSaveFailed')));
   };
 
+  // E-posta / Ara hızlı eylemleri — cihazın varsayılan mail/arama uygulamasını açar.
+  const emailClient = () => {
+    if (!client) return;
+    if (!client.email || client.email === '—') { toast.info(t('clients.profile.flagEmailMissing')); return; }
+    window.location.href = `mailto:${client.email}`;
+  };
+  const callClient = () => {
+    if (!client) return;
+    if (!client.phone || client.phone === '—') { toast.info(t('clients.profile.phoneMissing')); return; }
+    window.location.href = `tel:${client.phone.replace(/\s+/g, '')}`;
+  };
+
+  const openEditModal = () => {
+    if (!client) return;
+    setEditForm({
+      ...emptyClientForm,
+      name: client.name,
+      email: client.email === '—' ? '' : client.email,
+      phone: client.phone === '—' ? '' : client.phone,
+      nationality: client.nationality === '—' ? '' : client.nationality,
+      type: client.type,
+      relationshipStatus: client.relationshipStatus,
+      investmentProfile: client.investmentProfile,
+      assignedConsultant: client.assignedConsultant === '—' ? '' : client.assignedConsultant,
+      source: client.source === '—' ? '' : client.source,
+      preferredRegions: client.preferredRegions,
+      unitTypes: client.unitTypes ?? [],
+      purpose: client.purpose ?? 'Investment',
+      budgetMin: client.budgetMin ? String(client.budgetMin) : '',
+      budgetMax: client.budgetMax ? String(client.budgetMax) : '',
+      budgetCurrency: client.budgetCurrency ?? 'EUR',
+      requirements: client.requirements ?? '',
+    });
+    setShowEditModal(true);
+  };
+
+  const openAssignModal = () => {
+    if (!client) return;
+    setAssignSel(client.assignedConsultant && client.assignedConsultant !== '—' ? client.assignedConsultant : '');
+    setAssignOpen(true);
+  };
+
+  const handleAssign = async () => {
+    if (!client || !assignSel) return;
+    setAssigning(true);
+    await saveClient({ assignedConsultant: assignSel }, t('clients.profile.consultantAssigned', { name: assignSel }));
+    setAssigning(false);
+    setAssignOpen(false);
+  };
+
   const handleDelete = async () => {
     if (!client) return;
     setDeleting(true);
@@ -382,55 +450,53 @@ export const ClientProfile: React.FC = () => {
           </div>
         </div>
         <div className={styles.headerActions}>
-          <Button variant="outline" onClick={() => handleActionClick('Send Email')}><EnvelopeSimple size={16} /> {t('clients.profile.email')}</Button>
-          <Button variant="outline" onClick={() => handleActionClick('Log Call')}><Phone size={16} /> {t('clients.profile.call')}</Button>
-          {/* DS §5.4: sayfada tek primary — vault sekmesindeki Upload File primary kalır */}
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setEditForm({
-                ...emptyClientForm,
-                name: client.name,
-                email: client.email === '—' ? '' : client.email,
-                phone: client.phone === '—' ? '' : client.phone,
-                nationality: client.nationality === '—' ? '' : client.nationality,
-                type: client.type,
-                relationshipStatus: client.relationshipStatus,
-                investmentProfile: client.investmentProfile,
-                assignedConsultant: client.assignedConsultant === '—' ? '' : client.assignedConsultant,
-                source: client.source === '—' ? '' : client.source,
-                preferredRegions: client.preferredRegions,
-                unitTypes: client.unitTypes ?? [],
-                purpose: client.purpose ?? 'Investment',
-                budgetMin: client.budgetMin ? String(client.budgetMin) : '',
-                budgetMax: client.budgetMax ? String(client.budgetMax) : '',
-                budgetCurrency: client.budgetCurrency ?? 'EUR',
-                requirements: client.requirements ?? '',
-              });
-              setShowEditModal(true);
-            }}
-          >
-            <PencilSimple size={16} /> {t('clients.profile.editProfile')}
-          </Button>
-          {canDelete && (confirmingDelete ? (
-            <>
-              <span style={{ fontSize: 13, color: 'var(--color-danger)', alignSelf: 'center' }}>
-                {t('clients.profile.deleteConfirm')}
-              </span>
-              <Button variant="outline" onClick={handleDelete} disabled={deleting}
-                style={{ color: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}>
-                <Trash size={16} /> {t('clients.profile.deleteYes')}
-              </Button>
-              <Button variant="ghost" onClick={() => setConfirmingDelete(false)} disabled={deleting}>
-                {t('clients.profile.deleteCancel')}
-              </Button>
-            </>
-          ) : (
-            <Button variant="ghost" onClick={() => setConfirmingDelete(true)}
-              style={{ color: 'var(--color-danger)' }}>
-              <Trash size={16} /> {t('clients.profile.delete')}
+          <Button variant="outline" onClick={emailClient}><EnvelopeSimple size={16} /> {t('clients.profile.email')}</Button>
+          <Button variant="outline" onClick={callClient}><Phone size={16} /> {t('clients.profile.call')}</Button>
+          {/* Daha Fazla — düzenle / danışmana ata / sil tek bir kebab menüsünde toplanır */}
+          <div className={styles.moreWrap} ref={moreRef}>
+            <Button
+              variant="secondary"
+              aria-label={t('clients.profile.moreActions')}
+              aria-haspopup="menu"
+              aria-expanded={moreOpen}
+              onClick={() => setMoreOpen((o) => !o)}
+            >
+              <DotsThreeVertical size={18} weight="bold" />
             </Button>
-          ))}
+            {moreOpen && (
+              <div className={styles.moreMenu} role="menu">
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={styles.moreItem}
+                  onClick={() => { setMoreOpen(false); openEditModal(); }}
+                >
+                  <PencilSimple size={16} /> {t('clients.profile.editProfile')}
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={styles.moreItem}
+                  onClick={() => { setMoreOpen(false); openAssignModal(); }}
+                >
+                  <UserPlus size={16} /> {t('clients.profile.assignConsultant')}
+                </button>
+                {canDelete && (
+                  <>
+                    <div className={styles.moreDivider} />
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className={`${styles.moreItem} ${styles.moreItemDanger}`}
+                      onClick={() => { setMoreOpen(false); setConfirmingDelete(true); }}
+                    >
+                      <Trash size={16} /> {t('clients.profile.delete')}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -853,6 +919,54 @@ export const ClientProfile: React.FC = () => {
             onChange={(e) => setActivityNote(e.target.value)}
           />
         </Field>
+      </Modal>
+
+      {/* Danışmana Ata — müşteriyi doğrudan bir danışmana bağla */}
+      <Modal
+        isOpen={assignOpen}
+        onClose={() => setAssignOpen(false)}
+        title={t('clients.profile.assignConsultantTitle')}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setAssignOpen(false)}>{t('clients.cancel')}</Button>
+            <Button variant="primary" onClick={handleAssign} disabled={!assignSel || assigning}>
+              {t('clients.profile.assignConsultantSave')}
+            </Button>
+          </>
+        }
+      >
+        <Field label={t('clients.profile.assignedConsultant')}>
+          <SelectMenu
+            value={assignSel}
+            onChange={setAssignSel}
+            options={[
+              { value: '', label: t('clients.profile.assignConsultantPlaceholder') },
+              ...(consultants ?? []).map((u) => ({ value: u.name, label: `${u.name} · ${u.role}` })),
+            ]}
+          />
+        </Field>
+      </Modal>
+
+      {/* Müşteriyi Sil — onay (super_admin) */}
+      <Modal
+        isOpen={confirmingDelete}
+        onClose={() => !deleting && setConfirmingDelete(false)}
+        title={t('clients.profile.delete')}
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setConfirmingDelete(false)} disabled={deleting}>
+              {t('clients.profile.deleteCancel')}
+            </Button>
+            <Button variant="primary" onClick={handleDelete} disabled={deleting}
+              style={{ background: 'var(--color-danger)', borderColor: 'var(--color-danger)' }}>
+              <Trash size={16} /> {t('clients.profile.deleteYes')}
+            </Button>
+          </>
+        }
+      >
+        <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+          {t('clients.profile.deleteConfirm')}
+        </p>
       </Modal>
 
       {/* Edit Profile: tüm profil alanları tek formda (mock-persist → overrides) */}
