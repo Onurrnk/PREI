@@ -269,6 +269,7 @@ export const en = {
       priorityTasks: 'Priority Tasks',
       noMeetings: 'No upcoming meetings',
       hasAppointment: 'Appointment on this day — go to Meetings',
+      openCalendar: 'Open Calendar',
       dow: { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' },
       noTasks: 'No open tasks',
     },

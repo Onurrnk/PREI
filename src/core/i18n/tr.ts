@@ -268,6 +268,7 @@ export const tr = {
       priorityTasks: 'Öncelikli Görevler',
       noMeetings: 'Yaklaşan toplantı yok',
       hasAppointment: 'Bu gün randevu var — Toplantılar’a git',
+      openCalendar: 'Takvimi Aç',
       dow: { mon: 'Pzt', tue: 'Sal', wed: 'Çar', thu: 'Per', fri: 'Cum', sat: 'Cmt', sun: 'Paz' },
       noTasks: 'Açık görev yok',
     },

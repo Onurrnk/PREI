@@ -197,14 +197,22 @@ export const Dashboard: React.FC = () => {
             </div>
           </CardHeader>
           <CardBody padding="none">
-            {/* Mini ay takvimi — randevu olan günler nokta ile işaretli */}
-            <div style={{ padding: '12px 16px 4px', borderBottom: '1px solid var(--border-subtle)' }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'capitalize', marginBottom: 8 }}>
-                {miniCal.monthLabel}
+            {/* Mini ay takvimi — randevu olan günler vurgulu; her güne tıklayınca Toplantılar */}
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border-subtle)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'capitalize' }}>
+                  {miniCal.monthLabel}
+                </span>
+                <button
+                  onClick={() => navigate('/meetings')}
+                  style={{ border: 'none', background: 'transparent', color: 'var(--brand-primary)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                >
+                  {t('dashboard.openCalendar')}
+                </button>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, maxWidth: 280 }}>
                 {[t('dashboard.dow.mon'), t('dashboard.dow.tue'), t('dashboard.dow.wed'), t('dashboard.dow.thu'), t('dashboard.dow.fri'), t('dashboard.dow.sat'), t('dashboard.dow.sun')].map((d, i) => (
-                  <div key={`h${i}`} style={{ textAlign: 'center', fontSize: '0.6875rem', color: 'var(--text-muted)', fontWeight: 500 }}>{d}</div>
+                  <div key={`h${i}`} style={{ textAlign: 'center', fontSize: '0.625rem', color: 'var(--text-muted)', fontWeight: 500, paddingBottom: 2 }}>{d}</div>
                 ))}
                 {miniCal.cells.map((d, i) => {
                   if (d === null) return <div key={`e${i}`} />;
@@ -213,20 +221,21 @@ export const Dashboard: React.FC = () => {
                   return (
                     <button
                       key={`d${d}`}
-                      onClick={() => hasMeeting && navigate('/meetings')}
-                      title={hasMeeting ? t('dashboard.hasAppointment') : undefined}
+                      onClick={() => navigate('/meetings')}
+                      title={hasMeeting ? t('dashboard.hasAppointment') : t('dashboard.openCalendar')}
+                      className={styles.miniCalDay}
                       style={{
-                        position: 'relative', aspectRatio: '1', border: 'none', cursor: hasMeeting ? 'pointer' : 'default',
+                        position: 'relative', height: 30, width: '100%', border: 'none', cursor: 'pointer',
                         borderRadius: 'var(--radius-control, 6px)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)',
-                        background: isToday ? 'var(--brand-primary)' : 'transparent',
-                        color: isToday ? 'var(--on-brand, #fff)' : hasMeeting ? 'var(--text-primary)' : 'var(--text-muted)',
+                        background: isToday ? 'var(--brand-primary)' : hasMeeting ? 'var(--brand-primary-soft, rgba(155,91,179,0.14))' : 'transparent',
+                        color: isToday ? 'var(--on-brand, #fff)' : 'var(--text-primary)',
                         fontWeight: isToday || hasMeeting ? 600 : 400,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}
                     >
                       {d}
                       {hasMeeting && !isToday && (
-                        <span style={{ position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: 'var(--brand-primary)' }} />
+                        <span style={{ position: 'absolute', bottom: 4, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: 'var(--brand-primary)' }} />
                       )}
                     </button>
                   );

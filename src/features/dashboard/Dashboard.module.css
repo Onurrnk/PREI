@@ -258,3 +258,8 @@
   color: var(--text-muted);
   font: var(--text-body);
 }
+
+/* Mini takvim günü — hover (bugün/randevu hariç sade) */
+.miniCalDay:hover {
+  background: var(--bg-surface-hover, rgba(155, 91, 179, 0.08)) !important;
+}
