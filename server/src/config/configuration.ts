@@ -70,6 +70,10 @@ export default (): AppConfig => ({
     scopes: [
       'https://www.googleapis.com/auth/gmail.readonly',
       'https://www.googleapis.com/auth/gmail.send',
+      // Takvim entegrasyonu (PREI randevusu → Google Calendar etkinliği).
+      // Şimdi eklendi ki Onur'un (okuma izni için zaten yapması gereken)
+      // yeniden-bağlanması takvim iznini de kapsasın — ikinci reconnect olmasın.
+      'https://www.googleapis.com/auth/calendar.events',
       'https://www.googleapis.com/auth/userinfo.email',
       'openid',
     ],
