@@ -4,7 +4,7 @@
 // PREI DTOs (never raw Gmail objects). Associates senders with CRM
 // contacts via ContactMatcherService.
 // =====================================================================
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { google, type gmail_v1 } from 'googleapis';
 import { GoogleOAuthService } from '../auth/google-oauth.service';
 import { ContactMatcherService } from '../contacts/contact-matcher.service';
@@ -34,6 +34,37 @@ interface SenderProfile {
 // eklerin toplamını 15MB (base64 olarak ~20MB) ile sınırlıyoruz.
 const MAX_ATTACHMENT_TOTAL_BASE64 = 20 * 1024 * 1024;
 
+/**
+ * Gmail bağlantısı yeniden yetkilendirme gerektiriyor (refresh token
+ * iptal/süre-dolumu → Google `invalid_grant`, ya da hiç bağlı değil).
+ * 401 DEĞİL 424 kullanılır: frontend api client herhangi bir 401'i "PREI
+ * oturumu düştü → token'ı sil, login'e at" diye yorumluyor; Gmail alt-
+ * entegrasyonunun düşmesi kullanıcıyı PREI'den ATMAMALI. 4xx olduğu için
+ * SentryGlobalFilter bunu raporlamaz (beklenen, kullanıcı-eylemi gerektiren
+ * durum — 5xx gürültüsü değil).
+ */
+export class GmailReauthRequiredException extends HttpException {
+  constructor() {
+    super(
+      { code: 'gmail_reauth_required', message: 'Gmail bağlantısının süresi doldu — Ayarlar’dan yeniden bağlanın.' },
+      HttpStatus.FAILED_DEPENDENCY,
+    );
+  }
+}
+
+/** Google OAuth refresh'inin KALICI olarak başarısız olduğu (token ölü)
+ *  durumları ayırt eder — geçici ağ/5xx hatalarından farklı; bunlarda
+ *  yeniden yetkilendirme şart. */
+export function isGmailAuthError(err: unknown): boolean {
+  const e = err as { message?: string; response?: { data?: { error?: string } } };
+  const oauthError = e?.response?.data?.error;
+  if (oauthError === 'invalid_grant' || oauthError === 'invalid_client' || oauthError === 'unauthorized_client') {
+    return true;
+  }
+  const msg = typeof e?.message === 'string' ? e.message : '';
+  return /invalid_grant|invalid_client|unauthorized_client|no refresh token|no access.*refresh token/i.test(msg);
+}
+
 /** Kompozör HTML'ini e-postaya gömmeden önce daralt: yalnız temel
  *  biçimlendirme etiketlerine izin ver, olay öznitelikleri ile script/style
  *  gövdelerini at. (Girdi zaten kimlik doğrulamalı danışmandan gelir; bu
@@ -58,11 +89,41 @@ export function sanitizeComposerHtml(html: string): string {
 
 @Injectable()
 export class GmailService {
+  private readonly logger = new Logger(GmailService.name);
+
   constructor(
     private readonly oauth: GoogleOAuthService,
     private readonly matcher: ContactMatcherService,
     private readonly db: DatabaseService,
   ) {}
+
+  /**
+   * Gmail API çağrılarını tek noktadan sarar: bağlı client'ı hazırlar, işi
+   * çalıştırır ve refresh'in KALICI başarısızlığını (`invalid_grant` / hiç
+   * bağlı değil) yakalar → ölü token'ı temizleyip {@link GmailReauthRequiredException}
+   * (424) fırlatır. Böylece (1) ham `invalid_grant` bir daha unhandled 500 →
+   * Sentry olmaz, (2) Ayarlar'daki bağlantı durumu "bağlı" yalanını sürdürmez,
+   * (3) kullanıcı 401 yüzünden PREI'den atılmaz. Geçici hatalar aynen yükselir.
+   */
+  private async withGmail<T>(userId: string, fn: (gmail: gmail_v1.Gmail) => Promise<T>): Promise<T> {
+    try {
+      const gmail = await this.client(userId);
+      return await fn(gmail);
+    } catch (err) {
+      const notConnected = err instanceof UnauthorizedException;
+      if (isGmailAuthError(err) || notConnected) {
+        // Token gerçekten ölü → sakla-tut yerine temizle ki getConnection
+        // dürüstçe "bağlı değil" desin ve kullanıcı yeniden bağlansın.
+        if (!notConnected) {
+          await this.oauth.disconnect(userId).catch((e) =>
+            this.logger.warn(`Ölü Gmail token temizlenemedi (user=${userId}): ${(e as Error).message}`),
+          );
+        }
+        throw new GmailReauthRequiredException();
+      }
+      throw err;
+    }
+  }
 
   private async senderProfile(userId: string): Promise<SenderProfile> {
     const rows = await this.db.raw<{ full_name: string; email: string; phone: string | null; metadata: Record<string, unknown> }>(
@@ -96,7 +157,7 @@ export class GmailService {
   async listMessagesWithIcs(
     userId: string, q: string, maxResults = 15,
   ): Promise<Array<{ messageId: string; ics: string | null }>> {
-    const gmail = await this.client(userId);
+    return this.withGmail(userId, async (gmail) => {
     const list = await gmail.users.messages.list({ userId: 'me', q, maxResults });
     const out: Array<{ messageId: string; ics: string | null }> = [];
 
@@ -128,11 +189,12 @@ export class GmailService {
       out.push({ messageId: m.id!, ics });
     }
     return out;
+    });
   }
 
   /** List recent threads (optionally filtered by a Gmail query `q`). */
   async listThreads(userId: string, q?: string, maxResults = 20): Promise<ThreadSummaryDTO[]> {
-    const gmail = await this.client(userId);
+    return this.withGmail(userId, async (gmail) => {
     const list = await gmail.users.threads.list({ userId: 'me', q, maxResults });
     const threads = list.data.threads ?? [];
 
@@ -167,11 +229,12 @@ export class GmailService {
     );
 
     return summaries;
+    });
   }
 
   /** Full thread with decoded message bodies. */
   async getThread(userId: string, threadId: string): Promise<ThreadDetailDTO> {
-    const gmail = await this.client(userId);
+    return this.withGmail(userId, async (gmail) => {
     const res = await gmail.users.threads.get({ userId: 'me', id: threadId, format: 'full' });
     const messages = (res.data.messages ?? []).map(toMessageDTO);
     const first = messages[0];
@@ -183,6 +246,7 @@ export class GmailService {
       contact: first ? this.toContactDTO(first.fromEmail, match) : null,
       messages,
     };
+    });
   }
 
   /** Send a new email or reply within a thread. Rendered through the
@@ -193,14 +257,15 @@ export class GmailService {
     if (attachmentTotal > MAX_ATTACHMENT_TOTAL_BASE64) {
       throw new BadRequestException('Ekler çok büyük — toplam en fazla ~15MB gönderilebilir.');
     }
-    const gmail = await this.client(userId);
-    const sender = await this.senderProfile(userId);
-    const raw = this.buildRawMessage(dto, sender);
-    const res = await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: { raw, threadId: dto.threadId },
+    return this.withGmail(userId, async (gmail) => {
+      const sender = await this.senderProfile(userId);
+      const raw = this.buildRawMessage(dto, sender);
+      const res = await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: { raw, threadId: dto.threadId },
+      });
+      return { id: res.data.id ?? '', threadId: res.data.threadId ?? '' };
     });
-    return { id: res.data.id ?? '', threadId: res.data.threadId ?? '' };
   }
 
   /** Tam sayfa markalı HTML gönderir (teklif). Composer sanitizer'ından
@@ -210,21 +275,22 @@ export class GmailService {
     userId: string,
     args: { to: string; subject: string; html: string },
   ): Promise<{ id: string; threadId: string }> {
-    const gmail = await this.client(userId);
-    const sender = await this.senderProfile(userId);
-    const headers = [
-      `To: ${args.to}`,
-      `From: ${sender.name} <${sender.email}>`,
-      `Subject: ${this.encodeSubject(args.subject)}`,
-      'MIME-Version: 1.0',
-      'Content-Type: text/html; charset="UTF-8"',
-      'Content-Transfer-Encoding: base64',
-    ];
-    const body = Buffer.from(args.html, 'utf-8').toString('base64');
-    const message = `${headers.join('\r\n')}\r\n\r\n${body}`;
-    const raw = Buffer.from(message, 'utf-8').toString('base64url');
-    const res = await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
-    return { id: res.data.id ?? '', threadId: res.data.threadId ?? '' };
+    return this.withGmail(userId, async (gmail) => {
+      const sender = await this.senderProfile(userId);
+      const headers = [
+        `To: ${args.to}`,
+        `From: ${sender.name} <${sender.email}>`,
+        `Subject: ${this.encodeSubject(args.subject)}`,
+        'MIME-Version: 1.0',
+        'Content-Type: text/html; charset="UTF-8"',
+        'Content-Transfer-Encoding: base64',
+      ];
+      const body = Buffer.from(args.html, 'utf-8').toString('base64');
+      const message = `${headers.join('\r\n')}\r\n\r\n${body}`;
+      const raw = Buffer.from(message, 'utf-8').toString('base64url');
+      const res = await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
+      return { id: res.data.id ?? '', threadId: res.data.threadId ?? '' };
+    });
   }
 
   /** Build a base64url-encoded RFC822 message: multipart/related wrapping

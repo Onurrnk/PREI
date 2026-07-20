@@ -6,7 +6,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { DatabaseService } from '../../database/database.service';
-import { GmailService } from '../gmail/gmail.service';
+import { GmailService, GmailReauthRequiredException } from '../gmail/gmail.service';
 import type { RequestContext } from '../../common/request-context';
 import type { WhatsAppEventDto } from './dto/whatsapp-event.dto';
 import type { LeadScoreEventDto } from './dto/lead-score-event.dto';
@@ -1132,11 +1132,23 @@ export class AgentService {
     const reader = readers[0];
     const hostEmails = ['info@produality.com', 'onur.karatas@produality.com', reader.email].filter(Boolean);
 
-    const messages = await this.gmail.listMessagesWithIcs(
-      reader.id,
-      `from:calendly.com has:attachment newer_than:${safeDays}d`,
-      15,
-    );
+    // Gmail bağlantısı süresi dolmuşsa (invalid_grant): n8n bunu 15 dk'da bir
+    // çağırıyor — 500 fırlatıp Sentry'yi doldurmak yerine benign özet dön.
+    // Onur Gmail'i yeniden bağlayınca kendiliğinden düzelir.
+    let messages: Array<{ messageId: string; ics: string | null }>;
+    try {
+      messages = await this.gmail.listMessagesWithIcs(
+        reader.id,
+        `from:calendly.com has:attachment newer_than:${safeDays}d`,
+        15,
+      );
+    } catch (err) {
+      if (err instanceof GmailReauthRequiredException) {
+        this.logger.warn('Calendly taraması atlandı: Gmail yeniden yetkilendirme gerekiyor.');
+        return { scanned: 0, created: 0, deduped: 0, skipped: 0, details: [{ messageId: '-', status: 'gmail_auth_expired' }] };
+      }
+      throw err;
+    }
 
     const details: Array<{ messageId: string; status: string; invitee?: string }> = [];
     let created = 0; let deduped = 0; let skipped = 0;
