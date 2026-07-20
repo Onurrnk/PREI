@@ -61,7 +61,16 @@ export class IntakeRepository {
          VALUES ($1,$2,'project_invite.created','project_invite',$3,$4,$5)`,
         [ctx.tenantId, ctx.userId, rows[0].id, JSON.stringify({ developerId: input.developerId }), ctx.correlationId],
       );
-      return this.getInvite(ctx, rows[0].id) as Promise<InviteRow>;
+      // AYNI bağlantıda oku — iç içe withContext (ayrı transaction) yeni INSERT'i
+      // commit öncesi göremez ve null döndürürdü (toInvite null.revoked_at → 500).
+      const { rows: full } = await c.query<InviteRow>(
+        `SELECT i.id, i.developer_id, o.name AS developer_name, i.token, i.label,
+                i.expires_at, i.revoked_at, i.max_uses, i.used_count, i.created_at
+           FROM project_invites i LEFT JOIN organizations o ON o.id = i.developer_id
+          WHERE i.id = $1`,
+        [rows[0].id],
+      );
+      return full[0];
     });
   }
 
