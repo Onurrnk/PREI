@@ -5,7 +5,7 @@
 // =====================================================================
 import { describe, it, expect } from 'vitest';
 import { HttpStatus } from '@nestjs/common';
-import { isGmailAuthError, GmailReauthRequiredException } from './gmail.service';
+import { isGmailAuthError, isGmailScopeError, GmailReauthRequiredException } from './gmail.service';
 
 describe('isGmailAuthError', () => {
   it('googleapis token-endpoint invalid_grant yanıtını yakalar', () => {
@@ -28,6 +28,31 @@ describe('isGmailAuthError', () => {
     expect(isGmailAuthError({ message: 'Internal error' })).toBe(false);
     expect(isGmailAuthError(null)).toBe(false);
     expect(isGmailAuthError(undefined)).toBe(false);
+  });
+
+  it('kapsam hatası (Insufficient Permission) ÖLÜ-token sayılmaz (silinmemeli)', () => {
+    expect(isGmailAuthError(new Error('Insufficient Permission'))).toBe(false);
+  });
+});
+
+describe('isGmailScopeError', () => {
+  it('googleapis "Insufficient Permission" mesajını yakalar', () => {
+    expect(isGmailScopeError(new Error('Insufficient Permission'))).toBe(true);
+  });
+
+  it('errors[].reason=insufficientPermissions yapısını yakalar', () => {
+    expect(isGmailScopeError({ message: 'x', errors: [{ reason: 'insufficientPermissions' }] })).toBe(true);
+    expect(isGmailScopeError({ response: { data: { error: { errors: [{ reason: 'ACCESS_TOKEN_SCOPE_INSUFFICIENT' }] } } } })).toBe(true);
+  });
+
+  it('"insufficient authentication scopes" ifadesini yakalar', () => {
+    expect(isGmailScopeError(new Error('Request had insufficient authentication scopes.'))).toBe(true);
+  });
+
+  it('ölü-token ve geçici hataları kapsam-hatası saymaz', () => {
+    expect(isGmailScopeError(new Error('invalid_grant'))).toBe(false);
+    expect(isGmailScopeError(new Error('getaddrinfo ENOTFOUND'))).toBe(false);
+    expect(isGmailScopeError(null)).toBe(false);
   });
 });
 

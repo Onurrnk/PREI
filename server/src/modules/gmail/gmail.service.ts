@@ -35,8 +35,10 @@ interface SenderProfile {
 const MAX_ATTACHMENT_TOTAL_BASE64 = 20 * 1024 * 1024;
 
 /**
- * Gmail bağlantısı yeniden yetkilendirme gerektiriyor (refresh token
- * iptal/süre-dolumu → Google `invalid_grant`, ya da hiç bağlı değil).
+ * Gmail bağlantısı yeniden yetkilendirme gerektiriyor. İki sınıf:
+ *  (a) token ölü — refresh iptal/süre-dolumu (`invalid_grant`) veya hiç bağlı değil;
+ *  (b) kapsam/izin yetersiz — token geçerli ama gerekli Gmail izni verilmemiş
+ *      (`Insufficient Permission` / insufficientPermissions, 403).
  * 401 DEĞİL 424 kullanılır: frontend api client herhangi bir 401'i "PREI
  * oturumu düştü → token'ı sil, login'e at" diye yorumluyor; Gmail alt-
  * entegrasyonunun düşmesi kullanıcıyı PREI'den ATMAMALI. 4xx olduğu için
@@ -46,15 +48,14 @@ const MAX_ATTACHMENT_TOTAL_BASE64 = 20 * 1024 * 1024;
 export class GmailReauthRequiredException extends HttpException {
   constructor() {
     super(
-      { code: 'gmail_reauth_required', message: 'Gmail bağlantısının süresi doldu — Ayarlar’dan yeniden bağlanın.' },
+      { code: 'gmail_reauth_required', message: 'Gmail bağlantısı yenilenmeli — Ayarlar’dan tüm izinleri onaylayarak yeniden bağlanın.' },
       HttpStatus.FAILED_DEPENDENCY,
     );
   }
 }
 
-/** Google OAuth refresh'inin KALICI olarak başarısız olduğu (token ölü)
- *  durumları ayırt eder — geçici ağ/5xx hatalarından farklı; bunlarda
- *  yeniden yetkilendirme şart. */
+/** Token ÖLÜ (refresh iptal/süre-dolumu) — yeniden yetki + ölü token temizliği
+ *  gerektirir. Geçici ağ/5xx hatalarından ayrıdır. */
 export function isGmailAuthError(err: unknown): boolean {
   const e = err as { message?: string; response?: { data?: { error?: string } } };
   const oauthError = e?.response?.data?.error;
@@ -63,6 +64,26 @@ export function isGmailAuthError(err: unknown): boolean {
   }
   const msg = typeof e?.message === 'string' ? e.message : '';
   return /invalid_grant|invalid_client|unauthorized_client|no refresh token|no access.*refresh token/i.test(msg);
+}
+
+/** Token GEÇERLİ ama gerekli Gmail KAPSAMI/izni verilmemiş (403 Insufficient
+ *  Permission / insufficientPermissions / ACCESS_TOKEN_SCOPE_INSUFFICIENT).
+ *  Kullanıcı Ayarlar'dan tüm izinleri onaylayarak yeniden bağlamalı. Ölü token
+ *  DEĞİL → otomatik silinmez (send gibi diğer kapsamlar çalışıyor olabilir). */
+export function isGmailScopeError(err: unknown): boolean {
+  const e = err as {
+    message?: string;
+    errors?: Array<{ reason?: string }>;
+    response?: { data?: { error?: { errors?: Array<{ reason?: string }> } } };
+  };
+  const msg = typeof e?.message === 'string' ? e.message : '';
+  if (/insufficient permission|insufficient authentication scopes|ACCESS_TOKEN_SCOPE_INSUFFICIENT/i.test(msg)) {
+    return true;
+  }
+  const reasons = e?.response?.data?.error?.errors ?? e?.errors ?? [];
+  return Array.isArray(reasons) && reasons.some(
+    (x) => x?.reason === 'insufficientPermissions' || x?.reason === 'ACCESS_TOKEN_SCOPE_INSUFFICIENT',
+  );
 }
 
 /** Kompozör HTML'ini e-postaya gömmeden önce daralt: yalnız temel
@@ -119,6 +140,13 @@ export class GmailService {
             this.logger.warn(`Ölü Gmail token temizlenemedi (user=${userId}): ${(e as Error).message}`),
           );
         }
+        throw new GmailReauthRequiredException();
+      }
+      // Kapsam/izin yetersiz (403): token ölü DEĞİL — silme (send çalışabilir),
+      // yalnız handled 424'e çevir ki unhandled 500 → Sentry olmasın; kullanıcı
+      // tüm izinleri onaylayarak yeniden bağlamalı.
+      if (isGmailScopeError(err)) {
+        this.logger.warn(`Gmail kapsamı yetersiz (user=${userId}): ${(err as Error).message}`);
         throw new GmailReauthRequiredException();
       }
       throw err;
