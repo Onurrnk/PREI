@@ -642,6 +642,8 @@ export interface MeetingDTO {
   platform: string;
   notes: string;
   kind: string;           // viewing | signing | meeting
+  gcalSync: string;       // synced | reauth | failed | skipped | ''
+  gcalLink: string | null;
 }
 
 export interface CreateMeetingInput {
@@ -649,6 +651,7 @@ export interface CreateMeetingInput {
   date: string;           // ISO
   durationLabel?: string;
   client?: string;
+  clientEmail?: string;   // verilirse Google Takvim etkinliğine davetli eklenir
   location?: string;
   platform?: 'In-person' | 'Zoom';
   notes?: string;

@@ -1,4 +1,4 @@
-import { IsDateString, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsDateString, IsEmail, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class CreateMeetingDto {
   @IsString() @MinLength(1) @MaxLength(200)
@@ -12,6 +12,11 @@ export class CreateMeetingDto {
 
   @IsOptional() @IsString() @MaxLength(120)
   client?: string;
+
+  /** Davetli e-postası — verilirse Google Takvim etkinliğine attendee eklenir
+   *  (davet gider, müşterinin takviminde de görünür). */
+  @IsOptional() @IsEmail()
+  clientEmail?: string;
 
   @IsOptional() @IsString() @MaxLength(200)
   location?: string;

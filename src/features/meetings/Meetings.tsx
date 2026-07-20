@@ -3,7 +3,7 @@ import { Card } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { Modal } from '../../core/components/Modal/Modal';
 import { useToast } from '../../core/components/Toast/ToastProvider';
-import { CalendarBlank as CalendarIcon, CaretLeft, CaretRight, Plus, MapPin, User, VideoCamera, ArrowsClockwise, Clock, FileText } from '@phosphor-icons/react';
+import { CalendarBlank as CalendarIcon, CaretLeft, CaretRight, Plus, MapPin, User, VideoCamera, Clock, FileText } from '@phosphor-icons/react';
 import type { MeetingDTO } from '../../core/types';
 import { meetingsApi } from '../../core/api/resources';
 import { ApiError } from '../../core/api/client';
@@ -35,16 +35,18 @@ export const Meetings: React.FC = () => {
   const [newMeetingDate, setNewMeetingDate] = useState('');
   const [newMeetingTime, setNewMeetingTime] = useState('');
   const [newMeetingLocation, setNewMeetingLocation] = useState('');
+  const [newMeetingClient, setNewMeetingClient] = useState('');
+  const [newMeetingClientEmail, setNewMeetingClientEmail] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingDTO | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
   const toast = useToast();
 
   const closeAddModal = () => {
     setShowAddModal(false);
     setNewMeetingTitle(''); setNewMeetingType('meeting'); setNewMeetingPlatform('In-person');
     setNewMeetingDate(''); setNewMeetingTime(''); setNewMeetingLocation('');
+    setNewMeetingClient(''); setNewMeetingClientEmail('');
   };
 
   const handleCreateMeeting = async () => {
@@ -58,15 +60,22 @@ export const Meetings: React.FC = () => {
     }
     setIsCreating(true);
     try {
-      await meetingsApi.create({
+      const created = await meetingsApi.create({
         title: newMeetingTitle.trim(),
         date: new Date(`${newMeetingDate}T${newMeetingTime}`).toISOString(),
+        client: newMeetingClient.trim() || undefined,
+        clientEmail: newMeetingClientEmail.trim() || undefined,
         location: newMeetingLocation.trim() || undefined,
         platform: newMeetingPlatform as 'In-person' | 'Zoom',
         kind: newMeetingType as 'meeting' | 'viewing' | 'signing',
       });
       closeAddModal();
       refetch();
+      // Google Takvim senkron durumunu dürüstçe bildir.
+      if (created.gcalSync === 'synced') toast.success(t('meetings.gcalSynced'));
+      else if (created.gcalSync === 'reauth') toast.info(t('meetings.gcalReauth'));
+      else if (created.gcalSync === 'failed') toast.info(t('meetings.gcalFailed'));
+      else toast.success(t('meetings.created'));
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : t('meetings.createError');
       toast.error(msg);
@@ -121,12 +130,6 @@ export const Meetings: React.FC = () => {
   const pillClass = (kind: string) =>
     kind === 'viewing' ? styles.eventViewing : kind === 'signing' ? styles.eventSigning : styles.eventMeeting;
 
-  const handleSync = () => {
-    setIsSyncing(true);
-    // Google Takvim entegrasyonu ayrı bir faz — şimdilik simüle.
-    setTimeout(() => { setIsSyncing(false); toast.info(t('meetings.gcalSyncSoon')); }, 900);
-  };
-
   const openMeetingDetails = (m: MeetingDTO) => { setSelectedMeeting(m); setShowDetailsModal(true); };
 
   return (
@@ -137,14 +140,10 @@ export const Meetings: React.FC = () => {
           <p className={styles.subtitle}>{t('meetings.subtitle')}</p>
         </div>
         <div className={styles.headerActions}>
-          <div className={styles.syncBadge}>
+          <div className={styles.syncBadge} title={t('meetings.gcalBadgeHint')}>
             <CalendarIcon size={16} />
-            Google Calendar ({t('common.comingSoon')})
+            {t('meetings.gcalBadge')}
           </div>
-          <Button variant="outline" onClick={handleSync} disabled={isSyncing}>
-            <ArrowsClockwise size={16} className={isSyncing ? 'spin' : ''} />
-            {isSyncing ? t('meetings.syncing') : t('meetings.syncNow')}
-          </Button>
           <Button variant="primary" onClick={() => setShowAddModal(true)}>
             <Plus size={16} /> {t('meetings.newAppointment')}
           </Button>
@@ -375,6 +374,27 @@ export const Meetings: React.FC = () => {
               value={newMeetingLocation}
               onChange={(e) => setNewMeetingLocation(e.target.value)}
             />
+          </div>
+          <div className={styles.formGroup}>
+            <label>{t('meetings.clientLabel')}</label>
+            <input
+              type="text"
+              className={styles.textInput}
+              placeholder={t('meetings.clientPlaceholder')}
+              value={newMeetingClient}
+              onChange={(e) => setNewMeetingClient(e.target.value)}
+            />
+          </div>
+          <div className={styles.formGroup}>
+            <label>{t('meetings.clientEmailLabel')}</label>
+            <input
+              type="email"
+              className={styles.textInput}
+              placeholder={t('meetings.clientEmailPlaceholder')}
+              value={newMeetingClientEmail}
+              onChange={(e) => setNewMeetingClientEmail(e.target.value)}
+            />
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>{t('meetings.clientEmailHint')}</span>
           </div>
         </div>
       </Modal>
