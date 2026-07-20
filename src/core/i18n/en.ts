@@ -1016,8 +1016,8 @@ export const en = {
         location: 'Location (mark on map)',
         locationHint: 'Click the map to mark the project location — investors see it directly.',
         locationPicked: 'Selected: {{lat}}, {{lng}}',
-        brochure: 'Brochure (PDF)', brochureHint: 'Required · PDF only, ≤15MB',
-        images: 'Images', imagesHint: 'At least 1, up to 8 · JPEG/PNG/WEBP, ≤10MB',
+        brochure: 'Brochure (PDF)', brochureHint: 'Required · PDF only, ≤30MB',
+        images: 'Images', imagesHint: 'At least 1, up to 8 · high-res is fine, auto-optimized',
         imagesCount: '{{count}} images selected',
       },
       admin: {

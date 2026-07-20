@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes, randomUUID } from 'node:crypto';
+import sharp from 'sharp';
 import type { AppConfig } from '../../config/configuration';
 import type { RequestContext } from '../../common/request-context';
 import { IntakeRepository, type InviteRow, type SubmissionRow, type DuplicateProjectMatch } from './intake.repository';
@@ -43,15 +44,34 @@ export interface NotifyCandidate {
   propertyIds: string[];
 }
 
-const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
-const MAX_IMAGE = 10 * 1024 * 1024;
-const MAX_BROCHURE = 15 * 1024 * 1024;
+// Girişte geniş kabul: geliştirici orijinali yükler, sunucuda optimize edilir.
+// Orijinal boyut sınırı yüksek (yüksek çözünürlüklü telefon fotoğrafları geçsin);
+// depoya küçültülmüş/optimize JPEG yazılır.
+const MAX_IMAGE = 60 * 1024 * 1024;   // orijinal görsel üst sınırı (optimize öncesi)
+const MAX_BROCHURE = 30 * 1024 * 1024; // broşür (PDF) üst sınırı
 const MAX_IMAGES = 8;
+// Katalog için makul boyut: en uzun kenar 2560px, EXIF-döndür, optimize JPEG.
+const IMG_MAX_EDGE = 2560;
+const IMG_QUALITY = 82;
 
 interface UploadFile { originalname: string; mimetype: string; size: number; buffer: Buffer }
 
 function safeName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80) || 'file';
+}
+
+/**
+ * Görseli katalog için optimize eder: EXIF'e göre döndürür (telefon fotoğrafı),
+ * en uzun kenarı IMG_MAX_EDGE'e sığdırır (büyütmez), optimize (mozjpeg) JPEG'e
+ * çevirir. 30MB'lık orijinal → ~birkaç yüz KB. sharp HEIC/PNG/WEBP/TIFF/AVIF/JPEG
+ * decode eder; decode edilemeyen dosya için çağıran taraf hata verir.
+ */
+export async function optimizeImage(input: Buffer): Promise<Buffer> {
+  return sharp(input, { failOn: 'error' })
+    .rotate()
+    .resize({ width: IMG_MAX_EDGE, height: IMG_MAX_EDGE, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: IMG_QUALITY, mozjpeg: true })
+    .toBuffer();
 }
 
 // --- Onay öncesi otomatik ön-kontrol (deterministik) ---
@@ -174,25 +194,33 @@ export class IntakeService {
 
     if (!brochure) throw new BadRequestException('Broşür (PDF) zorunludur.');
     if (brochure.mimetype !== 'application/pdf') throw new BadRequestException('Broşür yalnız PDF olabilir.');
-    if (brochure.size > MAX_BROCHURE) throw new BadRequestException('Broşür 15MB sınırını aşıyor.');
+    if (brochure.size > MAX_BROCHURE) throw new BadRequestException('Broşür 30MB sınırını aşıyor.');
     if (totalImages === 0) throw new BadRequestException('En az 1 görsel gereklidir.');
     if (totalImages > MAX_IMAGES * 3) throw new BadRequestException('Görsel sayısı sınırı aşıyor.');
+    // Tür kontrolü gevşek: kabul edilen her görsel türü (JPEG/PNG/WEBP/HEIC/…)
+    // sunucuda optimize edilir; asıl geçerlilik sharp decode ile (aşağıda) sınanır.
     for (const [, arr] of categories) {
       for (const im of arr) {
-        if (!IMAGE_MIMES.includes(im.mimetype)) throw new BadRequestException('Görseller yalnız JPEG/PNG/WEBP olabilir.');
-        if (im.size > MAX_IMAGE) throw new BadRequestException('Bir görsel 10MB sınırını aşıyor.');
+        if (im.size > MAX_IMAGE) throw new BadRequestException(`Bir görsel 60MB sınırını aşıyor: ${im.originalname}`);
       }
     }
 
     const submissionId = randomUUID();
 
-    // Görseller → media (public URL); kategori yol ön ekiyle + kategori haritası.
+    // Görseller → sunucuda optimize (küçült + JPEG) → media (public URL).
+    // Geliştirici orijinali yükler; katalog boyutunu biz düşürürüz.
     const imageUrls: string[] = [];
     const imagesByCategory: Record<string, string[]> = {};
     for (const [cat, arr] of categories) {
       for (const im of arr) {
-        const path = `submissions/${submissionId}/${cat}-${randomUUID()}-${safeName(im.originalname)}`;
-        await this.storage.upload(path, im.buffer, im.mimetype, MEDIA_BUCKET);
+        let optimized: Buffer;
+        try {
+          optimized = await optimizeImage(im.buffer);
+        } catch {
+          throw new BadRequestException(`Görsel işlenemedi (bozuk veya desteklenmeyen format): ${im.originalname}`);
+        }
+        const path = `submissions/${submissionId}/${cat}-${randomUUID()}.jpg`;
+        await this.storage.upload(path, optimized, 'image/jpeg', MEDIA_BUCKET);
         const url = this.storage.publicUrl(path, MEDIA_BUCKET);
         imageUrls.push(url);
         (imagesByCategory[cat] ??= []).push(url);

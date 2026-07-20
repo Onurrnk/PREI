@@ -288,15 +288,15 @@ export const SubmitProject: React.FC = () => {
           {/* Görseller — iç / dış / sosyal alanlar ayrı */}
           <div className={styles.sectionTitle}>{t('intake.form.imagesSection')}</div>
           <Field label={t('intake.form.imagesExterior')} hint={t('intake.form.imagesHint')}>
-            <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={pickFiles(setImgExterior)} />
+            <input type="file" accept="image/*" multiple onChange={pickFiles(setImgExterior)} />
             {imgExterior.length > 0 && <span className={styles.fileName}>{t('intake.form.imagesCount', { count: imgExterior.length })}</span>}
           </Field>
           <Field label={t('intake.form.imagesInterior')} hint={t('intake.form.imagesHint')}>
-            <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={pickFiles(setImgInterior)} />
+            <input type="file" accept="image/*" multiple onChange={pickFiles(setImgInterior)} />
             {imgInterior.length > 0 && <span className={styles.fileName}>{t('intake.form.imagesCount', { count: imgInterior.length })}</span>}
           </Field>
           <Field label={t('intake.form.imagesSocial')} hint={t('intake.form.imagesHint')}>
-            <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={pickFiles(setImgSocial)} />
+            <input type="file" accept="image/*" multiple onChange={pickFiles(setImgSocial)} />
             {imgSocial.length > 0 && <span className={styles.fileName}>{t('intake.form.imagesCount', { count: imgSocial.length })}</span>}
           </Field>
 

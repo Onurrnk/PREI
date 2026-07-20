@@ -1015,8 +1015,8 @@ export const tr = {
         location: 'Konum (haritada işaretleyin)',
         locationHint: 'Projenin konumunu haritaya tıklayarak işaretleyin — yatırımcılar konumu doğrudan görür.',
         locationPicked: 'Seçilen konum: {{lat}}, {{lng}}',
-        brochure: 'Broşür (PDF)', brochureHint: 'Zorunlu · yalnız PDF, ≤15MB',
-        images: 'Görseller', imagesHint: 'En az 1, en çok 8 · JPEG/PNG/WEBP, ≤10MB',
+        brochure: 'Broşür (PDF)', brochureHint: 'Zorunlu · yalnız PDF, ≤30MB',
+        images: 'Görseller', imagesHint: 'En az 1, en çok 8 · yüksek çözünürlük sorun değil, otomatik optimize edilir',
         imagesCount: '{{count}} görsel seçildi',
       },
       admin: {

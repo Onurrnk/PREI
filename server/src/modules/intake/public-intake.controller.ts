@@ -42,7 +42,7 @@ export class PublicIntakeController {
         { name: 'imagesExterior', maxCount: 8 },  // dış mekan
         { name: 'imagesSocial', maxCount: 8 },    // sosyal alanlar
       ],
-      { limits: { fileSize: 15 * 1024 * 1024 } },
+      { limits: { fileSize: 60 * 1024 * 1024 } }, // orijinali kabul et; sunucuda optimize edilir
     ),
   )
   submit(
