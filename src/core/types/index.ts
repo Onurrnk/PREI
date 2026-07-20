@@ -157,6 +157,7 @@ export interface ProjectSubmissionDTO {
   mapUrl: string | null;
   imageUrls: string[];
   imagesByCategory: Record<string, string[]>;
+  unitDetails: { type: string; variants: { label: string; images: string[]; layout: string | null }[] }[];
   downPaymentPct: number | null;
   installmentMonths: number | null;
   paymentNote: string | null;

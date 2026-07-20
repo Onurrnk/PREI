@@ -350,6 +350,33 @@ export const ProjectIntake: React.FC = () => {
                 </div>
               )
             )}
+            {(review.unitDetails ?? []).length > 0 && (
+              <div className={styles.unitGalleries}>
+                <div className={styles.galleryLabel}>{t('intake.admin.unitTypesLabel')}</div>
+                {review.unitDetails.map((u, ui) => (
+                  <div key={ui} className={styles.unitBlock}>
+                    <div className={styles.unitType}>{u.type}</div>
+                    {u.variants.map((v, vi) => (
+                      <div key={vi} className={styles.variantBlock}>
+                        <span className={styles.variantTag}>{v.label}</span>
+                        <div className={styles.gallery}>
+                          {v.layout && (
+                            <a href={v.layout} target="_blank" rel="noreferrer" className={styles.thumbLayout} title={t('intake.admin.layout')}>
+                              <img src={v.layout} alt="layout" />
+                            </a>
+                          )}
+                          {v.images.map((img, i) => (
+                            <a key={i} href={img} target="_blank" rel="noreferrer" className={styles.thumb}>
+                              <img src={img} alt="" />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </Modal>

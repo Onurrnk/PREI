@@ -278,6 +278,7 @@ export class IntakeRepository {
         project_status: 'Off-plan',
         images: s.image_urls,
         images_by_category: payload.imagesByCategory ?? {},
+        unit_details: payload.unitDetails ?? [],
         payment_plan: paymentPlan,
         payment_note: payload.paymentNote ?? null,
         price_min: priceMin,

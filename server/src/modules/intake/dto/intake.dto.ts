@@ -129,6 +129,15 @@ export class SubmitProjectDto {
   @IsOptional() @IsString() @MaxLength(400)
   unitTypes?: string;
 
+  /**
+   * Daire-tipi/varyant görsel yapısı (JSON): dosya SAYILARINI taşır; gerçek
+   * dosyalar unitImages (sırayla) + unitLayouts (varyant başına 1, sırayla)
+   * alanlarında gelir. Backend sırayı yürüyerek URL'lerle eşler.
+   * [{ "type":"2+1", "variants":[{ "label":"A", "imageCount":8, "hasLayout":true }] }]
+   */
+  @IsOptional() @IsString() @MaxLength(20000)
+  unitTypesData?: string;
+
   @IsOptional() @IsString() @MaxLength(5000)
   description?: string;
 

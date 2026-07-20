@@ -29,6 +29,7 @@ const dupSubmission = {
   duplicate: { refType: 'property', refId: 'p1', refTitle: 'Emaar Beachfront', matchedBy: 'aynı geliştirici' },
   checks: [],
   source: 'developer_submission',
+  unitDetails: [],
   createdAt: '2026-07-19T00:00:00.000Z',
 };
 
@@ -72,6 +73,22 @@ describe('ProjectIntake — mükerrer proje işareti', () => {
     renderPage();
     await screen.findByText('Emaar Beachfront');
     expect(screen.getByText('E-posta taslağı')).toBeInTheDocument();
+  });
+
+  it('daire tipi/varyant galerileri incele modalında görünür', async () => {
+    const withUnits = {
+      ...dupSubmission, id: 'sub-units', duplicate: null,
+      unitDetails: [{
+        type: '2+1',
+        variants: [{ label: 'A', images: ['https://x/a1.jpg', 'https://x/a2.jpg'], layout: 'https://x/layA.jpg' }],
+      }],
+    };
+    server.use(http.get('/api/intake/queue', () => HttpResponse.json([withUnits])));
+    renderPage();
+    fireEvent.click(await screen.findByText('Emaar Beachfront'));
+    await screen.findByText('Daire Tipi Görselleri');
+    expect(screen.getByText('2+1')).toBeInTheDocument();
+    expect(screen.getByText('A')).toBeInTheDocument();
   });
 
   it('property eşleşmesinde incele modalı "Güncelle" + "Yeni ekle" butonlarını sunar', async () => {

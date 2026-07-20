@@ -38,9 +38,11 @@ export class PublicIntakeController {
       [
         { name: 'brochure', maxCount: 1 },
         { name: 'images', maxCount: 8 },          // eski istemci uyumu (genel)
-        { name: 'imagesInterior', maxCount: 8 },  // iç mekan
-        { name: 'imagesExterior', maxCount: 8 },  // dış mekan
-        { name: 'imagesSocial', maxCount: 8 },    // sosyal alanlar
+        { name: 'imagesInterior', maxCount: 8 },  // eski istemci uyumu (iç mekan)
+        { name: 'imagesExterior', maxCount: 8 },  // dış mekan (proje seviyesi)
+        { name: 'imagesSocial', maxCount: 8 },    // sosyal alanlar (proje seviyesi)
+        { name: 'unitImages', maxCount: 200 },    // daire-tipi/varyant iç görselleri (sırayla)
+        { name: 'unitLayouts', maxCount: 60 },    // varyant başına 1 layout (sırayla)
       ],
       { limits: { fileSize: 60 * 1024 * 1024 } }, // orijinali kabul et; sunucuda optimize edilir
     ),
@@ -52,6 +54,7 @@ export class PublicIntakeController {
     @UploadedFiles() files: {
       brochure?: MulterFile[]; images?: MulterFile[];
       imagesInterior?: MulterFile[]; imagesExterior?: MulterFile[]; imagesSocial?: MulterFile[];
+      unitImages?: MulterFile[]; unitLayouts?: MulterFile[];
     },
   ) {
     const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()

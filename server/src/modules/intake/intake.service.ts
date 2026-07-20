@@ -74,6 +74,35 @@ export async function optimizeImage(input: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
+// --- Daire tipi / varyant görselleri (teklif sunumu için) ---
+export interface UnitVariant { label: string; images: string[]; layout: string | null }
+export interface UnitTypeDetail { type: string; variants: UnitVariant[] }
+interface VariantMeta { label?: string; imageCount?: number; hasLayout?: boolean }
+interface TypeMeta { type?: string; variants?: VariantMeta[] }
+
+/**
+ * Frontend'in gönderdiği yapı meta'sını (sayılar) sırayla yükelenmiş URL'lerle
+ * eşler. unitImages her varyantın imageCount kadarını sırayla tüketir;
+ * unitLayouts hasLayout olan her varyanttan birer tane alır. Eksik/fazla
+ * durumunda güvenli davranır (var olanı atar, taşmaz).
+ */
+export function assembleUnitDetails(meta: TypeMeta[], imageUrls: string[], layoutUrls: string[]): UnitTypeDetail[] {
+  let ii = 0, li = 0;
+  const out: UnitTypeDetail[] = [];
+  for (const t of meta ?? []) {
+    const variants: UnitVariant[] = [];
+    for (const v of t.variants ?? []) {
+      const want = Math.max(0, Math.min(Number(v.imageCount ?? 0) || 0, imageUrls.length - ii));
+      const images = imageUrls.slice(ii, ii + want);
+      ii += want;
+      const layout = v.hasLayout && li < layoutUrls.length ? layoutUrls[li++] : null;
+      variants.push({ label: String(v.label ?? '').slice(0, 20) || '—', images, layout });
+    }
+    out.push({ type: String(t.type ?? '').slice(0, 40) || '—', variants });
+  }
+  return out;
+}
+
 // --- Onay öncesi otomatik ön-kontrol (deterministik) ---
 export type SubmissionCheckLevel = 'warn' | 'info';
 export interface SubmissionCheck { code: string; level: SubmissionCheckLevel }
@@ -179,27 +208,31 @@ export class IntakeService {
     files: {
       brochure?: UploadFile[]; images?: UploadFile[];
       imagesInterior?: UploadFile[]; imagesExterior?: UploadFile[]; imagesSocial?: UploadFile[];
+      unitImages?: UploadFile[]; unitLayouts?: UploadFile[];
     },
     ip: string | null,
   ) {
     const brochure = files.brochure?.[0];
-    // Kategorili görseller (iç/dış/sosyal) + eski istemci uyumu için 'images' (genel).
+    // Proje-seviyesi kategoriler: dış cephe + sosyal alanlar (+ eski istemci uyumu).
     const categories: Array<[string, UploadFile[]]> = [
       ['interior', files.imagesInterior ?? []],
       ['exterior', files.imagesExterior ?? []],
       ['social', files.imagesSocial ?? []],
       ['general', files.images ?? []],
     ];
+    const unitImages = files.unitImages ?? [];   // daire-tipi/varyant iç görselleri
+    const unitLayouts = files.unitLayouts ?? [];  // varyant layout çizimleri
     const totalImages = categories.reduce((s, [, arr]) => s + arr.length, 0);
+    const totalAnyImage = totalImages + unitImages.length; // proje + daire görselleri
 
     if (!brochure) throw new BadRequestException('Broşür (PDF) zorunludur.');
     if (brochure.mimetype !== 'application/pdf') throw new BadRequestException('Broşür yalnız PDF olabilir.');
     if (brochure.size > MAX_BROCHURE) throw new BadRequestException('Broşür 30MB sınırını aşıyor.');
-    if (totalImages === 0) throw new BadRequestException('En az 1 görsel gereklidir.');
+    if (totalAnyImage === 0) throw new BadRequestException('En az 1 görsel gereklidir.');
     if (totalImages > MAX_IMAGES * 3) throw new BadRequestException('Görsel sayısı sınırı aşıyor.');
     // Tür kontrolü gevşek: kabul edilen her görsel türü (JPEG/PNG/WEBP/HEIC/…)
     // sunucuda optimize edilir; asıl geçerlilik sharp decode ile (aşağıda) sınanır.
-    for (const [, arr] of categories) {
+    for (const arr of [...categories.map(([, a]) => a), unitImages, unitLayouts]) {
       for (const im of arr) {
         if (im.size > MAX_IMAGE) throw new BadRequestException(`Bir görsel 60MB sınırını aşıyor: ${im.originalname}`);
       }
@@ -207,32 +240,53 @@ export class IntakeService {
 
     const submissionId = randomUUID();
 
-    // Görseller → sunucuda optimize (küçült + JPEG) → media (public URL).
+    // Tek görsel → sunucuda optimize (küçült + JPEG) → media (public URL).
     // Geliştirici orijinali yükler; katalog boyutunu biz düşürürüz.
+    const uploadOne = async (im: UploadFile, prefix: string): Promise<string> => {
+      let optimized: Buffer;
+      try {
+        optimized = await optimizeImage(im.buffer);
+      } catch {
+        throw new BadRequestException(`Görsel işlenemedi (bozuk veya desteklenmeyen format): ${im.originalname}`);
+      }
+      const path = `submissions/${submissionId}/${prefix}-${randomUUID()}.jpg`;
+      await this.storage.upload(path, optimized, 'image/jpeg', MEDIA_BUCKET);
+      return this.storage.publicUrl(path, MEDIA_BUCKET);
+    };
+
+    // Proje-seviyesi görseller (dış cephe / sosyal / genel).
     const imageUrls: string[] = [];
     const imagesByCategory: Record<string, string[]> = {};
     for (const [cat, arr] of categories) {
       for (const im of arr) {
-        let optimized: Buffer;
-        try {
-          optimized = await optimizeImage(im.buffer);
-        } catch {
-          throw new BadRequestException(`Görsel işlenemedi (bozuk veya desteklenmeyen format): ${im.originalname}`);
-        }
-        const path = `submissions/${submissionId}/${cat}-${randomUUID()}.jpg`;
-        await this.storage.upload(path, optimized, 'image/jpeg', MEDIA_BUCKET);
-        const url = this.storage.publicUrl(path, MEDIA_BUCKET);
+        const url = await uploadOne(im, cat);
         imageUrls.push(url);
         (imagesByCategory[cat] ??= []).push(url);
       }
     }
 
+    // Daire-tipi/varyant görselleri: unitImages sırayla, unitLayouts sırayla →
+    // meta (unitTypesData) ile eşlenir. Her biri de optimize edilir.
+    const unitImageUrls: string[] = [];
+    for (const im of unitImages) unitImageUrls.push(await uploadOne(im, 'unit'));
+    const unitLayoutUrls: string[] = [];
+    for (const im of unitLayouts) unitLayoutUrls.push(await uploadOne(im, 'layout'));
+    let unitMeta: TypeMeta[] = [];
+    try {
+      const parsed = dto.unitTypesData ? JSON.parse(dto.unitTypesData) : [];
+      if (Array.isArray(parsed)) unitMeta = parsed as TypeMeta[];
+    } catch { unitMeta = []; }
+    const unitDetails = assembleUnitDetails(unitMeta, unitImageUrls, unitLayoutUrls);
+
     // Broşür → vault (imzalı URL ile sunulur)
     const brochurePath = `submissions/${submissionId}/brochure-${randomUUID()}.pdf`;
     await this.storage.upload(brochurePath, brochure.buffer, 'application/pdf', VAULT_BUCKET);
 
-    const unitTypes = (dto.unitTypes ?? '')
-      .split(',').map((s) => s.trim()).filter(Boolean).slice(0, 30);
+    // Basit daire tipi listesi (text[]) — yapı varsa ondan türet, yoksa csv alanı.
+    const unitTypes = (unitDetails.length
+      ? unitDetails.map((u) => u.type)
+      : (dto.unitTypes ?? '').split(',').map((s) => s.trim())
+    ).filter(Boolean).slice(0, 30);
 
     // Mükerrer proje ön-kontrolü (kaynak bağımsız): aynı başlıklı proje daha önce
     // gönderilmiş/onaylanmış mı? Bulunursa gönderiye görünür bir not düşer ve
@@ -273,6 +327,7 @@ export class IntakeService {
         completionDate: dto.completionDate ?? null,
         developerName: invite.developerName,
         imagesByCategory,
+        unitDetails,
         downPaymentPct: dto.downPaymentPct ?? null,
         installmentMonths: dto.installmentMonths ?? null,
         paymentNote: dto.paymentNote?.trim() || null,
@@ -553,6 +608,7 @@ export class IntakeService {
       mapUrl: mapUrl(r.latitude, r.longitude),
       imageUrls: r.image_urls,
       imagesByCategory: ((r.payload as Record<string, unknown>)?.imagesByCategory ?? {}) as Record<string, string[]>,
+      unitDetails: ((r.payload as Record<string, unknown>)?.unitDetails ?? []) as UnitTypeDetail[],
       downPaymentPct: ((r.payload as Record<string, unknown>)?.downPaymentPct ?? null) as number | null,
       installmentMonths: ((r.payload as Record<string, unknown>)?.installmentMonths ?? null) as number | null,
       paymentNote: ((r.payload as Record<string, unknown>)?.paymentNote ?? null) as string | null,
