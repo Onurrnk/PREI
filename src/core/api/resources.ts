@@ -17,6 +17,7 @@ import type {
   ClientTimelineEntryDTO,
   ContactDTO,
   ContractDTO,
+  ContractWriteInput,
   CreateDeveloperInput,
   CreateMeetingInput,
   CreateProjectInput,
@@ -190,6 +191,8 @@ export const proposalsApi = {
 export const contractsApi = {
   list: () => api.get<ContractDTO[]>('/api/contracts'),
   get: (id: string) => api.get<ContractDTO>(`/api/contracts/${id}`),
+  create: (input: ContractWriteInput) => api.post<ContractDTO>('/api/contracts', input),
+  update: (id: string, input: ContractWriteInput) => api.patch<ContractDTO>(`/api/contracts/${id}`, input),
 };
 
 export const meetingsApi = {

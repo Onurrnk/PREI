@@ -23,6 +23,9 @@ export interface ContractResponse {
   paymentTerms: string;
   amount: number | null;
   currency: string;
+  // Düzenleme formunun proje/müşteri seçicilerini ön-doldurabilmesi için ham FK'ler.
+  propertyId: string | null;
+  contactId: string | null;
   documents: ContractDocRef[];
 }
 
@@ -69,6 +72,8 @@ export function toContractResponse(row: ContractRow, docs: ContractDocRow[] = []
     paymentTerms: str(m.payment_terms),
     amount: num(row.amount),
     currency: row.currency,
+    propertyId: row.property_id ?? null,
+    contactId: row.contact_id ?? null,
     documents: docs.map((d) => ({ id: d.id, name: d.name, size: formatSize(Number(d.size_bytes)) })),
   };
 }

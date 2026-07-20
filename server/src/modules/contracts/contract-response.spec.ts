@@ -14,6 +14,7 @@ const row = (over: Partial<ContractRow> = {}): ContractRow => ({
   start_date: '2025-01-01', end_date: daysFromNow(200),
   amount: '500000', currency: 'AED',
   metadata: { commission: '5%', legal_entity: 'Emaar PJSC', payment_terms: '30 Gün' },
+  property_id: 'p1', contact_id: 'ct1',
   developer_name: 'Emaar', project_title: 'Beachfront', updated_at: '2026-06-15',
   ...over,
 });
@@ -61,5 +62,12 @@ describe('toContractResponse — alanlar', () => {
     expect(r.documents).toEqual([]);
     expect(r.commission).toBe('');
     expect(r.legalEntity).toBe('');
+  });
+
+  it('düzenleme formu için ham property_id/contact_id geçirilir', () => {
+    const r = toContractResponse(row());
+    expect(r.propertyId).toBe('p1');
+    expect(r.contactId).toBe('ct1');
+    expect(toContractResponse(row({ property_id: null, contact_id: null })).propertyId).toBeNull();
   });
 });

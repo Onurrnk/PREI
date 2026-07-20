@@ -14,6 +14,7 @@ import type {
   ClientDTO,
   ContactDTO,
   ContractDTO,
+  ContractWriteInput,
   CreateDeveloperInput,
   CreateMeetingInput,
   CreateProjectInput,
@@ -127,6 +128,14 @@ const mockVaultDocuments: VaultDocumentDTO[] = [
   { id: 'doc6', name: 'ROI_Calculator_2026.xlsx', folder: 'Root', type: 'excel', sizeMB: 0.5, uploadedAt: '2026-01-10', uploadedBy: 'Finance' },
   { id: 'doc7', name: 'Beachfront_Brochure.pdf', folder: 'Marketing', type: 'pdf', sizeMB: 12, uploadedAt: '2026-06-01', uploadedBy: 'Marketing Team', relatedId: 'p1' },
   { id: 'doc8', name: 'Villa_Layouts.pdf', folder: 'Marketing', type: 'pdf', sizeMB: 10, uploadedAt: '2026-05-15', uploadedBy: 'Marketing Team', relatedId: 'p3' },
+];
+
+// Sözleşmeler — module-level, oturum-içi kalıcı (create/update mock modda görünür).
+let mockContracts: ContractDTO[] = [
+  { id: 'C-1001', developer: 'Emaar Properties', project: 'Downtown Views II', status: 'Active', contractType: 'pm', startDate: '2025-01-01', expiryDate: '2026-12-31', commission: '5%', legalEntity: 'Emaar Development PJSC', paymentTerms: '30 Days Net', amount: null, currency: 'AED', propertyId: null, contactId: null, documents: [] },
+  { id: 'C-1002', developer: 'Nakheel', project: 'Palm Beach Towers', status: 'Active', contractType: 'pm', startDate: '2025-06-15', expiryDate: '2027-06-14', commission: '4%', legalEntity: 'Nakheel PJSC', paymentTerms: '45 Days Net', amount: null, currency: 'AED', propertyId: null, contactId: null, documents: [] },
+  { id: 'C-1003', developer: 'Damac Properties', project: 'Damac Hills', status: 'Expiring', contractType: 'pm', startDate: '2024-08-01', expiryDate: '2026-08-20', commission: '6%', legalEntity: 'Damac Real Estate Dev.', paymentTerms: '15 Days Net', amount: null, currency: 'AED', propertyId: null, contactId: null, documents: [] },
+  { id: 'C-1004', developer: 'Meraas', project: 'City Walk', status: 'Expired', contractType: 'pm', startDate: '2024-01-01', expiryDate: '2026-01-01', commission: '5%', legalEntity: 'Meraas Holding', paymentTerms: '30 Days Net', amount: null, currency: 'AED', propertyId: null, contactId: null, documents: [] },
 ];
 
 // Mock modda Gmail thread'leri — module-level, mockThreads'e gönderilen
@@ -778,12 +787,48 @@ export const handlers = [
       mockVaultDocuments
         .filter((d) => d.relatedId === contractId)
         .map((d) => ({ id: d.id, name: d.name, size: `${d.sizeMB} MB` }));
-    return HttpResponse.json<ContractDTO[]>([
-      { id: 'C-1001', developer: 'Emaar Properties', project: 'Downtown Views II', status: 'Active', contractType: 'pm', startDate: '2025-01-01', expiryDate: '2026-12-31', commission: '5%', legalEntity: 'Emaar Development PJSC', paymentTerms: '30 Days Net', amount: null, currency: 'AED', documents: docsFor('C-1001') },
-      { id: 'C-1002', developer: 'Nakheel', project: 'Palm Beach Towers', status: 'Active', contractType: 'pm', startDate: '2025-06-15', expiryDate: '2027-06-14', commission: '4%', legalEntity: 'Nakheel PJSC', paymentTerms: '45 Days Net', amount: null, currency: 'AED', documents: docsFor('C-1002') },
-      { id: 'C-1003', developer: 'Damac Properties', project: 'Damac Hills', status: 'Expiring', contractType: 'pm', startDate: '2024-08-01', expiryDate: '2026-08-20', commission: '6%', legalEntity: 'Damac Real Estate Dev.', paymentTerms: '15 Days Net', amount: null, currency: 'AED', documents: docsFor('C-1003') },
-      { id: 'C-1004', developer: 'Meraas', project: 'City Walk', status: 'Expired', contractType: 'pm', startDate: '2024-01-01', expiryDate: '2026-01-01', commission: '5%', legalEntity: 'Meraas Holding', paymentTerms: '30 Days Net', amount: null, currency: 'AED', documents: docsFor('C-1004') },
-    ]);
+    return HttpResponse.json<ContractDTO[]>(
+      mockContracts.map((c) => ({ ...c, documents: docsFor(c.id) })),
+    );
+  }),
+
+  http.post('/api/contracts', async ({ request }) => {
+    const b = (await request.json()) as ContractWriteInput;
+    const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+    const created: ContractDTO = {
+      id: `C-${1000 + mockContracts.length + 1}`,
+      developer: '—', project: '—',
+      status: cap(b.status ?? 'draft') as ContractDTO['status'],
+      contractType: b.contractType,
+      startDate: b.startDate ?? null, expiryDate: b.endDate ?? null,
+      commission: b.commission ?? '', legalEntity: b.legalEntity ?? '',
+      paymentTerms: b.paymentTerms ?? '', amount: b.amount ?? null,
+      currency: b.currency ?? 'EUR',
+      propertyId: b.propertyId ?? null, contactId: b.contactId ?? null,
+      documents: [],
+    };
+    mockContracts = [created, ...mockContracts];
+    return HttpResponse.json<ContractDTO>(created, { status: 201 });
+  }),
+
+  http.patch('/api/contracts/:id', async ({ params, request }) => {
+    const b = (await request.json()) as ContractWriteInput;
+    const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+    const idx = mockContracts.findIndex((c) => c.id === params.id);
+    if (idx < 0) return HttpResponse.json({ message: 'not found' }, { status: 404 });
+    const cur = mockContracts[idx];
+    const updated: ContractDTO = {
+      ...cur,
+      contractType: b.contractType ?? cur.contractType,
+      status: (b.status ? cap(b.status) : cur.status) as ContractDTO['status'],
+      startDate: b.startDate ?? cur.startDate, expiryDate: b.endDate ?? cur.expiryDate,
+      amount: b.amount ?? cur.amount, currency: b.currency ?? cur.currency,
+      commission: b.commission ?? cur.commission, legalEntity: b.legalEntity ?? cur.legalEntity,
+      paymentTerms: b.paymentTerms ?? cur.paymentTerms,
+      propertyId: b.propertyId ?? cur.propertyId, contactId: b.contactId ?? cur.contactId,
+    };
+    mockContracts[idx] = updated;
+    return HttpResponse.json<ContractDTO>(updated);
   }),
 
   http.get('/api/dashboard/summary', () => {

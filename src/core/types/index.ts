@@ -610,7 +610,24 @@ export interface ContractDTO {
   paymentTerms: string;
   amount: number | null;
   currency: string;
+  propertyId: string | null;
+  contactId: string | null;
   documents: ContractDocRef[];
+}
+
+// POST/PATCH /api/contracts gövdesi — backend CreateContractDto/UpdateContractDto ile senkron.
+export interface ContractWriteInput {
+  contractType: string; // sale | rental | pm | reservation
+  status?: string; // draft | active | expired | terminated | renewed
+  propertyId?: string | null;
+  contactId?: string | null;
+  startDate?: string | null; // YYYY-MM-DD
+  endDate?: string | null;
+  amount?: number | null;
+  currency?: string;
+  commission?: string;
+  legalEntity?: string;
+  paymentTerms?: string;
 }
 
 // GET /api/meetings sözleşmesi — backend MeetingResponse ile senkron (OV-8).
