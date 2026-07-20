@@ -626,9 +626,24 @@ export const Settings: React.FC = () => {
                     <div>
                       <div className={styles.integrationName}>Google Calendar</div>
                       <div className={styles.integrationDesc}>{t('settings.integrations.gcalDesc')}</div>
+                      {gmailStatus?.connected && (
+                        <div style={{ marginTop: '8px', fontSize: '0.75rem', color: 'var(--data-positive)', fontWeight: 500 }}>
+                          {t('settings.integrations.gcalConnectedVia', { email: gmailStatus.email })}
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <Button variant="outline" onClick={() => toast.info(t('settings.integrations.comingSoon'))}>{t('settings.integrations.connect')}</Button>
+                  {/* Takvim, Gmail ile AYNI Google OAuth token'ından gelir — ayrı
+                      bağlantı yok. Buton aynı akışı tetikler (takvim kapsamı dahil). */}
+                  {gmailStatus?.connected ? (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--data-positive)', fontWeight: 600 }}>
+                      {t('settings.integrations.connectedShort')}
+                    </span>
+                  ) : (
+                    <Button variant="outline" onClick={() => void handleGmailConnect()} disabled={gmailConnecting}>
+                      {gmailConnecting ? t('settings.integrations.connecting') : t('settings.integrations.connect')}
+                    </Button>
+                  )}
                 </div>
 
                 <div className={styles.integrationCard}>
