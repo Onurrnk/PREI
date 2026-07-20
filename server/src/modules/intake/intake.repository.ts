@@ -130,21 +130,21 @@ export class IntakeRepository {
                     THEN 'aynı geliştirici' ELSE 'aynı şehir' END AS matched_by,
                0 AS prio
           FROM properties p
-         WHERE p.tenant_id = $1 AND p.deleted_at IS NULL
-           AND lower(regexp_replace(btrim(p.title), '\\s+', ' ', 'g')) = $3
+         WHERE p.tenant_id = $1::uuid AND p.deleted_at IS NULL
+           AND lower(regexp_replace(btrim(p.title), '\\s+', ' ', 'g')) = $3::text
            AND ( ($2::uuid IS NOT NULL AND p.developer_id IS NOT DISTINCT FROM $2::uuid)
-                 OR ($4 IS NOT NULL AND lower(regexp_replace(btrim(coalesce(p.city,'')), '\\s+', ' ', 'g')) = $4) )
+                 OR ($4::text IS NOT NULL AND lower(regexp_replace(btrim(coalesce(p.city,'')), '\\s+', ' ', 'g')) = $4::text) )
         UNION ALL
         SELECT 'submission'::text, s.id::text, s.title,
                CASE WHEN $2::uuid IS NOT NULL AND s.developer_id IS NOT DISTINCT FROM $2::uuid
                     THEN 'aynı geliştirici' ELSE 'aynı şehir' END,
                1 AS prio
           FROM project_submissions s
-         WHERE s.tenant_id = $1 AND s.status <> 'rejected'
+         WHERE s.tenant_id = $1::uuid AND s.status <> 'rejected'
            AND ($5::uuid IS NULL OR s.id <> $5::uuid)
-           AND lower(regexp_replace(btrim(s.title), '\\s+', ' ', 'g')) = $3
+           AND lower(regexp_replace(btrim(s.title), '\\s+', ' ', 'g')) = $3::text
            AND ( ($2::uuid IS NOT NULL AND s.developer_id IS NOT DISTINCT FROM $2::uuid)
-                 OR ($4 IS NOT NULL AND lower(regexp_replace(btrim(coalesce(s.city,'')), '\\s+', ' ', 'g')) = $4) )
+                 OR ($4::text IS NOT NULL AND lower(regexp_replace(btrim(coalesce(s.city,'')), '\\s+', ' ', 'g')) = $4::text) )
       ) m
       ORDER BY prio ASC
       LIMIT 1`,
