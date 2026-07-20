@@ -76,6 +76,27 @@ export const Dashboard: React.FC = () => {
       .slice(0, 3);
   }, [meetingsData]);
 
+  // Mini ay takvimi: randevu olan günler işaretli (Komuta Merkezi'nde).
+  const miniCal = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear(), mo = now.getMonth();
+    const firstWeekday = (new Date(y, mo, 1).getDay() + 6) % 7; // Pzt=0
+    const daysInMonth = new Date(y, mo + 1, 0).getDate();
+    const meetingDays = new Set<number>();
+    for (const m of meetingsData ?? []) {
+      if (!m.date) continue;
+      const d = new Date(m.date);
+      if (d.getFullYear() === y && d.getMonth() === mo) meetingDays.add(d.getDate());
+    }
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < firstWeekday; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    return {
+      cells, meetingDays, today: now.getDate(),
+      monthLabel: now.toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' }),
+    };
+  }, [meetingsData, dateLocale]);
+
   // Priority Tasks: tamamlanmamış gerçek görevler, önceliğe göre (ilk 4).
   const priorityTasks = useMemo(() => {
     return (tasksData ?? [])
@@ -176,6 +197,42 @@ export const Dashboard: React.FC = () => {
             </div>
           </CardHeader>
           <CardBody padding="none">
+            {/* Mini ay takvimi — randevu olan günler nokta ile işaretli */}
+            <div style={{ padding: '12px 16px 4px', borderBottom: '1px solid var(--border-subtle)' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'capitalize', marginBottom: 8 }}>
+                {miniCal.monthLabel}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+                {[t('dashboard.dow.mon'), t('dashboard.dow.tue'), t('dashboard.dow.wed'), t('dashboard.dow.thu'), t('dashboard.dow.fri'), t('dashboard.dow.sat'), t('dashboard.dow.sun')].map((d, i) => (
+                  <div key={`h${i}`} style={{ textAlign: 'center', fontSize: '0.6875rem', color: 'var(--text-muted)', fontWeight: 500 }}>{d}</div>
+                ))}
+                {miniCal.cells.map((d, i) => {
+                  if (d === null) return <div key={`e${i}`} />;
+                  const isToday = d === miniCal.today;
+                  const hasMeeting = miniCal.meetingDays.has(d);
+                  return (
+                    <button
+                      key={`d${d}`}
+                      onClick={() => hasMeeting && navigate('/meetings')}
+                      title={hasMeeting ? t('dashboard.hasAppointment') : undefined}
+                      style={{
+                        position: 'relative', aspectRatio: '1', border: 'none', cursor: hasMeeting ? 'pointer' : 'default',
+                        borderRadius: 'var(--radius-control, 6px)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)',
+                        background: isToday ? 'var(--brand-primary)' : 'transparent',
+                        color: isToday ? 'var(--on-brand, #fff)' : hasMeeting ? 'var(--text-primary)' : 'var(--text-muted)',
+                        fontWeight: isToday || hasMeeting ? 600 : 400,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >
+                      {d}
+                      {hasMeeting && !isToday && (
+                        <span style={{ position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: 'var(--brand-primary)' }} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <div className={styles.listWidget}>
               {schedule.length === 0 && <div className={styles.listEmpty}>{t('dashboard.noMeetings')}</div>}
               {schedule.map((m) => (

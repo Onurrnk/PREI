@@ -639,6 +639,7 @@ export interface MeetingDTO {
   durationLabel: string;
   client: string;
   location: string;
+  phone: string;
   platform: string;
   notes: string;
   kind: string;           // viewing | signing | meeting
@@ -652,8 +653,9 @@ export interface CreateMeetingInput {
   durationLabel?: string;
   client?: string;
   clientEmail?: string;   // verilirse Google Takvim etkinliğine davetli eklenir
-  location?: string;
-  platform?: 'In-person' | 'Zoom';
+  location?: string;      // yüz yüzede adres/mekan, Zoom'da toplantı linki
+  phone?: string;         // telefon görüşmesinde aranacak numara
+  platform?: 'In-person' | 'Zoom' | 'Phone';
   notes?: string;
   kind?: 'meeting' | 'viewing' | 'signing';
 }

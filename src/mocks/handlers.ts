@@ -327,10 +327,10 @@ const mockMeetingsNow = new Date();
 const mockMeetingDay = (d: number, h: number, m = 0) =>
   new Date(mockMeetingsNow.getFullYear(), mockMeetingsNow.getMonth(), d, h, m).toISOString();
 let mockMeetings: MeetingDTO[] = [
-  { id: 'm1', title: 'Viewing: Marina Vista', date: mockMeetingDay(12, 10), durationLabel: '1h', client: 'Oliver Hartwell', location: 'Marina Vista Tower B', platform: 'In-person', notes: '3BR deniz manzaralı birimlerle ilgileniyor.', kind: 'viewing', gcalSync: '', gcalLink: null },
-  { id: 'm2', title: 'Consultation: T. Weber', date: mockMeetingDay(12, 14), durationLabel: '45m', client: 'Tobias Weber', location: 'Zoom', platform: 'Zoom', notes: 'Off-plan yatırım ilk görüşme.', kind: 'meeting', gcalSync: '', gcalLink: null },
-  { id: 'm3', title: 'Contract Signing', date: mockMeetingDay(15, 11, 30), durationLabel: '1h', client: 'Carmen Ortega', location: 'Emaar Sales Center', platform: 'In-person', notes: 'Tüm SPA dokümanları hazır olsun.', kind: 'signing', gcalSync: '', gcalLink: null },
-  { id: 'm4', title: 'Zoom: Project Pitch', date: mockMeetingDay(22, 16), durationLabel: '1h', client: 'Tobias Weber', location: 'Zoom', platform: 'Zoom', notes: 'Safa Two projesi sunumu.', kind: 'meeting', gcalSync: '', gcalLink: null },
+  { id: 'm1', title: 'Viewing: Marina Vista', date: mockMeetingDay(12, 10), durationLabel: '1h', client: 'Oliver Hartwell', location: 'Marina Vista Tower B', platform: 'In-person', notes: '3BR deniz manzaralı birimlerle ilgileniyor.', kind: 'viewing', phone: '', gcalSync: '', gcalLink: null },
+  { id: 'm2', title: 'Consultation: T. Weber', date: mockMeetingDay(12, 14), durationLabel: '45m', client: 'Tobias Weber', location: 'Zoom', platform: 'Zoom', notes: 'Off-plan yatırım ilk görüşme.', kind: 'meeting', phone: '', gcalSync: '', gcalLink: null },
+  { id: 'm3', title: 'Contract Signing', date: mockMeetingDay(15, 11, 30), durationLabel: '1h', client: 'Carmen Ortega', location: 'Emaar Sales Center', platform: 'In-person', notes: 'Tüm SPA dokümanları hazır olsun.', kind: 'signing', phone: '', gcalSync: '', gcalLink: null },
+  { id: 'm4', title: 'Zoom: Project Pitch', date: mockMeetingDay(22, 16), durationLabel: '1h', client: 'Tobias Weber', location: 'Zoom', platform: 'Zoom', notes: 'Safa Two projesi sunumu.', kind: 'meeting', phone: '', gcalSync: '', gcalLink: null },
 ];
 
 let mockBranding: BrandingSettingsDTO = {
@@ -1089,6 +1089,7 @@ export const handlers = [
       durationLabel: input.durationLabel ?? '',
       client: input.client ?? '',
       location: input.location ?? '',
+      phone: input.phone ?? '',
       platform: input.platform ?? 'In-person',
       notes: input.notes ?? '',
       kind: input.kind ?? 'meeting',

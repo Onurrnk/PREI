@@ -3,7 +3,7 @@ import { Card } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { Modal } from '../../core/components/Modal/Modal';
 import { useToast } from '../../core/components/Toast/ToastProvider';
-import { CalendarBlank as CalendarIcon, CaretLeft, CaretRight, Plus, MapPin, User, VideoCamera, Clock, FileText } from '@phosphor-icons/react';
+import { CalendarBlank as CalendarIcon, CaretLeft, CaretRight, Plus, MapPin, User, VideoCamera, Clock, FileText, Phone } from '@phosphor-icons/react';
 import type { MeetingDTO } from '../../core/types';
 import { meetingsApi } from '../../core/api/resources';
 import { ApiError } from '../../core/api/client';
@@ -35,6 +35,8 @@ export const Meetings: React.FC = () => {
   const [newMeetingDate, setNewMeetingDate] = useState('');
   const [newMeetingTime, setNewMeetingTime] = useState('');
   const [newMeetingLocation, setNewMeetingLocation] = useState('');
+  const [newMeetingPhone, setNewMeetingPhone] = useState('');
+  const [newMeetingDuration, setNewMeetingDuration] = useState('1h');
   const [newMeetingClient, setNewMeetingClient] = useState('');
   const [newMeetingClientEmail, setNewMeetingClientEmail] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -46,6 +48,7 @@ export const Meetings: React.FC = () => {
     setShowAddModal(false);
     setNewMeetingTitle(''); setNewMeetingType('meeting'); setNewMeetingPlatform('In-person');
     setNewMeetingDate(''); setNewMeetingTime(''); setNewMeetingLocation('');
+    setNewMeetingPhone(''); setNewMeetingDuration('1h');
     setNewMeetingClient(''); setNewMeetingClientEmail('');
   };
 
@@ -63,10 +66,12 @@ export const Meetings: React.FC = () => {
       const created = await meetingsApi.create({
         title: newMeetingTitle.trim(),
         date: new Date(`${newMeetingDate}T${newMeetingTime}`).toISOString(),
+        durationLabel: newMeetingDuration,
         client: newMeetingClient.trim() || undefined,
         clientEmail: newMeetingClientEmail.trim() || undefined,
-        location: newMeetingLocation.trim() || undefined,
-        platform: newMeetingPlatform as 'In-person' | 'Zoom',
+        location: newMeetingPlatform !== 'Phone' ? (newMeetingLocation.trim() || undefined) : undefined,
+        phone: newMeetingPlatform === 'Phone' ? (newMeetingPhone.trim() || undefined) : undefined,
+        platform: newMeetingPlatform as 'In-person' | 'Zoom' | 'Phone',
         kind: newMeetingType as 'meeting' | 'viewing' | 'signing',
       });
       closeAddModal();
@@ -268,9 +273,30 @@ export const Meetings: React.FC = () => {
               <div>
                 <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('meetings.locationPlatform')}</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-primary)', fontWeight: 500 }}>
-                  {selectedMeeting.platform === 'Zoom' ? <VideoCamera size={14} /> : <MapPin size={14} />}
-                  {selectedMeeting.location || selectedMeeting.platform || 'N/A'}
+                  {selectedMeeting.platform === 'Zoom' ? <VideoCamera size={14} />
+                    : selectedMeeting.platform === 'Phone' ? <Phone size={14} />
+                    : <MapPin size={14} />}
+                  {selectedMeeting.platform === 'Phone'
+                    ? (selectedMeeting.phone || t('meetings.phone'))
+                    : (selectedMeeting.location || selectedMeeting.platform || 'N/A')}
                 </span>
+                {selectedMeeting.platform === 'In-person' && selectedMeeting.location && (
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedMeeting.location)}`}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: '0.8rem', color: 'var(--brand-primary)', fontWeight: 500 }}
+                  >
+                    <MapPin size={12} /> {t('meetings.openInMaps')}
+                  </a>
+                )}
+                {selectedMeeting.platform === 'Phone' && selectedMeeting.phone && (
+                  <a
+                    href={`tel:${selectedMeeting.phone.replace(/\s+/g, '')}`}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: '0.8rem', color: 'var(--brand-primary)', fontWeight: 500 }}
+                  >
+                    <Phone size={12} /> {t('meetings.callNow')}
+                  </a>
+                )}
               </div>
             </div>
 
@@ -341,6 +367,7 @@ export const Meetings: React.FC = () => {
                 options={[
                   { value: 'In-person', label: t('meetings.inPerson') },
                   { value: 'Zoom', label: 'Zoom' },
+                  { value: 'Phone', label: t('meetings.phone') },
                 ]}
               />
             </div>
@@ -364,17 +391,50 @@ export const Meetings: React.FC = () => {
                 onChange={(e) => setNewMeetingTime(e.target.value)}
               />
             </div>
+            <div className={styles.formGroup}>
+              <label>{t('meetings.duration')}</label>
+              <SelectMenu
+                aria-label={t('meetings.duration')}
+                value={newMeetingDuration}
+                onChange={setNewMeetingDuration}
+                options={[
+                  { value: '30m', label: t('meetings.dur30m') },
+                  { value: '45m', label: t('meetings.dur45m') },
+                  { value: '1h', label: t('meetings.dur1h') },
+                  { value: '1h 30m', label: t('meetings.dur90m') },
+                  { value: '2h', label: t('meetings.dur2h') },
+                ]}
+              />
+            </div>
           </div>
-          <div className={styles.formGroup}>
-            <label>{t('meetings.locationLink')}</label>
-            <input
-              type="text"
-              className={styles.textInput}
-              placeholder={t('meetings.locationPlaceholder')}
-              value={newMeetingLocation}
-              onChange={(e) => setNewMeetingLocation(e.target.value)}
-            />
-          </div>
+          {newMeetingPhone !== undefined && newMeetingPlatform === 'Phone' ? (
+            <div className={styles.formGroup}>
+              <label>{t('meetings.phoneLabel')}</label>
+              <input
+                type="tel"
+                className={styles.textInput}
+                placeholder={t('meetings.phonePlaceholder')}
+                value={newMeetingPhone}
+                onChange={(e) => setNewMeetingPhone(e.target.value)}
+              />
+            </div>
+          ) : (
+            <div className={styles.formGroup}>
+              <label>{newMeetingPlatform === 'Zoom' ? t('meetings.zoomLinkLabel') : t('meetings.addressLabel')}</label>
+              <input
+                type="text"
+                className={styles.textInput}
+                placeholder={newMeetingPlatform === 'Zoom' ? t('meetings.zoomLinkPlaceholder') : t('meetings.addressPlaceholder')}
+                value={newMeetingLocation}
+                onChange={(e) => setNewMeetingLocation(e.target.value)}
+              />
+              {newMeetingPlatform === 'In-person' && (
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
+                  {t('meetings.addressHint')}
+                </span>
+              )}
+            </div>
+          )}
           <div className={styles.formGroup}>
             <label>{t('meetings.clientLabel')}</label>
             <input
