@@ -129,6 +129,53 @@ export class CatalogRepository {
   }
 
   /** Proje yaşam döngüsü durumunu (metadata.lifecycle_status) değiştirir. */
+  /** Proje tam-alan güncelleme: kolonlar COALESCE ile, metadata merge (|| ile
+   *  yalnız verilen anahtarlar). deleted_at IS NULL koruması. */
+  async updateProject(
+    ctx: RequestContext,
+    id: string,
+    input: {
+      title?: string | null;
+      developerId?: string | null;
+      city?: string | null;
+      district?: string | null;
+      description?: string | null;
+      price?: number | null;
+      currency?: string | null;
+      metadataPatch?: Record<string, unknown>;
+    },
+  ): Promise<ProjectRow | null> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `UPDATE properties SET
+            title       = COALESCE($2, title),
+            developer_id = COALESCE($3, developer_id),
+            city        = COALESCE($4, city),
+            district    = COALESCE($5, district),
+            description = COALESCE($6, description),
+            price       = COALESCE($7, price),
+            currency    = COALESCE($8, currency),
+            metadata    = COALESCE(metadata, '{}'::jsonb) || $9::jsonb,
+            updated_by  = $10, updated_at = now()
+          WHERE id = $1 AND deleted_at IS NULL
+          RETURNING id`,
+        [
+          id, input.title ?? null, input.developerId ?? null, input.city ?? null,
+          input.district ?? null, input.description ?? null, input.price ?? null,
+          input.currency ?? null, JSON.stringify(input.metadataPatch ?? {}), ctx.userId,
+        ],
+      );
+      if (!rows[0]) return null;
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'project.updated','property',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, id, JSON.stringify({ fields: Object.keys(input) }), ctx.correlationId],
+      );
+      const { rows: full } = await c.query<ProjectRow>(`${PROJECT_SELECT} WHERE p.id = $1`, [id]);
+      return full[0];
+    });
+  }
+
   async setLifecycleStatus(ctx: RequestContext, id: string, status: string): Promise<ProjectRow | null> {
     return this.db.withContext(ctx, async (c) => {
       const { rows } = await c.query<{ id: string }>(

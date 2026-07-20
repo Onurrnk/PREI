@@ -21,6 +21,7 @@ import type {
   CreateDeveloperInput,
   CreateMeetingInput,
   CreateProjectInput,
+  UpdateProjectInput,
   CreateProposalInput,
   UpdateProposalInput,
   CreateTaskInput,
@@ -177,6 +178,7 @@ export const projectsApi = {
   },
   setLifecycle: (id: string, status: ProjectDTO['lifecycleStatus']) =>
     api.patch<ProjectDTO>(`/api/projects/${id}/lifecycle`, { status }),
+  update: (id: string, input: UpdateProjectInput) => api.patch<ProjectDTO>(`/api/projects/${id}`, input),
 };
 
 export const proposalsApi = {

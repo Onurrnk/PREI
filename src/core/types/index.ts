@@ -432,6 +432,8 @@ export interface ProjectDTO {
   developerName: string;
   name: string;
   location: string;
+  city: string;
+  district: string;
   status: 'Off-plan' | 'Under Construction' | 'Completed';
   lifecycleStatus: 'active' | 'sold' | 'paused' | 'archived';
   totalUnits: number;
@@ -464,6 +466,9 @@ export interface CreateProjectInput {
   paymentPlan?: PaymentPlanDTO[];
   amenities?: string[];
 }
+
+// PATCH /api/projects/:id gövdesi — tüm alanlar opsiyonel (verilen güncellenir).
+export type UpdateProjectInput = Partial<CreateProjectInput>;
 
 export interface DeveloperDTO {
   id: string;

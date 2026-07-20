@@ -5,6 +5,7 @@ import { MEDIA_BUCKET, StorageService } from '../documents/storage.service';
 import type { RequestContext } from '../../common/request-context';
 import { toProjectResponse, type ProjectResponse } from './dto/project-response.dto';
 import type { CreateProjectDto } from './dto/create-project.dto';
+import type { UpdateProjectDto } from './dto/update-project.dto';
 
 export interface UploadedImageLike {
   originalname: string;
@@ -56,6 +57,30 @@ export class ProjectsService {
         documents: [],
       },
     });
+    return toProjectResponse(row);
+  }
+
+  /** Proje tam-alan güncelleme — yalnız verilen alanlar değişir. */
+  async update(ctx: RequestContext, id: string, dto: UpdateProjectDto): Promise<ProjectResponse> {
+    const metadataPatch: Record<string, unknown> = {};
+    if (dto.status !== undefined) metadataPatch.project_status = dto.status;
+    if (dto.completionDate !== undefined) metadataPatch.completion_date = dto.completionDate;
+    if (dto.totalUnits !== undefined) metadataPatch.total_units = dto.totalUnits;
+    if (dto.availableUnits !== undefined) metadataPatch.available_units = dto.availableUnits;
+    if (dto.paymentPlan !== undefined) metadataPatch.payment_plan = dto.paymentPlan;
+    if (dto.amenities !== undefined) metadataPatch.amenities = dto.amenities;
+
+    const row = await this.repo.updateProject(ctx, id, {
+      title: dto.title?.trim(),
+      developerId: dto.developerId,
+      city: dto.city?.trim(),
+      district: dto.district?.trim(),
+      description: dto.description?.trim(),
+      price: dto.price,
+      currency: dto.currency,
+      metadataPatch: Object.keys(metadataPatch).length ? metadataPatch : undefined,
+    });
+    if (!row) throw new NotFoundException();
     return toProjectResponse(row);
   }
 

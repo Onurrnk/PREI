@@ -18,6 +18,7 @@ import type {
   CreateDeveloperInput,
   CreateMeetingInput,
   CreateProjectInput,
+  UpdateProjectInput,
   CreateProposalInput,
   CreateTaskInput,
   DashboardSummaryDTO,
@@ -431,7 +432,9 @@ let mockProjects: ProjectDTO[] = ([
     ],
     documents: []
   }
-] as Omit<ProjectDTO, 'lifecycleStatus'>[]).map((p) => ({ ...p, lifecycleStatus: 'active' as const }));
+] as Omit<ProjectDTO, 'lifecycleStatus' | 'city' | 'district'>[]).map((p) => ({
+  ...p, lifecycleStatus: 'active' as const, city: p.location, district: '',
+}));
 
 // Teklif oluşturma/güncelleme mock'u — zengin metadata (daire, ROI, liste/
 // indirim) alanlarını backend mapper'ıyla aynı şekilde ProposalDTO'ya çıkarır.
@@ -1218,6 +1221,29 @@ export const handlers = [
     return HttpResponse.json<ProjectDTO>(mockProjects[idx]);
   }),
 
+  http.patch('/api/projects/:id', async ({ params, request }) => {
+    const idx = mockProjects.findIndex((p) => p.id === params.id);
+    if (idx === -1) return new HttpResponse(null, { status: 404 });
+    const b = (await request.json()) as UpdateProjectInput;
+    const cur = mockProjects[idx];
+    const city = b.city ?? cur.city, district = b.district ?? cur.district;
+    const updated: ProjectDTO = {
+      ...cur,
+      name: b.title ?? cur.name,
+      status: (b.status ?? cur.status) as ProjectDTO['status'],
+      city, district,
+      location: [district, city].filter(Boolean).join(', ') || cur.location,
+      description: b.description ?? cur.description,
+      startingPrice: b.price ?? cur.startingPrice,
+      currency: b.currency ?? cur.currency,
+      completionDate: b.completionDate ?? cur.completionDate,
+      totalUnits: b.totalUnits ?? cur.totalUnits,
+      availableUnits: b.availableUnits ?? cur.availableUnits,
+    };
+    mockProjects[idx] = updated;
+    return HttpResponse.json<ProjectDTO>(updated);
+  }),
+
   http.post('/api/projects', async ({ request }) => {
     const input = (await request.json()) as CreateProjectInput;
     const newProject: ProjectDTO = {
@@ -1226,6 +1252,8 @@ export const handlers = [
       developerName: input.developerId ? (mockDeveloperNames[input.developerId] ?? '—') : '—',
       name: input.title,
       location: [input.district, input.city].filter(Boolean).join(', ') || '—',
+      city: input.city ?? '',
+      district: input.district ?? '',
       status: input.status ?? 'Off-plan',
       lifecycleStatus: 'active',
       totalUnits: input.totalUnits ?? 0,

@@ -13,6 +13,7 @@ import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { ProjectsService, type UploadedImageLike } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
 import { SetLifecycleDto } from './dto/lifecycle.dto';
 
 @Controller('projects')
@@ -38,6 +39,15 @@ export class ProjectsController {
   @Post()
   create(@Ctx() ctx: RequestContext, @Body() dto: CreateProjectDto) {
     return this.projects.create(ctx, dto);
+  }
+
+  @Patch(':id')
+  update(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateProjectDto,
+  ) {
+    return this.projects.update(ctx, id, dto);
   }
 
   @Patch(':id/lifecycle')

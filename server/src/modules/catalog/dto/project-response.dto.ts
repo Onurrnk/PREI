@@ -15,6 +15,8 @@ export interface ProjectResponse {
   developerName: string;
   name: string;
   location: string;
+  city: string;      // düzenleme formu ön-dolumu için ham değer
+  district: string;
   status: string; // 'Off-plan' | 'Under Construction' | 'Completed' (yapım aşaması)
   lifecycleStatus: string; // 'active' | 'sold' | 'paused' | 'archived' (yaşam döngüsü)
   totalUnits: number;
@@ -63,6 +65,8 @@ export function toProjectResponse(row: ProjectRow, docs: ProjectDocRow[] = []): 
     developerName: row.developer_name ?? '—',
     name: row.title,
     location,
+    city: row.city ?? '',
+    district: row.district ?? '',
     status: str(m.project_status) || 'Off-plan',
     lifecycleStatus: str(m.lifecycle_status) || 'active',
     totalUnits: num(m.total_units),

@@ -5,10 +5,12 @@ import type { ClientDTO, ProjectDTO } from '../../core/types';
 import { clientsApi, gmailApi, projectsApi, documentsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
+import { Modal } from '../../core/components/Modal/Modal';
+import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { ArrowLeft, MapPin, Buildings, CalendarBlank, CurrencyDollar, CheckCircle, FileText, FilePdf, Table, DownloadSimple, PaperPlaneTilt, Paperclip } from '@phosphor-icons/react';
+import { ArrowLeft, MapPin, Buildings, CalendarBlank, CurrencyDollar, CheckCircle, FileText, FilePdf, Table, DownloadSimple, PaperPlaneTilt, Paperclip, PencilSimple } from '@phosphor-icons/react';
 import styles from './ProjectProfile.module.css';
 
 export const ProjectProfile: React.FC = () => {
@@ -18,6 +20,55 @@ export const ProjectProfile: React.FC = () => {
   const { data, loading, refetch } = useFetch<ProjectDTO[]>(() => projectsApi.list(), [id]);
   const project = (data ?? []).find(p => p.id === id) ?? null;
   const [lifecycleSaving, setLifecycleSaving] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const [edit, setEdit] = useState({
+    title: '', status: 'Off-plan', city: '', district: '', description: '',
+    price: '', currency: 'EUR', completionDate: '', totalUnits: '', availableUnits: '',
+  });
+  const patchEdit = (p: Partial<typeof edit>) => setEdit((e) => ({ ...e, ...p }));
+
+  const openEdit = () => {
+    if (!project) return;
+    setEdit({
+      title: project.name,
+      status: project.status,
+      city: project.city ?? '',
+      district: project.district ?? '',
+      description: project.description ?? '',
+      price: project.startingPrice ? String(project.startingPrice) : '',
+      currency: project.currency || 'EUR',
+      completionDate: project.completionDate ?? '',
+      totalUnits: project.totalUnits ? String(project.totalUnits) : '',
+      availableUnits: project.availableUnits ? String(project.availableUnits) : '',
+    });
+    setEditOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!project) return;
+    if (!edit.title.trim()) { toast.error(t('projects.edit.titleRequired')); return; }
+    setEditSaving(true);
+    try {
+      await projectsApi.update(project.id, {
+        title: edit.title.trim(),
+        status: edit.status as ProjectDTO['status'],
+        city: edit.city.trim(),
+        district: edit.district.trim(),
+        description: edit.description.trim(),
+        price: edit.price.trim() ? Number(edit.price) : undefined,
+        currency: edit.currency,
+        completionDate: edit.completionDate.trim(),
+        totalUnits: edit.totalUnits.trim() ? Number(edit.totalUnits) : undefined,
+        availableUnits: edit.availableUnits.trim() ? Number(edit.availableUnits) : undefined,
+      });
+      toast.success(t('projects.edit.saved'));
+      setEditOpen(false);
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('projects.edit.saveError'));
+    } finally { setEditSaving(false); }
+  };
   const { data: clientsData } = useFetch<ClientDTO[]>(() => clientsApi.list(), []);
   const clients = clientsData ?? [];
   const [selectedImage, setSelectedImage] = useState(0);
@@ -112,10 +163,74 @@ export const ProjectProfile: React.FC = () => {
               }))}
             />
           </div>
+          <Button variant="outline" onClick={openEdit}><PencilSimple size={16} /> {t('projects.edit.button')}</Button>
           <Button variant="outline" onClick={() => handleActionClick('Download Full Media Kit')}><FileText size={16} /> {t('projects.mediaKit')}</Button>
           <Button variant="primary" onClick={() => handleActionClick('Reserve Unit')}>{t('projects.reserveUnit')}</Button>
         </div>
       </div>
+
+      {/* Projeyi Düzenle */}
+      <Modal
+        isOpen={editOpen}
+        onClose={() => setEditOpen(false)}
+        title={t('projects.edit.title')}
+        size="lg"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>{t('common.cancel')}</Button>
+            <Button variant="primary" onClick={handleSaveEdit} disabled={editSaving}>
+              {editSaving ? t('common.saving') : t('projects.edit.save')}
+            </Button>
+          </>
+        }
+      >
+        <Field label={t('projects.edit.projectTitle')}>
+          <Input value={edit.title} onChange={(e) => patchEdit({ title: e.target.value })} />
+        </Field>
+        <FormRow>
+          <Field label={t('projects.edit.status')}>
+            <SelectMenu
+              value={edit.status}
+              onChange={(v) => patchEdit({ status: v })}
+              options={['Off-plan', 'Under Construction', 'Completed'].map((s) => ({ value: s, label: s }))}
+            />
+          </Field>
+          <Field label={t('projects.edit.completionDate')}>
+            <Input value={edit.completionDate} onChange={(e) => patchEdit({ completionDate: e.target.value })} placeholder={t('projects.edit.completionPlaceholder')} />
+          </Field>
+        </FormRow>
+        <FormRow>
+          <Field label={t('projects.edit.city')}>
+            <Input value={edit.city} onChange={(e) => patchEdit({ city: e.target.value })} />
+          </Field>
+          <Field label={t('projects.edit.district')}>
+            <Input value={edit.district} onChange={(e) => patchEdit({ district: e.target.value })} />
+          </Field>
+        </FormRow>
+        <FormRow>
+          <Field label={t('projects.edit.price')}>
+            <Input type="number" min="0" value={edit.price} onChange={(e) => patchEdit({ price: e.target.value })} />
+          </Field>
+          <Field label={t('projects.edit.currency')}>
+            <SelectMenu
+              value={edit.currency}
+              onChange={(v) => patchEdit({ currency: v })}
+              options={['EUR', 'USD', 'GBP', 'AED', 'TRY'].map((c) => ({ value: c, label: c }))}
+            />
+          </Field>
+        </FormRow>
+        <FormRow>
+          <Field label={t('projects.edit.totalUnits')}>
+            <Input type="number" min="0" value={edit.totalUnits} onChange={(e) => patchEdit({ totalUnits: e.target.value })} />
+          </Field>
+          <Field label={t('projects.edit.availableUnits')}>
+            <Input type="number" min="0" value={edit.availableUnits} onChange={(e) => patchEdit({ availableUnits: e.target.value })} />
+          </Field>
+        </FormRow>
+        <Field label={t('projects.edit.description')}>
+          <Textarea rows={4} value={edit.description} onChange={(e) => patchEdit({ description: e.target.value })} />
+        </Field>
+      </Modal>
 
       <div className={styles.content}>
         <div className={styles.mainContent}>
