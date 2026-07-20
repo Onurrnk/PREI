@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
+import { EmptyState } from '../../core/components/EmptyState/EmptyState';
 import {
   TrendUp,
   TrendDown,
@@ -9,6 +10,8 @@ import {
   CheckSquare,
   CalendarBlank,
   ChartBar,
+  ChartPieSlice,
+  ListChecks,
 } from '@phosphor-icons/react';
 import { TrendArea, Sparkline, DonutMetric, HBarCompare, fmtEUR } from '../../core/charts';
 import type { DashboardSummaryDTO, MeetingDTO, TaskDTO } from '../../core/types';
@@ -150,7 +153,13 @@ export const Dashboard: React.FC = () => {
           {pipelineTrend.length > 0 ? (
             <TrendArea data={pipelineTrend} formatValue={fmtEUR} name="Pipeline" height={280} />
           ) : (
-            <div className={styles.emptyChart}>{t('dashboard.noPipelineData')}</div>
+            <EmptyState
+              icon={<TrendUp size={24} weight="duotone" />}
+              title={t('dashboard.empty.pipelineTitle')}
+              description={t('dashboard.empty.pipelineDesc')}
+              actionLabel={t('dashboard.empty.addLead')}
+              onAction={() => navigate('/leads')}
+            />
           )}
         </Card>
 
@@ -167,7 +176,11 @@ export const Dashboard: React.FC = () => {
               height={192}
             />
           ) : (
-            <div className={styles.emptyChart}>{t('dashboard.noPipelineData')}</div>
+            <EmptyState
+              icon={<ChartPieSlice size={24} weight="duotone" />}
+              title={t('dashboard.empty.portfolioTitle')}
+              description={t('dashboard.empty.portfolioDesc')}
+            />
           )}
         </Card>
       </div>
@@ -184,7 +197,13 @@ export const Dashboard: React.FC = () => {
           {leadSources.length > 0 ? (
             <HBarCompare data={leadSources} />
           ) : (
-            <div className={styles.emptyChart}>{t('dashboard.noLeadSources')}</div>
+            <EmptyState
+              icon={<ChartBar size={24} weight="duotone" />}
+              title={t('dashboard.empty.leadSourcesTitle')}
+              description={t('dashboard.empty.leadSourcesDesc')}
+              actionLabel={t('dashboard.empty.addLead')}
+              onAction={() => navigate('/leads')}
+            />
           )}
         </Card>
 
@@ -243,7 +262,15 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
             <div className={styles.listWidget}>
-              {schedule.length === 0 && <div className={styles.listEmpty}>{t('dashboard.noMeetings')}</div>}
+              {schedule.length === 0 && (
+                <EmptyState
+                  compact
+                  icon={<CalendarBlank size={22} weight="duotone" />}
+                  title={t('dashboard.noMeetings')}
+                  actionLabel={t('dashboard.empty.scheduleMeeting')}
+                  onAction={() => navigate('/meetings')}
+                />
+              )}
               {schedule.map((m) => (
                 <button key={m.id} className={styles.listItem} onClick={() => navigate('/meetings')}>
                   <span className={styles.itemIcon}>
@@ -270,7 +297,15 @@ export const Dashboard: React.FC = () => {
           </CardHeader>
           <CardBody padding="none">
             <div className={styles.listWidget}>
-              {priorityTasks.length === 0 && <div className={styles.listEmpty}>{t('dashboard.noTasks')}</div>}
+              {priorityTasks.length === 0 && (
+                <EmptyState
+                  compact
+                  icon={<ListChecks size={22} weight="duotone" />}
+                  title={t('dashboard.noTasks')}
+                  actionLabel={t('dashboard.empty.goToTasks')}
+                  onAction={() => navigate('/tasks')}
+                />
+              )}
               {priorityTasks.map((t) => (
                 <button key={t.id} className={styles.listItem} onClick={() => navigate('/tasks')}>
                   <span className={styles.itemContent}>
