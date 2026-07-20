@@ -15,6 +15,7 @@ const ACTIVE_STATUSES = "('new','contacted','qualified','nurturing')";
 
 const MARKET_NAME: Record<string, string> = {
   TR: 'Türkiye', AE: 'Dubai (UAE)', ES: 'Spain', GB: 'United Kingdom', TH: 'Thailand', DE: 'Germany',
+  XX: 'Diğer',
 };
 
 export interface MarketSplitItem { code: string; name: string; valueEur: number }
@@ -67,13 +68,33 @@ export class DashboardService {
                 AND due_date <  date_trunc('week', now()) + interval '7 days') AS meetings_week`,
       );
 
+      // Pazar (market) çıkarımı — öncelik sırası: (1) açık target_market_code,
+      // (2) işlem para birimi (GBP→GB, TRY→TR, AED→AE, EUR→ES; USD belirsiz
+      // olduğu için atlanır), (3) müşteri telefon ülke kodu (+90/+44/+971/+34).
+      // Hiçbiri yoksa 'XX' (Diğer). Uydurma değil — gerçek alanlardan türetilir;
+      // target_market_code dolarsa her zaman o kazanır (ileriye dönük doğru).
       const { rows: markets } = await c.query<{ code: string; value_eur: string }>(
-        `SELECT l.target_market_code AS code, COALESCE(SUM(fx.amount_eur),0) AS value_eur
+        `SELECT
+           COALESCE(
+             l.target_market_code,
+             CASE l.currency
+               WHEN 'GBP' THEN 'GB' WHEN 'TRY' THEN 'TR'
+               WHEN 'AED' THEN 'AE' WHEN 'EUR' THEN 'ES'
+             END,
+             CASE
+               WHEN ct.phone LIKE '+90%'  THEN 'TR'
+               WHEN ct.phone LIKE '+44%'  THEN 'GB'
+               WHEN ct.phone LIKE '+971%' THEN 'AE'
+               WHEN ct.phone LIKE '+34%'  THEN 'ES'
+             END,
+             'XX'
+           ) AS code,
+           COALESCE(SUM(fx.amount_eur),0) AS value_eur
            FROM leads l
            LEFT JOIN LATERAL fx_to_eur(l.budget_max, l.currency) fx ON true
+           LEFT JOIN contacts ct ON ct.id = l.contact_id
           WHERE l.deleted_at IS NULL AND l.status IN ${ACTIVE_STATUSES}
-            AND l.target_market_code IS NOT NULL
-          GROUP BY l.target_market_code
+          GROUP BY 1
           ORDER BY value_eur DESC`,
       );
 

@@ -151,15 +151,19 @@ export const Dashboard: React.FC = () => {
             <span className={styles.cardMeta}>{t('dashboard.last12Weeks')}</span>
           </div>
           {pipelineTrend.length > 0 ? (
-            <TrendArea data={pipelineTrend} formatValue={fmtEUR} name="Pipeline" height={280} />
+            <div className={styles.chartFill}>
+              <TrendArea data={pipelineTrend} formatValue={fmtEUR} name="Pipeline" height={260} />
+            </div>
           ) : (
-            <EmptyState
-              icon={<TrendUp size={24} weight="duotone" />}
-              title={t('dashboard.empty.pipelineTitle')}
-              description={t('dashboard.empty.pipelineDesc')}
-              actionLabel={t('dashboard.empty.addLead')}
-              onAction={() => navigate('/leads')}
-            />
+            <div className={styles.fillCenter}>
+              <EmptyState
+                icon={<TrendUp size={24} weight="duotone" />}
+                title={t('dashboard.empty.pipelineTitle')}
+                description={t('dashboard.empty.pipelineDesc')}
+                actionLabel={t('dashboard.empty.addLead')}
+                onAction={() => navigate('/leads')}
+              />
+            </div>
           )}
         </Card>
 
@@ -168,19 +172,23 @@ export const Dashboard: React.FC = () => {
             <h2 className={styles.cardTitle}>{t('dashboard.portfolioByMarket')}</h2>
           </div>
           {marketSplit.length > 0 ? (
-            <DonutMetric
-              data={marketSplit}
-              centerValue={fmtEUR(marketTotal)}
-              centerLabel={t('common.total')}
-              formatValue={fmtEUR}
-              height={192}
-            />
+            <div className={styles.chartFill}>
+              <DonutMetric
+                data={marketSplit}
+                centerValue={fmtEUR(marketTotal)}
+                centerLabel={t('common.total')}
+                formatValue={fmtEUR}
+                height={192}
+              />
+            </div>
           ) : (
-            <EmptyState
-              icon={<ChartPieSlice size={24} weight="duotone" />}
-              title={t('dashboard.empty.portfolioTitle')}
-              description={t('dashboard.empty.portfolioDesc')}
-            />
+            <div className={styles.fillCenter}>
+              <EmptyState
+                icon={<ChartPieSlice size={24} weight="duotone" />}
+                title={t('dashboard.empty.portfolioTitle')}
+                description={t('dashboard.empty.portfolioDesc')}
+              />
+            </div>
           )}
         </Card>
       </div>
@@ -195,15 +203,19 @@ export const Dashboard: React.FC = () => {
             <span className={styles.cardMeta}>{t('dashboard.days30')}</span>
           </div>
           {leadSources.length > 0 ? (
-            <HBarCompare data={leadSources} />
+            <div className={styles.chartFill}>
+              <HBarCompare data={leadSources} />
+            </div>
           ) : (
-            <EmptyState
-              icon={<ChartBar size={24} weight="duotone" />}
-              title={t('dashboard.empty.leadSourcesTitle')}
-              description={t('dashboard.empty.leadSourcesDesc')}
-              actionLabel={t('dashboard.empty.addLead')}
-              onAction={() => navigate('/leads')}
-            />
+            <div className={styles.fillCenter}>
+              <EmptyState
+                icon={<ChartBar size={24} weight="duotone" />}
+                title={t('dashboard.empty.leadSourcesTitle')}
+                description={t('dashboard.empty.leadSourcesDesc')}
+                actionLabel={t('dashboard.empty.addLead')}
+                onAction={() => navigate('/leads')}
+              />
+            </div>
           )}
         </Card>
 
@@ -215,7 +227,7 @@ export const Dashboard: React.FC = () => {
               </h2>
             </div>
           </CardHeader>
-          <CardBody padding="none">
+          <CardBody padding="none" className={styles.fillBody}>
             {/* Mini ay takvimi — randevu olan günler vurgulu; her güne tıklayınca Toplantılar */}
             <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border-subtle)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -261,7 +273,7 @@ export const Dashboard: React.FC = () => {
                 })}
               </div>
             </div>
-            <div className={styles.listWidget}>
+            <div className={`${styles.listWidget} ${schedule.length === 0 ? styles.fillCenter : ''}`}>
               {schedule.length === 0 && (
                 <EmptyState
                   compact
@@ -295,8 +307,8 @@ export const Dashboard: React.FC = () => {
               </h2>
             </div>
           </CardHeader>
-          <CardBody padding="none">
-            <div className={styles.listWidget}>
+          <CardBody padding="none" className={styles.fillBody}>
+            <div className={`${styles.listWidget} ${priorityTasks.length === 0 ? styles.fillCenter : ''}`}>
               {priorityTasks.length === 0 && (
                 <EmptyState
                   compact
