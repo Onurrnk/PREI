@@ -465,8 +465,10 @@ export class AgentService {
    * gerçek telefon gelirse onunla DEĞİŞTİRİLİR. Kriterler leads.metadata
    * .criteria'ya merge edilir (yeni anahtar ekler, eskiyi korur).
    */
-  async updateLeadProfile(ctx: RequestContext, dto: LeadProfileDto): Promise<{ lead_id: string; updated: string[] }> {
-    return this.db.withContext(ctx, async (c) => {
+  async updateLeadProfile(
+    ctx: RequestContext, dto: LeadProfileDto,
+  ): Promise<{ lead_id: string; updated: string[]; welcome_email?: WebLeadResult['welcome_email'] }> {
+    const result = await this.db.withContext(ctx, async (c) => {
       const { rows: lead } = await c.query<{ id: string; contact_id: string }>(
         `SELECT id, contact_id FROM leads WHERE id = $1 AND tenant_id = $2 AND deleted_at IS NULL`,
         [dto.lead_id, ctx.tenantId],
@@ -540,8 +542,21 @@ export class AgentService {
       if (updated.length > 0) {
         await this.writeEvent(c, ctx, 'lead', dto.lead_id, 'lead.profile_extracted', { updated });
       }
-      return { lead_id: dto.lead_id, updated };
+      return { lead_id: dto.lead_id, updated, contactId };
     });
+
+    // Eylül elzem verileri (e-posta/telefon) tamamlar tamamlamaz markalı hoş
+    // geldiniz e-postası gider — idempotent (welcome_email_sent_at). Böylece
+    // WhatsApp'tan gelen lead de web formuyla aynı karşılamayı alır.
+    let welcome: WebLeadResult['welcome_email'] | undefined;
+    if (result.updated.includes('email') || result.updated.includes('phone')) {
+      const langRow = await this.db
+        .raw<{ preferred_lang: string | null }>(`SELECT preferred_lang FROM contacts WHERE id = $1`, [result.contactId])
+        .catch(() => [] as Array<{ preferred_lang: string | null }>);
+      const lang: 'tr' | 'en' = langRow[0]?.preferred_lang === 'en' ? 'en' : 'tr';
+      welcome = await this.maybeSendWelcome(ctx, result.contactId, lang, 'contact');
+    }
+    return { lead_id: result.lead_id, updated: result.updated, welcome_email: welcome };
   }
 
   /**
