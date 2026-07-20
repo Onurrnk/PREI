@@ -26,6 +26,7 @@ export interface MeetingResponse {
   client: string;
   location: string;
   platform: string;
+  phone: string;
   notes: string;
   kind: string;               // viewing | signing | meeting
   // Google Takvim senkron durumu: synced | reauth | failed | skipped (bağlı Gmail yok)
@@ -35,6 +36,39 @@ export interface MeetingResponse {
 
 function str(v: unknown): string {
   return typeof v === 'string' ? v : '';
+}
+
+const PLATFORM_TR: Record<string, string> = { 'In-person': 'Yüz yüze', Zoom: 'Zoom', Phone: 'Telefon' };
+const KIND_TR: Record<string, string> = { meeting: 'Görüşme', viewing: 'Mülk Gezisi', signing: 'Sözleşme İmzası' };
+
+/** Google Takvim etkinliği için tam açıklama — telefondaki takvim uygulamasında
+ *  her detay (tür/müşteri/platform/adres-link-telefon/not) eksiksiz görünür;
+ *  sonda PREI linki (isteyen daha fazla detay için PREI'ye bağlanır). */
+export function buildEventDescription(dto: {
+  kind?: string; client?: string; clientEmail?: string; platform?: string;
+  phone?: string; location?: string; notes?: string;
+}): string {
+  const platform = dto.platform ?? 'In-person';
+  const lines = [
+    `Tür: ${KIND_TR[dto.kind ?? 'meeting'] ?? 'Görüşme'}`,
+    dto.client?.trim() ? `Müşteri: ${dto.client.trim()}` : null,
+    dto.clientEmail?.trim() ? `E-posta: ${dto.clientEmail.trim()}` : null,
+    `Platform: ${PLATFORM_TR[platform] ?? platform}`,
+    platform === 'Phone' && dto.phone?.trim() ? `Telefon: ${dto.phone.trim()}` : null,
+    platform === 'Zoom' && dto.location?.trim() ? `Zoom: ${dto.location.trim()}` : null,
+    platform === 'In-person' && dto.location?.trim() ? `Adres: ${dto.location.trim()}` : null,
+    dto.notes?.trim() ? `\nNot: ${dto.notes.trim()}` : null,
+    `\n— PREI’de görüntüle: https://prei.produality.com/meetings`,
+  ];
+  return lines.filter(Boolean).join('\n');
+}
+
+/** Google Takvim 'location' alanı: yüz yüzede adres (Google haritada gösterir),
+ *  Zoom'da link, telefonda numara. */
+export function buildEventLocation(dto: { platform?: string; location?: string; phone?: string }): string | null {
+  const platform = dto.platform ?? 'In-person';
+  if (platform === 'Phone') return dto.phone?.trim() ? `Telefon: ${dto.phone.trim()}` : null;
+  return dto.location?.trim() || null;
 }
 
 @Injectable()
@@ -68,6 +102,7 @@ export class MeetingsService {
       durationLabel: str(m.duration),
       client: r.related_name ?? '',
       location: str(m.location),
+      phone: str(m.phone),
       platform: str(m.platform),
       notes: r.description ?? '',
       kind: str(m.meeting_kind) || 'meeting',
@@ -80,6 +115,7 @@ export class MeetingsService {
     const metadata = {
       duration: dto.durationLabel ?? '',
       location: dto.location ?? '',
+      phone: dto.phone ?? '',
       platform: dto.platform ?? 'In-person',
       meeting_kind: dto.kind ?? 'meeting',
     };
@@ -136,8 +172,8 @@ export class MeetingsService {
     try {
       const res = await this.calendar.createEvent(users[0].id, {
         summary: dto.title.trim(),
-        description: [dto.notes?.trim(), dto.client ? `Müşteri: ${dto.client}` : null].filter(Boolean).join('\n') || null,
-        location: dto.location?.trim() || null,
+        description: buildEventDescription(dto),
+        location: buildEventLocation(dto),
         startIso: dto.date,
         durationMinutes: parseDurationMinutes(dto.durationLabel),
         attendeeEmail: dto.clientEmail?.trim() || null,

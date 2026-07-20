@@ -18,10 +18,16 @@ export class CreateMeetingDto {
   @IsOptional() @IsEmail()
   clientEmail?: string;
 
-  @IsOptional() @IsString() @MaxLength(200)
+  /** Yüz yüze görüşmede adres/mekan (Google Takvim'de haritalı gösterilir);
+   *  Zoom'da toplantı linki. */
+  @IsOptional() @IsString() @MaxLength(300)
   location?: string;
 
-  @IsOptional() @IsIn(['In-person', 'Zoom'])
+  /** Telefon görüşmesinde aranacak numara. */
+  @IsOptional() @IsString() @MaxLength(40)
+  phone?: string;
+
+  @IsOptional() @IsIn(['In-person', 'Zoom', 'Phone'])
   platform?: string;
 
   @IsOptional() @IsString() @MaxLength(2000)
