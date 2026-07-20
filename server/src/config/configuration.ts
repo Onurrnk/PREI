@@ -67,13 +67,17 @@ export default (): AppConfig => ({
     clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
     redirectUri:
       process.env.GOOGLE_REDIRECT_URI ?? 'http://localhost:4000/api/auth/google/callback',
+    // Takvim kapsamı env-bayrağıyla (GOOGLE_CALENDAR_ENABLED=true) açılır.
+    // KAPALI varsayılan: Google Cloud tarafında (a) Calendar API etkin ve
+    // (b) calendar.events kapsamı OAuth consent screen'e eklenmeden istenirse
+    // Google 'invalid_scope' döndürüp TÜM reconnect'i (Gmail dahil) bloke eder.
+    // Cloud hazır olunca bayrak açılır → tek reconnect'te takvim de gelir.
     scopes: [
       'https://www.googleapis.com/auth/gmail.readonly',
       'https://www.googleapis.com/auth/gmail.send',
-      // Takvim entegrasyonu (PREI randevusu → Google Calendar etkinliği).
-      // Şimdi eklendi ki Onur'un (okuma izni için zaten yapması gereken)
-      // yeniden-bağlanması takvim iznini de kapsasın — ikinci reconnect olmasın.
-      'https://www.googleapis.com/auth/calendar.events',
+      ...(process.env.GOOGLE_CALENDAR_ENABLED === 'true'
+        ? ['https://www.googleapis.com/auth/calendar.events']
+        : []),
       'https://www.googleapis.com/auth/userinfo.email',
       'openid',
     ],
