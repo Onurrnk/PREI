@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   MagnifyingGlass, Paperclip, PaperPlaneTilt, ArrowBendUpLeft,
-  EnvelopeSimple, TextB, TextItalic, TextUnderline, ListBullets, ListNumbers, FileText, X,
+  EnvelopeSimple, TextB, TextItalic, TextUnderline, ListBullets, ListNumbers, FileText, X, WarningCircle,
 } from '@phosphor-icons/react';
 import type { EmailMessageDTO, ThreadSummaryDTO, ThreadDetailDTO, EmailAttachmentInput, MeResponse } from '../../../core/types';
 import { gmailApi, meApi } from '../../../core/api/resources';
@@ -280,7 +280,7 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
         <div className={styles.headerTop}>
           <div className={styles.integrationBadge}>
             <img src="https://cdn.simpleicons.org/gmail/EA4335" alt="Gmail" className={styles.googleIcon} />
-            <span>{t('clients.email.gmailConnected')}</span>
+            <span>{threadsError ? t('clients.email.gmailNeedsReconnect') : t('clients.email.gmailConnected')}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span className={styles.threadCount}>{t('clients.email.threadCount', { count: threads.length })}</span>
@@ -304,7 +304,13 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
       <CardBody className={styles.emailBody}>
         <div className={styles.threadList}>
           {threadsLoading && <p className={styles.messageEmpty}>{t('clients.email.loading')}</p>}
-          {threadsError && <p className={styles.messageEmpty}>{threadsError}</p>}
+          {threadsError && (
+            <div className={styles.messageEmpty} style={{ padding: 24, textAlign: 'center', gap: 8 }}>
+              <WarningCircle size={28} weight="duotone" style={{ color: 'var(--data-warning, var(--color-warning))' }} />
+              <p style={{ fontWeight: 600 }}>{t('clients.email.connectionIssueTitle')}</p>
+              <p style={{ fontSize: 13 }}>{threadsError}</p>
+            </div>
+          )}
           {!threadsLoading && !threadsError && threads.length === 0 && (
             <div className={styles.messageEmpty}>
               <EnvelopeSimple size={28} weight="duotone" />

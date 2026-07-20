@@ -352,16 +352,21 @@ export const ClientProfile: React.FC = () => {
       .catch(() => toast.error(t('clients.profile.noteSaveFailed')));
   };
 
-  // E-posta / Ara hızlı eylemleri — cihazın varsayılan mail/arama uygulamasını açar.
+  // E-posta: entegre Mail sekmesini açar (markalı Gmail kompozörü orada) —
+  // masaüstünde işe yaramayan mailto: yerine uygulama-içi gerçek eylem.
   const emailClient = () => {
     if (!client) return;
     if (!client.email || client.email === '—') { toast.info(t('clients.profile.flagEmailMissing')); return; }
-    window.location.href = `mailto:${client.email}`;
+    setActiveTab('email');
   };
+  // Ara: görüşme kaydı modalını açar (masaüstünde işe yaramayan tel: yerine
+  // her cihazda çalışan CRM eylemi — aramayı timeline'a kaydet). Telefon
+  // numarası da modalda görünür/kopyalanabilir.
   const callClient = () => {
     if (!client) return;
     if (!client.phone || client.phone === '—') { toast.info(t('clients.profile.phoneMissing')); return; }
-    window.location.href = `tel:${client.phone.replace(/\s+/g, '')}`;
+    setActivityType('Call');
+    setShowActivityModal(true);
   };
 
   const openEditModal = () => {

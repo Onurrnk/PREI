@@ -549,6 +549,8 @@ export const tr = {
       },
       email: {
         gmailConnected: 'Gmail Bağlı',
+        gmailNeedsReconnect: 'Gmail yeniden bağlanmalı',
+        connectionIssueTitle: 'Gmail yazışmaları yüklenemedi',
         newEmail: 'Yeni E-posta',
         subjectPh: 'Konu…',
         subjectRequired: 'Konu satırı zorunludur.',

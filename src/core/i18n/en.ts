@@ -550,6 +550,8 @@ export const en = {
       },
       email: {
         gmailConnected: 'Gmail Connected',
+        gmailNeedsReconnect: 'Gmail needs reconnect',
+        connectionIssueTitle: 'Could not load Gmail threads',
         newEmail: 'New Email',
         subjectPh: 'Subject…',
         subjectRequired: 'A subject line is required.',
