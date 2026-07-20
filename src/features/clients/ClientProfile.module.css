@@ -627,19 +627,36 @@
   color: var(--text-primary);
 }
 
-.requirementsBox {
+/* Tutarlı blok etiketi (Amaç, Özel İstekler, Daire Tipleri, Bölgeler) —
+   küçük, letter-spaced, muted; hepsi Geist sans ile uyumlu. */
+.blockLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Serbest-metin açıklama bloğu (Amaç / Özel İstekler) — yatay satır yerine
+   dikey, sarılan metin taşmasını önler; hafif inset kutu. */
+.descBlock {
   margin-top: var(--spacing-md);
-  padding: 10px 12px;
+  padding: 12px 14px;
   background-color: var(--bg-inset, var(--bg-app));
   border: 1px solid var(--border-subtle, var(--border-color));
   border-radius: var(--radius-md);
 }
 
-.requirementsText {
-  font-size: 0.8125rem;
-  line-height: 1.55;
-  color: var(--text-secondary);
+.descText {
   margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
 }
 
 /* ===== Edit Profile modal bölümleri ===== */

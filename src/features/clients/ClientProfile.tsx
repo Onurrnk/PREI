@@ -526,9 +526,9 @@ export const ClientProfile: React.FC = () => {
               </div>
 
               {client.purpose && (
-                <div className={styles.detailRow}>
-                  <span className={styles.detailLabel}>{t('clients.profile.purpose')}</span>
-                  <span className={styles.detailValue}>{client.purpose}</span>
+                <div className={styles.descBlock}>
+                  <span className={styles.blockLabel}>{t('clients.profile.purpose')}</span>
+                  <p className={styles.descText}>{client.purpose}</p>
                 </div>
               )}
               {client.budgetRange && (
@@ -539,7 +539,7 @@ export const ClientProfile: React.FC = () => {
               )}
               {client.unitTypes && client.unitTypes.length > 0 && (
                 <div className={styles.regionsContainer}>
-                  <span className={styles.detailLabel} style={{ marginBottom: '8px', display: 'block' }}>{t('clients.profile.unitTypeSearch')}</span>
+                  <span className={styles.blockLabel}>{t('clients.profile.unitTypeSearch')}</span>
                   <div className={styles.regionsList}>
                     {client.unitTypes.map((u) => (
                       <span key={u} className={styles.unitTag}>{u}</span>
@@ -548,14 +548,14 @@ export const ClientProfile: React.FC = () => {
                 </div>
               )}
               {client.requirements && (
-                <div className={styles.requirementsBox}>
-                  <span className={styles.detailLabel} style={{ marginBottom: '6px', display: 'block' }}>{t('clients.profile.specificRequirements')}</span>
-                  <p className={styles.requirementsText}>{client.requirements}</p>
+                <div className={styles.descBlock}>
+                  <span className={styles.blockLabel}>{t('clients.profile.specificRequirements')}</span>
+                  <p className={styles.descText}>{client.requirements}</p>
                 </div>
               )}
 
               <div className={styles.regionsContainer}>
-                <span className={styles.detailLabel} style={{ marginBottom: '8px', display: 'block' }}>{t('clients.profile.regions')}</span>
+                <span className={styles.blockLabel}>{t('clients.profile.regions')}</span>
                 <RegionsEditor
                   regions={client.preferredRegions}
                   onChange={(regions) => { void saveClient({ preferredRegions: regions }, t('clients.profile.regionsUpdated')); }}
