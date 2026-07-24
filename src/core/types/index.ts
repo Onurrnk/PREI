@@ -764,6 +764,7 @@ export interface MeResponse {
   email: string;
   name: string;
   phone: string | null;
+  avatar: string | null;
   role: Role;
   tenantId: string;
   jobTitle: string | null;
@@ -777,6 +778,22 @@ export interface MeResponse {
 export interface GoogleOAuthStatus {
   connected: boolean;
   email: string | null;
+}
+
+export type NotificationKind = 'lead' | 'contact' | 'meeting' | 'proposal' | 'document' | 'note';
+
+export interface NotificationDTO {
+  id: string;
+  type: string;          // event_type (i18n anahtarı için)
+  kind: NotificationKind;
+  label: string | null;  // ilgili kişi/başlık
+  occurredAt: string;
+  unread: boolean;
+}
+
+export interface NotificationFeed {
+  items: NotificationDTO[];
+  unreadCount: number;
 }
 
 export interface UpdateMeInput {

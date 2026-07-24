@@ -234,3 +234,7 @@
   padding-top: var(--spacing-lg);
   border-top: 1px solid var(--border-color);
 }
+
+/* Profil fotoğrafı yükleme spinner'ı */
+.spin { animation: settingsSpin 0.8s linear infinite; }
+@keyframes settingsSpin { to { transform: rotate(360deg); } }

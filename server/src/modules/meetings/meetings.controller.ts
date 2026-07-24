@@ -1,7 +1,7 @@
 // =====================================================================
 // PREI | MeetingsController — /api/meetings (takvim, list/create). 'meetings' izni.
 // =====================================================================
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RbacGuard } from '../../common/rbac.guard';
 import { RequirePermission } from '../../common/require-permission.decorator';
@@ -24,5 +24,10 @@ export class MeetingsController {
   @Post()
   create(@Ctx() ctx: RequestContext, @Body() dto: CreateMeetingDto) {
     return this.meetings.create(ctx, dto);
+  }
+
+  @Delete(':id')
+  remove(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.meetings.remove(ctx, id);
   }
 }

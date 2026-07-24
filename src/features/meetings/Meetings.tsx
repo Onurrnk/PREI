@@ -3,7 +3,7 @@ import { Card } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { Modal } from '../../core/components/Modal/Modal';
 import { useToast } from '../../core/components/Toast/ToastProvider';
-import { CalendarBlank as CalendarIcon, CaretLeft, CaretRight, Plus, MapPin, User, VideoCamera, Clock, FileText, Phone } from '@phosphor-icons/react';
+import { CalendarBlank as CalendarIcon, CaretLeft, CaretRight, Plus, MapPin, User, VideoCamera, Clock, FileText, Phone, Trash, Warning } from '@phosphor-icons/react';
 import type { MeetingDTO } from '../../core/types';
 import { meetingsApi } from '../../core/api/resources';
 import { ApiError } from '../../core/api/client';
@@ -42,7 +42,27 @@ export const Meetings: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingDTO | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const toast = useToast();
+
+  // Randevu silme — soft-delete + (varsa) Google Takvim etkinliğini kaldırır.
+  const handleDeleteMeeting = async () => {
+    if (!selectedMeeting) return;
+    setDeleting(true);
+    try {
+      await meetingsApi.remove(selectedMeeting.id);
+      toast.success(t('meetings.deleted'));
+      setShowDeleteConfirm(false);
+      setShowDetailsModal(false);
+      setSelectedMeeting(null);
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : t('meetings.deleteError'));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const closeAddModal = () => {
     setShowAddModal(false);
@@ -246,10 +266,15 @@ export const Meetings: React.FC = () => {
           title={t('meetings.details')}
           size="md"
           footer={
-            <>
-              <Button variant="outline" onClick={() => setShowDetailsModal(false)}>{t('common.close')}</Button>
-              <Button variant="primary" onClick={() => toast.info(t('meetings.editSoon'))}>{t('meetings.edit')}</Button>
-            </>
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: '8px' }}>
+              <Button variant="ghost" onClick={() => setShowDeleteConfirm(true)} style={{ color: 'var(--data-negative)' }}>
+                <Trash size={16} /> {t('common.delete')}
+              </Button>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Button variant="outline" onClick={() => setShowDetailsModal(false)}>{t('common.close')}</Button>
+                <Button variant="primary" onClick={() => toast.info(t('meetings.editSoon'))}>{t('meetings.edit')}</Button>
+              </div>
+            </div>
           }
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -314,6 +339,31 @@ export const Meetings: React.FC = () => {
                 <VideoCamera size={16} /> {t('meetings.joinZoom')}
               </Button>
             )}
+          </div>
+        </Modal>
+      )}
+
+      {/* Randevu Silme Onayı */}
+      {selectedMeeting && (
+        <Modal
+          isOpen={showDeleteConfirm}
+          onClose={() => setShowDeleteConfirm(false)}
+          title={t('meetings.deleteTitle')}
+          size="sm"
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>{t('common.cancel')}</Button>
+              <Button variant="primary" onClick={handleDeleteMeeting} disabled={deleting} style={{ background: 'var(--data-negative)', borderColor: 'var(--data-negative)' }}>
+                <Trash size={16} /> {deleting ? t('common.loading') : t('common.delete')}
+              </Button>
+            </>
+          }
+        >
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <Warning size={22} weight="fill" style={{ color: 'var(--data-negative)', flexShrink: 0, marginTop: 2 }} />
+            <p style={{ margin: 0, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              {t('meetings.deleteConfirm', { title: selectedMeeting.title })}
+            </p>
           </div>
         </Modal>
       )}

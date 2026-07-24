@@ -1,76 +1,92 @@
 // =====================================================================
-// PREI | Bildirim Merkezi (T7b)
-// Topbar zilinin arkasındaki panel. Mock bildirimler Faz 4-6'da gerçek
-// event akışına (sözleşme uyarısı, gecikmiş ödeme, CPL anomalisi) bağlanır.
+// PREI | Bildirim Merkezi — Topbar zilinin arkasındaki panel.
+// GERÇEK veri: /api/me/notifications (events akışından süzülmüş anlamlı
+// olaylar). Okundu durumu sunucuda users.metadata.notificationsSeenAt ile
+// tutulur; "Tümünü okundu işaretle" bu zaman damgasını günceller.
 // =====================================================================
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
-  Bell,
-  BellSlash,
-  UserPlus,
-  Warning,
-  FileText,
-  Megaphone,
-  CalendarBlank,
-  Checks,
+  Bell, BellSlash, UserPlus, AddressBook, FileText, CalendarBlank, FileArrowUp, Note, Checks,
 } from '@phosphor-icons/react';
 import styles from './NotificationCenter.module.css';
 import { useTranslation } from 'react-i18next';
-
-type NotificationKind = 'lead' | 'payment' | 'contract' | 'ad' | 'meeting';
-
-interface Notification {
-  id: string;
-  kind: NotificationKind;
-  titlePath: string;
-  bodyPath: string;
-  time: string;
-  unread: boolean;
-}
-
-// Mock — Faz 6'da event akışından beslenecek
-const initialNotifications: Notification[] = [
-  { id: 'n1', kind: 'lead', titlePath: 'notifications.items.n1.title', bodyPath: 'notifications.items.n1.body', time: '12m', unread: true },
-  { id: 'n2', kind: 'payment', titlePath: 'notifications.items.n2.title', bodyPath: 'notifications.items.n2.body', time: '1h', unread: true },
-  { id: 'n3', kind: 'ad', titlePath: 'notifications.items.n3.title', bodyPath: 'notifications.items.n3.body', time: '3h', unread: true },
-  { id: 'n4', kind: 'contract', titlePath: 'notifications.items.n4.title', bodyPath: 'notifications.items.n4.body', time: '1d', unread: false },
-  { id: 'n5', kind: 'meeting', titlePath: 'notifications.items.n5.title', bodyPath: 'notifications.items.n5.body', time: '1d', unread: false },
-];
+import { notificationsApi } from '../../api/resources';
+import type { NotificationDTO, NotificationKind } from '../../types';
 
 const KIND_ICON: Record<NotificationKind, React.ReactNode> = {
   lead: <UserPlus size={16} />,
-  payment: <Warning size={16} />,
-  contract: <FileText size={16} />,
-  ad: <Megaphone size={16} />,
+  contact: <AddressBook size={16} />,
   meeting: <CalendarBlank size={16} />,
+  proposal: <FileText size={16} />,
+  document: <FileArrowUp size={16} />,
+  note: <Note size={16} />,
 };
 
 const KIND_CLASS: Record<NotificationKind, string> = {
   lead: 'kindPositive',
-  payment: 'kindNegative',
-  contract: 'kindWarning',
-  ad: 'kindInfo',
+  contact: 'kindPositive',
   meeting: 'kindNeutral',
+  proposal: 'kindWarning',
+  document: 'kindInfo',
+  note: 'kindInfo',
+};
+
+// event_type → i18n başlık anahtarı
+const TYPE_KEY: Record<string, string> = {
+  'lead.created': 'notifications.event.leadCreated',
+  'lead.web_form': 'notifications.event.leadWebForm',
+  'contact.created': 'notifications.event.contactCreated',
+  'meeting.created': 'notifications.event.meetingCreated',
+  'proposal.follow_up_sent': 'notifications.event.proposalFollowUp',
+  'document.uploaded': 'notifications.event.documentUploaded',
+  'client.note_created': 'notifications.event.noteCreated',
 };
 
 export const NotificationCenter: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<Notification[]>(initialNotifications);
+  const [items, setItems] = useState<NotificationDTO[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = items.filter((n) => n.unread).length;
+  const relTime = useCallback((iso: string): string => {
+    const diff = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return t('notifications.time.now');
+    if (m < 60) return `${m}${t('notifications.time.m')}`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}${t('notifications.time.h')}`;
+    const d = Math.floor(h / 24);
+    if (d < 7) return `${d}${t('notifications.time.d')}`;
+    return new Date(iso).toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short' });
+  }, [t, i18n.language]);
+
+  const load = useCallback(async () => {
+    try {
+      const feed = await notificationsApi.list();
+      setItems(feed.items);
+      setUnreadCount(feed.unreadCount);
+    } catch {
+      // sessiz: bildirim zili kritik değil, hata topbar'ı bozmamalı
+    }
+  }, []);
+
+  // İlk yükleme + 60 sn'de bir tazele
+  useEffect(() => {
+    void load();
+    const id = window.setInterval(() => void load(), 60000);
+    return () => window.clearInterval(id);
+  }, [load]);
+
+  // Panel açıldığında tazele
+  useEffect(() => { if (open) void load(); }, [open, load]);
 
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
     };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('mousedown', onPointerDown);
     document.addEventListener('keydown', onKeyDown);
     return () => {
@@ -79,9 +95,11 @@ export const NotificationCenter: React.FC = () => {
     };
   }, [open]);
 
-  const markAllRead = () => setItems((list) => list.map((n) => ({ ...n, unread: false })));
-  const markRead = (id: string) =>
-    setItems((list) => list.map((n) => (n.id === id ? { ...n, unread: false } : n)));
+  const markAllRead = async () => {
+    setItems((list) => list.map((n) => ({ ...n, unread: false })));
+    setUnreadCount(0);
+    try { await notificationsApi.markSeen(); } catch { void load(); }
+  };
 
   return (
     <div className={styles.root} ref={rootRef}>
@@ -115,23 +133,19 @@ export const NotificationCenter: React.FC = () => {
           ) : (
             <div className={styles.list}>
               {items.map((n) => (
-                <button
-                  key={n.id}
-                  className={`${styles.item} ${n.unread ? styles.itemUnread : ''}`}
-                  onClick={() => markRead(n.id)}
-                >
+                <div key={n.id} className={`${styles.item} ${n.unread ? styles.itemUnread : ''}`}>
                   <span className={`${styles.kindIcon} ${styles[KIND_CLASS[n.kind]]}`}>
                     {KIND_ICON[n.kind]}
                   </span>
                   <span className={styles.itemBody}>
                     <span className={styles.itemTop}>
-                      <span className={styles.itemTitle}>{t(n.titlePath)}</span>
-                      <span className={styles.itemTime}>{n.time}</span>
+                      <span className={styles.itemTitle}>{t(TYPE_KEY[n.type] ?? 'notifications.event.generic')}</span>
+                      <span className={styles.itemTime}>{relTime(n.occurredAt)}</span>
                     </span>
-                    <span className={styles.itemText}>{t(n.bodyPath)}</span>
+                    {n.label && <span className={styles.itemText}>{n.label}</span>}
                   </span>
                   {n.unread && <span className={styles.unreadDot} aria-label={t('notifications.unread')} />}
-                </button>
+                </div>
               ))}
             </div>
           )}

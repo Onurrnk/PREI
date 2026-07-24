@@ -40,6 +40,7 @@ import type {
   ProjectSubmissionDTO,
   PublicInviteInfoDTO,
   MeetingDTO,
+  NotificationFeed,
   KPIDTO,
   LeadCommunicationDTO,
   LeadDTO,
@@ -76,6 +77,11 @@ export const authApi = {
 export const meApi = {
   get: () => api.get<MeResponse>('/api/me'),
   update: (input: UpdateMeInput) => api.patch<MeResponse>('/api/me', input),
+  uploadAvatar: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post<MeResponse>('/api/me/avatar', form);
+  },
 };
 
 export const googleAuthApi = {
@@ -200,6 +206,12 @@ export const contractsApi = {
 export const meetingsApi = {
   list: () => api.get<MeetingDTO[]>('/api/meetings'),
   create: (input: CreateMeetingInput) => api.post<MeetingDTO>('/api/meetings', input),
+  remove: (id: string) => api.delete<{ id: string; deleted: true }>(`/api/meetings/${id}`),
+};
+
+export const notificationsApi = {
+  list: () => api.get<NotificationFeed>('/api/me/notifications'),
+  markSeen: () => api.post<{ ok: true }>('/api/me/notifications/seen'),
 };
 
 export const documentsApi = {

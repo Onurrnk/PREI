@@ -28,6 +28,7 @@ import type {
   CreateAdSpendInput,
   MeetingDTO,
   MeResponse,
+  NotificationDTO,
   TeamMemberDTO,
   RoleOptionDTO,
   UpdateTeamMemberInput,
@@ -208,6 +209,7 @@ let mockMe: MeResponse = {
   email: 'admin@prei.app',
   name: 'Onur Nazım Karataş',
   phone: '+90 555 123 4567',
+  avatar: null,
   role: 'Admin',
   tenantId: 't1',
   jobTitle: 'Founder & Broker',
@@ -217,6 +219,16 @@ let mockMe: MeResponse = {
   timezone: 'dubai',
   notificationPrefs: { newLead: true, taskDue: true, weeklyReport: true, smsHotLeads: false },
 };
+
+// Bildirim merkezi mock verisi (gerçekte /api/me/notifications events'ten türetir)
+let mockNotifSeenAt = 0;
+const mockNotifNow = Date.now();
+const mockNotifications: NotificationDTO[] = [
+  { id: 'ev1', type: 'lead.created', kind: 'lead', label: 'Kudret Kalyoncuoğlu', occurredAt: new Date(mockNotifNow - 12 * 60000).toISOString(), unread: true },
+  { id: 'ev2', type: 'meeting.created', kind: 'meeting', label: 'Yatırım Görüşmesi — Duygu Karataş', occurredAt: new Date(mockNotifNow - 3 * 3600000).toISOString(), unread: true },
+  { id: 'ev3', type: 'proposal.follow_up_sent', kind: 'proposal', label: null, occurredAt: new Date(mockNotifNow - 26 * 3600000).toISOString(), unread: false },
+  { id: 'ev4', type: 'document.uploaded', kind: 'document', label: 'Tapu_Marina_2B.pdf', occurredAt: new Date(mockNotifNow - 2 * 86400000).toISOString(), unread: false },
+];
 
 // --- Mock auth (token format: "mock-token-<userId>") ---
 const tokenFor = (userId: string) => `mock-token-${userId}`;
@@ -545,6 +557,29 @@ export const handlers = [
       }),
     };
     return HttpResponse.json<MeResponse>(mockMe);
+  }),
+
+  // Profil fotoğrafı yükleme — mock: yüklenen dosyayı data URL olarak sakla.
+  http.post('/api/me/avatar', async ({ request }) => {
+    const form = await request.formData();
+    const file = form.get('file');
+    if (file && file instanceof File) {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let bin = '';
+      for (let i = 0; i < bytes.length; i += 8192) bin += String.fromCharCode(...bytes.subarray(i, i + 8192));
+      mockMe = { ...mockMe, avatar: `data:${file.type};base64,${btoa(bin)}` };
+    }
+    return HttpResponse.json<MeResponse>(mockMe);
+  }),
+
+  http.get('/api/me/notifications', () => {
+    const items = mockNotifications.map((n) => ({ ...n, unread: new Date(n.occurredAt).getTime() > mockNotifSeenAt }));
+    return HttpResponse.json({ items, unreadCount: items.filter((i) => i.unread).length });
+  }),
+
+  http.post('/api/me/notifications/seen', () => {
+    mockNotifSeenAt = Date.now();
+    return HttpResponse.json({ ok: true });
   }),
 
   http.get('/api/users', () => {
@@ -1102,6 +1137,13 @@ export const handlers = [
     };
     mockMeetings = [...mockMeetings, newMeeting];
     return HttpResponse.json<MeetingDTO>(newMeeting, { status: 201 });
+  }),
+
+  http.delete('/api/meetings/:id', ({ params }) => {
+    const idx = mockMeetings.findIndex((m) => m.id === params.id);
+    if (idx === -1) return new HttpResponse(null, { status: 404 });
+    mockMeetings = mockMeetings.filter((m) => m.id !== params.id);
+    return HttpResponse.json({ id: params.id, deleted: true });
   }),
 
   // Mock müşteri listesi module-level: PATCH oturum içinde kalıcıdır.

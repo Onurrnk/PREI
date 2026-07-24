@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { User, GearSix as SettingsIcon, Palette, Plug, UsersThree, FloppyDisk, ChatCircle, Globe, Buildings, CheckCircle, Plus, EnvelopeSimple, CalendarBlank, PaperPlaneTilt } from '@phosphor-icons/react';
+import { User, GearSix as SettingsIcon, Palette, Plug, UsersThree, FloppyDisk, ChatCircle, Globe, Buildings, CheckCircle, Plus, EnvelopeSimple, CalendarBlank, PaperPlaneTilt, Camera, CircleNotch } from '@phosphor-icons/react';
 import { Modal } from '../../core/components/Modal/Modal';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { useToast } from '../../core/components/Toast/ToastProvider';
@@ -27,7 +27,7 @@ export const Settings: React.FC = () => {
   const { theme: appliedTheme, setTheme: applyTheme } = useTheme();
   const toast = useToast();
 
-  const { data: me } = useFetch<MeResponse>(() => meApi.get(), []);
+  const { data: me, refetch: refetchMe } = useFetch<MeResponse>(() => meApi.get(), []);
   const { data: branding, refetch: refetchBranding } = useFetch<BrandingSettingsDTO>(() => adminApi.branding(), []);
   const { data: team, loading: teamLoading, refetch: refetchTeam } = useFetch<TeamMemberDTO[]>(() => adminApi.team(), []);
   const { data: roleOptions } = useFetch<RoleOptionDTO[]>(() => adminApi.roles(), []);
@@ -217,6 +217,24 @@ export const Settings: React.FC = () => {
     }
   };
 
+  // Profil fotoğrafı yükleme — 'media' bucket'a gider, metadata.avatar'a yazılır.
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const handleAvatarUpload = async (file: File | null) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error(t('settings.profile.photoTypeError')); return; }
+    setAvatarUploading(true);
+    try {
+      await meApi.uploadAvatar(file);
+      refetchMe();
+      toast.success(t('settings.profile.photoUploaded'));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('settings.profile.photoUploadFailed'));
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -308,12 +326,34 @@ export const Settings: React.FC = () => {
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px' }}>
                 <div style={{ position: 'relative' }}>
-                  <div style={{ width: '80px', height: '80px', borderRadius: '50%', border: '2px solid var(--border-color)', backgroundColor: 'var(--brand-primary-soft)', color: 'var(--brand-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 600 }}>
-                    OK
-                  </div>
-                  <div style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: 'var(--brand-primary)', color: 'var(--on-brand)', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '2px solid var(--bg-app)' }}>
-                    <Plus size={16} />
-                  </div>
+                  {me?.avatar ? (
+                    <img
+                      src={me.avatar}
+                      alt={me.name}
+                      style={{ width: '80px', height: '80px', borderRadius: '50%', border: '2px solid var(--border-color)', objectFit: 'cover', display: 'block' }}
+                    />
+                  ) : (
+                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', border: '2px solid var(--border-color)', backgroundColor: 'var(--brand-primary-soft)', color: 'var(--brand-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-mono)', fontSize: '1.5rem', fontWeight: 600 }}>
+                      {(me?.name ?? '').split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase() || '—'}
+                    </div>
+                  )}
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={(e) => { void handleAvatarUpload(e.target.files?.[0] ?? null); e.target.value = ''; }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    disabled={avatarUploading}
+                    title={t('settings.profile.uploadPhoto')}
+                    aria-label={t('settings.profile.uploadPhoto')}
+                    style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: 'var(--brand-primary)', color: 'var(--on-brand)', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: avatarUploading ? 'wait' : 'pointer', border: '2px solid var(--bg-app)', padding: 0 }}
+                  >
+                    {avatarUploading ? <CircleNotch size={16} className={styles.spin} /> : <Camera size={16} />}
+                  </button>
                 </div>
                 <div>
                   <h4 style={{ margin: '0 0 4px 0', fontSize: '1rem', color: 'var(--text-primary)' }}>{t('settings.profile.photo')}</h4>

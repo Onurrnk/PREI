@@ -2,7 +2,7 @@
 // PREI | MeetingsService — tasks(task_type='meeting') → MeetingDTO.
 // date=due_date; client=related_name; yer/platform/süre/tür metadata'dan.
 // =====================================================================
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 import type { RequestContext } from '../../common/request-context';
 import type { CreateMeetingDto } from './dto/create-meeting.dto';
@@ -149,6 +149,45 @@ export class MeetingsService {
       ).catch((e) => this.logger.warn(`gcal metadata yazılamadı: ${(e as Error).message}`));
     }
     return this.toResponse(merged);
+  }
+
+  /**
+   * Randevuyu siler (soft-delete). Bağlı Google Takvim etkinliği varsa onu da
+   * kaldırır (resilient: takvim silme başarısız olsa da PREI kaydı silinir).
+   */
+  async remove(ctx: RequestContext, id: string): Promise<{ id: string; deleted: true }> {
+    const row = await this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string; title: string; metadata: Record<string, unknown> | null }>(
+        `UPDATE tasks SET deleted_at = now(), updated_at = now(), updated_by = $2
+          WHERE id = $1 AND task_type = 'meeting' AND deleted_at IS NULL
+          RETURNING id, title, metadata`,
+        [id, ctx.userId],
+      );
+      if (rows.length === 0) throw new NotFoundException('Randevu bulunamadı');
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'meeting.deleted','task',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, id, JSON.stringify({ title: rows[0].title }), ctx.correlationId],
+      );
+      return rows[0];
+    });
+
+    // Google Takvim etkinliğini kaldır (varsa) — hata randevu silmeyi bozmaz.
+    const eventId = (row.metadata ?? {})['google_event_id'] as string | undefined;
+    if (eventId) {
+      const users = await this.db.raw<{ id: string }>(
+        `SELECT id FROM users
+           WHERE tenant_id = $1 AND metadata ? 'googleOAuth' AND is_active = true AND deleted_at IS NULL
+           ORDER BY created_at ASC LIMIT 1`,
+        [ctx.tenantId],
+      ).catch(() => [] as Array<{ id: string }>);
+      if (users.length > 0) {
+        await this.calendar.deleteEvent(users[0].id, eventId).catch((e) =>
+          this.logger.warn(`Google Takvim etkinliği silinemedi: ${(e as Error).message}`),
+        );
+      }
+    }
+    return { id: row.id, deleted: true };
   }
 
   /**
