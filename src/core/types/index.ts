@@ -665,6 +665,8 @@ export interface CreateMeetingInput {
   kind?: 'meeting' | 'viewing' | 'signing';
 }
 
+export type UpdateMeetingInput = Partial<CreateMeetingInput>;
+
 export interface VaultDocumentDTO {
   id: string;
   name: string;

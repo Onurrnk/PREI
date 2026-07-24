@@ -20,6 +20,7 @@ import type {
   ContractWriteInput,
   CreateDeveloperInput,
   CreateMeetingInput,
+  UpdateMeetingInput,
   CreateProjectInput,
   UpdateProjectInput,
   CreateProposalInput,
@@ -206,6 +207,7 @@ export const contractsApi = {
 export const meetingsApi = {
   list: () => api.get<MeetingDTO[]>('/api/meetings'),
   create: (input: CreateMeetingInput) => api.post<MeetingDTO>('/api/meetings', input),
+  update: (id: string, input: UpdateMeetingInput) => api.patch<MeetingDTO>(`/api/meetings/${id}`, input),
   remove: (id: string) => api.delete<{ id: string; deleted: true }>(`/api/meetings/${id}`),
 };
 

@@ -40,6 +40,7 @@ export const Meetings: React.FC = () => {
   const [newMeetingClient, setNewMeetingClient] = useState('');
   const [newMeetingClientEmail, setNewMeetingClientEmail] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedMeeting, setSelectedMeeting] = useState<MeetingDTO | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -66,13 +67,35 @@ export const Meetings: React.FC = () => {
 
   const closeAddModal = () => {
     setShowAddModal(false);
+    setEditingId(null);
     setNewMeetingTitle(''); setNewMeetingType('meeting'); setNewMeetingPlatform('In-person');
     setNewMeetingDate(''); setNewMeetingTime(''); setNewMeetingLocation('');
     setNewMeetingPhone(''); setNewMeetingDuration('1h');
     setNewMeetingClient(''); setNewMeetingClientEmail('');
   };
 
-  const handleCreateMeeting = async () => {
+  // Detay modalındaki "Düzenle" → formu mevcut randevu verisiyle doldur ve aç.
+  const openEditMeeting = (m: MeetingDTO) => {
+    setEditingId(m.id);
+    setNewMeetingTitle(m.title);
+    setNewMeetingType(m.kind || 'meeting');
+    setNewMeetingPlatform(m.platform || 'In-person');
+    if (m.date) {
+      const d = new Date(m.date);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      setNewMeetingDate(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
+      setNewMeetingTime(`${pad(d.getHours())}:${pad(d.getMinutes())}`);
+    } else { setNewMeetingDate(''); setNewMeetingTime(''); }
+    setNewMeetingLocation(m.location || '');
+    setNewMeetingPhone(m.phone || '');
+    setNewMeetingDuration(m.durationLabel || '1h');
+    setNewMeetingClient(m.client || '');
+    setNewMeetingClientEmail('');
+    setShowDetailsModal(false);
+    setShowAddModal(true);
+  };
+
+  const handleSaveMeeting = async () => {
     if (!newMeetingTitle.trim()) {
       toast.error(t('meetings.titleRequired'));
       return;
@@ -82,27 +105,35 @@ export const Meetings: React.FC = () => {
       return;
     }
     setIsCreating(true);
+    const payload = {
+      title: newMeetingTitle.trim(),
+      date: new Date(`${newMeetingDate}T${newMeetingTime}`).toISOString(),
+      durationLabel: newMeetingDuration,
+      client: newMeetingClient.trim() || undefined,
+      clientEmail: newMeetingClientEmail.trim() || undefined,
+      location: newMeetingPlatform !== 'Phone' ? (newMeetingLocation.trim() || undefined) : undefined,
+      phone: newMeetingPlatform === 'Phone' ? (newMeetingPhone.trim() || undefined) : undefined,
+      platform: newMeetingPlatform as 'In-person' | 'Zoom' | 'Phone',
+      kind: newMeetingType as 'meeting' | 'viewing' | 'signing',
+    };
     try {
-      const created = await meetingsApi.create({
-        title: newMeetingTitle.trim(),
-        date: new Date(`${newMeetingDate}T${newMeetingTime}`).toISOString(),
-        durationLabel: newMeetingDuration,
-        client: newMeetingClient.trim() || undefined,
-        clientEmail: newMeetingClientEmail.trim() || undefined,
-        location: newMeetingPlatform !== 'Phone' ? (newMeetingLocation.trim() || undefined) : undefined,
-        phone: newMeetingPlatform === 'Phone' ? (newMeetingPhone.trim() || undefined) : undefined,
-        platform: newMeetingPlatform as 'In-person' | 'Zoom' | 'Phone',
-        kind: newMeetingType as 'meeting' | 'viewing' | 'signing',
-      });
-      closeAddModal();
-      refetch();
-      // Google Takvim senkron durumunu dürüstçe bildir.
-      if (created.gcalSync === 'synced') toast.success(t('meetings.gcalSynced'));
-      else if (created.gcalSync === 'reauth') toast.info(t('meetings.gcalReauth'));
-      else if (created.gcalSync === 'failed') toast.info(t('meetings.gcalFailed'));
-      else toast.success(t('meetings.created'));
+      if (editingId) {
+        await meetingsApi.update(editingId, payload);
+        closeAddModal();
+        refetch();
+        toast.success(t('meetings.updated'));
+      } else {
+        const created = await meetingsApi.create(payload);
+        closeAddModal();
+        refetch();
+        // Google Takvim senkron durumunu dürüstçe bildir.
+        if (created.gcalSync === 'synced') toast.success(t('meetings.gcalSynced'));
+        else if (created.gcalSync === 'reauth') toast.info(t('meetings.gcalReauth'));
+        else if (created.gcalSync === 'failed') toast.info(t('meetings.gcalFailed'));
+        else toast.success(t('meetings.created'));
+      }
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : t('meetings.createError');
+      const msg = err instanceof ApiError ? err.message : t(editingId ? 'meetings.updateError' : 'meetings.createError');
       toast.error(msg);
     } finally {
       setIsCreating(false);
@@ -272,7 +303,7 @@ export const Meetings: React.FC = () => {
               </Button>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <Button variant="outline" onClick={() => setShowDetailsModal(false)}>{t('common.close')}</Button>
-                <Button variant="primary" onClick={() => toast.info(t('meetings.editSoon'))}>{t('meetings.edit')}</Button>
+                <Button variant="primary" onClick={() => selectedMeeting && openEditMeeting(selectedMeeting)}>{t('meetings.edit')}</Button>
               </div>
             </div>
           }
@@ -372,13 +403,13 @@ export const Meetings: React.FC = () => {
       <Modal
         isOpen={showAddModal}
         onClose={closeAddModal}
-        title={t('meetings.scheduleNew')}
+        title={editingId ? t('meetings.editTitle') : t('meetings.scheduleNew')}
         size="md"
         footer={
           <>
             <Button variant="outline" onClick={closeAddModal} disabled={isCreating}>{t('common.cancel')}</Button>
-            <Button variant="primary" onClick={handleCreateMeeting} disabled={isCreating}>
-              {isCreating ? t('common.saving') : t('meetings.schedule')}
+            <Button variant="primary" onClick={handleSaveMeeting} disabled={isCreating}>
+              {isCreating ? t('common.saving') : (editingId ? t('common.save') : t('meetings.schedule'))}
             </Button>
           </>
         }

@@ -17,6 +17,7 @@ import type {
   ContractWriteInput,
   CreateDeveloperInput,
   CreateMeetingInput,
+  UpdateMeetingInput,
   CreateProjectInput,
   UpdateProjectInput,
   CreateProposalInput,
@@ -1137,6 +1138,27 @@ export const handlers = [
     };
     mockMeetings = [...mockMeetings, newMeeting];
     return HttpResponse.json<MeetingDTO>(newMeeting, { status: 201 });
+  }),
+
+  http.patch('/api/meetings/:id', async ({ params, request }) => {
+    const idx = mockMeetings.findIndex((m) => m.id === params.id);
+    if (idx === -1) return new HttpResponse(null, { status: 404 });
+    const patch = (await request.json()) as UpdateMeetingInput;
+    const cur = mockMeetings[idx];
+    const updated: MeetingDTO = {
+      ...cur,
+      ...(patch.title !== undefined && { title: patch.title }),
+      ...(patch.date !== undefined && { date: patch.date }),
+      ...(patch.durationLabel !== undefined && { durationLabel: patch.durationLabel }),
+      ...(patch.client !== undefined && { client: patch.client }),
+      ...(patch.location !== undefined && { location: patch.location ?? '' }),
+      ...(patch.phone !== undefined && { phone: patch.phone ?? '' }),
+      ...(patch.platform !== undefined && { platform: patch.platform }),
+      ...(patch.notes !== undefined && { notes: patch.notes }),
+      ...(patch.kind !== undefined && { kind: patch.kind }),
+    };
+    mockMeetings = mockMeetings.map((m) => (m.id === params.id ? updated : m));
+    return HttpResponse.json<MeetingDTO>(updated);
   }),
 
   http.delete('/api/meetings/:id', ({ params }) => {
