@@ -39,29 +39,65 @@ function str(v: unknown): string {
   return typeof v === 'string' ? v : '';
 }
 
-const PLATFORM_TR: Record<string, string> = { 'In-person': 'Yüz yüze', Zoom: 'Zoom', Phone: 'Telefon' };
-const KIND_TR: Record<string, string> = { meeting: 'Görüşme', viewing: 'Mülk Gezisi', signing: 'Sözleşme İmzası' };
+const PLATFORM_TR: Record<string, string> = { 'In-person': 'Yüz yüze', Zoom: 'Zoom görüşme', Phone: 'Telefon görüşmesi' };
+const KIND_TR: Record<string, string> = { meeting: 'Yatırım Görüşmesi', viewing: 'Mülk Gezisi', signing: 'Sözleşme İmzası' };
+// Randevu türüne göre sıcak, marka sesiyle açılış cümlesi (müşteriye hitap eder).
+const KIND_INTRO_TR: Record<string, string> = {
+  meeting: 'Yatırım görüşmemiz için randevunuz oluşturuldu. Sizi dinleyip, hedeflerinize en uygun yol haritasını birlikte netleştireceğiz.',
+  viewing: 'Mülk gezimiz için randevunuz oluşturuldu. Yerinde birlikte inceleyip tüm sorularınızı yanıtlayacağız.',
+  signing: 'Sözleşme imza görüşmemiz için randevunuz oluşturuldu. Tüm adımları şeffafça gözden geçirip yanınızda olacağız.',
+};
 
-/** Google Takvim etkinliği için tam açıklama — telefondaki takvim uygulamasında
- *  her detay (tür/müşteri/platform/adres-link-telefon/not) eksiksiz görünür;
- *  sonda PREI linki (isteyen daha fazla detay için PREI'ye bağlanır). */
+const DIVIDER = '━━━━━━━━━━━━━━━━━━━━━━━━━━';
+
+/** Google Takvim etkinliğinin başlığı — marka adıyla, takvimde tanınır olsun. */
+export function buildEventSummary(dto: { title: string }): string {
+  const t = dto.title.trim();
+  return /produality/i.test(t) ? t : `ProDuality · ${t}`;
+}
+
+/** Google Takvim etkinliği için MARKALI açıklama şablonu (ProDuality marka sesi).
+ *  Düz metin — Google Takvim'in tüm istemcilerinde (web, mobil, davet e-postası)
+ *  birebir aynı görünür. Müşteriye davetli olarak gittiğinde bir marka temas
+ *  noktasıdır; sıcak, profesyonel ve dürüst ton (algı değil bilgi). */
 export function buildEventDescription(dto: {
   kind?: string; client?: string; clientEmail?: string; platform?: string;
   phone?: string; location?: string; notes?: string;
 }): string {
+  const kind = dto.kind ?? 'meeting';
   const platform = dto.platform ?? 'In-person';
+  const client = dto.client?.trim();
+
+  const detay = [
+    `• Görüşme türü: ${KIND_TR[kind] ?? 'Yatırım Görüşmesi'}`,
+    `• Biçim: ${PLATFORM_TR[platform] ?? platform}`,
+    platform === 'In-person' && dto.location?.trim() ? `• Adres: ${dto.location.trim()}` : null,
+    platform === 'Zoom' && dto.location?.trim() ? `• Bağlantı: ${dto.location.trim()}` : null,
+    platform === 'Phone' && dto.phone?.trim() ? `• Aranacak numara: ${dto.phone.trim()}` : null,
+    client ? `• Danışan: ${client}` : null,
+  ].filter(Boolean);
+
   const lines = [
-    `Tür: ${KIND_TR[dto.kind ?? 'meeting'] ?? 'Görüşme'}`,
-    dto.client?.trim() ? `Müşteri: ${dto.client.trim()}` : null,
-    dto.clientEmail?.trim() ? `E-posta: ${dto.clientEmail.trim()}` : null,
-    `Platform: ${PLATFORM_TR[platform] ?? platform}`,
-    platform === 'Phone' && dto.phone?.trim() ? `Telefon: ${dto.phone.trim()}` : null,
-    platform === 'Zoom' && dto.location?.trim() ? `Zoom: ${dto.location.trim()}` : null,
-    platform === 'In-person' && dto.location?.trim() ? `Adres: ${dto.location.trim()}` : null,
+    'ProDuality',
+    'Bağımsız Uluslararası Gayrimenkul Danışmanlığı',
+    DIVIDER,
+    '',
+    client ? `Sayın ${client},` : 'Merhaba,',
+    '',
+    KIND_INTRO_TR[kind] ?? KIND_INTRO_TR.meeting,
+    '',
+    'RANDEVU DETAYLARI',
+    ...detay,
     dto.notes?.trim() ? `\nNot: ${dto.notes.trim()}` : null,
-    `\n— PREI’de görüntüle: https://prei.produality.com/meetings`,
-  ];
-  return lines.filter(Boolean).join('\n');
+    '',
+    'Randevu saati veya biçiminde bir değişiklik olursa bize kısaca yazmanız yeterli — gerekli düzenlemeyi hemen yaparız.',
+    '',
+    DIVIDER,
+    'ProDuality · Onur Nazım Karataş',
+    'info@produality.com · produality.com',
+  ].filter((l) => l !== null) as string[];
+
+  return lines.join('\n');
 }
 
 /** Google Takvim 'location' alanı: yüz yüzede adres (Google haritada gösterir),
@@ -209,7 +245,7 @@ export class MeetingsService {
           notes: row.description ?? undefined,
         };
         await this.calendar.updateEvent(users[0].id, eventId, {
-          summary: row.title,
+          summary: buildEventSummary({ title: row.title }),
           description: buildEventDescription(eff),
           location: buildEventLocation(eff),
           startIso: row.due_date,
@@ -280,7 +316,7 @@ export class MeetingsService {
 
     try {
       const res = await this.calendar.createEvent(users[0].id, {
-        summary: dto.title.trim(),
+        summary: buildEventSummary({ title: dto.title }),
         description: buildEventDescription(dto),
         location: buildEventLocation(dto),
         startIso: dto.date,
