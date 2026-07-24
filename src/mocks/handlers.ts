@@ -894,6 +894,25 @@ export const handlers = [
         { name: 'WhatsApp', value: 14 }, { name: 'Instagram', value: 9 },
         { name: 'Referral', value: 6 }, { name: 'Website', value: 4 }, { name: 'Direct', value: 3 },
       ],
+      geography: [
+        { code: 'TR', name: 'Türkiye', contacts: 11, activeLeads: 9, pipelineEur: 1_540_000 },
+        { code: 'AE', name: 'Dubai (UAE)', contacts: 7, activeLeads: 8, pipelineEur: 1_860_000 },
+        { code: 'GB', name: 'United Kingdom', contacts: 5, activeLeads: 4, pipelineEur: 540_000 },
+        { code: 'ES', name: 'Spain', contacts: 3, activeLeads: 4, pipelineEur: 780_000 },
+        { code: 'US', name: 'United States', contacts: 2, activeLeads: 2, pipelineEur: 0 },
+        { code: 'SA', name: 'Saudi Arabia', contacts: 1, activeLeads: 1, pipelineEur: 0 },
+      ],
+      marketing: {
+        hasSpendData: true,
+        adSpend30dEur: 4_850,
+        avgCpl30dEur: 173.2,
+        leads30d: 28,
+        spendByMarket: [
+          { code: 'AE', name: 'Dubai (UAE)', valueEur: 2_400 },
+          { code: 'TR', name: 'Türkiye', valueEur: 1_650 },
+          { code: 'GB', name: 'United Kingdom', valueEur: 800 },
+        ],
+      },
     });
   }),
 

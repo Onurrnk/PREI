@@ -1,0 +1,82 @@
+/* PREI | GeoMap — Müşteri Coğrafyası (Design System v1, mor accent) */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.land {
+  fill: var(--bg-inset);
+  stroke: var(--border-subtle);
+  stroke-width: 0.6;
+}
+
+.marker {
+  cursor: pointer;
+}
+
+.halo {
+  fill: var(--brand-primary);
+  opacity: 0.14;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.markerActive .halo {
+  opacity: 0.28;
+}
+
+.dot {
+  fill: var(--brand-primary);
+  stroke: var(--bg-surface);
+  stroke-width: 1.5;
+}
+
+.dotLabel {
+  fill: var(--on-brand, #fff);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.infoBar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-height: 32px;
+  padding: 6px 12px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.8125rem;
+}
+
+.infoName {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.infoStat {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.infoValue {
+  margin-left: auto;
+  color: var(--brand-primary);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.infoHint {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}

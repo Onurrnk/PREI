@@ -27,6 +27,24 @@ export interface WeeklyTrendsDTO {
 
 export interface LeadSourceItemDTO { name: string; value: number }
 
+/** Ülkeye göre müşteri coğrafyası — Komuta Merkezi harita kartı. */
+export interface GeographyItemDTO {
+  code: string;          // ISO-2 (TR, GB, AE...) veya XX
+  name: string;
+  contacts: number;
+  activeLeads: number;
+  pipelineEur: number;
+}
+
+/** Marketing entegrasyonu — son 30 günün reklam özeti (ad_spend). */
+export interface DashboardMarketingDTO {
+  hasSpendData: boolean;
+  adSpend30dEur: number;
+  avgCpl30dEur: number | null;
+  leads30d: number;
+  spendByMarket: { code: string; name: string; valueEur: number }[];
+}
+
 export interface DashboardSummaryDTO {
   activeLeads: number;
   pipelineValueEur: number;
@@ -36,6 +54,8 @@ export interface DashboardSummaryDTO {
   marketSplit: MarketSplitItemDTO[];
   trends: WeeklyTrendsDTO;
   leadSources: LeadSourceItemDTO[];
+  geography: GeographyItemDTO[];
+  marketing: DashboardMarketingDTO;
 }
 
 // GET /api/financials/summary?timeframe=Q1|Q2|YTD|1Y — gerçek aggregate (EUR).

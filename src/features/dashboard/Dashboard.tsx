@@ -12,7 +12,10 @@ import {
   ChartBar,
   ChartPieSlice,
   ListChecks,
+  GlobeHemisphereWest,
+  Megaphone,
 } from '@phosphor-icons/react';
+import { GeoMap } from '../../core/components/GeoMap/GeoMap';
 import { TrendArea, Sparkline, DonutMetric, HBarCompare, fmtEUR } from '../../core/charts';
 import type { DashboardSummaryDTO, MeetingDTO, TaskDTO } from '../../core/types';
 import { dashboardApi, meetingsApi, tasksApi } from '../../core/api/resources';
@@ -40,6 +43,12 @@ const weeklyDelta = (series: number[] | undefined): number | null => {
 
 const PRIORITY_RANK: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
 
+// ISO-2 ülke kodu → bayrak emojisi (XX/bilinmeyen → küre).
+const flagOf = (code: string): string =>
+  /^[A-Z]{2}$/.test(code) && code !== 'XX'
+    ? String.fromCodePoint(...[...code].map((c) => 0x1f1a5 + c.charCodeAt(0)))
+    : '🌐';
+
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -49,12 +58,17 @@ export const Dashboard: React.FC = () => {
   const { data: tasksData } = useFetch<TaskDTO[]>(() => tasksApi.list(), []);
 
   const trends = summary?.trends;
+  const marketing = summary?.marketing;
   const kpis = useMemo(() => [
     { id: 'pipeline', label: t('dashboard.kpi.pipelineValue'), value: summary ? fmtEUR(summary.pipelineValueEur) : '—', delta: weeklyDelta(trends?.pipelineEur), spark: trends?.pipelineEur ?? [] },
     { id: 'leads', label: t('dashboard.kpi.activeLeads'), value: summary ? String(summary.activeLeads) : '—', delta: weeklyDelta(trends?.activeLeads), spark: trends?.activeLeads ?? [] },
     { id: 'meetings', label: t('dashboard.kpi.meetingsWeek'), value: summary ? String(summary.meetingsThisWeek) : '—', delta: weeklyDelta(trends?.meetings), spark: trends?.meetings ?? [] },
     { id: 'closed', label: t('dashboard.kpi.closedWon'), value: summary ? fmtEUR(summary.closedWonEur) : '—', delta: weeklyDelta(trends?.closedWonEur), spark: trends?.closedWonEur ?? [] },
-  ], [summary, trends, t]);
+    { id: 'adspend', label: t('dashboard.kpi.adSpend30d'), value: marketing ? (marketing.hasSpendData ? fmtEUR(marketing.adSpend30dEur) : '—') : '—', delta: null, spark: [] as number[] },
+  ], [summary, trends, marketing, t]);
+
+  const geography = useMemo(() => summary?.geography ?? [], [summary]);
+  const geoTotalContacts = useMemo(() => geography.reduce((s, g) => s + g.contacts, 0), [geography]);
 
   // Haftalık pipeline momentumu — backend trend serisinden.
   const pipelineTrend = useMemo(
@@ -143,7 +157,96 @@ export const Dashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Ana grid: trend (temsili) + pazar dağılımı (gerçek) */}
+      {/* Coğrafya satırı: dünya haritası (gerçek müşteri/aday dağılımı) + sağda portföy & kanallar */}
+      <div className={styles.geoGrid}>
+        <Card padding="md">
+          <div className={styles.cardTitleRow}>
+            <h2 className={styles.cardTitle}>
+              <GlobeHemisphereWest size={16} className={styles.titleIcon} /> {t('dashboard.geo.title')}
+            </h2>
+            <span className={styles.cardMeta}>
+              {geography.filter((g) => g.code !== 'XX').length} {t('dashboard.geo.countries')} · {geoTotalContacts} {t('dashboard.geo.clients')}
+            </span>
+          </div>
+          {geography.length > 0 ? (
+            <>
+              <GeoMap items={geography} />
+              <div className={styles.countryList}>
+                {geography.map((g) => (
+                  <div key={g.code} className={styles.countryRow}>
+                    <span className={styles.countryFlag}>{flagOf(g.code)}</span>
+                    <span className={styles.countryName}>{g.name}</span>
+                    <span className={styles.countryStat}>{g.contacts} {t('dashboard.geo.client')}</span>
+                    <span className={styles.countryStat}>{g.activeLeads} {t('dashboard.geo.lead')}</span>
+                    <span className={styles.countryValue}>{g.pipelineEur > 0 ? fmtEUR(g.pipelineEur) : '—'}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className={styles.fillCenter}>
+              <EmptyState
+                icon={<GlobeHemisphereWest size={24} weight="duotone" />}
+                title={t('dashboard.geo.emptyTitle')}
+                description={t('dashboard.geo.emptyDesc')}
+              />
+            </div>
+          )}
+        </Card>
+
+        <div className={styles.rightStack}>
+          <Card padding="md">
+            <div className={styles.cardTitleRow}>
+              <h2 className={styles.cardTitle}>{t('dashboard.portfolioByMarket')}</h2>
+            </div>
+            {marketSplit.length > 0 ? (
+              <div className={styles.chartFill}>
+                <DonutMetric
+                  data={marketSplit}
+                  centerValue={fmtEUR(marketTotal)}
+                  centerLabel={t('common.total')}
+                  formatValue={fmtEUR}
+                  height={170}
+                />
+              </div>
+            ) : (
+              <div className={styles.fillCenter}>
+                <EmptyState
+                  icon={<ChartPieSlice size={24} weight="duotone" />}
+                  title={t('dashboard.empty.portfolioTitle')}
+                  description={t('dashboard.empty.portfolioDesc')}
+                />
+              </div>
+            )}
+          </Card>
+
+          <Card padding="md">
+            <div className={styles.cardTitleRow}>
+              <h2 className={styles.cardTitle}>
+                <ChartBar size={16} className={styles.titleIcon} /> {t('dashboard.leadSources')}
+              </h2>
+              <span className={styles.cardMeta}>{t('dashboard.days30')}</span>
+            </div>
+            {leadSources.length > 0 ? (
+              <div className={styles.chartFill}>
+                <HBarCompare data={leadSources} />
+              </div>
+            ) : (
+              <div className={styles.fillCenter}>
+                <EmptyState
+                  icon={<ChartBar size={24} weight="duotone" />}
+                  title={t('dashboard.empty.leadSourcesTitle')}
+                  description={t('dashboard.empty.leadSourcesDesc')}
+                  actionLabel={t('dashboard.empty.addLead')}
+                  onAction={() => navigate('/leads')}
+                />
+              </div>
+            )}
+          </Card>
+        </div>
+      </div>
+
+      {/* Ana grid: pipeline trendi + marketing özeti (entegrasyon) */}
       <div className={styles.mainGrid}>
         <Card padding="md">
           <div className={styles.cardTitleRow}>
@@ -152,7 +255,7 @@ export const Dashboard: React.FC = () => {
           </div>
           {pipelineTrend.length > 0 ? (
             <div className={styles.chartFill}>
-              <TrendArea data={pipelineTrend} formatValue={fmtEUR} name="Pipeline" height={260} />
+              <TrendArea data={pipelineTrend} formatValue={fmtEUR} name="Pipeline" height={240} />
             </div>
           ) : (
             <div className={styles.fillCenter}>
@@ -169,56 +272,58 @@ export const Dashboard: React.FC = () => {
 
         <Card padding="md">
           <div className={styles.cardTitleRow}>
-            <h2 className={styles.cardTitle}>{t('dashboard.portfolioByMarket')}</h2>
+            <h2 className={styles.cardTitle}>
+              <Megaphone size={16} className={styles.titleIcon} /> {t('dashboard.mkt.title')}
+            </h2>
+            <span className={styles.cardMeta}>{t('dashboard.days30')}</span>
           </div>
-          {marketSplit.length > 0 ? (
-            <div className={styles.chartFill}>
-              <DonutMetric
-                data={marketSplit}
-                centerValue={fmtEUR(marketTotal)}
-                centerLabel={t('common.total')}
-                formatValue={fmtEUR}
-                height={192}
-              />
+          {marketing?.hasSpendData ? (
+            <div className={styles.mktBody}>
+              <div className={styles.mktStatRow}>
+                <div className={styles.mktStat}>
+                  <span className={styles.mktStatLabel}>{t('dashboard.mkt.spend')}</span>
+                  <span className={styles.mktStatValue}>{fmtEUR(marketing.adSpend30dEur)}</span>
+                </div>
+                <div className={styles.mktStat}>
+                  <span className={styles.mktStatLabel}>{t('dashboard.mkt.cpl')}</span>
+                  <span className={styles.mktStatValue}>{marketing.avgCpl30dEur != null ? fmtEUR(marketing.avgCpl30dEur) : '—'}</span>
+                </div>
+                <div className={styles.mktStat}>
+                  <span className={styles.mktStatLabel}>{t('dashboard.mkt.leads')}</span>
+                  <span className={styles.mktStatValue}>{marketing.leads30d}</span>
+                </div>
+              </div>
+              {marketing.spendByMarket.length > 0 && (
+                <div className={styles.mktMarkets}>
+                  {marketing.spendByMarket.map((m) => (
+                    <div key={m.code} className={styles.countryRow}>
+                      <span className={styles.countryFlag}>{flagOf(m.code)}</span>
+                      <span className={styles.countryName}>{m.name}</span>
+                      <span className={styles.countryValue}>{fmtEUR(m.valueEur)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button className={styles.mktLink} onClick={() => navigate('/marketing')}>
+                {t('dashboard.mkt.open')}
+              </button>
             </div>
           ) : (
             <div className={styles.fillCenter}>
               <EmptyState
-                icon={<ChartPieSlice size={24} weight="duotone" />}
-                title={t('dashboard.empty.portfolioTitle')}
-                description={t('dashboard.empty.portfolioDesc')}
+                icon={<Megaphone size={24} weight="duotone" />}
+                title={t('dashboard.mkt.emptyTitle')}
+                description={t('dashboard.mkt.emptyDesc')}
+                actionLabel={t('dashboard.mkt.open')}
+                onAction={() => navigate('/marketing')}
               />
             </div>
           )}
         </Card>
       </div>
 
-      {/* Alt grid: kaynaklar (temsili) + takvim + görevler (gerçek) */}
+      {/* Alt grid: takvim + görevler (gerçek) */}
       <div className={styles.bottomGrid}>
-        <Card padding="md">
-          <div className={styles.cardTitleRow}>
-            <h2 className={styles.cardTitle}>
-              <ChartBar size={16} className={styles.titleIcon} /> {t('dashboard.leadSources')}
-            </h2>
-            <span className={styles.cardMeta}>{t('dashboard.days30')}</span>
-          </div>
-          {leadSources.length > 0 ? (
-            <div className={styles.chartFill}>
-              <HBarCompare data={leadSources} />
-            </div>
-          ) : (
-            <div className={styles.fillCenter}>
-              <EmptyState
-                icon={<ChartBar size={24} weight="duotone" />}
-                title={t('dashboard.empty.leadSourcesTitle')}
-                description={t('dashboard.empty.leadSourcesDesc')}
-                actionLabel={t('dashboard.empty.addLead')}
-                onAction={() => navigate('/leads')}
-              />
-            </div>
-          )}
-        </Card>
-
         <Card padding="none">
           <CardHeader>
             <div className={styles.cardTitleRow}>
