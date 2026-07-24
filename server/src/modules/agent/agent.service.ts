@@ -350,7 +350,12 @@ export class AgentService {
         );
         if (sess.length > 0) contactId = sess[0].contact_id;
       }
-      if (!contactId) contactId = await this.upsertContact(c, ctx, normalized, dto.name);
+      // WhatsApp'ta gelen tanımlayıcı gerçek telefondur; Telegram vb. kanallarda
+      // chat id'dir (telefon DEĞİL) — telefon alanına yazılmaz, handle olarak saklanır.
+      const identifierIsPhone = channel === 'whatsapp';
+      if (!contactId) {
+        contactId = await this.upsertContact(c, ctx, normalized, dto.name, channel, identifierIsPhone);
+      }
       const lead = await this.ensureOpenLead(c, ctx, contactId, dto.qualification_score);
       const leadId = lead.id;
       if (lead.created) this.notifyAdminNewLead(dto.name ?? 'Yeni yatırımcı', channel, leadId);
@@ -516,8 +521,30 @@ export class AgentService {
         updated.push('last_name');
       }
       if (dto.email && !cur.email) {
-        await c.query(`UPDATE contacts SET email = $2, updated_by = $3 WHERE id = $1`, [contactId, dto.email.toLowerCase(), ctx.userId]);
+        const email = dto.email.toLowerCase();
+        // MÜKERRER KORUMASI: bu e-posta başka bir aktif kişide zaten varsa,
+        // sessizce iki ayrı dosya yaşamasın — kaydı işaretle ki birleştirme
+        // için görünür olsun (otomatik birleştirme yapılmaz: müşteri verisi).
+        const { rows: dupe } = await c.query<{ id: string }>(
+          `SELECT id FROM contacts
+             WHERE tenant_id = $1 AND lower(email) = $2 AND id <> $3
+               AND deleted_at IS NULL AND merged_into_id IS NULL
+             LIMIT 1`,
+          [ctx.tenantId, email, contactId],
+        );
+        await c.query(`UPDATE contacts SET email = $2, updated_by = $3 WHERE id = $1`, [contactId, email, ctx.userId]);
         updated.push('email');
+        if (dupe.length > 0) {
+          await c.query(
+            `UPDATE contacts SET metadata = coalesce(metadata,'{}'::jsonb)
+               || jsonb_build_object('duplicate_suspect_of', $2::text, 'duplicate_reason', 'email')
+             WHERE id = $1`,
+            [contactId, dupe[0].id],
+          );
+          this.logger.warn(
+            `Mükerrer şüphesi (e-posta): contact ${contactId} ile ${dupe[0].id} aynı e-postayı paylaşıyor`,
+          );
+        }
       }
       if (dto.phone && phoneReplaceable && dto.phone !== cur.phone) {
         try {
@@ -791,20 +818,47 @@ export class AgentService {
     });
   }
 
-  private async upsertContact(c: PoolClient, ctx: RequestContext, normalized: string, name?: string): Promise<string> {
-    const { rows } = await c.query<{ id: string }>(
-      `SELECT id FROM contacts
-         WHERE tenant_id = $1 AND normalized_phone = $2 AND deleted_at IS NULL AND merged_into_id IS NULL
-         LIMIT 1`,
-      [ctx.tenantId, normalized],
-    );
-    if (rows.length > 0) return rows[0].id;
+  /**
+   * Kişiyi kanal tanımlayıcısıyla bulur/oluşturur.
+   *
+   * ÖNEMLİ ayrım: WhatsApp'ta tanımlayıcı GERÇEK telefondur; Telegram'da ise
+   * chat id'dir. Eskiden chat id de `'+' + id` yapılıp phone/whatsapp alanına
+   * yazılıyordu — bu hem UYDURMA telefon numaraları üretiyordu (+8981368094
+   * gibi) hem de kimlik anahtarını veri alanına bağladığı için gerçek telefon
+   * öğrenilince anahtar kopup MÜKERRER kişi açılmasına yol açıyordu.
+   * Artık kanal handle'ı telefon alanına YAZILMAZ; kalıcı kimlik çapası olarak
+   * metadata.channel_handles.<kanal> altında tutulur ve eşleştirme oradan yapılır.
+   */
+  private async upsertContact(
+    c: PoolClient, ctx: RequestContext, normalized: string, name?: string,
+    channel = 'whatsapp', identifierIsPhone = true,
+  ): Promise<string> {
+    if (identifierIsPhone) {
+      const { rows } = await c.query<{ id: string }>(
+        `SELECT id FROM contacts
+           WHERE tenant_id = $1 AND normalized_phone = $2 AND deleted_at IS NULL AND merged_into_id IS NULL
+           LIMIT 1`,
+        [ctx.tenantId, normalized],
+      );
+      if (rows.length > 0) return rows[0].id;
+    } else {
+      const { rows } = await c.query<{ id: string }>(
+        `SELECT id FROM contacts
+           WHERE tenant_id = $1 AND metadata->'channel_handles'->>$2 = $3
+             AND deleted_at IS NULL AND merged_into_id IS NULL
+           LIMIT 1`,
+        [ctx.tenantId, channel, normalized],
+      );
+      if (rows.length > 0) return rows[0].id;
+    }
     const first = (name ?? 'WhatsApp Lead').trim().split(/\s+/)[0] || 'WhatsApp';
     const last = name ? name.trim().split(/\s+/).slice(1).join(' ') || null : null;
+    const phone = identifierIsPhone ? '+' + normalized : null;
     const { rows: created } = await c.query<{ id: string }>(
-      `INSERT INTO contacts (tenant_id, first_name, last_name, phone, whatsapp, created_by, updated_by)
-       VALUES ($1,$2,$3,$4,$4,$5,$5) RETURNING id`,
-      [ctx.tenantId, first, last, '+' + normalized, ctx.userId],
+      `INSERT INTO contacts (tenant_id, first_name, last_name, phone, whatsapp, metadata, created_by, updated_by)
+       VALUES ($1,$2,$3,$4,$4,$5,$6,$6) RETURNING id`,
+      [ctx.tenantId, first, last, phone,
+       JSON.stringify({ channel_handles: { [channel]: normalized } }), ctx.userId],
     );
     return created[0].id;
   }
