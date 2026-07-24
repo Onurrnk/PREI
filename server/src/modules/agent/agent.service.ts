@@ -332,7 +332,25 @@ export class AgentService {
         }
       }
 
-      const contactId = await this.upsertContact(c, ctx, normalized, dto.name);
+      // Kanal dış-kimliği (ör. Telegram chat id) KARARLI çapadır. Telegram'da
+      // `phone` alanına chat id yazılır; profil çıkarımı gerçek numarayı bulup
+      // kişiyi güncelleyince normalized_phone eşleşmesi KOPUYOR ve sonraki her
+      // mesaj yeni kişi+lead açıyordu → konuşma hafızası bölünüyor, Eylül aynı
+      // bilgileri tekrar tekrar soruyordu. Önce oturumdan çöz, yoksa telefona düş
+      // (WhatsApp'ta external_session_id yoksa davranış aynı kalır).
+      let contactId: string | null = null;
+      if (dto.external_session_id) {
+        const { rows: sess } = await c.query<{ contact_id: string }>(
+          `SELECT s.contact_id FROM conversation_sessions s
+             JOIN contacts ct ON ct.id = s.contact_id
+            WHERE s.tenant_id = $1 AND s.channel = $2 AND s.external_session_id = $3
+              AND ct.deleted_at IS NULL AND ct.merged_into_id IS NULL
+            LIMIT 1`,
+          [ctx.tenantId, channel, dto.external_session_id],
+        );
+        if (sess.length > 0) contactId = sess[0].contact_id;
+      }
+      if (!contactId) contactId = await this.upsertContact(c, ctx, normalized, dto.name);
       const lead = await this.ensureOpenLead(c, ctx, contactId, dto.qualification_score);
       const leadId = lead.id;
       if (lead.created) this.notifyAdminNewLead(dto.name ?? 'Yeni yatırımcı', channel, leadId);
