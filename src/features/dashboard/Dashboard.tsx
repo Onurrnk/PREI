@@ -14,11 +14,20 @@ import {
   ListChecks,
   GlobeHemisphereWest,
   Megaphone,
+  InstagramLogo,
+  LinkedinLogo,
+  XLogo,
+  YoutubeLogo,
+  TiktokLogo,
+  FacebookLogo,
+  TelegramLogo,
+  ShareNetwork,
+  UsersThree,
 } from '@phosphor-icons/react';
 import { GeoMap } from '../../core/components/GeoMap/GeoMap';
 import { TrendArea, Sparkline, DonutMetric, HBarCompare, fmtEUR } from '../../core/charts';
-import type { DashboardSummaryDTO, MeetingDTO, TaskDTO } from '../../core/types';
-import { dashboardApi, meetingsApi, tasksApi } from '../../core/api/resources';
+import type { DashboardSummaryDTO, MeetingDTO, TaskDTO, SocialSummaryDTO } from '../../core/types';
+import { dashboardApi, meetingsApi, tasksApi, socialApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { useTranslation } from 'react-i18next';
 import styles from './Dashboard.module.css';
@@ -49,6 +58,21 @@ const flagOf = (code: string): string =>
     ? String.fromCodePoint(...[...code].map((c) => 0x1f1a5 + c.charCodeAt(0)))
     : '🌐';
 
+// Platform kimlik renkleri — markaların kendi tonları (Design System: veri
+// renkleri serbest; mor yalnız PREI accent'ı olarak kalır).
+const PLATFORM_META: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  instagram: { label: 'Instagram', color: '#E1306C', icon: <InstagramLogo size={15} weight="fill" /> },
+  linkedin:  { label: 'LinkedIn',  color: '#0A66C2', icon: <LinkedinLogo size={15} weight="fill" /> },
+  x:         { label: 'X',         color: '#8B98A5', icon: <XLogo size={15} /> },
+  youtube:   { label: 'YouTube',   color: '#E53935', icon: <YoutubeLogo size={15} weight="fill" /> },
+  tiktok:    { label: 'TikTok',    color: '#4CC3C9', icon: <TiktokLogo size={15} weight="fill" /> },
+  facebook:  { label: 'Facebook',  color: '#1877F2', icon: <FacebookLogo size={15} weight="fill" /> },
+  telegram:  { label: 'Telegram',  color: '#229ED9', icon: <TelegramLogo size={15} weight="fill" /> },
+};
+
+const fmtCompact = (n: number): string =>
+  n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(1)}K` : String(n);
+
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
@@ -56,6 +80,7 @@ export const Dashboard: React.FC = () => {
   const { data: summary } = useFetch<DashboardSummaryDTO>(() => dashboardApi.summary(), []);
   const { data: meetingsData } = useFetch<MeetingDTO[]>(() => meetingsApi.list(), []);
   const { data: tasksData } = useFetch<TaskDTO[]>(() => tasksApi.list(), []);
+  const { data: social } = useFetch<SocialSummaryDTO>(() => socialApi.summary(), []);
 
   const trends = summary?.trends;
   const marketing = summary?.marketing;
@@ -322,8 +347,79 @@ export const Dashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Alt grid: takvim + görevler (gerçek) */}
+      {/* Alt grid: sosyal medya + takvim + görevler */}
       <div className={styles.bottomGrid}>
+        <Card padding="md">
+          <div className={styles.cardTitleRow}>
+            <h2 className={styles.cardTitle}>
+              <ShareNetwork size={16} className={styles.titleIcon} /> {t('dashboard.social.title')}
+            </h2>
+            {social?.hasData && social.totalFollowers > 0 && (
+              <span className={styles.socialTotal}>
+                <UsersThree size={14} /> {fmtCompact(social.totalFollowers)}
+                {social.totalDeltaPct != null && (
+                  <span className={social.totalDeltaPct >= 0 ? styles.deltaUp : styles.deltaDown} style={{ padding: '1px 5px', fontSize: '0.6875rem' }}>
+                    {social.totalDeltaPct >= 0 ? '+' : ''}{social.totalDeltaPct}%
+                  </span>
+                )}
+              </span>
+            )}
+          </div>
+          {social?.hasData ? (
+            <div className={styles.socialBody}>
+              {social.platforms.map((p) => {
+                const meta = PLATFORM_META[p.platform] ?? { label: p.platform, color: 'var(--text-muted)', icon: <ShareNetwork size={15} /> };
+                return (
+                  <div key={p.platform} className={styles.socialRow}>
+                    <span className={styles.socialIcon} style={{ color: meta.color }}>{meta.icon}</span>
+                    <span className={styles.socialName}>{meta.label}</span>
+                    <span className={styles.socialFollowers}>{fmtCompact(p.followers)}</span>
+                    {p.deltaPct != null ? (
+                      <span className={`${styles.socialDelta} ${p.deltaPct >= 0 ? styles.deltaUp : styles.deltaDown}`}>
+                        {p.deltaPct >= 0 ? '+' : ''}{p.deltaPct}%
+                      </span>
+                    ) : (
+                      <span className={styles.socialDeltaNone}>—</span>
+                    )}
+                  </div>
+                );
+              })}
+              {social.topPosts.length > 0 && (
+                <>
+                  <div className={styles.socialSubhead}>{t('dashboard.social.topPosts')}</div>
+                  {social.topPosts.slice(0, 3).map((p) => {
+                    const meta = PLATFORM_META[p.platform];
+                    return (
+                      <div key={p.id} className={styles.socialPostRow} title={p.title}>
+                        <span className={styles.socialIcon} style={{ color: meta?.color }}>{meta?.icon}</span>
+                        <span className={styles.socialPostTitle}>{p.title}</span>
+                        <span className={styles.socialPostStat}>{fmtCompact(p.engagements)} ♥</span>
+                        {p.leads > 0 && (
+                          <span className={styles.socialLeadBadge}>{p.leads} {t('dashboard.social.lead')}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+              <button className={styles.mktLink} onClick={() => navigate('/marketing')}>
+                {t('dashboard.social.manage')}
+              </button>
+            </div>
+          ) : (
+            <div className={styles.fillCenter}>
+              <EmptyState
+                compact
+                icon={<ShareNetwork size={22} weight="duotone" />}
+                title={t('dashboard.social.emptyTitle')}
+                description={t('dashboard.social.emptyDesc')}
+                actionLabel={t('dashboard.social.manage')}
+                onAction={() => navigate('/marketing')}
+              />
+            </div>
+          )}
+        </Card>
+
         <Card padding="none">
           <CardHeader>
             <div className={styles.cardTitleRow}>

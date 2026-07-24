@@ -42,6 +42,10 @@ import type {
   PublicInviteInfoDTO,
   MeetingDTO,
   NotificationFeed,
+  SocialSummaryDTO,
+  SocialPostDTO,
+  UpsertFollowersInput,
+  CreateSocialPostInput,
   KPIDTO,
   LeadCommunicationDTO,
   LeadDTO,
@@ -209,6 +213,13 @@ export const meetingsApi = {
   create: (input: CreateMeetingInput) => api.post<MeetingDTO>('/api/meetings', input),
   update: (id: string, input: UpdateMeetingInput) => api.patch<MeetingDTO>(`/api/meetings/${id}`, input),
   remove: (id: string) => api.delete<{ id: string; deleted: true }>(`/api/meetings/${id}`),
+};
+
+export const socialApi = {
+  summary: () => api.get<SocialSummaryDTO>('/api/marketing/social/summary'),
+  upsertFollowers: (input: UpsertFollowersInput) => api.post<{ ok: true }>('/api/marketing/social/followers', input),
+  createPost: (input: CreateSocialPostInput) => api.post<SocialPostDTO>('/api/marketing/social/posts', input),
+  removePost: (id: string) => api.delete<{ deleted: true }>(`/api/marketing/social/posts/${id}`),
 };
 
 export const notificationsApi = {

@@ -236,9 +236,118 @@
 
 .bottomGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--sp-4);
   align-items: stretch;
+}
+
+/* ===== Sosyal medya kartı (kompakt) ===== */
+.socialTotal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.socialBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.socialRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 6px 2px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.8125rem;
+}
+
+.socialIcon {
+  display: inline-flex;
+  width: 20px;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.socialName {
+  color: var(--text-primary);
+  font-weight: 500;
+  flex: 1;
+  min-width: 0;
+}
+
+.socialFollowers {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.socialDelta {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  padding: 1px 6px;
+  border-radius: var(--radius-control);
+  min-width: 48px;
+  text-align: center;
+}
+
+.socialDeltaNone {
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  min-width: 48px;
+  text-align: center;
+}
+
+.socialSubhead {
+  font: var(--text-label);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.625rem;
+  margin: var(--sp-3) 0 4px;
+}
+
+.socialPostRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 5px 2px;
+  font-size: 0.75rem;
+}
+
+.socialPostTitle {
+  color: var(--text-secondary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.socialPostStat {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.socialLeadBadge {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--data-positive);
+  background: color-mix(in srgb, var(--data-positive) 12%, transparent);
+  padding: 1px 6px;
+  border-radius: var(--radius-control);
+  white-space: nowrap;
 }
 
 /* Stretch edilen kartlarda içerik dikeyde dolar/ortalanır → ölü boşluk yok.

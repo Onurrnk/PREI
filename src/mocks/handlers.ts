@@ -30,6 +30,10 @@ import type {
   MeetingDTO,
   MeResponse,
   NotificationDTO,
+  SocialSummaryDTO,
+  SocialPostDTO,
+  UpsertFollowersInput,
+  CreateSocialPostInput,
   TeamMemberDTO,
   RoleOptionDTO,
   UpdateTeamMemberInput,
@@ -220,6 +224,18 @@ let mockMe: MeResponse = {
   timezone: 'dubai',
   notificationPrefs: { newLead: true, taskDue: true, weeklyReport: true, smsHotLeads: false },
 };
+
+// Sosyal medya mock verisi (002w) — {şimdiki, önceki} takipçi + paylaşımlar
+const mockSocialFollowers: Record<string, { now: number; prev: number }> = {
+  instagram: { now: 1240, prev: 1130 },
+  linkedin: { now: 860, prev: 795 },
+  youtube: { now: 210, prev: 214 },
+};
+const mockSocialPosts: SocialPostDTO[] = [
+  { id: 'sp1', platform: 'instagram', title: 'Dubai Marina proje tanıtımı', url: null, postedAt: '2026-07-18', impressions: 8400, engagements: 412, leads: 3 },
+  { id: 'sp2', platform: 'linkedin', title: 'İstanbul pazar analizi — 2026 Q3', url: null, postedAt: '2026-07-15', impressions: 3100, engagements: 187, leads: 1 },
+  { id: 'sp3', platform: 'instagram', title: 'Golden Visa rehberi (Reels)', url: null, postedAt: '2026-07-10', impressions: 12600, engagements: 356, leads: 0 },
+];
 
 // Bildirim merkezi mock verisi (gerçekte /api/me/notifications events'ten türetir)
 let mockNotifSeenAt = 0;
@@ -914,6 +930,54 @@ export const handlers = [
         ],
       },
     });
+  }),
+
+  // Sosyal medya (002w) — module-level mutable; oturum içinde kalıcı.
+  http.get('/api/marketing/social/summary', () => {
+    const platforms = Object.entries(mockSocialFollowers).map(([platform, f]) => ({
+      platform, followers: f.now, deltaPct: f.prev > 0 ? Math.round(((f.now - f.prev) / f.prev) * 1000) / 10 : null,
+      asOf: new Date().toISOString().slice(0, 10),
+    })).sort((a, b) => b.followers - a.followers);
+    const totalFollowers = platforms.reduce((s, p) => s + p.followers, 0);
+    const prevTotal = Object.values(mockSocialFollowers).reduce((s, f) => s + f.prev, 0);
+    const topPosts = [...mockSocialPosts].sort((a, b) => b.engagements - a.engagements).slice(0, 5);
+    return HttpResponse.json<SocialSummaryDTO>({
+      hasData: platforms.length > 0 || mockSocialPosts.length > 0,
+      totalFollowers,
+      totalDeltaPct: prevTotal > 0 ? Math.round(((totalFollowers - prevTotal) / prevTotal) * 1000) / 10 : null,
+      platforms: platforms as SocialSummaryDTO['platforms'],
+      topPosts,
+      totals30d: {
+        posts: mockSocialPosts.length,
+        engagements: mockSocialPosts.reduce((s, p) => s + p.engagements, 0),
+        leads: mockSocialPosts.reduce((s, p) => s + p.leads, 0),
+      },
+    });
+  }),
+
+  http.post('/api/marketing/social/followers', async ({ request }) => {
+    const b = (await request.json()) as UpsertFollowersInput;
+    const cur = mockSocialFollowers[b.platform];
+    mockSocialFollowers[b.platform] = { now: b.followers, prev: cur?.now ?? 0 };
+    return HttpResponse.json({ ok: true });
+  }),
+
+  http.post('/api/marketing/social/posts', async ({ request }) => {
+    const b = (await request.json()) as CreateSocialPostInput;
+    const post: SocialPostDTO = {
+      id: `sp${Date.now()}`, platform: b.platform, title: b.title, url: b.url ?? null,
+      postedAt: b.postedAt ?? new Date().toISOString().slice(0, 10),
+      impressions: b.impressions ?? 0, engagements: b.engagements ?? 0, leads: b.leads ?? 0,
+    };
+    mockSocialPosts.unshift(post);
+    return HttpResponse.json<SocialPostDTO>(post, { status: 201 });
+  }),
+
+  http.delete('/api/marketing/social/posts/:id', ({ params }) => {
+    const i = mockSocialPosts.findIndex((p) => p.id === params.id);
+    if (i === -1) return new HttpResponse(null, { status: 404 });
+    mockSocialPosts.splice(i, 1);
+    return HttpResponse.json({ deleted: true });
   }),
 
   http.get('/api/financials/summary', () => {

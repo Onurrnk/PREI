@@ -8,8 +8,8 @@ import { Field, Input, Select, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { useFetch } from '../../core/hooks/useFetch';
-import { marketingApi } from '../../core/api/resources';
-import type { MarketingSummaryDTO, MarketingTimeframe, CreateAdSpendInput } from '../../core/types';
+import { marketingApi, socialApi } from '../../core/api/resources';
+import type { MarketingSummaryDTO, MarketingTimeframe, CreateAdSpendInput, SocialSummaryDTO, SocialPlatform } from '../../core/types';
 import {
   TrendUp, TrendDown, ChatCircle, WhatsappLogo, TelegramLogo, InstagramLogo,
   Plus, UploadSimple, Trash, Info, ArrowsClockwise,
@@ -21,6 +21,16 @@ import styles from './Marketing.module.css';
 const MARKETS = ['TR', 'AE', 'ES', 'GB', 'TH', 'DE'];
 const CHANNELS = ['meta', 'instagram', 'google', 'other'];
 const CURRENCIES = ['EUR', 'USD', 'GBP', 'AED', 'TRY'];
+
+const SOCIAL_PLATFORMS: { value: SocialPlatform; label: string }[] = [
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'linkedin', label: 'LinkedIn' },
+  { value: 'x', label: 'X (Twitter)' },
+  { value: 'youtube', label: 'YouTube' },
+  { value: 'tiktok', label: 'TikTok' },
+  { value: 'facebook', label: 'Facebook' },
+  { value: 'telegram', label: 'Telegram' },
+];
 
 const scoreClass = (score: number): string =>
   score >= 75 ? 'scoreHigh' : score >= 50 ? 'scoreMid' : 'scoreLow';
@@ -99,6 +109,69 @@ export const Marketing: React.FC = () => {
   const conversations = data?.conversations ?? [];
 
   const setF = (patch: Partial<CreateAdSpendInput>) => setForm((f) => ({ ...f, ...patch }));
+
+  // ---- Sosyal medya (002w): takipçi güncelle + paylaşım ekle/sil ----
+  const { data: social, refetch: refetchSocial } = useFetch<SocialSummaryDTO>(() => socialApi.summary(), []);
+  const [snapPlatform, setSnapPlatform] = useState<SocialPlatform>('instagram');
+  const [snapCount, setSnapCount] = useState('');
+  const [snapSaving, setSnapSaving] = useState(false);
+  const [postPlatform, setPostPlatform] = useState<SocialPlatform>('instagram');
+  const [postTitle, setPostTitle] = useState('');
+  const [postUrl, setPostUrl] = useState('');
+  const [postDate, setPostDate] = useState('');
+  const [postImpr, setPostImpr] = useState('');
+  const [postEng, setPostEng] = useState('');
+  const [postLeads, setPostLeads] = useState('');
+  const [postSaving, setPostSaving] = useState(false);
+
+  const handleSaveFollowers = async () => {
+    const n = parseInt(snapCount, 10);
+    if (!Number.isFinite(n) || n < 0) { toast.error(t('marketing.social.followersInvalid')); return; }
+    setSnapSaving(true);
+    try {
+      await socialApi.upsertFollowers({ platform: snapPlatform, followers: n });
+      toast.success(t('marketing.social.followersSaved'));
+      setSnapCount('');
+      refetchSocial();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('marketing.form.saveError'));
+    } finally {
+      setSnapSaving(false);
+    }
+  };
+
+  const handleAddPost = async () => {
+    if (postTitle.trim().length < 2) { toast.error(t('marketing.social.postTitleRequired')); return; }
+    setPostSaving(true);
+    try {
+      await socialApi.createPost({
+        platform: postPlatform,
+        title: postTitle.trim(),
+        url: postUrl.trim() || undefined,
+        postedAt: postDate || undefined,
+        impressions: postImpr ? parseInt(postImpr, 10) || 0 : undefined,
+        engagements: postEng ? parseInt(postEng, 10) || 0 : undefined,
+        leads: postLeads ? parseInt(postLeads, 10) || 0 : undefined,
+      });
+      toast.success(t('marketing.social.postSaved'));
+      setPostTitle(''); setPostUrl(''); setPostDate(''); setPostImpr(''); setPostEng(''); setPostLeads('');
+      refetchSocial();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('marketing.form.saveError'));
+    } finally {
+      setPostSaving(false);
+    }
+  };
+
+  const handleDeletePost = async (id: string) => {
+    try {
+      await socialApi.removePost(id);
+      toast.success(t('marketing.social.postDeleted'));
+      refetchSocial();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('marketing.form.saveError'));
+    }
+  };
 
   const handleSave = async () => {
     if (!form.name.trim() || !form.periodStart || !form.periodEnd) {
@@ -349,6 +422,113 @@ export const Marketing: React.FC = () => {
             </TableBody>
           </Table>
         </CardBody>
+      </Card>
+
+      {/* Sosyal medya: takipçi güncelle + paylaşım performansı (002w) */}
+      <Card padding="md">
+        <div className={styles.cardTitleRow}>
+          <h2 className={styles.cardTitle}>{t('marketing.social.title')}</h2>
+          <span className={styles.cardMeta}>{t('marketing.social.hint')}</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,2fr)', gap: 'var(--sp-4)', alignItems: 'start' }}>
+          {/* Takipçi güncelle */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+            <Field label={t('marketing.social.updateFollowers')}>
+              <SelectMenu
+                value={snapPlatform}
+                options={SOCIAL_PLATFORMS}
+                onChange={(v) => setSnapPlatform(v as SocialPlatform)}
+                aria-label={t('marketing.social.platform')}
+              />
+            </Field>
+            <Field label={t('marketing.social.followerCount')}>
+              <Input type="number" min={0} value={snapCount} onChange={(e) => setSnapCount(e.target.value)} placeholder="1250" />
+            </Field>
+            <Button variant="outline" onClick={handleSaveFollowers} disabled={snapSaving}>
+              {snapSaving ? t('common.saving') : t('common.save')}
+            </Button>
+            {(social?.platforms.length ?? 0) > 0 && (
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {social!.platforms.map((p) => `${p.platform}: ${p.followers.toLocaleString()}`).join(' · ')}
+              </div>
+            )}
+          </div>
+
+          {/* Paylaşım ekle */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+            <FormRow>
+              <Field label={t('marketing.social.platform')}>
+                <SelectMenu
+                  value={postPlatform}
+                  options={SOCIAL_PLATFORMS}
+                  onChange={(v) => setPostPlatform(v as SocialPlatform)}
+                  aria-label={t('marketing.social.platform')}
+                />
+              </Field>
+              <Field label={t('marketing.social.postDate')}>
+                <Input type="date" value={postDate} onChange={(e) => setPostDate(e.target.value)} />
+              </Field>
+            </FormRow>
+            <Field label={t('marketing.social.postTitle')}>
+              <Input value={postTitle} onChange={(e) => setPostTitle(e.target.value)} placeholder={t('marketing.social.postTitlePh')} />
+            </Field>
+            <FormRow>
+              <Field label={t('marketing.social.impressions')}>
+                <Input type="number" min={0} value={postImpr} onChange={(e) => setPostImpr(e.target.value)} placeholder="0" />
+              </Field>
+              <Field label={t('marketing.social.engagements')}>
+                <Input type="number" min={0} value={postEng} onChange={(e) => setPostEng(e.target.value)} placeholder="0" />
+              </Field>
+              <Field label={t('marketing.social.leads')}>
+                <Input type="number" min={0} value={postLeads} onChange={(e) => setPostLeads(e.target.value)} placeholder="0" />
+              </Field>
+            </FormRow>
+            <FormRow>
+              <Field label={t('marketing.social.postUrl')}>
+                <Input value={postUrl} onChange={(e) => setPostUrl(e.target.value)} placeholder="https://…" />
+              </Field>
+            </FormRow>
+            <Button variant="primary" onClick={handleAddPost} disabled={postSaving} style={{ alignSelf: 'flex-start' }}>
+              <Plus size={16} /> {postSaving ? t('common.saving') : t('marketing.social.addPost')}
+            </Button>
+          </div>
+        </div>
+
+        {(social?.topPosts.length ?? 0) > 0 && (
+          <div style={{ marginTop: 'var(--sp-4)' }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeader>{t('marketing.social.platform')}</TableHeader>
+                  <TableHeader>{t('marketing.social.postTitle')}</TableHeader>
+                  <TableHeader align="right">{t('marketing.social.impressions')}</TableHeader>
+                  <TableHeader align="right">{t('marketing.social.engagements')}</TableHeader>
+                  <TableHeader align="right">{t('marketing.social.leads')}</TableHeader>
+                  <TableHeader align="right" />
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {social!.topPosts.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell><span className={styles.marketChip}>{p.platform}</span></TableCell>
+                    <TableCell style={{ fontWeight: 500 }}>
+                      {p.url ? <a href={p.url} target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>{p.title}</a> : p.title}
+                    </TableCell>
+                    <TableCell align="right"><span className={styles.numCell}>{p.impressions.toLocaleString()}</span></TableCell>
+                    <TableCell align="right"><span className={styles.numCell}>{p.engagements.toLocaleString()}</span></TableCell>
+                    <TableCell align="right"><span className={styles.numCell}>{p.leads}</span></TableCell>
+                    <TableCell align="right">
+                      <button className={styles.rowDelete} onClick={() => handleDeletePost(p.id)} aria-label={t('common.delete')}>
+                        <Trash size={15} />
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </Card>
 
       {/* Pazar dağılımı + Eylül konuşmaları */}

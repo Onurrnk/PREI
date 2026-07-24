@@ -16,14 +16,19 @@ import { RequirePermission } from '../../common/require-permission.decorator';
 import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { MarketingService } from './marketing.service';
+import { SocialService } from './social.service';
 import { CreateAdSpendDto, ImportAdSpendDto, UpdateAdSpendDto } from './dto/ad-spend.dto';
+import { CreateSocialPostDto, UpsertFollowersDto } from './dto/social.dto';
 import { MARKETING_TIMEFRAMES, type MarketingTimeframe } from './marketing.util';
 
 @Controller('marketing')
 @UseGuards(JwtAuthGuard, RbacGuard)
 @RequirePermission('marketing')
 export class MarketingController {
-  constructor(private readonly marketing: MarketingService) {}
+  constructor(
+    private readonly marketing: MarketingService,
+    private readonly social: SocialService,
+  ) {}
 
   @Get('summary')
   summary(@Ctx() ctx: RequestContext, @Query('timeframe') timeframe?: string) {
@@ -65,5 +70,26 @@ export class MarketingController {
   @Post('meta-sync')
   metaSync(@Ctx() ctx: RequestContext, @Query('datePreset') datePreset?: string) {
     return this.marketing.syncMeta(ctx, datePreset || 'last_30d');
+  }
+
+  // ---- Sosyal medya (002w): takipçi anlık görüntüleri + paylaşımlar ----
+  @Get('social/summary')
+  socialSummary(@Ctx() ctx: RequestContext) {
+    return this.social.summary(ctx);
+  }
+
+  @Post('social/followers')
+  socialFollowers(@Ctx() ctx: RequestContext, @Body() dto: UpsertFollowersDto) {
+    return this.social.upsertFollowers(ctx, dto);
+  }
+
+  @Post('social/posts')
+  socialCreatePost(@Ctx() ctx: RequestContext, @Body() dto: CreateSocialPostDto) {
+    return this.social.createPost(ctx, dto);
+  }
+
+  @Delete('social/posts/:id')
+  socialRemovePost(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.social.removePost(ctx, id);
   }
 }

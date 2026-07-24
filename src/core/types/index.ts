@@ -27,6 +27,52 @@ export interface WeeklyTrendsDTO {
 
 export interface LeadSourceItemDTO { name: string; value: number }
 
+/** Sosyal medya (002w) — takipçi anlık görüntüleri + paylaşım performansı. */
+export type SocialPlatform = 'instagram' | 'linkedin' | 'x' | 'youtube' | 'tiktok' | 'facebook' | 'telegram';
+
+export interface SocialPlatformStatDTO {
+  platform: SocialPlatform;
+  followers: number;
+  deltaPct: number | null;
+  asOf: string;
+}
+
+export interface SocialPostDTO {
+  id: string;
+  platform: SocialPlatform;
+  title: string;
+  url: string | null;
+  postedAt: string;
+  impressions: number;
+  engagements: number;
+  leads: number;
+}
+
+export interface SocialSummaryDTO {
+  hasData: boolean;
+  totalFollowers: number;
+  totalDeltaPct: number | null;
+  platforms: SocialPlatformStatDTO[];
+  topPosts: SocialPostDTO[];
+  totals30d: { posts: number; engagements: number; leads: number };
+}
+
+export interface UpsertFollowersInput {
+  platform: SocialPlatform;
+  followers: number;
+  snapshotDate?: string;
+}
+
+export interface CreateSocialPostInput {
+  platform: SocialPlatform;
+  title: string;
+  url?: string;
+  postedAt?: string;
+  impressions?: number;
+  engagements?: number;
+  leads?: number;
+}
+
 /** Ülkeye göre müşteri coğrafyası — Komuta Merkezi harita kartı. */
 export interface GeographyItemDTO {
   code: string;          // ISO-2 (TR, GB, AE...) veya XX
