@@ -721,6 +721,37 @@ export const handlers = [
     return HttpResponse.json<ClientDTO>(c);
   }),
 
+  // Toplu içe aktarım — mock modda gerçek ayrıştırıcı YOK; ekranın akışını
+  // (önizle → aktar) denemek için yeterli, temsilî bir rapor döner.
+  // Gerçek kolon tanıma/mükerrer mantığı backend'de ve orada test edilir.
+  ...(['preview', 'commit'] as const).map((mode) =>
+    http.post(`/api/contacts/import/${mode}`, async ({ request }) => {
+      const body = (await request.json()) as { csv?: string };
+      const lines = String(body.csv ?? '').trim().split('\n').filter(Boolean);
+      if (lines.length < 2) {
+        return HttpResponse.json({ message: 'Başlık dışında veri satırı yok.' }, { status: 400 });
+      }
+      const rows = lines.slice(1).map((line, i) => ({
+        rowNumber: i + 1,
+        name: line.split(/[;,]/)[0] || '—',
+        email: null, phone: null,
+        outcome: 'created' as const,
+        contactId: mode === 'commit' ? `mock-${i}` : null,
+        matchedBy: null, targetsAdded: 0, issues: [],
+      }));
+      return HttpResponse.json({
+        dryRun: mode === 'preview',
+        delimiter: lines[0].includes(';') ? ';' : ',',
+        mapping: [{ header: lines[0].split(/[;,]/)[0], field: 'fullName' }],
+        unmappedHeaders: [],
+        summary: {
+          total: rows.length, created: rows.length, matched: 0, skipped: 0, targets: 0,
+        },
+        rows,
+      });
+    }),
+  ),
+
   // Yatırım hedefleri (003g) — ülke listeden seçilir, serbest yazım yok.
   http.get('/api/contacts/investment-countries', () => HttpResponse.json(MOCK_COUNTRIES)),
 

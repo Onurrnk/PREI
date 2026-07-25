@@ -15,6 +15,8 @@ import { ContactsService } from './contacts.service';
 import {
   InvestmentTargetsService, type InvestmentTargetInput,
 } from './investment-targets.service';
+import { ContactImportService } from './import/contact-import.service';
+import { ImportContactsDto } from './import/contact-import.dto';
 import { CreateContactDto } from './dto/contact.dto';
 
 @Controller('contacts')
@@ -24,7 +26,25 @@ export class ContactsController {
   constructor(
     private readonly contacts: ContactsService,
     private readonly targets: InvestmentTargetsService,
+    private readonly importer: ContactImportService,
   ) {}
+
+  // ── Toplu içe aktarım ──────────────────────────────────────────────
+  // İki uç aynı mantığı çalıştırır; tek fark yazma. Önce /preview
+  // çağrılması BEKLENİR ama zorunlu değildir — /commit kendi başına da
+  // doğrudur (aynı doğrulamalardan geçer).
+
+  /** Kuru çalıştırma: ne olacağını gösterir, HİÇBİR ŞEY YAZMAZ. */
+  @Post('import/preview')
+  importPreview(@Ctx() ctx: RequestContext, @Body() dto: ImportContactsDto) {
+    return this.importer.run(ctx, dto.csv, dto, true);
+  }
+
+  /** Gerçek aktarım. Tek transaction: yarım yüklenmiş defter olmaz. */
+  @Post('import/commit')
+  importCommit(@Ctx() ctx: RequestContext, @Body() dto: ImportContactsDto) {
+    return this.importer.run(ctx, dto.csv, dto, false);
+  }
 
   // ── Yatırım hedefleri (ülke + bölge) ───────────────────────────────
   // Not: sabit yollar ':id'den ÖNCE tanımlı olmalı, yoksa UUID pipe'ına

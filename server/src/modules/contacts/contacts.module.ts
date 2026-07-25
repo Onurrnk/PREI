@@ -4,13 +4,14 @@ import { ContactsController } from './contacts.controller';
 import { ContactsService } from './contacts.service';
 import { ContactsRepository } from './contacts.repository';
 import { InvestmentTargetsService } from './investment-targets.service';
+import { ContactImportService } from './import/contact-import.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RbacGuard } from '../../common/rbac.guard';
 
 @Module({
   controllers: [ContactsController],
   providers: [ContactMatcherService, ContactsService, ContactsRepository,
-    InvestmentTargetsService, JwtAuthGuard, RbacGuard],
+    InvestmentTargetsService, ContactImportService, JwtAuthGuard, RbacGuard],
   exports: [ContactMatcherService, InvestmentTargetsService],
 })
 export class ContactsModule {}

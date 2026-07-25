@@ -6,14 +6,15 @@ import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
 import { Button } from '../../core/components/Button/Button';
-import { Plus, DotsThree, FunnelSimple, DownloadSimple, MagnifyingGlass, CheckCircle } from '@phosphor-icons/react';
+import { Plus, DotsThree, FunnelSimple, DownloadSimple, MagnifyingGlass, CheckCircle, UploadSimple } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../core/components/Modal/Modal';
 import { ClientForm, emptyClientForm, clientFormToPatch, type ClientFormValue } from './ClientForm';
+import { ImportClients } from './ImportClients';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import styles from './Clients.module.css';
 
-type ModalKind = 'addClient' | 'export' | 'filter' | 'rowActions' | null;
+type ModalKind = 'addClient' | 'import' | 'export' | 'filter' | 'rowActions' | null;
 
 export const ClientsList: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -85,6 +86,7 @@ export const ClientsList: React.FC = () => {
   };
 
   const modalTitle = modalKind === 'addClient' ? t('clients.addClient')
+    : modalKind === 'import' ? t('clients.import.title')
     : modalKind === 'export' ? t('clients.export')
     : modalKind === 'filter' ? t('clients.filter')
     : modalKind === 'rowActions' ? rowActionsFor
@@ -110,6 +112,7 @@ export const ClientsList: React.FC = () => {
           </div>
           <Button variant="outline" onClick={() => handleActionClick('filter')}><FunnelSimple size={16} /> {t('clients.filter')}</Button>
           <Button variant="outline" onClick={() => handleActionClick('export')}><DownloadSimple size={16} /> {t('clients.export')}</Button>
+          <Button variant="outline" onClick={() => handleActionClick('import')}><UploadSimple size={16} /> {t('clients.import.open')}</Button>
           <Button variant="primary" onClick={() => handleActionClick('addClient')}><Plus size={16} /> {t('clients.addClient')}</Button>
         </div>
       </div>
@@ -201,29 +204,39 @@ export const ClientsList: React.FC = () => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         title={modalTitle}
-        size={modalKind === 'addClient' ? 'lg' : 'md'}
+        size={modalKind === 'addClient' || modalKind === 'import' ? 'lg' : 'md'}
         footer={
-          <>
-            <Button variant="outline" onClick={() => setShowModal(false)}>{t('clients.cancel')}</Button>
-            <Button
-              variant="primary"
-              disabled={modalKind === 'addClient' && saving}
-              onClick={() => {
-                if (modalKind === 'addClient') {
-                  void handleSaveClient();
-                } else {
-                  setShowModal(false);
-                }
-              }}
-            >
-              {modalKind === 'addClient' ? (saving ? t('clients.saving') : t('clients.saveClient')) : t('clients.close')}
+          // İçe aktarımda tek düğme: "Önizle"/"İçe aktar" bileşenin kendi
+          // içinde. Altta ikinci bir birincil düğme hangisinin yazdığını
+          // belirsizleştirirdi.
+          modalKind === 'import' ? (
+            <Button variant="outline" onClick={() => setShowModal(false)}>
+              {t('clients.close')}
             </Button>
-          </>
+          ) : (
+            <>
+              <Button variant="outline" onClick={() => setShowModal(false)}>{t('clients.cancel')}</Button>
+              <Button
+                variant="primary"
+                disabled={modalKind === 'addClient' && saving}
+                onClick={() => {
+                  if (modalKind === 'addClient') {
+                    void handleSaveClient();
+                  } else {
+                    setShowModal(false);
+                  }
+                }}
+              >
+                {modalKind === 'addClient' ? (saving ? t('clients.saving') : t('clients.saveClient')) : t('clients.close')}
+              </Button>
+            </>
+          )
         }
       >
         {modalKind === 'addClient' && (
           <ClientForm value={form} onChange={setForm} duplicateCheck />
         )}
+        {modalKind === 'import' && <ImportClients onImported={refetch} />}
         {modalKind === 'export' && (
           <div className={styles.exportState}>
             <CheckCircle size={40} weight="duotone" className={styles.exportIcon} />

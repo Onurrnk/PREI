@@ -1,0 +1,258 @@
+/* =====================================================================
+   PREI | Toplu içe aktarım — Private Banking Terminal dili.
+   Yalnız tasarım sistemi jetonları; altın/gradyan yok.
+   ===================================================================== */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  /* Modal içinde uzun rapor tabloları taşmasın. */
+  max-width: 100%;
+}
+
+.intro {
+  font: var(--text-body);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ── Dosya seçimi ──────────────────────────────────────────────── */
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+/* Yerleşik dosya girdisi gizlenir; label düğme gibi davranır.
+   display:none KULLANILMAZ — klavye odağı kaybolur. */
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fileLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  font: var(--text-body);
+  color: var(--text-primary);
+  background: var(--bg-surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  /* Uzun dosya adı satırı patlatmasın. */
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileLabel:hover { background: var(--bg-surface); border-color: var(--brand-primary); }
+
+.fileInput:focus-visible + .fileLabel {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.reset {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 0;
+  font: var(--text-label);
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.reset:hover { color: var(--text-primary); }
+
+/* ── Alan kodu ─────────────────────────────────────────────────── */
+
+.dial {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  font: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.dialInput {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  width: fit-content;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  color: var(--text-muted);
+  font: var(--text-numeric);
+}
+
+.dialInput input {
+  width: 4ch;
+  padding: 0;
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  outline: none;
+  font: var(--text-numeric);
+}
+
+.dial small { color: var(--text-muted); font: var(--text-label); }
+
+.actions {
+  display: flex;
+  gap: var(--sp-3);
+}
+
+/* ── Rapor ─────────────────────────────────────────────────────── */
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.summary {
+  display: grid;
+  /* minmax(0,1fr): çıplak 1fr uzun sayıda taşmaya yol açıyor (FINDING-002). */
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+  gap: var(--sp-2);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-3);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  min-width: 0;
+}
+
+.statValue { font: var(--text-metric); color: var(--text-primary); }
+.statLabel { font: var(--text-label); color: var(--text-muted); }
+
+.positive { color: var(--data-positive); }
+.info     { color: var(--data-info); }
+.warning  { color: var(--data-warning); }
+
+.meta {
+  margin: 0;
+  font: var(--text-label);
+  color: var(--text-muted);
+  /* Uzun kolon eşleşme listesi sarsın, taşmasın. */
+  overflow-wrap: anywhere;
+}
+
+.meta code {
+  padding: 1px var(--sp-1);
+  background: var(--bg-inset);
+  border-radius: var(--radius-control);
+  font: var(--text-numeric);
+  color: var(--text-secondary);
+}
+
+.warn, .ok {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  font: var(--text-label);
+}
+
+.warn { color: var(--data-warning); }
+.ok   { color: var(--data-positive); }
+
+/* ── Satır tablosu ─────────────────────────────────────────────── */
+
+.tableScroll {
+  /* Geniş içerik kendi kutusunda kaysın; sayfa yatay kaymasın. */
+  overflow-x: auto;
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--text-body);
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--sp-2) var(--sp-3);
+  text-align: left;
+  font: var(--text-label);
+  color: var(--text-muted);
+  background: var(--bg-surface-raised);
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: var(--sp-2) var(--sp-3);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: top;
+}
+
+.table tr:last-child td { border-bottom: none; }
+
+/* Atlanan satır göz önünde ama geri planda. */
+.dim td { color: var(--text-muted); }
+
+.num { font: var(--text-numeric); color: var(--text-muted); }
+
+.contact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font: var(--text-label);
+  color: var(--text-secondary);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px var(--sp-2);
+  font: var(--text-label);
+  border-radius: var(--radius-control);
+  white-space: nowrap;
+}
+
+.created { color: var(--data-positive); background: rgba(63, 163, 114, 0.12); }
+.matched { color: var(--data-info);     background: rgba(91, 141, 184, 0.12); }
+.skipped { color: var(--text-muted);    background: var(--bg-inset); }
+
+.targets {
+  margin-left: var(--sp-2);
+  font: var(--text-label);
+  color: var(--brand-primary);
+}
+
+.issues {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  font: var(--text-label);
+  color: var(--data-warning);
+  max-width: 320px;
+}

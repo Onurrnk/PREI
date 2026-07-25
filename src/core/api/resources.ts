@@ -179,7 +179,41 @@ export const contactsApi = {
       countryCode: string; countryName: string; countryNameEn?: string;
       contacts: number; regions: string[];
     }>>('/api/contacts/investment-targets/summary'),
+
+  // Toplu içe aktarım — önizleme HİÇBİR ŞEY YAZMAZ, aynı mantığı çalıştırır.
+  importPreview: (input: ImportContactsInput) =>
+    api.post<ImportReportDTO>('/api/contacts/import/preview', input),
+  importCommit: (input: ImportContactsInput) =>
+    api.post<ImportReportDTO>('/api/contacts/import/commit', input),
 };
+
+export interface ImportContactsInput {
+  csv: string;
+  /** Ülke kodsuz yerel numaralar için varsayılan alan kodu ("90"). */
+  defaultDialCode?: string;
+  delimiter?: string;
+}
+
+export interface ImportRowResultDTO {
+  rowNumber: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  outcome: 'created' | 'matched' | 'skipped';
+  contactId: string | null;
+  matchedBy: string | null;
+  targetsAdded: number;
+  issues: string[];
+}
+
+export interface ImportReportDTO {
+  dryRun: boolean;
+  delimiter: string;
+  mapping: Array<{ header: string; field: string | null }>;
+  unmappedHeaders: string[];
+  summary: { total: number; created: number; matched: number; skipped: number; targets: number };
+  rows: ImportRowResultDTO[];
+}
 
 export const leadsApi = {
   list: () => api.get<LeadDTO[]>('/api/leads'),

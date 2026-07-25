@@ -25,6 +25,9 @@ const renderProfile = (id = '1') =>
   );
 
 describe('DeveloperProfile — gerçek PATCH /developers/:id + Visit Website', () => {
+  // Test sınırı, içindeki waitFor sınırından BÜYÜK olmalı. Eşit olduğunda
+  // (ikisi de 5000 ms) waitFor kendi limitine varamadan test ölüyor ve
+  // makine yüklüyken rastgele kırılıyordu — flakelik buradan geliyordu.
   it('Edit Profile ile isim değiştirilip kaydedilince başlıkta güncellenir', async () => {
     renderProfile();
     await screen.findByRole('heading', { name: 'Emaar Properties' });
@@ -40,7 +43,7 @@ describe('DeveloperProfile — gerçek PATCH /developers/:id + Visit Website', (
       () => expect(screen.getByRole('heading', { name: 'Emaar Properties Group' })).toBeInTheDocument(),
       { timeout: 5000 },
     );
-  });
+  }, 15_000);
 
   it('Visit Website gerçek bir pencere açar', async () => {
     renderProfile('2');
