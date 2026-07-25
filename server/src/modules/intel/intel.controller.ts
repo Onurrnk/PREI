@@ -17,6 +17,7 @@ import { AgentKeyGuard } from '../../auth/agent-key.guard';
 import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { IntelService, type IntelItem } from './intel.service';
+import { ContentPackService } from './content-pack.service';
 
 interface UploadedReportLike {
   originalname: string;
@@ -33,7 +34,32 @@ const STATUSES: IntelItem['status'][] = ['new', 'queued', 'published', 'skipped'
 @UseGuards(JwtAuthGuard, RbacGuard)
 @RequirePermission('marketing')
 export class IntelController {
-  constructor(private readonly intel: IntelService) {}
+  constructor(
+    private readonly intel: IntelService,
+    private readonly content: ContentPackService,
+  ) {}
+
+  /** Rapordan post metinleri + karusel planları üret. */
+  @Post(':id/content-pack')
+  generatePack(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.content.generate(ctx, id);
+  }
+
+  /** Kayıtlı paketi getir (tekrar üretmeden). */
+  @Get(':id/content-pack')
+  getPack(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.content.latestPack(ctx, id);
+  }
+
+  /** Karusel görselleri (Nano Banana). force=1 → yeniden üret. */
+  @Post('content-packs/:packId/images')
+  images(
+    @Ctx() ctx: RequestContext,
+    @Param('packId', ParseUUIDPipe) packId: string,
+    @Query('force') force?: string,
+  ) {
+    return this.content.carouselImages(ctx, packId, force === '1' || force === 'true');
+  }
 
   @Get()
   list(@Ctx() ctx: RequestContext, @Query('limit') limit?: string) {
@@ -126,7 +152,28 @@ export class IntelController {
 @Controller('agent/intel')
 @UseGuards(AgentKeyGuard)
 export class AgentIntelController {
-  constructor(private readonly intel: IntelService) {}
+  constructor(
+    private readonly intel: IntelService,
+    private readonly content: ContentPackService,
+  ) {}
+
+  /** Yerel betik: rapordan içerik paketi üret. */
+  @Post('reports/:id/content-pack')
+  generatePack(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.content.generate(ctx, id);
+  }
+
+  /** Yerel betik: karusel görsellerini al (base64). */
+  @Post('content-packs/:packId/images')
+  images(@Ctx() ctx: RequestContext, @Param('packId', ParseUUIDPipe) packId: string) {
+    return this.content.carouselImages(ctx, packId);
+  }
+
+  /** Yerel betik: haber kalemlerini al (paket üretilemese de klasöre yazılsın). */
+  @Get('reports/:id')
+  detail(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.intel.detail(ctx, id);
+  }
 
   @Post('reports')
   ingest(

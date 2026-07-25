@@ -31,6 +31,10 @@ export interface AppConfig {
   };
   google: {
     clientId: string;
+    /** Google AI Studio anahtarı — Nano Banana (Gemini) görsel üretimi. */
+    apiKey: string;
+    /** Görsel üretim modeli. */
+    imageModel: string;
     clientSecret: string;
     redirectUri: string;
     scopes: string[];
@@ -81,6 +85,8 @@ export default (): AppConfig => ({
   },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID ?? '',
+    apiKey: process.env.GOOGLE_AI_API_KEY ?? '',
+    imageModel: process.env.GOOGLE_IMAGE_MODEL ?? 'gemini-2.5-flash-image',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',
     redirectUri:
       process.env.GOOGLE_REDIRECT_URI ?? 'http://localhost:4000/api/auth/google/callback',
