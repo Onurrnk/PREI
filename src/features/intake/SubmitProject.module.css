@@ -324,3 +324,26 @@
 @media (max-width: 520px) {
   .amenityGrid { grid-template-columns: 1fr; }
 }
+
+/* Varyant m² alanları (madde 22) — layout hücrelerinin yanında dar sütun. */
+.areaCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 92px;
+}
+
+.areaCell span {
+  font-size: 0.6875rem;
+  color: var(--text-muted, #6B6B6B);
+}
+
+.areaInput {
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid var(--border-color, #E6E3DE);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  background: transparent;
+  color: inherit;
+}

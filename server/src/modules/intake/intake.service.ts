@@ -79,9 +79,21 @@ export async function optimizeImage(input: Buffer): Promise<Buffer> {
 }
 
 // --- Daire tipi / varyant görselleri (teklif sunumu için) ---
-export interface UnitVariant { label: string; images: string[]; layout: string | null }
+export interface UnitVariant {
+  label: string; images: string[]; layout: string | null;
+  /**
+   * Brüt/net m² — layout GÖRSELİNİN içindeki rakamlar okunamadığı için
+   * ayrı veri olarak alınıyor. Teklif sihirbazı daire tipi seçilince
+   * bunları otomatik dolduruyor.
+   */
+  areaGross: number | null;
+  areaNet: number | null;
+}
 export interface UnitTypeDetail { type: string; variants: UnitVariant[] }
-interface VariantMeta { label?: string; imageCount?: number; hasLayout?: boolean }
+interface VariantMeta {
+  label?: string; imageCount?: number; hasLayout?: boolean;
+  areaGross?: number | string | null; areaNet?: number | string | null;
+}
 interface TypeMeta { type?: string; variants?: VariantMeta[] }
 
 /**
@@ -90,6 +102,13 @@ interface TypeMeta { type?: string; variants?: VariantMeta[] }
  * unitLayouts hasLayout olan her varyanttan birer tane alır. Eksik/fazla
  * durumunda güvenli davranır (var olanı atar, taşmaz).
  */
+/** Metrekare: pozitif sayı değilse null (0 ya da "abc" yazılmış olabilir). */
+function toArea(v: number | string | null | undefined): number | null {
+  if (v === null || v === undefined || v === '') return null;
+  const n = typeof v === 'number' ? v : Number(String(v).replace(',', '.'));
+  return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null;
+}
+
 export function assembleUnitDetails(meta: TypeMeta[], imageUrls: string[], layoutUrls: string[]): UnitTypeDetail[] {
   let ii = 0, li = 0;
   const out: UnitTypeDetail[] = [];
@@ -100,7 +119,11 @@ export function assembleUnitDetails(meta: TypeMeta[], imageUrls: string[], layou
       const images = imageUrls.slice(ii, ii + want);
       ii += want;
       const layout = v.hasLayout && li < layoutUrls.length ? layoutUrls[li++] : null;
-      variants.push({ label: String(v.label ?? '').slice(0, 20) || '—', images, layout });
+      variants.push({
+        label: String(v.label ?? '').slice(0, 20) || '—', images, layout,
+        areaGross: toArea(v.areaGross),
+        areaNet: toArea(v.areaNet),
+      });
     }
     out.push({ type: String(t.type ?? '').slice(0, 40) || '—', variants });
   }

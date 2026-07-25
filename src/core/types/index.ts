@@ -620,6 +620,17 @@ export interface ProjectDTO {
   amenities: string[];
   paymentPlan: PaymentPlanDTO[];
   documents: DocumentDTO[];
+  /**
+   * Daire tipleri — teklif sihirbazı m²'yi buradan otomatik dolduruyor.
+   * Layout bir görsel olduğu için m² ayrı veri alanında (madde 22).
+   */
+  unitTypes?: Array<{
+    type: string;
+    variants: Array<{
+      label: string; layout: string | null;
+      areaGross: number | null; areaNet: number | null;
+    }>;
+  }>;
 }
 
 export interface CreateProjectInput {

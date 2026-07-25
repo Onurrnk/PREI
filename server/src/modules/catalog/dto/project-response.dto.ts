@@ -32,6 +32,24 @@ export interface ProjectResponse {
   amenities: string[];
   paymentPlan: PaymentPlanItem[];
   documents: ProjectDocItem[];
+  /**
+   * Daire tipleri ve varyantları — teklif sihirbazı daire tipi seçilince
+   * brüt/net m²'yi buradan otomatik dolduruyor (madde 22). Layout bir
+   * görsel olduğu için m² ayrı veri alanı olarak taşınır.
+   */
+  unitTypes: ProjectUnitType[];
+}
+
+export interface ProjectUnitVariant {
+  label: string;
+  layout: string | null;
+  areaGross: number | null;
+  areaNet: number | null;
+}
+
+export interface ProjectUnitType {
+  type: string;
+  variants: ProjectUnitVariant[];
 }
 
 function num(v: unknown): number {
@@ -80,6 +98,15 @@ export function toProjectResponse(row: ProjectRow, docs: ProjectDocRow[] = []): 
     description: row.description ?? '',
     images: arr<string>(m.images),
     amenities: arr<string>(m.amenities),
+    unitTypes: arr<{ type?: unknown; variants?: unknown }>(m.unit_details).map((u) => ({
+      type: str(u.type),
+      variants: arr<Record<string, unknown>>(u.variants).map((v) => ({
+        label: str(v.label),
+        layout: typeof v.layout === 'string' ? v.layout : null,
+        areaGross: typeof v.areaGross === 'number' ? v.areaGross : null,
+        areaNet: typeof v.areaNet === 'number' ? v.areaNet : null,
+      })),
+    })),
     paymentPlan: arr<PaymentPlanItem>(m.payment_plan),
     documents: docs.map((d) => ({
       id: d.id, title: d.name, type: docType(d.mime_type), size: formatSize(Number(d.size_bytes)),

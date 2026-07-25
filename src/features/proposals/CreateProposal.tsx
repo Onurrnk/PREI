@@ -29,6 +29,7 @@ import type {
   ClientDTO, ProjectDTO, ProposalRoiInputs, ProposalUnitDetails, CreateProposalInput,
 } from '../../core/types';
 import { computeRoi, formatMoney, groupThousands, parseNumeric } from './roi';
+import { buildPaymentPlan, planTotal } from './payment-plan';
 import styles from './CreateProposal.module.css';
 
 interface PaymentPlanRow {
@@ -75,7 +76,14 @@ const DICT = {
     addStage: 'Aşama Ekle',
     total: 'Toplam',
     pay: { stage: 'Aşama', pct: 'Oran (%)', note: 'Açıklama / Tarih',
-      stagePh: 'Örn: Peşinat', notePh: 'Örn: Rezervasyonda / Q4 2026' },
+      stagePh: 'Örn: Peşinat', notePh: 'Örn: Rezervasyonda / Q4 2026',
+      downLabel: 'Peşinat (%)', monthsLabel: 'Vade (ay)', autoBtn: 'Planı oluştur',
+      autoHint: 'Peşinatı ve vadeyi girin; kalan tutar aylara eşit bölünür. Satırları sonra elle düzenleyebilirsiniz.',
+      auto: {
+        down: 'Peşinat', installment: '{{n}}. Taksit', remainder: 'Kalan',
+        monthlyNote: '{{n}} ay · aylık %{{pct}}',
+      } },
+    areaAuto: 'm² proje kaydından dolduruldu',
     unit: {
       type: 'Daire Tipi', unitNo: 'Daire / Blok No', area: 'Brüt Alan (m²)', netArea: 'Net Alan (m²)',
       floor: 'Kat', facade: 'Cephe / Yön', view: 'Manzara', beds: 'Yatak Odası', baths: 'Banyo',
@@ -131,7 +139,14 @@ const DICT = {
     addStage: 'Add Stage',
     total: 'Total',
     pay: { stage: 'Milestone', pct: 'Rate (%)', note: 'Note / Date',
-      stagePh: 'e.g. Down Payment', notePh: 'e.g. On Booking / Q4 2026' },
+      stagePh: 'e.g. Down Payment', notePh: 'e.g. On Booking / Q4 2026',
+      downLabel: 'Down payment (%)', monthsLabel: 'Term (months)', autoBtn: 'Build plan',
+      autoHint: 'Enter the down payment and term; the balance is split evenly across the months. You can edit the rows afterwards.',
+      auto: {
+        down: 'Down Payment', installment: 'Instalment {{n}}', remainder: 'Balance',
+        monthlyNote: '{{n}} months · {{pct}}% monthly',
+      } },
+    areaAuto: 'm² auto-filled from the project record',
     unit: {
       type: 'Unit Type', unitNo: 'Unit / Block No', area: 'Gross Area (m²)', netArea: 'Net Area (m²)',
       floor: 'Floor', facade: 'Facade / Aspect', view: 'View', beds: 'Bedrooms', baths: 'Bathrooms',
@@ -197,6 +212,32 @@ export const CreateProposal: React.FC = () => {
   const [paymentPlanOnList, setPaymentPlanOnList] = useState(false);
 
   const [unit, setUnit] = useState<ProposalUnitDetails>({});
+  // Seçili projenin daire tipleri — m² otomatik doldurmanın kaynağı (madde 22).
+  const projectUnitTypes = useMemo(
+    () => projects.find((p) => p.id === selectedProject)?.unitTypes ?? [],
+    [projects, selectedProject],
+  );
+  const [areaAutoFilled, setAreaAutoFilled] = useState(false);
+
+  /**
+   * Daire tipi seçilince brüt/net m²'yi projeden doldurur.
+   * Kullanıcı m²'yi ELLE değiştirmişse üzerine yazmaz — otomatik dolum
+   * yalnız boş alanları doldurur.
+   */
+  const applyUnitType = (type: string) => {
+    const match = projectUnitTypes.find(
+      (u) => u.type.trim().toLocaleLowerCase('tr') === type.trim().toLocaleLowerCase('tr'),
+    );
+    const v = match?.variants.find((x) => x.areaGross != null || x.areaNet != null);
+    setUnit((cur) => {
+      const next: ProposalUnitDetails = { ...cur, type };
+      let filled = false;
+      if (v?.areaGross != null && cur.area == null) { next.area = v.areaGross; filled = true; }
+      if (v?.areaNet != null && cur.netArea == null) { next.netArea = v.areaNet; filled = true; }
+      setAreaAutoFilled(filled);
+      return next;
+    });
+  };
   const [roi, setRoi] = useState<ProposalRoiInputs>({
     propertyStatus: 'ready', rentalType: 'longterm', occupancyRate: 60,
     appreciationPercent: 5, maintenancePercent: 1, mgmtFeePercent: 5,
@@ -244,7 +285,18 @@ export const CreateProposal: React.FC = () => {
   const togglePhoto = (url: string) =>
     setSelectedPhotos((cur) => (cur.includes(url) ? cur.filter((u) => u !== url) : [...cur, url]));
 
-  const planTotal = Math.round(paymentPlan.reduce((s, r) => s + (Number(r.percentage) || 0), 0));
+  const totalPct = planTotal(paymentPlan);
+
+  // Peşinat + vade → planı otomatik kur (madde 24).
+  const [downPct, setDownPct] = useState('');
+  const [planMonths, setPlanMonths] = useState('');
+  const applyAutoPlan = () => {
+    setPaymentPlan(buildPaymentPlan({
+      downPct: Number(downPct) || 0,
+      months: Number(planMonths) || 0,
+      labels: TX.pay.auto,
+    }));
+  };
   const canProceed1 = !!selectedClient && projectName.length > 0 && title.trim().length >= 2;
 
   function buildPayload(status: 'draft' | 'sent'): CreateProposalInput {
@@ -395,8 +447,12 @@ export const CreateProposal: React.FC = () => {
                   <div className={styles.formGroup}>
                     <label>{TX.unit.type}</label>
                     <input className={styles.textInput} list="prei-unittypes" value={unit.type ?? ''}
-                      onChange={(e) => setUnit({ ...unit, type: e.target.value })} placeholder="2+1 / 4+2…" />
-                    <datalist id="prei-unittypes">{UNIT_TYPES.map((u) => <option key={u} value={u} />)}</datalist>
+                      onChange={(e) => applyUnitType(e.target.value)} placeholder="2+1 / 4+2…" />
+                    <datalist id="prei-unittypes">
+                      {projectUnitTypes.map((u) => <option key={u.type} value={u.type} />)}
+                      {UNIT_TYPES.map((u) => <option key={u} value={u} />)}
+                    </datalist>
+                    {areaAutoFilled && <span className={styles.autoHint}>{TX.areaAuto}</span>}
                   </div>
                   <div className={styles.formGroup}>
                     <label>{TX.unit.unitNo}</label>
@@ -424,14 +480,12 @@ export const CreateProposal: React.FC = () => {
                     <label>{TX.unit.view}</label>
                     <input className={styles.textInput} value={unit.view ?? ''} onChange={(e) => setUnit({ ...unit, view: e.target.value })} />
                   </div>
+                  {/* Oda sayısı kaldırıldı (madde 23): daire tipi "2+1" zaten
+                      oda bilgisini taşıyor, iki yerde sormak tutarsızlık üretiyordu. */}
                   <div className={styles.formGroup}>
-                    <label>{TX.unit.beds} / {TX.unit.baths}</label>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <input type="number" className={styles.textInput} placeholder={TX.unit.beds} value={unit.bedrooms ?? ''}
-                        onChange={(e) => setUnit({ ...unit, bedrooms: e.target.value ? Number(e.target.value) : undefined })} />
-                      <input type="number" className={styles.textInput} placeholder={TX.unit.baths} value={unit.bathrooms ?? ''}
-                        onChange={(e) => setUnit({ ...unit, bathrooms: e.target.value ? Number(e.target.value) : undefined })} />
-                    </div>
+                    <label>{TX.unit.baths}</label>
+                    <input type="number" min={0} className={styles.textInput} value={unit.bathrooms ?? ''}
+                      onChange={(e) => setUnit({ ...unit, bathrooms: e.target.value ? Number(e.target.value) : undefined })} />
                   </div>
                   <div className={styles.formGroup}>
                     <label>{TX.unit.titleDeed}</label>
@@ -484,6 +538,28 @@ export const CreateProposal: React.FC = () => {
                   </div>
 
                   <div className={styles.paymentPlanBuilder} style={{ gridColumn: 'span 2' }}>
+                    {/* Peşinat + vade → kalanı otomatik böl (madde 24) */}
+                    <div className={styles.autoPlanBox}>
+                      <div className={styles.autoPlanFields}>
+                        <label className={styles.autoPlanField}>
+                          <span>{TX.pay.downLabel}</span>
+                          <input type="number" min={0} max={100} className={styles.textInput}
+                            value={downPct} placeholder="30"
+                            onChange={(e) => setDownPct(e.target.value)} />
+                        </label>
+                        <label className={styles.autoPlanField}>
+                          <span>{TX.pay.monthsLabel}</span>
+                          <input type="number" min={0} max={360} className={styles.textInput}
+                            value={planMonths} placeholder="12"
+                            onChange={(e) => setPlanMonths(e.target.value)} />
+                        </label>
+                        <Button variant="outline" onClick={applyAutoPlan} disabled={!downPct && !planMonths}>
+                          {TX.pay.autoBtn}
+                        </Button>
+                      </div>
+                      <p className={styles.hintText} style={{ margin: 0 }}>{TX.pay.autoHint}</p>
+                    </div>
+
                     <div className={styles.paymentRowForm} style={{ marginBottom: 2 }}>
                       <span className={styles.hintText} style={{ margin: 0, flex: 1 }}>{TX.pay.stage}</span>
                       <span className={styles.hintText} style={{ margin: 0, width: 90, textAlign: 'center' }}>{TX.pay.pct}</span>
@@ -503,7 +579,7 @@ export const CreateProposal: React.FC = () => {
                     ))}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
                       <Button variant="outline" onClick={addPaymentRow}><Plus size={14} style={{ marginRight: 4 }} /> {TX.addStage}</Button>
-                      <span className={styles.hintText} style={{ margin: 0 }}>{TX.total}: %{planTotal}</span>
+                      <span className={styles.hintText} style={{ margin: 0 }}>{TX.total}: %{totalPct}</span>
                     </div>
                     <label className={styles.checkboxItem} style={{ marginTop: 12 }}>
                       <input type="checkbox" checked={paymentPlanOnList} onChange={(e) => setPaymentPlanOnList(e.target.checked)} />

@@ -25,7 +25,12 @@ const VARIANT_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 const LOGO_URL = 'https://produality.com/assets/images/logo-transparent.png';
 
 // Daire tipi → varyant (A/B/C…) → iç görseller + 1 layout çizimi.
-type UnitVariant = { label: string; images: File[]; layout: File | null };
+// Metrekare layout GÖRSELİNİN içinde yazıyor ve okunamıyor; ayrı alan
+// olarak alınıyor ki teklif sihirbazı otomatik doldurabilsin (madde 22).
+type UnitVariant = {
+  label: string; images: File[]; layout: File | null;
+  areaGross: string; areaNet: string;
+};
 type UnitTypeDef = { type: string; variants: UnitVariant[] };
 
 // Fiyat girişi: yalnız rakam tut, binlik ayracıyla göster (1.250.000).
@@ -97,13 +102,13 @@ export const SubmitProject: React.FC = () => {
 
   // --- Daire tipi / varyant kurucu ---
   const addUnitType = () =>
-    setUnitDefs((p) => [...p, { type: '', variants: [{ label: VARIANT_LABELS[0], images: [], layout: null }] }]);
+    setUnitDefs((p) => [...p, { type: '', variants: [{ label: VARIANT_LABELS[0], images: [], layout: null, areaGross: '', areaNet: '' }] }]);
   const removeUnitType = (ti: number) => setUnitDefs((p) => p.filter((_, i) => i !== ti));
   const setUnitType = (ti: number, type: string) =>
     setUnitDefs((p) => p.map((u, i) => (i === ti ? { ...u, type } : u)));
   const addVariant = (ti: number) =>
     setUnitDefs((p) => p.map((u, i) => i === ti
-      ? { ...u, variants: [...u.variants, { label: VARIANT_LABELS[u.variants.length] ?? '', images: [], layout: null }] }
+      ? { ...u, variants: [...u.variants, { label: VARIANT_LABELS[u.variants.length] ?? '', images: [], layout: null, areaGross: '', areaNet: '' }] }
       : u));
   const removeVariant = (ti: number, vi: number) =>
     setUnitDefs((p) => p.map((u, i) => i === ti ? { ...u, variants: u.variants.filter((_, j) => j !== vi) } : u));
@@ -140,12 +145,15 @@ export const SubmitProject: React.FC = () => {
       if (form.commissionPct) fd.append('commissionPct', form.commissionPct);
       // Daire tipleri: yapıyı (sayılar) JSON olarak + dosyaları SIRAYLA gönder.
       const cleanDefs = unitDefs
-        .map((u) => ({ ...u, type: u.type.trim(), variants: u.variants.filter((v) => v.images.length > 0 || v.layout) }))
+        .map((u) => ({ ...u, type: u.type.trim(), variants: u.variants.filter((v) => v.images.length > 0 || v.layout || v.areaGross || v.areaNet) }))
         .filter((u) => u.type && u.variants.length > 0);
       if (cleanDefs.length) {
         fd.append('unitTypesData', JSON.stringify(cleanDefs.map((u) => ({
           type: u.type,
-          variants: u.variants.map((v) => ({ label: v.label.trim() || '—', imageCount: v.images.length, hasLayout: !!v.layout })),
+          variants: u.variants.map((v) => ({
+            label: v.label.trim() || '—', imageCount: v.images.length, hasLayout: !!v.layout,
+            areaGross: v.areaGross.trim() || null, areaNet: v.areaNet.trim() || null,
+          })),
         }))));
         const typeLabels = [...new Set(cleanDefs.map((u) => u.type))];
         fd.append('unitTypes', typeLabels.join(', '));
@@ -345,6 +353,22 @@ export const SubmitProject: React.FC = () => {
                     <input type="file" accept="image/*"
                       onChange={(e) => patchVariant(ti, vi, { layout: e.target.files?.[0] ?? null })} />
                     {v.layout && <span className={styles.fileNameOk}>✓ {v.layout.name.slice(0, 24)}</span>}
+                  </label>
+                  {/* m²: layout görselindeki rakamlar okunamıyor, veri olarak
+                      alınıyor — teklifte otomatik doluyor (madde 22). */}
+                  <label className={styles.areaCell}>
+                    <span>{t('intake.form.areaGross')}</span>
+                    <input type="number" min={0} step="0.01" inputMode="decimal"
+                      className={styles.areaInput} placeholder="145"
+                      value={v.areaGross}
+                      onChange={(e) => patchVariant(ti, vi, { areaGross: e.target.value })} />
+                  </label>
+                  <label className={styles.areaCell}>
+                    <span>{t('intake.form.areaNet')}</span>
+                    <input type="number" min={0} step="0.01" inputMode="decimal"
+                      className={styles.areaInput} placeholder="118"
+                      value={v.areaNet}
+                      onChange={(e) => patchVariant(ti, vi, { areaNet: e.target.value })} />
                   </label>
                   {u.variants.length > 1 && (
                     <button type="button" className={styles.removeBtnSm} onClick={() => removeVariant(ti, vi)} aria-label="sil">×</button>

@@ -557,6 +557,10 @@ let mockDevelopers: Omit<DeveloperDTO, 'projects'>[] = [
 
 let mockProjects: ProjectDTO[] = ([
   {
+    unitTypes: [
+      { type: '2+1', variants: [{ label: 'A', layout: null, areaGross: 145, areaNet: 118 }] },
+      { type: '3+1', variants: [{ label: 'A', layout: null, areaGross: 186.5, areaNet: 152 }] },
+    ],
     id: 'p1', developerId: '1', developerName: 'Emaar Properties', name: 'Beachfront Residences', location: 'Dubai Marina', status: 'Off-plan',
     totalUnits: 350, availableUnits: 42, startingPrice: 2500000, currency: 'AED', completionDate: 'Q4 2027',
     projectManagerName: 'Tariq Mansour', projectManagerEmail: 'tariq.m@emaar.ae', projectManagerPhone: '+971 55 987 6543',
