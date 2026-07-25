@@ -105,6 +105,57 @@ export class CatalogRepository {
     });
   }
 
+  /**
+   * Projeden TEK bir görseli kaldırır.
+   *
+   * İki yerde duruyor: metadata.images (galeri) ve metadata.images_by_category
+   * (kategorili gösterim). İkisinden de çıkarılmazsa silinen görsel bir
+   * bölümde kalmaya devam ediyordu.
+   */
+  async removeProjectImage(
+    ctx: RequestContext, id: string, url: string,
+  ): Promise<ProjectRow | null> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string }>(
+        `UPDATE properties p
+            SET metadata = jsonb_set(
+                  jsonb_set(
+                    p.metadata,
+                    '{images}',
+                    COALESCE((
+                      SELECT jsonb_agg(v) FROM jsonb_array_elements(
+                        COALESCE(p.metadata->'images', '[]'::jsonb)) v
+                       WHERE v <> to_jsonb($2::text)
+                    ), '[]'::jsonb)
+                  ),
+                  '{images_by_category}',
+                  COALESCE((
+                    SELECT jsonb_object_agg(
+                             kv.key,
+                             COALESCE((
+                               SELECT jsonb_agg(v) FROM jsonb_array_elements(kv.value) v
+                                WHERE v <> to_jsonb($2::text)
+                             ), '[]'::jsonb))
+                      FROM jsonb_each(
+                        COALESCE(p.metadata->'images_by_category', '{}'::jsonb)) kv
+                  ), '{}'::jsonb)
+                ),
+                updated_by = $3
+          WHERE p.id = $1 AND p.deleted_at IS NULL
+          RETURNING p.id`,
+        [id, url, ctx.userId],
+      );
+      if (!rows[0]) return null;
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'project.image_removed','property',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, id, JSON.stringify({ url }), ctx.correlationId],
+      );
+      const { rows: full } = await c.query<ProjectRow>(`${PROJECT_SELECT} WHERE p.id = $1`, [id]);
+      return full[0];
+    });
+  }
+
   /** Projenin metadata.images dizisine yeni public URL'ler ekler. */
   async appendProjectImages(ctx: RequestContext, id: string, urls: string[]): Promise<ProjectRow | null> {
     return this.db.withContext(ctx, async (c) => {

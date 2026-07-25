@@ -2,7 +2,7 @@
 // PREI | ProjectsController — /api/projects (properties tabanlı, list/detail/create).
 // =====================================================================
 import {
-  Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query,
+  Body, Delete, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query,
   DefaultValuePipe, ParseIntPipe, UploadedFiles, UseGuards, UseInterceptors,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -57,6 +57,16 @@ export class ProjectsController {
     @Body() dto: SetLifecycleDto,
   ) {
     return this.projects.setLifecycle(ctx, id, dto.status);
+  }
+
+  /** Beğenilmeyen görseli kaldır — galeri + kategorili gösterim + depo. */
+  @Delete(':id/images')
+  removeImage(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('url') url: string,
+  ) {
+    return this.projects.removeImage(ctx, id, url);
   }
 
   @Post(':id/images')

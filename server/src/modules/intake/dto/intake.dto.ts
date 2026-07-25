@@ -130,6 +130,14 @@ export class SubmitProjectDto {
   unitTypes?: string;
 
   /**
+   * Virgülle ayrılmış olanak KODLARI (ör. "indoor_pool,fiber,smart_home").
+   * Multipart olduğu için dizi değil metin; backend normalizeAmenities ile
+   * tanımadığı kodları atar.
+   */
+  @IsOptional() @IsString() @MaxLength(2000)
+  amenities?: string;
+
+  /**
    * Daire-tipi/varyant görsel yapısı (JSON): dosya SAYILARINI taşır; gerçek
    * dosyalar unitImages (sırayla) + unitLayouts (varyant başına 1, sırayla)
    * alanlarında gelir. Backend sırayı yürüyerek URL'lerle eşler.

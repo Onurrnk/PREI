@@ -10,7 +10,7 @@ import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { ArrowLeft, MapPin, Buildings, CalendarBlank, CurrencyDollar, CheckCircle, FileText, FilePdf, Table, DownloadSimple, PaperPlaneTilt, Paperclip, PencilSimple } from '@phosphor-icons/react';
+import { ArrowLeft, MapPin, Buildings, CalendarBlank, CurrencyDollar, CheckCircle, FileText, FilePdf, Table, DownloadSimple, PaperPlaneTilt, Paperclip, PencilSimple, Trash } from '@phosphor-icons/react';
 import styles from './ProjectProfile.module.css';
 
 export const ProjectProfile: React.FC = () => {
@@ -72,6 +72,25 @@ export const ProjectProfile: React.FC = () => {
   const { data: clientsData } = useFetch<ClientDTO[]>(() => clientsApi.list(), []);
   const clients = clientsData ?? [];
   const [selectedImage, setSelectedImage] = useState(0);
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
+  const [removingImage, setRemovingImage] = useState<string | null>(null);
+
+  const confirmRemoveImage = async () => {
+    if (!project || !removeTarget) return;
+    setRemovingImage(removeTarget);
+    try {
+      await projectsApi.removeImage(project.id, removeTarget);
+      toast.success(t('projects.gallery.removed'));
+      // Silinen kare son görselse seçim dışarı taşmasın.
+      setSelectedImage((i) => Math.max(0, Math.min(i, project.images.length - 2)));
+      setRemoveTarget(null);
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('projects.gallery.removeFailed'));
+    } finally {
+      setRemovingImage(null);
+    }
+  };
   const [shareClient, setShareClient] = useState('');
   const [emailSubject, setEmailSubject] = useState<string | null>(null);
   const [emailBody, setEmailBody] = useState<string | null>(null);
@@ -232,18 +251,55 @@ export const ProjectProfile: React.FC = () => {
         </Field>
       </Modal>
 
+      <Modal
+        isOpen={removeTarget !== null}
+        onClose={() => setRemoveTarget(null)}
+        title={t('projects.gallery.removeTitle')}
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setRemoveTarget(null)} disabled={removingImage !== null}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="primary" onClick={confirmRemoveImage} disabled={removingImage !== null}>
+              {removingImage ? t('projects.gallery.removing') : t('common.delete')}
+            </Button>
+          </>
+        }
+      >
+        {removeTarget && (
+          <>
+            <img src={removeTarget} alt="" className={styles.removePreview} />
+            <p className={styles.removeNote}>{t('projects.gallery.removeBody')}</p>
+          </>
+        )}
+      </Modal>
+
       <div className={styles.content}>
         <div className={styles.mainContent}>
           <Card className={styles.galleryCard}>
-            <div className={styles.galleryMain}>
-              <img src={project.images[selectedImage]} alt={project.name} className={styles.mainImage} />
-              <span className={styles.galleryCounter}>{selectedImage + 1} / {project.images.length}</span>
-            </div>
+            {project.images.length > 0 && (
+              <div className={styles.galleryMain}>
+                <img src={project.images[selectedImage]} alt={project.name} className={styles.mainImage} />
+                <span className={styles.galleryCounter}>{selectedImage + 1} / {project.images.length}</span>
+                {/* Beğenilmeyen görseli kaldır — geliştiriciden gelen galeride
+                    her kare işe yaramıyor (madde 19). */}
+                <button
+                  type="button"
+                  className={styles.imageDelete}
+                  title={t('projects.gallery.removeImage')}
+                  disabled={removingImage !== null}
+                  onClick={() => setRemoveTarget(project.images[selectedImage])}
+                >
+                  <Trash size={15} />
+                </button>
+              </div>
+            )}
             {project.images.length > 1 && (
               <div className={styles.galleryThumbnails}>
                 {project.images.map((img, idx) => (
                   <div
-                    key={idx}
+                    key={img}
                     className={`${styles.thumbnail} ${selectedImage === idx ? styles.activeThumb : ''}`}
                     onClick={() => setSelectedImage(idx)}
                   >
@@ -251,6 +307,9 @@ export const ProjectProfile: React.FC = () => {
                   </div>
                 ))}
               </div>
+            )}
+            {project.images.length === 0 && (
+              <p className={styles.galleryEmpty}>{t('projects.gallery.empty')}</p>
             )}
           </Card>
 

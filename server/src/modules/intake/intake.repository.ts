@@ -8,6 +8,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../database/database.service';
 import type { RequestContext } from '../../common/request-context';
+import { normalizeAmenities, amenityLabels } from './amenities';
 
 export interface InviteRow {
   id: string; developer_id: string | null; developer_name: string | null;
@@ -285,6 +286,11 @@ export class IntakeRepository {
         price_max: priceMax,
         commission_pct: s.commission_pct != null ? Number(s.commission_pct) : null,
         unit_types: s.unit_types,
+        // Olanaklar: kod olarak saklanır, etiketler gösterimde çözülür.
+        // Böylece "havuzu olan projeler" filtrelenebilir (003 öncesi boştu).
+        amenity_codes: normalizeAmenities(payload.amenities as string | string[]),
+        amenities: amenityLabels(
+          normalizeAmenities(payload.amenities as string | string[])),
         source: 'developer_submission',
         submission_id: s.id,
         developer_name: s.developer_name,
@@ -398,6 +404,7 @@ export class IntakeRepository {
     property_id: string; title: string; city: string | null; market_code: string | null;
     currency: string; price_min: string | null; price_max: string | null;
     latitude: string | null; longitude: string | null;
+    cover_url: string | null; amenities: string[]; unit_types: string[];
   }>> {
     return this.db.withContext(ctx, async (c) => {
       const { rows } = await c.query(
@@ -407,7 +414,14 @@ export class IntakeRepository {
                 p.id AS property_id, p.title, p.city, p.market_code, p.currency,
                 (p.metadata->>'price_min') AS price_min,
                 (p.metadata->>'price_max') AS price_max,
-                p.latitude, p.longitude
+                p.latitude, p.longitude,
+                -- Kapak: galerinin ilk görseli. Public URL olduğu için
+                -- e-postada doğrudan gösterilebilir (imzalı URL süresi dolardı).
+                (p.metadata->'images'->>0) AS cover_url,
+                COALESCE((SELECT array_agg(x) FROM jsonb_array_elements_text(
+                  COALESCE(p.metadata->'amenities','[]'::jsonb)) x), '{}') AS amenities,
+                COALESCE((SELECT array_agg(x) FROM jsonb_array_elements_text(
+                  COALESCE(p.metadata->'unit_types','[]'::jsonb)) x), '{}') AS unit_types
            FROM properties p
            JOIN contacts c ON c.tenant_id = p.tenant_id
                           AND c.deleted_at IS NULL AND c.merged_into_id IS NULL

@@ -320,6 +320,8 @@ export interface ProjectSubmissionDTO {
   imageUrls: string[];
   imagesByCategory: Record<string, string[]>;
   unitDetails: { type: string; variants: { label: string; images: string[]; layout: string | null }[] }[];
+  /** Seçilen olanaklar (etiket olarak) — onay kuyruğunda gösterilir. */
+  amenities?: string[];
   downPaymentPct: number | null;
   installmentMonths: number | null;
   paymentNote: string | null;
@@ -795,6 +797,14 @@ export interface InvestmentTargetInput {
   rank?: number;
   leadId?: string | null;
   notes?: string | null;
+}
+
+/** Proje olanak kataloğu — davet formundaki gruplu seçim listesi. */
+export interface AmenityGroupDTO {
+  group: string;
+  groupTr: string;
+  groupEn: string;
+  items: Array<{ code: string; tr: string; en: string }>;
 }
 
 export interface ContractDocRef { id: string; name: string; size: string }

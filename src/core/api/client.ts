@@ -102,5 +102,10 @@ export const api = {
   post: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('POST', path, body, options),
   put: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PUT', path, body, options),
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) => request<T>('PATCH', path, body, options),
-  delete: <T>(path: string, options?: RequestOptions) => request<T>('DELETE', path, undefined, options),
+  /**
+   * DELETE gövdeli de çağrılabilir: "şu URL'deki görseli sil" gibi hedefi
+   * yolla ifade edilemeyen silmelerde gerekiyor (RFC gövdeyi yasaklamıyor).
+   */
+  delete: <T>(path: string, options?: RequestOptions & { body?: unknown }) =>
+    request<T>('DELETE', path, options?.body, options),
 };

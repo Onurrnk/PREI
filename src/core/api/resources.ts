@@ -43,6 +43,7 @@ import type {
   CreateInviteInput,
   ProjectSubmissionDTO,
   PublicInviteInfoDTO,
+  AmenityGroupDTO,
   MeetingDTO,
   NotificationFeed,
   SocialSummaryDTO,
@@ -229,6 +230,9 @@ export const projectsApi = {
     files.forEach((f) => form.append('files', f));
     return api.post<ProjectDTO>(`/api/projects/${id}/images`, form);
   },
+  /** Beğenilmeyen görseli kaldır (galeri + kategori + depo). */
+  removeImage: (id: string, url: string) =>
+    api.delete<ProjectDTO>(`/api/projects/${id}/images`, { body: { url } }),
   setLifecycle: (id: string, status: ProjectDTO['lifecycleStatus']) =>
     api.patch<ProjectDTO>(`/api/projects/${id}/lifecycle`, { status }),
   update: (id: string, input: UpdateProjectInput) => api.patch<ProjectDTO>(`/api/projects/${id}`, input),
@@ -410,6 +414,8 @@ export const intakeApi = {
 // Proje Girişi — public (geliştirici, tokenli, auth'suz).
 export const publicIntakeApi = {
   info: (token: string) => api.get<PublicInviteInfoDTO>(`/api/public/intake/${token}`),
+  /** Olanak kataloğu — formdaki tikli seçim listesi (kimlik gerektirmez). */
+  amenities: () => api.get<AmenityGroupDTO[]>('/api/public/amenities'),
   submit: (token: string, form: FormData) =>
     api.post<{ ok: boolean; submissionId: string }>(`/api/public/intake/${token}/submit`, form),
 };

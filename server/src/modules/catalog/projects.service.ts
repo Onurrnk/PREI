@@ -115,4 +115,25 @@ export class ProjectsService {
     if (!row) throw new NotFoundException();
     return toProjectResponse(row);
   }
+
+  /**
+   * Görseli projeden kaldırır ve depodan siler.
+   *
+   * Depo silme BEST-EFFORT: dosya başka bir kayıtta da kullanılıyor olabilir
+   * ya da harici bir URL olabilir. Kayıt her hâlükârda güncellenir —
+   * kullanıcı "sildim" dediyse galeride görmemeli.
+   */
+  async removeImage(ctx: RequestContext, id: string, url: string): Promise<ProjectResponse> {
+    const clean = (url ?? '').trim();
+    if (!clean) throw new BadRequestException('Görsel adresi gerekli.');
+
+    const row = await this.repo.removeProjectImage(ctx, id, clean);
+    if (!row) throw new NotFoundException();
+
+    const path = this.storage.pathFromPublicUrl(clean, MEDIA_BUCKET);
+    if (path) {
+      await this.storage.remove(path, MEDIA_BUCKET).catch(() => undefined);
+    }
+    return toProjectResponse(row);
+  }
 }

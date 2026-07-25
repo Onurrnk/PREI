@@ -10,7 +10,7 @@ import { useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useFetch } from '../../core/hooks/useFetch';
 import { publicIntakeApi } from '../../core/api/resources';
-import type { PublicInviteInfoDTO } from '../../core/types';
+import type { AmenityGroupDTO, PublicInviteInfoDTO } from '../../core/types';
 import { Card } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { Field, Input, Textarea, Select, FormRow } from '../../core/components/Form/Form';
@@ -58,7 +58,18 @@ export const SubmitProject: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const isEn = i18n.language?.startsWith('en');
   const [form, setForm] = useState(emptyForm);
+
+  // Olanaklar: seçilen KODLAR. Serbest yazım yok — aynı olanağın üç yazımı
+  // olunca "havuzu olan projeler" filtrelenemiyordu (madde 21).
+  const { data: amenityCatalog } = useFetch<AmenityGroupDTO[]>(
+    () => publicIntakeApi.amenities(), []);
+  const [amenities, setAmenities] = useState<string[]>([]);
+
+  const toggleAmenity = (code: string) =>
+    setAmenities((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]);
   const [unitDefs, setUnitDefs] = useState<UnitTypeDef[]>([]);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [mapFocus, setMapFocus] = useState<MapFocus | null>(null);
@@ -148,6 +159,7 @@ export const SubmitProject: React.FC = () => {
       if (form.downPaymentPct) fd.append('downPaymentPct', form.downPaymentPct);
       if (form.installmentMonths) fd.append('installmentMonths', form.installmentMonths);
       if (form.paymentNote.trim()) fd.append('paymentNote', form.paymentNote.trim());
+      if (amenities.length) fd.append('amenities', amenities.join(','));
       fd.append('brochure', brochure!);
       imgExterior.forEach((f) => fd.append('imagesExterior', f));
       imgSocial.forEach((f) => fd.append('imagesSocial', f));
@@ -257,6 +269,35 @@ export const SubmitProject: React.FC = () => {
               <Input type="date" value={form.completionDate} onChange={(e) => setF({ completionDate: e.target.value })} />
             </Field>
           </FormRow>
+
+          {/* Olanaklar — tikleyerek seçim (madde 21) */}
+          <div className={styles.sectionTitle}>
+            {t('intake.form.amenitiesSection')}
+            {amenities.length > 0 && (
+              <span className={styles.sectionCount}>{amenities.length}</span>
+            )}
+          </div>
+          <p className={styles.sectionHint}>{t('intake.form.amenitiesHint')}</p>
+          {(amenityCatalog ?? []).map((g) => (
+            <div key={g.group} className={styles.amenityGroup}>
+              <span className={styles.amenityGroupTitle}>{isEn ? g.groupEn : g.groupTr}</span>
+              <div className={styles.amenityGrid}>
+                {g.items.map((a) => {
+                  const on = amenities.includes(a.code);
+                  return (
+                    <label key={a.code} className={on ? styles.amenityOn : styles.amenity}>
+                      <input
+                        type="checkbox"
+                        checked={on}
+                        onChange={() => toggleAmenity(a.code)}
+                      />
+                      <span>{isEn ? a.en : a.tr}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
 
           {/* Ödeme planı */}
           <div className={styles.sectionTitle}>{t('intake.form.paymentSection')}</div>

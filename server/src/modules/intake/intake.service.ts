@@ -16,6 +16,10 @@ import { verifyUnsubscribe, unsubscribeUrl } from './unsubscribe.util';
 import { StorageService, MEDIA_BUCKET, VAULT_BUCKET } from '../documents/storage.service';
 import type { CreateInviteDto, SubmitProjectDto, EmailDraftDto } from './dto/intake.dto';
 import type { InviteContext } from './submission-token.guard';
+import { normalizeAmenities, amenityLabels } from './amenities';
+import {
+  buildMatchEmailHtml, buildMatchEmailText, type MatchProject,
+} from './match-email';
 
 const MARKET_NAME: Record<string, string> = {
   TR: 'Türkiye', AE: 'Dubai (BAE)', ES: 'İspanya', GB: 'İngiltere', TH: 'Tayland', DE: 'Almanya',
@@ -143,6 +147,9 @@ export function buildSubmissionNotifyText(info: {
   lines.push('https://prei.produality.com/projects/intake');
   return lines.join('\n');
 }
+
+/** Markalı logo — public URL (e-posta istemcileri kimlik doğrulamaz). */
+const BRAND_LOGO_URL = 'https://produality.com/assets/images/logo-transparent.png';
 
 @Injectable()
 export class IntakeService {
@@ -333,6 +340,9 @@ export class IntakeService {
         paymentNote: dto.paymentNote?.trim() || null,
         neighborhood: dto.neighborhood?.trim() || null,
         listingUrl: dto.listingUrl?.trim() || null,
+        // Olanaklar: tanınmayan kodlar burada elenir, gönderi payload'ına
+        // yalnız kanonik kodlar girer.
+        amenities: normalizeAmenities(dto.amenities),
         duplicate: duplicate ?? null,
       },
       reviewNote,
@@ -444,16 +454,23 @@ export class IntakeService {
       const en = first.lang === 'en';
       const name = first.name || (en ? 'there' : 'Yatırımcımız');
 
-      const items = projects.map((p) => {
-        const market = p.market_code ? (MARKET_NAME[p.market_code] ?? p.market_code) : '';
-        const loc = [p.city, market].filter(Boolean).join(', ');
+      const items: MatchProject[] = projects.map((p) => {
+        const market = p.market_code ? (MARKET_NAME[p.market_code] ?? p.market_code) : null;
         const min = p.price_min ? Number(p.price_min) : null;
         const max = p.price_max ? Number(p.price_max) : null;
-        const range = min && max && min !== max
+        const priceLine = min && max && min !== max
           ? `${min.toLocaleString('tr-TR')} – ${max.toLocaleString('tr-TR')} ${p.currency}`
-          : (min || max ? `${(min || max)!.toLocaleString('tr-TR')} ${p.currency}` : '');
-        const tail = [loc, range].filter(Boolean).join(' · ');
-        return { title: p.title, line: tail, map: mapUrl(p.latitude, p.longitude) };
+          : (min || max ? `${(min || max)!.toLocaleString('tr-TR')} ${p.currency}` : null);
+        return {
+          title: p.title,
+          city: p.city,
+          marketName: market,
+          priceLine,
+          imageUrl: p.cover_url,
+          mapUrl: mapUrl(p.latitude, p.longitude),
+          amenities: p.amenities ?? [],
+          unitTypes: p.unit_types ?? [],
+        };
       });
 
       const n = projects.length;
@@ -461,29 +478,15 @@ export class IntakeService {
         ? (n === 1 ? `A new project that matches you: ${first.title}` : `${n} new investment opportunities for you`)
         : (n === 1 ? `Size uygun yeni proje: ${first.title}` : `Size uygun ${n} yeni yatırım fırsatı`);
 
-      // Not: selamlama ("Merhaba {ad},") agent-mail.php markalı kabukta ekleniyor —
-      // gövde selamla BAŞLAMAZ (çift selamlama olmasın).
-      const mapLabel = en ? 'View on map' : 'Haritada Gör';
-      const li = items.map((i) => `<li style="margin:0 0 8px 0;"><strong>${esc(i.title)}</strong>${i.line ? ` — ${esc(i.line)}` : ''}${i.map ? ` · <a href="${i.map}" style="color:#9B5BB3;">${mapLabel}</a>` : ''}</li>`).join('');
-      const bodyHtml = en
-        ? `<p style="margin:0 0 18px 0;">New project${n > 1 ? 's' : ''} matching your interests ${n > 1 ? 'have' : 'has'} just been added to our catalog:</p><ul style="margin:0 0 18px 0; padding-left:20px;">${li}</ul><p style="margin:0 0 18px 0;">Reply to this email for a tailored assessment and full details.</p>`
-        : `<p style="margin:0 0 18px 0;">İlgi alanınıza uygun, kataloğumuza yeni eklenen proje${n > 1 ? 'ler' : ''}:</p><ul style="margin:0 0 18px 0; padding-left:20px;">${li}</ul><p style="margin:0 0 18px 0;">Size özel değerlendirme ve detaylı bilgi için bu e-postayı yanıtlamanız yeterli.</p>`;
-
-      const textLines = items.map((i) => `- ${i.title}${i.line ? ` — ${i.line}` : ''}${i.map ? ` (${i.map})` : ''}`).join('\n');
-      const bodyText = en
-        ? `New projects matching your interests:\n${textLines}\n\nReply for details.`
-        : `İlgi alanınıza uygun yeni projeler:\n${textLines}\n\nDetaylar için yanıtlayın.`;
-
       // KVKK: toplu/eşleşme maili → izinli alıcıya abonelikten-çık linki (imzalı).
       const unsubUrl = unsubscribeUrl(contactId) + (en ? '&lang=en' : '');
-      const unsubHtml = en
-        ? `<p style="margin:24px 0 0; font-size:12px; color:#8a8a8a;">You are receiving this because you consented to project match updates. <a href="${unsubUrl}" style="color:#8a8a8a;">Unsubscribe</a>.</p>`
-        : `<p style="margin:24px 0 0; font-size:12px; color:#8a8a8a;">Bu e-postayı, proje eşleşme bildirimlerine izin verdiğiniz için alıyorsunuz. <a href="${unsubUrl}" style="color:#8a8a8a;">Abonelikten çık</a>.</p>`;
-      const unsubText = en ? `\n\nUnsubscribe: ${unsubUrl}` : `\n\nAbonelikten çık: ${unsubUrl}`;
+      const mail = { projects: items, en, logoUrl: BRAND_LOGO_URL, unsubscribeUrl: unsubUrl };
+      const bodyHtml = buildMatchEmailHtml(mail);
+      const bodyText = buildMatchEmailText(mail);
 
       out.push({
         contactId, to: first.email, toName: name, lang: en ? 'en' : 'tr',
-        subject, bodyHtml: bodyHtml + unsubHtml, bodyText: bodyText + unsubText,
+        subject, bodyHtml, bodyText,
         propertyIds: projects.map((p) => p.property_id),
       });
     }
@@ -609,6 +612,9 @@ export class IntakeService {
       imageUrls: r.image_urls,
       imagesByCategory: ((r.payload as Record<string, unknown>)?.imagesByCategory ?? {}) as Record<string, string[]>,
       unitDetails: ((r.payload as Record<string, unknown>)?.unitDetails ?? []) as UnitTypeDetail[],
+      // Olanaklar: kuyrukta da görünsün — onaylamadan önce kontrol edilir.
+      amenities: amenityLabels(
+        normalizeAmenities((r.payload as Record<string, unknown>)?.amenities as string | string[])),
       downPaymentPct: ((r.payload as Record<string, unknown>)?.downPaymentPct ?? null) as number | null,
       installmentMonths: ((r.payload as Record<string, unknown>)?.installmentMonths ?? null) as number | null,
       paymentNote: ((r.payload as Record<string, unknown>)?.paymentNote ?? null) as string | null,

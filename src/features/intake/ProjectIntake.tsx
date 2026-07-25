@@ -350,6 +350,17 @@ export const ProjectIntake: React.FC = () => {
                 </div>
               )
             )}
+            {/* Olanaklar — onaylamadan önce görülsün (madde 21) */}
+            {(review.amenities ?? []).length > 0 && (
+              <div className={styles.amenityList}>
+                <div className={styles.galleryLabel}>{t('intake.form.amenitiesSection')}</div>
+                <div className={styles.amenityChips}>
+                  {review.amenities!.map((a) => (
+                    <span key={a} className={styles.amenityChip}>{a}</span>
+                  ))}
+                </div>
+              </div>
+            )}
             {(review.unitDetails ?? []).length > 0 && (
               <div className={styles.unitGalleries}>
                 <div className={styles.galleryLabel}>{t('intake.admin.unitTypesLabel')}</div>

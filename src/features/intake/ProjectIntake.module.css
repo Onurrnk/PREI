@@ -136,3 +136,20 @@
   border: 2px solid var(--brand-primary);
 }
 .thumbLayout img { width: 100%; height: 100%; object-fit: contain; background: #fff; display: block; }
+
+/* Olanaklar — onay kuyruğu inceleme modalı (madde 21). */
+.amenityList { margin-top: var(--spacing-md); }
+
+.amenityChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.amenityChip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(155, 91, 179, 0.12);
+  color: var(--color-primary-purple);
+  font-size: 0.75rem;
+}

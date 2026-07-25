@@ -63,6 +63,18 @@ export class StorageService {
     return `${this.baseUrl}/object/public/${bucket}/${path}`;
   }
 
+  /**
+   * Public URL'den depo yolunu geri çıkarır (silme için).
+   * Bize ait olmayan / farklı bucket'a ait URL'lerde null döner —
+   * yanlış nesneyi silmektense hiç silmemek doğru.
+   */
+  pathFromPublicUrl(url: string, bucket = MEDIA_BUCKET): string | null {
+    const prefix = `${this.baseUrl}/object/public/${bucket}/`;
+    if (!url.startsWith(prefix)) return null;
+    const path = url.slice(prefix.length).split('?')[0];
+    return path ? decodeURIComponent(path) : null;
+  }
+
   /** Nesneyi bucket'tan siler (DB soft-delete ile birlikte çağrılır). */
   async remove(path: string, bucket = VAULT_BUCKET): Promise<void> {
     const res = await fetch(`${this.baseUrl}/object/${bucket}/${path}`, {

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { IntakeController } from './intake.controller';
+import { AmenitiesController } from './amenities.controller';
 import { PublicIntakeController } from './public-intake.controller';
 import { PublicUnsubscribeController } from './public-unsubscribe.controller';
 import { IntakeNotifyController } from './intake-notify.controller';
@@ -13,7 +14,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RbacGuard } from '../../common/rbac.guard';
 
 @Module({
-  controllers: [IntakeController, PublicIntakeController, PublicUnsubscribeController, IntakeNotifyController, IntakeIngestController],
+  controllers: [IntakeController, PublicIntakeController, AmenitiesController, PublicUnsubscribeController, IntakeNotifyController, IntakeIngestController],
   providers: [IntakeService, IntakeRepository, StorageService, SubmissionTokenGuard, AgentKeyGuard, JwtAuthGuard, RbacGuard],
 })
 export class IntakeModule {}
