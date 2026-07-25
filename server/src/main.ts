@@ -10,7 +10,9 @@ import { AppModule } from './app.module';
 import type { AppConfig } from './config/configuration';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // rawBody: Meta webhook imzası (X-Hub-Signature-256) HAM gövde üzerinden
+  // doğrulanır — JSON parse edilmiş hali imzayı bozar.
+  const app = await NestFactory.create(AppModule, { bufferLogs: true, rawBody: true });
   app.useLogger(app.get(Logger)); // pino'yu Nest logger'ı yap
   const config = app.get(ConfigService<AppConfig, true>);
 

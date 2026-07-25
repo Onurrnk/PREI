@@ -45,6 +45,18 @@ export interface AppConfig {
     accountId: string;   // 'act_123...' veya sade '123...'
     apiVersion: string;  // ör. 'v21.0'
   };
+  /** Instagram/Messenger DM köprüsü (Eylül'ün sosyal kanal cevapları). */
+  metaDm: {
+    appSecret: string;    // webhook imza doğrulaması (X-Hub-Signature-256)
+    verifyToken: string;  // webhook el sıkışması (GET hub.verify_token)
+    pageId: string;       // sayfa kimliği — sayfa token'ı bununla alınır
+  };
+  /** Eylül'ün DM beyni: gömme (RAG) + sohbet tamamlama. */
+  openai: {
+    apiKey: string;
+    chatModel: string;
+    embedModel: string;
+  };
 }
 
 export default (): AppConfig => ({
@@ -87,5 +99,16 @@ export default (): AppConfig => ({
     accessToken: process.env.META_ADS_ACCESS_TOKEN ?? '',
     accountId: process.env.META_ADS_ACCOUNT_ID ?? '',
     apiVersion: process.env.META_API_VERSION ?? 'v21.0',
+  },
+  metaDm: {
+    appSecret: process.env.META_APP_SECRET ?? '',
+    verifyToken: process.env.META_WEBHOOK_VERIFY_TOKEN ?? '',
+    pageId: process.env.META_PAGE_ID ?? '',
+  },
+  openai: {
+    apiKey: process.env.OPENAI_API_KEY ?? '',
+    // n8n'deki Eylül akışıyla aynı modeller — iki kanal aynı kalitede cevap versin.
+    chatModel: process.env.OPENAI_CHAT_MODEL ?? 'gpt-4o',
+    embedModel: process.env.OPENAI_EMBED_MODEL ?? 'text-embedding-3-small',
   },
 });
