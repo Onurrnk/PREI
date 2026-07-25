@@ -1190,7 +1190,7 @@ export interface IntelSearchHitDTO {
   snippet: string;
 }
 
-// ── Haftalık yayın akışı ────────────────────────────────────────────
+
 // Sistem hazırlar, Onur paylaşır. "published" = "ben paylaştım" kaydı,
 // sistemin bir yere gönderdiği anlamına GELMEZ.
 

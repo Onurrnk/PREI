@@ -12,9 +12,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Readable } from 'node:stream';
 import { google, type drive_v3 } from 'googleapis';
 import { GoogleOAuthService } from '../auth/google-oauth.service';
+import { DatabaseService } from '../../database/database.service';
 
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const ROOT_FOLDER = 'ProDuality Yayın Akışı';
+const SHEET_MIME = 'application/vnd.google-apps.spreadsheet';
 
 export interface DriveUploadResult {
   ok: boolean;
@@ -36,11 +38,40 @@ export interface DriveFile {
 export class DriveService {
   private readonly logger = new Logger(DriveService.name);
 
-  constructor(private readonly oauth: GoogleOAuthService) {}
+  constructor(
+    private readonly oauth: GoogleOAuthService,
+    private readonly db: DatabaseService,
+  ) {}
 
   private async client(userId: string): Promise<drive_v3.Drive> {
     const auth = await this.oauth.getAuthorizedClient(userId);
     return google.drive({ version: 'v3', auth });
+  }
+
+  /**
+   * Drive klasörünün sahibini bulur.
+   *
+   * Neden gerekli: haftalık akışı yerel betik (agent anahtarı) tetikliyor —
+   * ortada oturum açmış bir kullanıcı YOK. Drive ise kullanıcıya bağlı.
+   * Bu yüzden Drive iznini vermiş kullanıcıyı arıyoruz; birden fazlaysa
+   * super_admin öncelikli (klasör kurucunun Drive'ında olmalı).
+   */
+  async resolveOwner(): Promise<{ userId: string; email: string | null } | null> {
+    const rows = await this.db.raw<{ id: string; email: string | null; is_admin: boolean }>(
+      `SELECT u.id,
+              u.metadata->'googleOAuth'->>'email'  AS email,
+              EXISTS (
+                SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
+                 WHERE ur.user_id = u.id AND r.name = 'super_admin'
+              ) AS is_admin
+         FROM users u
+        WHERE u.metadata->'googleOAuth'->>'scope' LIKE '%' || $1 || '%'
+        ORDER BY is_admin DESC, u.created_at ASC
+        LIMIT 1`,
+      [DRIVE_SCOPE],
+    );
+    const row = rows[0];
+    return row ? { userId: row.id, email: row.email } : null;
   }
 
   /**
@@ -163,5 +194,48 @@ export class DriveService {
       folderLink: `https://drive.google.com/drive/folders/${folderId}`,
       files: out,
     };
+  }
+
+  /**
+   * Kökteki tek "İçerik Takvimi" tablosunu yazar/günceller.
+   *
+   * Neden CSV: Drive `files.create` bir CSV'yi Google E-Tablo mime'ıyla
+   * yükleyince kendisi dönüştürüyor — ayrı Sheets API kapsamı gerekmiyor.
+   * Tablo HER SEFERİNDE baştan yazılır (kaynak PREI'deki planlar).
+   */
+  async writeCalendar(
+    userId: string, rows: string[][],
+  ): Promise<{ ok: boolean; message?: string; link?: string }> {
+    if (!(await this.oauth.hasScope(userId, DRIVE_SCOPE))) {
+      return { ok: false, message: 'Drive izni yok — Google hesabını yeniden bağlayın.' };
+    }
+    // Excel/Sheets Türkçe karakterleri UTF-8 BOM olmadan bozabiliyor.
+    const csv = '﻿' + rows
+      .map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    try {
+      const drive = await this.client(userId);
+      const root = await this.ensureFolder(drive, ROOT_FOLDER);
+      const name = 'İçerik Takvimi';
+      const q = [
+        `name = '${name}'`, `'${root}' in parents`, 'trashed = false',
+      ].join(' and ');
+      const found = await drive.files.list({ q, fields: 'files(id)', pageSize: 1 });
+      const id = found.data.files?.[0]?.id;
+      const media = { mimeType: 'text/csv', body: csv };
+
+      const res = id
+        ? await drive.files.update({ fileId: id, media, fields: 'id,webViewLink' })
+        : await drive.files.create({
+            requestBody: { name, parents: [root], mimeType: SHEET_MIME },
+            media, fields: 'id,webViewLink',
+          });
+
+      this.logger.log(`İçerik takvimi güncellendi: ${rows.length - 1} satır`);
+      return { ok: true, link: res.data.webViewLink ?? undefined };
+    } catch (e) {
+      return { ok: false, message: `Takvim yazılamadı: ${(e as Error).message}` };
+    }
   }
 }

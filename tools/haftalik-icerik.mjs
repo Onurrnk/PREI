@@ -347,7 +347,7 @@ async function main() {
   log('  6/6  Haftalık yayın akışı kuruluyor...');
   try {
     const res = await callApi(
-      'POST', `/api/agent/intel/publishing/generate/${report.id}`, { generateImages: false });
+      'POST', `/api/agent/intel/publishing/generate/${report.id}`, {});
     if (res.ok && res.plan) {
       const posts = res.plan.items.filter((i) => i.kind === 'post');
       const cars = res.plan.items.filter((i) => i.kind === 'carousel');
@@ -364,7 +364,15 @@ async function main() {
           path.join(dir, `linkedin-${p.scheduledDate}-${slug(p.dayName)}.txt`), body, 'utf8');
       }
       log(`       ✓ ${posts.length} LinkedIn metni (ayrı dosya)`);
-      log("       → Drive'a yüklemek için: PREI > Pazarlama > Haftalık Yayın Akışı");
+      if (res.drive?.ok) {
+        log(`       ✓ Google Drive: ${res.drive.folderLink}`);
+      } else if (res.drive?.message) {
+        warn(res.drive.message);
+      }
+      if (res.images && res.images.total > 0) {
+        log(`       ${res.images.generated}/${res.images.total} karusel görseli`);
+        if (res.images.message) warn(res.images.message);
+      }
     } else {
       warn(res.message ?? 'Yayın akışı üretilemedi');
     }

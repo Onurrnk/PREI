@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  addDays, weekStart, distributeWeek, clampCounts, postToTextFile, weekOverview,
+  addDays, weekStart, distributeWeek, clampCounts, calendarRows, postToTextFile, weekOverview,
   PLAN_SCHEMA, PLAN_SYSTEM, DAY_NAMES,
   LINKEDIN_POSTS_PER_WEEK, CAROUSELS_PER_WEEK_MIN, CAROUSELS_PER_WEEK_MAX,
 } from './publishing-plan';
@@ -210,6 +210,68 @@ describe('PLAN_SYSTEM', () => {
     expect(PLAN_SYSTEM).toMatch(/Türkiye, BAE\s*\n?\s*\(Dubai\), İspanya ve İngiltere/);
     expect(PLAN_SYSTEM).toMatch(/Almanya, Hollanda, Tayland/);
     expect(PLAN_SYSTEM).toMatch(/hizmet pazarımız değil/);
+  });
+});
+
+describe('calendarRows', () => {
+  const item = (over: Partial<Parameters<typeof calendarRows>[0][0]> = {}) => ({
+    scheduledDate: '2026-07-27', dayName: 'Pazartesi', kind: 'post' as const,
+    title: 'Konu', marketCode: 'TR', forLinkedin: true, forMeta: true,
+    status: 'ready', slideCount: 0, driveFileLink: null, ...over,
+  });
+
+  it('başlık satırıyla başlar', () => {
+    const r = calendarRows([]);
+    expect(r).toHaveLength(1);
+    expect(r[0]).toEqual([
+      'Tarih', 'Gün', 'Tür', 'Konu', 'Pazar', 'LinkedIn', 'Meta', 'Slayt', 'Durum', 'Dosya',
+    ]);
+  });
+
+  it('kalemi satıra çevirir', () => {
+    const [, row] = calendarRows([item({ driveFileLink: 'https://drive/x' })]);
+    expect(row).toEqual([
+      '2026-07-27', 'Pazartesi', 'Post', 'Konu', 'TR', 'evet', 'evet', '', 'Hazır', 'https://drive/x',
+    ]);
+  });
+
+  it('karuselde slayt sayısını yazar, postta boş bırakır', () => {
+    const rows = calendarRows([
+      item({ kind: 'carousel', slideCount: 5, forLinkedin: false }),
+      item({ scheduledDate: '2026-07-28' }),
+    ]);
+    expect(rows[1][7]).toBe('5');
+    expect(rows[2][7]).toBe('');
+  });
+
+  it('tarihe göre sıralar — haftalar karışık gelse bile', () => {
+    const rows = calendarRows([
+      item({ scheduledDate: '2026-08-03' }),
+      item({ scheduledDate: '2026-07-27' }),
+      item({ scheduledDate: '2026-07-30' }),
+    ]);
+    expect(rows.slice(1).map((r) => r[0]))
+      .toEqual(['2026-07-27', '2026-07-30', '2026-08-03']);
+  });
+
+  it('girdi dizisini bozmaz (sıralama kopya üzerinde)', () => {
+    const input = [item({ scheduledDate: '2026-08-03' }), item({ scheduledDate: '2026-07-27' })];
+    calendarRows(input);
+    expect(input[0].scheduledDate).toBe('2026-08-03');
+  });
+
+  it('durumları Türkçeleştirir', () => {
+    const rows = calendarRows([
+      item({ status: 'published' }), item({ status: 'skipped' }),
+    ]);
+    expect(rows[1][8]).toBe('Paylaşıldı');
+    expect(rows[2][8]).toBe('Atlandı');
+  });
+
+  it('pazar/LinkedIn boşsa boş hücre bırakır (uydurmaz)', () => {
+    const [, row] = calendarRows([item({ marketCode: null, forLinkedin: false })]);
+    expect(row[4]).toBe('');
+    expect(row[5]).toBe('');
   });
 });
 

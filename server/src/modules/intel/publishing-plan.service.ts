@@ -20,9 +20,18 @@ import { buildContentPrompt } from './content-pack';
 import { DriveService, type DriveFile } from './drive.service';
 import { GeminiImageService } from './gemini-image.service';
 import {
-  PLAN_SCHEMA, PLAN_SYSTEM, clampCounts, distributeWeek, postToTextFile,
-  weekOverview, weekStart, addDays, type PlanSlot,
+  PLAN_SCHEMA, PLAN_SYSTEM, calendarRows, clampCounts, distributeWeek,
+  postToTextFile, weekOverview, weekStart, addDays, type PlanSlot,
 } from './publishing-plan';
+
+/**
+ * Drive bağlı değilken verilen tek mesaj. Sebep neredeyse her zaman aynı:
+ * drive.file kapsamı uygulamaya SONRADAN eklendi, mevcut Google oturumu
+ * onu taşımıyor. Yeniden bağlanmaktan başka çözümü yok.
+ */
+const DRIVE_NOT_CONNECTED =
+  'Google Drive bağlı değil. PREI > Ayarlar > Google hesabını YENİDEN bağlayın — ' +
+  'Drive izni sonradan eklendi, mevcut oturum onu taşımıyor. Klasör o hesapta açılır.';
 
 interface PlanPost {
   title: string; hook: string; body: string; hashtags: string[];
@@ -296,16 +305,17 @@ export class PublishingPlanService {
       `${out.carousels.length} karusel, ${out.skipped?.length ?? 0} atlanan`,
     );
 
-    // Drive'a LinkedIn dosyaları
-    let driveResult: GenerateResult['drive'];
-    if (opts.uploadDrive !== false) {
-      driveResult = await this.pushToDrive(ctx, planId, report.title, weekLabel);
-    }
-
-    // Karusel görselleri
+    // Önce görseller — Drive klasörüne onlar da gitsin.
     let imageResult: GenerateResult['images'];
     if (opts.generateImages !== false) {
       imageResult = await this.buildImages(ctx, planId);
+    }
+
+    let driveResult: GenerateResult['drive'];
+    if (opts.uploadDrive !== false) {
+      driveResult = await this.pushToDrive(ctx, planId, report.title, weekLabel);
+      // Takvim yalnız klasör yazıldıysa anlamlı.
+      if (driveResult.ok) await this.syncCalendar(ctx);
     }
 
     return {
@@ -379,18 +389,31 @@ export class PublishingPlanService {
     }
     files.push({ name: '01 - Meta Gunluk Metinler.md', mimeType: 'text/markdown', content: metaLines.join('\n') });
 
-    // Drive yüklemesi KULLANICININ Google token'ına bağlıdır. Agent
-    // kimliğinde (yerel betik, n8n) kullanıcı yok — sessizce atlamak yerine
-    // sebebini söyle.
-    if (!ctx.userId) {
-      return {
-        ok: false,
-        message: 'Drive yüklemesi kullanıcı oturumu gerektirir. ' +
-                 'PREI arayüzünden "Drive\'a yükle" ile tetikleyin.',
-      };
+    // Karusel görselleri — slayt sırasıyla, Meta'ya yüklenecek hâlde.
+    if (carousels.length > 0) {
+      const stored = await this.images.stored(ctx, carousels.map((c) => c.id));
+      for (const img of stored) {
+        if (!img.data) continue;
+        const owner = carousels.find((c) => c.id === img.itemId);
+        if (!owner) continue;
+        const ext = (img.mimeType || 'image/png').split('/')[1] || 'png';
+        files.push({
+          name: `${owner.scheduledDate} karusel${owner.orderIndex}-slayt${img.slideIndex}.${ext}`,
+          mimeType: img.mimeType || 'image/png',
+          data: Buffer.from(img.data, 'base64'),
+        });
+      }
     }
 
-    const res = await this.drive.uploadWeek(ctx.userId, weekLabel, files);
+    // Drive kullanıcıya bağlıdır ama akışı yerel betik (agent anahtarı)
+    // tetikliyor — oturum yok. Bu yüzden Drive iznini vermiş kullanıcıyı
+    // buluyoruz; klasör onun Drive'ında yaşıyor.
+    const owner = await this.drive.resolveOwner();
+    if (!owner) {
+      return { ok: false, message: DRIVE_NOT_CONNECTED };
+    }
+
+    const res = await this.drive.uploadWeek(owner.userId, weekLabel, files);
     if (res.folderId) {
       await this.db.withContext(ctx, (c) =>
         c.query(
@@ -413,6 +436,23 @@ export class PublishingPlanService {
       }
     }
     return { ok: res.ok, message: res.message, folderLink: res.folderLink };
+  }
+
+  /** Drive kökündeki içerik takvimini tüm haftalardan yeniden yazar. */
+  async syncCalendar(ctx: RequestContext): Promise<{ ok: boolean; message?: string; link?: string }> {
+    const owner = await this.drive.resolveOwner();
+    if (!owner) return { ok: false, message: DRIVE_NOT_CONNECTED };
+
+    const plans = await this.list(ctx, 52);
+    const rows = calendarRows(
+      plans.flatMap((p) => p.items.map((i) => ({
+        scheduledDate: i.scheduledDate, dayName: i.dayName, kind: i.kind,
+        title: i.title, marketCode: i.marketCode, forLinkedin: i.forLinkedin,
+        forMeta: i.forMeta, status: i.status, slideCount: i.slides.length,
+        driveFileLink: i.driveFileLink,
+      }))),
+    );
+    return this.drive.writeCalendar(owner.userId, rows);
   }
 
   /** Karusel slaytlarının görsellerini üretir. */

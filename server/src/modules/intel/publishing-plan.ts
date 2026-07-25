@@ -285,6 +285,44 @@ export function postToTextFile(
   return L.join('\n');
 }
 
+/**
+ * İçerik takvimi satırları — Drive kökündeki tek tablo.
+ *
+ * Amaç: haftalara dağılmış dosyaları tek yerden görmek ve Meta Business
+ * Suite'e sırayla girerken nerede kaldığını bilmek. Başlık satırı dahil.
+ */
+export function calendarRows(
+  items: Array<{
+    scheduledDate: string; dayName: string; kind: 'post' | 'carousel';
+    title: string; marketCode: string | null; forLinkedin: boolean;
+    forMeta: boolean; status: string; slideCount: number;
+    driveFileLink: string | null;
+  }>,
+): string[][] {
+  const rows: string[][] = [[
+    'Tarih', 'Gün', 'Tür', 'Konu', 'Pazar', 'LinkedIn', 'Meta', 'Slayt', 'Durum', 'Dosya',
+  ]];
+  const STATUS: Record<string, string> = {
+    ready: 'Hazır', published: 'Paylaşıldı', skipped: 'Atlandı',
+  };
+  // Tarihe göre sırala — takvim kronolojik okunur.
+  for (const i of [...items].sort((a, b) => a.scheduledDate.localeCompare(b.scheduledDate))) {
+    rows.push([
+      i.scheduledDate,
+      i.dayName,
+      i.kind === 'post' ? 'Post' : 'Karusel',
+      i.title,
+      i.marketCode ?? '',
+      i.forLinkedin ? 'evet' : '',
+      i.forMeta ? 'evet' : '',
+      i.kind === 'carousel' ? String(i.slideCount) : '',
+      STATUS[i.status] ?? i.status,
+      i.driveFileLink ?? '',
+    ]);
+  }
+  return rows;
+}
+
 /** Haftanın tamamını tek bakışta gösteren özet dosyası. */
 export function weekOverview(
   weekLabel: string, reportTitle: string, slots: PlanSlot[],

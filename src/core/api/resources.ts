@@ -78,14 +78,6 @@ import type {
   ActivityFiltersInput,
   BriefResultDTO,
   LeadDossierDTO,
-  IntelReportSummaryDTO,
-  IntelReportDetailDTO,
-  IntelItemDTO,
-  IntelSearchHitDTO,
-  PublishingPlanDTO,
-  PublishingPlanItemDTO,
-  PublishingGenerateResultDTO,
-  PlanImageDTO,
 } from '../types';
 
 export const authApi = {
@@ -257,58 +249,6 @@ export const meetingBriefApi = {
     api.get<LeadDossierDTO>(`/api/leads/${leadId}/dossier`),
   regenerate: (leadId: string) =>
     api.post<BriefResultDTO>(`/api/leads/${leadId}/brief/regenerate`, {}),
-};
-
-/** Haftalık istihbarat raporu arşivi ('marketing' izni). */
-export const intelApi = {
-  list: () => api.get<IntelReportSummaryDTO[]>('/api/intel/reports'),
-  detail: (id: string) => api.get<IntelReportDetailDTO>(`/api/intel/reports/${id}`),
-  search: (q: string, market?: string) => {
-    const p = new URLSearchParams({ q });
-    if (market) p.set('market', market);
-    return api.get<IntelSearchHitDTO[]>(`/api/intel/reports/search?${p.toString()}`);
-  },
-  items: (f: { status?: string; market?: string; speculative?: boolean } = {}) => {
-    const p = new URLSearchParams();
-    for (const [k, v] of Object.entries(f)) {
-      if (v !== undefined && v !== '') p.set(k, String(v));
-    }
-    const qs = p.toString();
-    return api.get<IntelItemDTO[]>(`/api/intel/reports/items${qs ? `?${qs}` : ''}`);
-  },
-  updateItem: (id: string, status: IntelItemDTO['status']) =>
-    api.patch<IntelItemDTO>(`/api/intel/reports/items/${id}`, { status }),
-  upload: (file: File) => {
-    const fd = new FormData();
-    fd.append('file', file);
-    return api.post<IntelReportDetailDTO>('/api/intel/reports/upload', fd);
-  },
-  fromText: (title: string, text: string) =>
-    api.post<IntelReportDetailDTO>('/api/intel/reports/text', { title, text }),
-  remove: (id: string) => api.delete<{ deleted: true }>(`/api/intel/reports/${id}`),
-};
-
-/**
- * Haftalık yayın akışı. Dikkat: burada "yayınla" ucu YOK — sistem
- * hiçbir yere paylaşım yapmaz, yalnız hazırlar. markItem bir kayıt.
- */
-export const publishingApi = {
-  list: (limit?: number) =>
-    api.get<PublishingPlanDTO[]>(`/api/intel/publishing${limit ? `?limit=${limit}` : ''}`),
-  today: () => api.get<PublishingPlanItemDTO[]>('/api/intel/publishing/today'),
-  get: (id: string) => api.get<PublishingPlanDTO>(`/api/intel/publishing/${id}`),
-  generate: (reportId: string, body: { weekStart?: string; generateImages?: boolean } = {}) =>
-    api.post<PublishingGenerateResultDTO>(`/api/intel/publishing/generate/${reportId}`, body),
-  pushDrive: (id: string) =>
-    api.post<{ ok: boolean; message?: string; folderLink?: string }>(
-      `/api/intel/publishing/${id}/drive`, {}),
-  buildImages: (id: string) =>
-    api.post<{ ok: boolean; message?: string; generated: number; total: number }>(
-      `/api/intel/publishing/${id}/images`, {}),
-  itemImages: (itemId: string) =>
-    api.get<PlanImageDTO[]>(`/api/intel/publishing/items/${itemId}/images`),
-  markItem: (itemId: string, status: PublishingPlanItemDTO['status']) =>
-    api.patch<{ ok: true }>(`/api/intel/publishing/items/${itemId}`, { status }),
 };
 
 export const socialApi = {
