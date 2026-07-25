@@ -64,7 +64,7 @@ export class EylulBrainService {
       .reverse()
       .map((h) => ({ direction: h.direction, body: h.body }));
 
-    const knowledgeText = await this.retrieve(input.message);
+    const knowledgeText = await this.retrieve(ctx, input.message);
     const messages = buildPrompt({
       persona: EYLUL_PERSONA,
       rules: EYLUL_RULES,
@@ -81,16 +81,24 @@ export class EylulBrainService {
     return clean || null;
   }
 
-  /** Bilgi bankası araması: mesajı gömer, en yakın pasajları metne çevirir. */
-  private async retrieve(query: string): Promise<string> {
+  /**
+   * Bilgi bankası araması: mesajı gömer, en yakın pasajları metne çevirir.
+   *
+   * withContext (prei_app) ŞART — db.raw() prei_bootstrap rolünü kullanır ve
+   * o rolün documents tablosunda GRANT'i yoktur ("permission denied").
+   * AgentService.searchKnowledge de aynı yolu kullanıyor.
+   */
+  private async retrieve(ctx: RequestContext, query: string): Promise<string> {
     const embedding = await this.embed(query);
     if (!embedding) return '';
     try {
-      const rows = await this.db.raw<{ content: string }>(
-        `SELECT content FROM match_documents($1::vector, $2, '{}'::jsonb)`,
-        [`[${embedding.join(',')}]`, RAG_MATCHES],
-      );
-      return rows.map((r) => r.content).join('\n\n---\n\n');
+      return await this.db.withContext(ctx, async (c) => {
+        const { rows } = await c.query<{ content: string }>(
+          `SELECT content FROM match_documents($1::vector, $2, '{}'::jsonb)`,
+          [`[${embedding.join(',')}]`, RAG_MATCHES],
+        );
+        return rows.map((r) => r.content).join('\n\n---\n\n');
+      });
     } catch (e) {
       this.logger.warn(`Bilgi bankası araması başarısız: ${(e as Error).message}`);
       return '';

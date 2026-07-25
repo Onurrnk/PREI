@@ -185,11 +185,13 @@ export class MetaDmService {
       if (!res.ok || json.error) {
         const message = json.error?.message ?? `HTTP ${res.status}`;
         this.logger.warn(`Meta DM gönderilemedi (${input.channel}): ${message}`);
+        await this.recordUndelivered(ctx, input, message);
         return { sent: false, message };
       }
     } catch (e) {
       const message = (e as Error).message;
       this.logger.warn(`Meta DM ağ hatası: ${message}`);
+      await this.recordUndelivered(ctx, input, message);
       return { sent: false, message };
     }
 
@@ -204,6 +206,29 @@ export class MetaDmService {
       ).catch((e) => this.logger.warn(`Outbound kaydı yazılamadı: ${(e as Error).message}`));
     }
     return { sent: true };
+  }
+
+  /**
+   * Gönderilemeyen cevabı yine de kaydeder.
+   * Neden: Eylül'ün yazdığı metin kaybolmasın — Onur müşteri kartında
+   * "şunu yazacaktı ama iletilemedi" diye görsün ve elle takip edebilsin.
+   * İzin eksikliği veya geçici Meta hatası sessiz veri kaybına dönüşmemeli.
+   */
+  private async recordUndelivered(
+    ctx: RequestContext,
+    input: { channel: string; text: string; leadId?: string; contactId?: string },
+    reason: string,
+  ): Promise<void> {
+    if (!input.leadId || !input.contactId) return;
+    await this.db.withContext(ctx, (c) =>
+      c.query(
+        `INSERT INTO communications
+           (tenant_id, lead_id, contact_id, channel, direction, body, sent_at, metadata, created_by)
+         VALUES ($1,$2,$3,$4,'outbound',$5,now(),$6::jsonb,$7)`,
+        [ctx.tenantId, input.leadId, input.contactId, input.channel, input.text,
+         JSON.stringify({ delivered: false, failureReason: reason, author: 'eylul' }), ctx.userId],
+      ),
+    ).catch((e) => this.logger.warn(`İletilemeyen cevap kaydedilemedi: ${(e as Error).message}`));
   }
 
   /** Gönderenin görünen adı (IG kullanıcı adı) — yoksa null. */
