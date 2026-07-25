@@ -51,6 +51,11 @@ export interface AppConfig {
     verifyToken: string;  // webhook el sıkışması (GET hub.verify_token)
     pageId: string;       // sayfa kimliği — sayfa token'ı bununla alınır
   };
+  /** Pazarlama analiz motoru (Claude). */
+  anthropic: {
+    apiKey: string;
+    model: string;
+  };
   /** Eylül'ün DM beyni: gömme (RAG) + sohbet tamamlama. */
   openai: {
     apiKey: string;
@@ -104,6 +109,10 @@ export default (): AppConfig => ({
     appSecret: process.env.META_APP_SECRET ?? '',
     verifyToken: process.env.META_WEBHOOK_VERIFY_TOKEN ?? '',
     pageId: process.env.META_PAGE_ID ?? '',
+  },
+  anthropic: {
+    apiKey: process.env.ANTHROPIC_API_KEY ?? '',
+    model: process.env.ANTHROPIC_MODEL ?? 'claude-opus-5',
   },
   openai: {
     apiKey: process.env.OPENAI_API_KEY ?? '',
