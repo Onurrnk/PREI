@@ -877,16 +877,38 @@ export interface UpdateMeInput {
   notificationPrefs?: Record<string, boolean>;
 }
 
+export type TaskStatus = 'Pending' | 'In Progress' | 'Completed';
+
+/** Görev rapor günlüğü girdisi — kim, ne zaman, ne yazdı, hangi durum geçişi. */
+export interface TaskReportDTO {
+  at: string;
+  byName: string;
+  text: string;
+  fromStatus?: TaskStatus;
+  toStatus?: TaskStatus;
+}
+
 export interface TaskDTO {
   id: string;
   title: string;
   description: string;
   dueDate: string;
   priority: 'High' | 'Medium' | 'Low';
-  status: 'Pending' | 'In Progress' | 'Completed';
+  status: TaskStatus;
   assigneeId: string;
   relatedEntity?: { type: 'Lead' | 'Client' | 'Project'; name: string; id: string };
   type: 'Task' | 'Meeting';
+  reports: TaskReportDTO[];
+}
+
+/** Görev güncelleme — rapor notu her işlemle birlikte gönderilebilir. */
+export interface UpdateTaskInput {
+  status?: TaskStatus;
+  priority?: 'High' | 'Medium' | 'Low';
+  title?: string;
+  description?: string;
+  dueDate?: string;
+  report?: string;
 }
 
 export interface CreateTaskInput {

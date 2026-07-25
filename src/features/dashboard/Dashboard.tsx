@@ -11,7 +11,6 @@ import {
   CalendarBlank,
   ChartBar,
   ChartPieSlice,
-  ListChecks,
   GlobeHemisphereWest,
   Megaphone,
   InstagramLogo,
@@ -25,6 +24,7 @@ import {
   UsersThree,
 } from '@phosphor-icons/react';
 import { GeoMap } from '../../core/components/GeoMap/GeoMap';
+import { TaskPanel } from './components/TaskPanel';
 import { TrendArea, Sparkline, DonutMetric, HBarCompare, fmtEUR } from '../../core/charts';
 import type { DashboardSummaryDTO, MeetingDTO, TaskDTO, SocialSummaryDTO } from '../../core/types';
 import { dashboardApi, meetingsApi, tasksApi, socialApi } from '../../core/api/resources';
@@ -49,8 +49,6 @@ const weeklyDelta = (series: number[] | undefined): number | null => {
   if (prev === 0) return null;
   return ((last - prev) / prev) * 100;
 };
-
-const PRIORITY_RANK: Record<string, number> = { High: 0, Medium: 1, Low: 2 };
 
 // ISO-2 ülke kodu → bayrak emojisi (XX/bilinmeyen → küre).
 const flagOf = (code: string): string =>
@@ -79,7 +77,7 @@ export const Dashboard: React.FC = () => {
   const dateLocale = i18n.language === 'tr' ? 'tr-TR' : 'en-GB';
   const { data: summary } = useFetch<DashboardSummaryDTO>(() => dashboardApi.summary(), []);
   const { data: meetingsData } = useFetch<MeetingDTO[]>(() => meetingsApi.list(), []);
-  const { data: tasksData } = useFetch<TaskDTO[]>(() => tasksApi.list(), []);
+  const { data: tasksData, refetch: refetchTasks } = useFetch<TaskDTO[]>(() => tasksApi.list(), []);
   const { data: social } = useFetch<SocialSummaryDTO>(() => socialApi.summary(), []);
 
   const trends = summary?.trends;
@@ -138,14 +136,6 @@ export const Dashboard: React.FC = () => {
       monthLabel: now.toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' }),
     };
   }, [meetingsData, dateLocale]);
-
-  // Priority Tasks: tamamlanmamış gerçek görevler, önceliğe göre (ilk 4).
-  const priorityTasks = useMemo(() => {
-    return (tasksData ?? [])
-      .filter((t) => t.status !== 'Completed')
-      .sort((a, b) => (PRIORITY_RANK[a.priority] ?? 3) - (PRIORITY_RANK[b.priority] ?? 3))
-      .slice(0, 4);
-  }, [tasksData]);
 
   return (
     <div className={styles.dashboard}>
@@ -509,27 +499,11 @@ export const Dashboard: React.FC = () => {
             </div>
           </CardHeader>
           <CardBody padding="none" className={styles.fillBody}>
-            <div className={`${styles.listWidget} ${priorityTasks.length === 0 ? styles.fillCenter : ''}`}>
-              {priorityTasks.length === 0 && (
-                <EmptyState
-                  compact
-                  icon={<ListChecks size={22} weight="duotone" />}
-                  title={t('dashboard.noTasks')}
-                  actionLabel={t('dashboard.empty.goToTasks')}
-                  onAction={() => navigate('/tasks')}
-                />
-              )}
-              {priorityTasks.map((t) => (
-                <button key={t.id} className={styles.listItem} onClick={() => navigate('/tasks')}>
-                  <span className={styles.itemContent}>
-                    <span className={styles.itemTitle}>{t.title}</span>
-                  </span>
-                  <span className={`${styles.statusChip} ${t.priority === 'High' ? styles.statusUrgent : ''}`}>
-                    {t.priority}
-                  </span>
-                </button>
-              ))}
-            </div>
+            <TaskPanel
+              tasks={tasksData ?? []}
+              onChanged={refetchTasks}
+              onSeeAll={() => navigate('/tasks')}
+            />
           </CardBody>
         </Card>
       </div>

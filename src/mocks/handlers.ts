@@ -22,6 +22,7 @@ import type {
   UpdateProjectInput,
   CreateProposalInput,
   CreateTaskInput,
+  UpdateTaskInput,
   DashboardSummaryDTO,
   FinancialsSummaryDTO,
   MarketingSummaryDTO,
@@ -256,12 +257,14 @@ const userIdFromToken = (auth: string | null): string | null => {
 };
 
 export let mockTasks: TaskDTO[] = [
-  { id: 't1', title: 'Prepare Proposal for Downtown Heights', description: 'Draft the initial proposal for Sarah Ahmed focusing on penthouses.', dueDate: '2026-06-21T14:00:00Z', priority: 'High', status: 'In Progress', assigneeId: 'u2', relatedEntity: { type: 'Lead', name: 'Sarah Ahmed', id: '2' }, type: 'Task' },
-  { id: 't2', title: 'Follow up with Oliver Hartwell', description: 'Call Oliver regarding the Beachfront Residences documents.', dueDate: '2026-06-20T10:00:00Z', priority: 'Medium', status: 'Pending', assigneeId: 'u2', relatedEntity: { type: 'Client', name: 'Oliver Hartwell', id: '1' }, type: 'Task' },
-  { id: 't3', title: 'Weekly Pipeline Review', description: 'Review all new leads and update statuses.', dueDate: '2026-06-22T09:00:00Z', priority: 'High', status: 'Pending', assigneeId: 'u3', type: 'Meeting' },
-  { id: 't4', title: 'Send Contract to Elena Rossi', description: 'Finalize the SPA and send it for digital signature.', dueDate: '2026-06-20T16:00:00Z', priority: 'High', status: 'Pending', assigneeId: 'u4', relatedEntity: { type: 'Lead', name: 'Elena Rossi', id: '4' }, type: 'Task' },
-  { id: 't5', title: 'Site Visit: DAMAC Hills', description: 'Accompany Mr. Al Fayed to the villa show home.', dueDate: '2026-06-23T11:00:00Z', priority: 'Medium', status: 'Pending', assigneeId: 'u2', relatedEntity: { type: 'Client', name: 'Mohammed Al Fayed', id: '4' }, type: 'Meeting' },
-  { id: 't6', title: 'Update Marketing Materials', description: 'Upload new brochures for Belmont Residences to the vault.', dueDate: '2026-06-19T17:00:00Z', priority: 'Low', status: 'Completed', assigneeId: 'u4', relatedEntity: { type: 'Project', name: 'Belmont Residences', id: 'p4' }, type: 'Task' },
+  { id: 't1', title: 'Prepare Proposal for Downtown Heights', description: 'Draft the initial proposal for Sarah Ahmed focusing on penthouses.', dueDate: '2026-06-21T14:00:00Z', priority: 'High', status: 'In Progress', assigneeId: 'u2', relatedEntity: { type: 'Lead', name: 'Sarah Ahmed', id: '2' }, type: 'Task', reports: [
+    { at: new Date(Date.now() - 2 * 86400000).toISOString(), byName: 'Onur Nazım Karataş', text: 'Müşteriyle ön görüşme yapıldı, penthouse tercihleri netleşti.', fromStatus: 'Pending', toStatus: 'In Progress' },
+  ] },
+  { id: 't2', title: 'Follow up with Oliver Hartwell', description: 'Call Oliver regarding the Beachfront Residences documents.', dueDate: '2026-06-20T10:00:00Z', priority: 'Medium', status: 'Pending', assigneeId: 'u2', relatedEntity: { type: 'Client', name: 'Oliver Hartwell', id: '1' }, type: 'Task', reports: [] },
+  { id: 't3', title: 'Weekly Pipeline Review', description: 'Review all new leads and update statuses.', dueDate: '2026-06-22T09:00:00Z', priority: 'High', status: 'Pending', assigneeId: 'u3', type: 'Meeting', reports: [] },
+  { id: 't4', title: 'Send Contract to Elena Rossi', description: 'Finalize the SPA and send it for digital signature.', dueDate: '2026-06-20T16:00:00Z', priority: 'High', status: 'Pending', assigneeId: 'u4', relatedEntity: { type: 'Lead', name: 'Elena Rossi', id: '4' }, type: 'Task', reports: [] },
+  { id: 't5', title: 'Site Visit: DAMAC Hills', description: 'Accompany Mr. Al Fayed to the villa show home.', dueDate: '2026-06-23T11:00:00Z', priority: 'Medium', status: 'Pending', assigneeId: 'u2', relatedEntity: { type: 'Client', name: 'Mohammed Al Fayed', id: '4' }, type: 'Meeting', reports: [] },
+  { id: 't6', title: 'Update Marketing Materials', description: 'Upload new brochures for Belmont Residences to the vault.', dueDate: '2026-06-19T17:00:00Z', priority: 'Low', status: 'Completed', assigneeId: 'u4', relatedEntity: { type: 'Project', name: 'Belmont Residences', id: 'p4' }, type: 'Task', reports: [] },
 ];
 
 // İç notlar (meeting_notes mock'u) — module-level: POST oturum içinde kalıcı.
@@ -624,6 +627,7 @@ export const handlers = [
       status: 'Pending',
       assigneeId: input.assigneeId ?? 'u2',
       type: 'Task',
+      reports: [],
     };
     mockTasks = [...mockTasks, newTask];
     return HttpResponse.json<TaskDTO>(newTask, { status: 201 });
@@ -631,13 +635,33 @@ export const handlers = [
 
   http.put('/api/tasks/:id', async ({ params, request }) => {
     const { id } = params;
-    const updates = await request.json() as Partial<TaskDTO>;
-    mockTasks = mockTasks.map(t => t.id === id ? { ...t, ...updates } : t);
-    const updatedTask = mockTasks.find(t => t.id === id);
-    if (!updatedTask) {
-      return new HttpResponse(null, { status: 404 });
+    const updates = (await request.json()) as UpdateTaskInput;
+    const current = mockTasks.find((t) => t.id === id);
+    if (!current) return new HttpResponse(null, { status: 404 });
+
+    // Rapor notu veya durum değişimi varsa günlüğe append (backend ile aynı davranış).
+    const note = updates.report?.trim() ?? '';
+    const changed = !!updates.status && updates.status !== current.status;
+    const reports = [...current.reports];
+    if (note || changed) {
+      reports.push({
+        at: new Date().toISOString(),
+        byName: 'Onur Nazım Karataş',
+        text: note,
+        ...(changed ? { fromStatus: current.status, toStatus: updates.status } : {}),
+      });
     }
-    return HttpResponse.json<TaskDTO>(updatedTask);
+    const updated: TaskDTO = {
+      ...current,
+      ...(updates.status !== undefined && { status: updates.status }),
+      ...(updates.priority !== undefined && { priority: updates.priority }),
+      ...(updates.title !== undefined && { title: updates.title }),
+      ...(updates.description !== undefined && { description: updates.description }),
+      ...(updates.dueDate !== undefined && { dueDate: updates.dueDate }),
+      reports,
+    };
+    mockTasks = mockTasks.map((t) => (t.id === id ? updated : t));
+    return HttpResponse.json<TaskDTO>(updated);
   }),
 
   http.get('/api/audit', () => {

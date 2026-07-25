@@ -26,6 +26,7 @@ import type {
   CreateProposalInput,
   UpdateProposalInput,
   CreateTaskInput,
+  UpdateTaskInput,
   DashboardSummaryDTO,
   DeveloperDTO,
   UpdateDeveloperInput,
@@ -262,7 +263,7 @@ export const tasksApi = {
   list: (assigneeId?: string) =>
     api.get<TaskDTO[]>('/api/tasks', { params: { assigneeId } }),
   create: (input: CreateTaskInput) => api.post<TaskDTO>('/api/tasks', input),
-  update: (id: string, updates: Partial<TaskDTO>) =>
+  update: (id: string, updates: UpdateTaskInput) =>
     api.put<TaskDTO>(`/api/tasks/${id}`, updates),
 };
 
