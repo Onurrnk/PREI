@@ -21,6 +21,7 @@ import { MeetingsModule } from './modules/meetings/meetings.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { FinancialsModule } from './modules/financials/financials.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
+import { IntelModule } from './modules/intel/intel.module';
 import { IntakeModule } from './modules/intake/intake.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { DocumentsModule } from './modules/documents/documents.module';
@@ -68,6 +69,7 @@ import { MeModule } from './modules/me/me.module';
     DashboardModule,
     FinancialsModule,
     MarketingModule,
+    IntelModule,
     IntakeModule,
     AdminModule,
     DocumentsModule,

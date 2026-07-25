@@ -1138,3 +1138,54 @@ export interface BriefResultDTO {
   generatedAt?: string;
   cached?: boolean;
 }
+
+
+// =====================================================================
+// Haftalık istihbarat raporu arşivi — bilgi bankası + içerik kaynağı.
+// Rapor MÜŞTERİYE GİTMEZ; sosyal medya postu/videosu için haber çıkarılır.
+// =====================================================================
+export interface IntelReportSummaryDTO {
+  id: string;
+  title: string;
+  reportDate: string;
+  periodStart: string | null;
+  periodEnd: string | null;
+  markets: string[];
+  sectionCount: number;
+  itemCount: number;
+  source: string;
+  createdAt: string;
+}
+
+export interface IntelSectionDTO {
+  index: number;
+  heading: string;
+  body: string;
+}
+
+export interface IntelItemDTO {
+  id: string;
+  reportId: string;
+  headline: string;
+  detail: string | null;
+  marketCode: string | null;
+  section: string | null;
+  /** Rapor bunu spekülatif bölümde etiketlemişti — haber gibi paylaşılmasın. */
+  isSpeculative: boolean;
+  suggestedFormat: string | null;
+  status: 'new' | 'queued' | 'published' | 'skipped';
+  createdAt: string;
+}
+
+export interface IntelReportDetailDTO extends IntelReportSummaryDTO {
+  sections: IntelSectionDTO[];
+  items: IntelItemDTO[];
+}
+
+export interface IntelSearchHitDTO {
+  reportId: string;
+  title: string;
+  reportDate: string;
+  sectionHeading: string | null;
+  snippet: string;
+}
