@@ -69,6 +69,8 @@ import type {
   UpdateMeInput,
   UserDTO,
   VaultDocumentDTO,
+  AdProposalDTO,
+  MarketingAnalysisDTO,
 } from '../types';
 
 export const authApi = {
@@ -222,6 +224,23 @@ export const socialApi = {
   createPost: (input: CreateSocialPostInput) => api.post<SocialPostDTO>('/api/marketing/social/posts', input),
   updatePostLeads: (id: string, leads: number) => api.patch<{ ok: true }>(`/api/marketing/social/posts/${id}`, { leads }),
   removePost: (id: string) => api.delete<{ deleted: true }>(`/api/marketing/social/posts/${id}`),
+};
+
+/** Reklam onay kuyruğu — bütçe kararı yalnız buradan geçer. */
+export const adProposalsApi = {
+  list: (status?: string) =>
+    api.get<AdProposalDTO[]>(`/api/marketing/ad-proposals${status ? `?status=${status}` : ''}`),
+  analyze: () => api.post<MarketingAnalysisDTO>('/api/marketing/ad-proposals/analyze', {}),
+  approve: (id: string, input: { dailyBudget?: number; note?: string }) =>
+    api.post<AdProposalDTO>(`/api/marketing/ad-proposals/${id}/approve`, input),
+  reject: (id: string, note?: string) =>
+    api.post<AdProposalDTO>(`/api/marketing/ad-proposals/${id}/reject`, { note }),
+  publish: (id: string) =>
+    api.post<{ ok: boolean; message: string }>(`/api/marketing/ad-proposals/${id}/publish`, {}),
+  activate: (id: string) =>
+    api.post<{ ok: boolean; message: string }>(`/api/marketing/ad-proposals/${id}/activate`, {}),
+  pause: (id: string) =>
+    api.post<{ ok: boolean; message: string }>(`/api/marketing/ad-proposals/${id}/pause`, {}),
 };
 
 export const notificationsApi = {

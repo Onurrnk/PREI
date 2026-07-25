@@ -47,6 +47,13 @@ export interface SocialPostDTO {
   engagements: number;
   leads: number;
   source: 'auto' | 'manual';   // auto = Meta günlük senkronundan
+  reach: number;
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  videoViews: number;
+  engagementRate: number | null;
 }
 
 export interface SocialSummaryDTO {
@@ -56,7 +63,54 @@ export interface SocialSummaryDTO {
   platforms: SocialPlatformStatDTO[];
   topPosts: SocialPostDTO[];
   totals30d: { posts: number; engagements: number; leads: number };
+  /** Hesap seviyesi 30 günlük görünürlük — takipçiden ÖNCE gelen metrikler. */
+  reach30d: {
+    reach: number;
+    impressions: number;
+    profileViews: number;
+    accountsEngaged: number;
+    websiteClicks: number;
+    reachDeltaPct: number | null;
+    profileViewsDeltaPct: number | null;
+  };
+  /** Kitle kırılımı: bizi kim takip ediyor (ülke/şehir/yaş/cinsiyet). */
+  audience: { dimension: string; bucket: string; value: number }[];
   metaLastSyncAt: string | null; // Meta otomatik senkronunun son çalışması
+}
+
+/** Reklam önerisi — AI üretir, Onur onaylar, ancak sonra yayınlanır. */
+export interface AdProposalDTO {
+  id: string;
+  title: string;
+  objective: string;
+  marketCode: string | null;
+  primaryText: string | null;
+  headline: string | null;
+  description: string | null;
+  callToAction: string | null;
+  creativeBrief: string | null;
+  rationale: string | null;
+  dailyBudget: number | null;
+  currency: string;
+  status: 'draft' | 'pending' | 'approved' | 'rejected' | 'published' | 'archived';
+  publishState: 'none' | 'paused' | 'active';
+  source: 'ai' | 'manual';
+  approvedAt: string | null;
+  activatedAt: string | null;
+  publishedAt: string | null;
+  metaCampaignId: string | null;
+  createdAt: string;
+}
+
+export interface MarketingAnalysisDTO {
+  ok: boolean;
+  message?: string;
+  proposalsCreated: number;
+  analysis?: {
+    findings: string[];
+    contentPlan: { format: string; topic: string; why: string }[];
+    warnings: string[];
+  };
 }
 
 export interface UpsertFollowersInput {

@@ -9,6 +9,8 @@ import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { useFetch } from '../../core/hooks/useFetch';
 import { marketingApi, socialApi } from '../../core/api/resources';
+import { ReachPanel } from './components/ReachPanel';
+import { AdApprovalQueue } from './components/AdApprovalQueue';
 import type { MarketingSummaryDTO, MarketingTimeframe, CreateAdSpendInput, SocialSummaryDTO, SocialPlatform } from '../../core/types';
 import {
   TrendUp, TrendDown, ChatCircle, WhatsappLogo, TelegramLogo, InstagramLogo,
@@ -438,6 +440,12 @@ export const Marketing: React.FC = () => {
           </Table>
         </CardBody>
       </Card>
+
+      {/* Görünürlük + kitle: Meta'dan otomatik gelir, elle giriş yok (002y) */}
+      <ReachPanel social={social ?? null} />
+
+      {/* Reklam onay kuyruğu — bütçe kararı yalnız buradan geçer (002y) */}
+      <AdApprovalQueue />
 
       {/* Sosyal medya: takipçi güncelle + paylaşım performansı (002w) */}
       <Card padding="md">

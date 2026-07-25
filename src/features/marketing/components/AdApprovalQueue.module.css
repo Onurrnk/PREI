@@ -1,0 +1,207 @@
+/* =====================================================================
+   AdApprovalQueue — reklam onay kuyruğu.
+   Renk anlamı: yeşil=onaylı, mavi=yayında/nötr işlem, kırmızı=reddedildi,
+   amber=bekliyor. Mor yalnız marka aksanı olarak (birincil buton).
+   ===================================================================== */
+
+.safety {
+  margin: 0 0 var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  font: var(--text-label);
+  line-height: 1.5;
+  color: var(--text-secondary);
+  background: var(--bg-inset);
+  border-left: 2px solid var(--data-info);
+  border-radius: var(--radius-control);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--sp-5) 0;
+  font: var(--text-body);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.rowMain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.rowTitle {
+  font: var(--text-body);
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowMain:hover .rowTitle { color: var(--accent); }
+
+.rowMeta {
+  font: var(--text-label);
+  color: var(--text-muted);
+}
+
+.rowActions {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+/* --- Durum rozetleri --- */
+.badge {
+  padding: 3px 9px;
+  font: var(--text-label);
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.badgePending   { color: var(--data-warning); background: color-mix(in srgb, var(--data-warning) 16%, transparent); }
+.badgeApproved  { color: var(--data-positive); background: color-mix(in srgb, var(--data-positive) 14%, transparent); }
+.badgeRejected  { color: var(--data-negative); background: color-mix(in srgb, var(--data-negative) 14%, transparent); }
+.badgePublished { color: var(--data-info); background: color-mix(in srgb, var(--data-info) 14%, transparent); }
+
+/* --- Detay modalı --- */
+.detail { display: grid; gap: var(--sp-4); }
+
+.block { display: grid; gap: var(--sp-2); }
+
+.blockTitle {
+  margin: 0;
+  font: var(--text-label);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.blockText {
+  margin: 0;
+  font: var(--text-body);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.adText {
+  margin: 0;
+  padding: var(--sp-3);
+  font: var(--text-body);
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.adHeadline {
+  margin: 0;
+  font: var(--text-title);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.brief {
+  margin: 0;
+  font: var(--text-label);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.budgetNote {
+  margin: 0;
+  font: var(--text-label);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.budgetRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.budgetInput {
+  width: 140px;
+  padding: 8px 10px;
+  font: var(--text-body);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-control);
+}
+
+.budgetInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.budgetCur {
+  font: var(--text-body);
+  color: var(--text-muted);
+}
+
+.detailActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 640px) {
+  .row { grid-template-columns: 1fr; }
+  .rowActions { justify-content: flex-start; }
+}
+
+/* --- Kart başlığı (Card bileşeni title prop'u almıyor) --- */
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.headTitle {
+  margin: 0;
+  font: var(--text-title);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.headMeta {
+  display: block;
+  margin-top: 2px;
+  font: var(--text-label);
+  color: var(--text-muted);
+}

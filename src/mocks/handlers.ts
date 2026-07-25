@@ -53,6 +53,7 @@ import type {
   TaskDTO,
   ThreadDetailDTO,
   ThreadSummaryDTO,
+  AdProposalDTO,
 } from '../core/types';
 
 // Re-export domain types for backward compatibility. The canonical source
@@ -233,9 +234,38 @@ const mockSocialFollowers: Record<string, { now: number; prev: number }> = {
   youtube: { now: 210, prev: 214 },
 };
 const mockSocialPosts: SocialPostDTO[] = [
-  { id: 'sp1', platform: 'instagram', title: 'Dubai Marina proje tanıtımı', url: null, postedAt: '2026-07-18', impressions: 8400, engagements: 412, leads: 3, source: 'auto' },
-  { id: 'sp2', platform: 'linkedin', title: 'İstanbul pazar analizi — 2026 Q3', url: null, postedAt: '2026-07-15', impressions: 3100, engagements: 187, leads: 1, source: 'manual' },
-  { id: 'sp3', platform: 'instagram', title: 'Golden Visa rehberi (Reels)', url: null, postedAt: '2026-07-10', impressions: 12600, engagements: 356, leads: 0, source: 'auto' },
+  { id: 'sp1', platform: 'instagram', title: 'Dubai Marina proje tanıtımı', url: null, postedAt: '2026-07-18', impressions: 8400, engagements: 412, leads: 3, source: 'auto', reach: 6900, likes: 302, comments: 41, shares: 38, saves: 31, videoViews: 0, engagementRate: 6.0 },
+  { id: 'sp2', platform: 'linkedin', title: 'İstanbul pazar analizi — 2026 Q3', url: null, postedAt: '2026-07-15', impressions: 3100, engagements: 187, leads: 1, source: 'manual', reach: 2400, likes: 150, comments: 22, shares: 9, saves: 6, videoViews: 0, engagementRate: 7.8 },
+  { id: 'sp3', platform: 'instagram', title: 'Golden Visa rehberi (Reels)', url: null, postedAt: '2026-07-10', impressions: 12600, engagements: 356, leads: 0, source: 'auto', reach: 11200, likes: 289, comments: 33, shares: 21, saves: 13, videoViews: 9800, engagementRate: 3.2 },
+];
+
+const mockAdProposals: AdProposalDTO[] = [
+  {
+    id: 'ap1', title: 'Istanbul — yatirimci danismanligi tanitimi',
+    objective: 'OUTCOME_LEADS', marketCode: 'TR',
+    primaryText: 'Gayrimenkul yatiriminda saticinin degil, sizin tarafinizdayiz. 100\'den fazla cozum ortagiyla bagimsiz secim yapiyor, sureci bastan sona takip ediyoruz.',
+    headline: 'Yatirimcinin yaninda duran danismanlik',
+    description: 'Ucretsiz on gorusme',
+    callToAction: 'SEND_MESSAGE',
+    creativeBrief: 'Istanbul siluети, sakin ve kurumsal ton. Abartili vaat gorseli yok.',
+    rationale: 'Takipcilerin %81\'i Turkiye\'de ve %51\'i Istanbul\'da. Kitle zaten burada; ilk test bu pazarda yapilmali.',
+    dailyBudget: 250, currency: 'TRY', status: 'pending', publishState: 'none',
+    source: 'ai', approvedAt: null, activatedAt: null, publishedAt: null,
+    metaCampaignId: null, createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'ap2', title: 'Dubai — 35-44 yas yatirimci segmenti',
+    objective: 'OUTCOME_TRAFFIC', marketCode: 'AE',
+    primaryText: 'Dubai\'de yatirim karari vermeden once bilmeniz gerekenler. Bolgeyi bilen yerel uzmanlarla calisiyor, sureci sizin adiniza yurutuyoruz.',
+    headline: 'Dubai yatiriminda dogru soru: nereye degil, neden?',
+    description: 'Yol haritanizi birlikte cikaralim',
+    callToAction: 'LEARN_MORE',
+    creativeBrief: 'Dubai marina, gunduz cekim. Luks klisesinden uzak.',
+    rationale: 'Yas kiriliminda 35-44 acik ara birinci (81 kisi). BAE\'den takipci az ama bu segment Dubai\'ye en yatkin grup.',
+    dailyBudget: 180, currency: 'TRY', status: 'pending', publishState: 'none',
+    source: 'ai', approvedAt: null, activatedAt: null, publishedAt: null,
+    metaCampaignId: null, createdAt: new Date().toISOString(),
+  },
 ];
 
 // Bildirim merkezi mock verisi (gerçekte /api/me/notifications events'ten türetir)
@@ -976,8 +1006,59 @@ export const handlers = [
         engagements: mockSocialPosts.reduce((s, p) => s + p.engagements, 0),
         leads: mockSocialPosts.reduce((s, p) => s + p.leads, 0),
       },
+      reach30d: {
+        reach: 18400, impressions: 24100, profileViews: 1320,
+        accountsEngaged: 940, websiteClicks: 118,
+        reachDeltaPct: 12.4, profileViewsDeltaPct: -3.1,
+      },
+      audience: [
+        { dimension: 'country', bucket: 'TR', value: 116 },
+        { dimension: 'country', bucket: 'DE', value: 6 },
+        { dimension: 'country', bucket: 'NL', value: 5 },
+        { dimension: 'country', bucket: 'GB', value: 2 },
+        { dimension: 'country', bucket: 'AE', value: 1 },
+        { dimension: 'city', bucket: 'Istanbul, Istanbul Province', value: 51 },
+        { dimension: 'city', bucket: 'Antalya, Antalya Province', value: 28 },
+        { dimension: 'city', bucket: 'Ankara, Ankara Province', value: 2 },
+        { dimension: 'age', bucket: '35-44', value: 81 },
+        { dimension: 'age', bucket: '25-34', value: 38 },
+        { dimension: 'age', bucket: '45-54', value: 16 },
+        { dimension: 'age', bucket: '18-24', value: 3 },
+        { dimension: 'gender', bucket: 'M', value: 84 },
+        { dimension: 'gender', bucket: 'F', value: 39 },
+      ],
       metaLastSyncAt: new Date(mockNotifNow - 2 * 3600000).toISOString(),
     });
+  }),
+
+  // Reklam onay kuyrugu (mock) — onay akisini gorsel dogrulamak icin
+  http.get('/api/marketing/ad-proposals', () => HttpResponse.json(mockAdProposals)),
+  http.post('/api/marketing/ad-proposals/analyze', () =>
+    HttpResponse.json({ ok: true, proposalsCreated: 0, message: 'mock' })),
+  http.post('/api/marketing/ad-proposals/:id/approve', ({ params }) => {
+    const pr = mockAdProposals.find((x) => x.id === params.id);
+    if (pr) { pr.status = 'approved'; pr.approvedAt = new Date().toISOString(); }
+    return HttpResponse.json(pr);
+  }),
+  http.post('/api/marketing/ad-proposals/:id/reject', ({ params }) => {
+    const pr = mockAdProposals.find((x) => x.id === params.id);
+    if (pr) pr.status = 'rejected';
+    return HttpResponse.json(pr);
+  }),
+  http.post('/api/marketing/ad-proposals/:id/publish', ({ params }) => {
+    const pr = mockAdProposals.find((x) => x.id === params.id);
+    if (pr) { pr.status = 'published'; pr.publishState = 'paused'; pr.publishedAt = new Date().toISOString(); }
+    return HttpResponse.json({ ok: true, message: 'Metada durdurulmus olarak olusturuldu.' });
+  }),
+  http.post('/api/marketing/ad-proposals/:id/activate', ({ params }) => {
+    const pr = mockAdProposals.find((x) => x.id === params.id);
+    if (pr) { pr.publishState = 'active'; pr.activatedAt = new Date().toISOString(); }
+    return HttpResponse.json({ ok: true, message: 'Kampanya yayinda.' });
+  }),
+  http.post('/api/marketing/ad-proposals/:id/pause', ({ params }) => {
+    const pr = mockAdProposals.find((x) => x.id === params.id);
+    if (pr) pr.publishState = 'paused';
+    return HttpResponse.json({ ok: true, message: 'Kampanya durduruldu.' });
   }),
 
   http.post('/api/marketing/social/followers', async ({ request }) => {
@@ -993,6 +1074,7 @@ export const handlers = [
       id: `sp${Date.now()}`, platform: b.platform, title: b.title, url: b.url ?? null,
       postedAt: b.postedAt ?? new Date().toISOString().slice(0, 10),
       impressions: b.impressions ?? 0, engagements: b.engagements ?? 0, leads: b.leads ?? 0, source: 'manual',
+      reach: 0, likes: 0, comments: 0, shares: 0, saves: 0, videoViews: 0, engagementRate: null,
     };
     mockSocialPosts.unshift(post);
     return HttpResponse.json<SocialPostDTO>(post, { status: 201 });

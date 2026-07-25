@@ -1,0 +1,153 @@
+/* =====================================================================
+   ReachPanel — görünürlük metrikleri + kitle kırılımı.
+   Renk kullanımı: mor yalnız marka aksanı; veri renkleri mavi/yeşil/kırmızı
+   (kullanıcı onaylı). Altın/degrade yok — Design System v1.
+   ===================================================================== */
+
+.wrap {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+/* --- Görünürlük metrikleri --- */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-3);
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-3);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.metricLabel {
+  font: var(--text-label);
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.metricValue {
+  font: var(--text-metric);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.deltaUp   { font: var(--text-label); color: var(--data-positive); font-variant-numeric: tabular-nums; }
+.deltaDown { font: var(--text-label); color: var(--data-negative); font-variant-numeric: tabular-nums; }
+.deltaNeutral { font: var(--text-label); color: var(--text-muted); }
+
+.empty {
+  margin: 0;
+  padding: var(--sp-4) 0;
+  font: var(--text-body);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* --- Kitle kırılımı --- */
+.audienceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--sp-4);
+}
+
+.secTitle {
+  margin: 0 0 var(--sp-2);
+  font: var(--text-label);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.barRow {
+  display: grid;
+  grid-template-columns: 78px 1fr 34px;
+  align-items: center;
+  gap: var(--sp-2);
+  font: var(--text-body);
+}
+
+.barLabel {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.barTrack {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--bg-surface-raised);
+  overflow: hidden;
+}
+
+.barFillBlue  { display: block; height: 100%; border-radius: 3px; background: var(--data-info); }
+.barFillGreen { display: block; height: 100%; border-radius: 3px; background: var(--data-positive); }
+
+.barValue {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 4px 10px;
+  font: var(--text-label);
+  color: var(--text-secondary);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+}
+
+.chip b {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Kart başlığı (Card bileşeni title prop'u almıyor) --- */
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.headTitle {
+  margin: 0;
+  font: var(--text-title);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.headMeta {
+  display: block;
+  margin-top: 2px;
+  font: var(--text-label);
+  color: var(--text-muted);
+}
