@@ -8,6 +8,7 @@ import { useFetch } from '../../core/hooks/useFetch';
 import { adminApi } from '../../core/api/resources';
 import { fmtEUR } from '../../core/charts';
 import type { TeamMemberDTO, UserDetailDTO } from '../../core/types';
+import { ActivityConsole } from './components/ActivityConsole';
 import styles from './AuditLogs.module.css';
 
 const PIPELINE_LABEL_KEY: Record<string, string> = {
@@ -283,6 +284,8 @@ export const AuditLogs: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Denetim konsolu: kim ne yaptı, hangi kayda, ne değişti (super_admin) */}
+      <ActivityConsole actorId={selectedUserId} />
     </div>
   );
 };

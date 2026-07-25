@@ -8,17 +8,21 @@ import type { AppRole } from './request-context';
 export type Permission =
   | 'dashboard' | 'leads' | 'clients' | 'developers' | 'projects' | 'proposals'
   | 'documents' | 'meetings' | 'tasks' | 'contracts' | 'financials'
-  | 'financials_confidential' | 'marketing' | 'admin' | 'settings';
+  | 'financials_confidential' | 'marketing' | 'admin' | 'settings'
+  // Denetim konsolu: HERKESİN her işlemini görmek. Sistemdeki en geniş
+  // görüş açısı — yalnız super_admin. Örtük değil AÇIK bir izin olmasının
+  // sebebi: ileride 'admin' başka bir role verilirse denetim kapalı kalsın.
+  | 'audit_full';
 
 const ALL: Permission[] = [
   'dashboard', 'leads', 'clients', 'developers', 'projects', 'proposals',
   'documents', 'meetings', 'tasks', 'contracts', 'financials',
-  'financials_confidential', 'marketing', 'admin', 'settings',
+  'financials_confidential', 'marketing', 'admin', 'settings', 'audit_full',
 ];
 
 export const ROLE_PERMISSIONS: Record<AppRole, Permission[]> = {
   super_admin: ALL,
-  manager: ALL.filter((p) => p !== 'admin' && p !== 'financials_confidential'),
+  manager: ALL.filter((p) => p !== 'admin' && p !== 'financials_confidential' && p !== 'audit_full'),
   finance_manager: ['dashboard', 'contracts', 'financials', 'financials_confidential', 'documents', 'meetings', 'tasks'],
   marketing_manager: ['dashboard', 'marketing', 'leads', 'documents', 'meetings', 'tasks'],
   consultant: ['dashboard', 'leads', 'clients', 'developers', 'projects', 'proposals', 'documents', 'meetings', 'tasks', 'settings'],

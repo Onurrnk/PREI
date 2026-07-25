@@ -73,6 +73,9 @@ import type {
   MarketingAnalysisDTO,
   ManagerRunDTO,
   ManagerReportDTO,
+  ActivityPageDTO,
+  AuditActorDTO,
+  ActivityFiltersInput,
 } from '../types';
 
 export const authApi = {
@@ -218,6 +221,22 @@ export const meetingsApi = {
   create: (input: CreateMeetingInput) => api.post<MeetingDTO>('/api/meetings', input),
   update: (id: string, input: UpdateMeetingInput) => api.patch<MeetingDTO>(`/api/meetings/${id}`, input),
   remove: (id: string) => api.delete<{ id: string; deleted: true }>(`/api/meetings/${id}`),
+};
+
+/** Denetim konsolu — YALNIZ super_admin ('audit_full' izni).
+ *  Mevcut auditApi.list() ham liste; bu konsol zenginleştirilmiş akış. */
+export const auditConsoleApi = {
+  activity: (f: ActivityFiltersInput = {}) => {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(f)) {
+      if (v !== undefined && v !== null && v !== '') q.set(k, String(v));
+    }
+    const qs = q.toString();
+    return api.get<ActivityPageDTO>(`/api/admin/audit/activity${qs ? `?${qs}` : ''}`);
+  },
+  actors: () => api.get<AuditActorDTO[]>('/api/admin/audit/actors'),
+  entityHistory: (id: string) =>
+    api.get<ActivityPageDTO['rows']>(`/api/admin/audit/entity/${id}`),
 };
 
 export const socialApi = {

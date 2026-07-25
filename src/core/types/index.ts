@@ -1012,3 +1012,58 @@ export interface CreateTaskInput {
   priority?: 'High' | 'Medium' | 'Low';
   assigneeId?: string;
 }
+
+
+// =====================================================================
+// Denetim konsolu (süper admin) — kim, ne zaman, hangi kayda, ne yaptı.
+// =====================================================================
+export interface AuditChangeDTO {
+  field: string;
+  before: string | null;
+  after: string | null;
+}
+
+export interface ActivityRowDTO {
+  id: string;
+  /** human = kullanıcı eylemi (audit_log), system = sistem/Eylül (events) */
+  source: 'human' | 'system';
+  occurredAt: string;
+  actorId: string | null;
+  actorName: string;
+  action: string;
+  actionLabel: string;
+  severity: 'normal' | 'notable' | 'critical';
+  entityType: string;
+  entityId: string;
+  /** Dokunulan kaydın insan okunur adı (hangi müşteri/proje). */
+  entityLabel: string | null;
+  /** Kaydın kendisine giden rota; yoksa null. */
+  entityRoute: string | null;
+  changes: AuditChangeDTO[];
+}
+
+export interface ActivityPageDTO {
+  rows: ActivityRowDTO[];
+  total: number;
+  hasMore: boolean;
+}
+
+export interface AuditActorDTO {
+  id: string;
+  name: string;
+  role: string | null;
+  isActive: boolean;
+  actions: number;
+  lastActiveAt: string | null;
+}
+
+export interface ActivityFiltersInput {
+  actorId?: string;
+  entityType?: string;
+  source?: 'human' | 'system';
+  search?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
+  offset?: number;
+}

@@ -271,6 +271,48 @@ const mockAdProposals: AdProposalDTO[] = [
 // Bildirim merkezi mock verisi (gerçekte /api/me/notifications events'ten türetir)
 let mockNotifSeenAt = 0;
 const mockNotifNow = Date.now();
+
+const mockActivity = [
+  {
+    id: 'a1', source: 'human', occurredAt: new Date(mockNotifNow - 3600000).toISOString(),
+    actorId: 'u1', actorName: 'Onur Karatas',
+    action: 'lead.updated', actionLabel: 'Musteri adayini guncelledi',
+    severity: 'normal', entityType: 'lead', entityId: 'l1',
+    entityLabel: 'Kudret Kalyoncu', entityRoute: '/leads/l1',
+    changes: [
+      { field: 'status', before: 'new', after: 'contacted' },
+      { field: 'score', before: '30', after: '68' },
+    ],
+  },
+  {
+    id: 'a2', source: 'system', occurredAt: new Date(mockNotifNow - 7200000).toISOString(),
+    actorId: null, actorName: 'Sistem',
+    action: 'lead.agent_reply', actionLabel: 'Eylul cevap verdi',
+    severity: 'normal', entityType: 'lead', entityId: 'l1',
+    entityLabel: 'Kudret Kalyoncu', entityRoute: '/leads/l1',
+    changes: [{ field: 'reply', before: null, after: 'Istanbul icindeyseniz memnuniyetle yuz yuze gorusuruz.' }],
+  },
+  {
+    id: 'a3', source: 'human', occurredAt: new Date(mockNotifNow - 90000000).toISOString(),
+    actorId: 'u2', actorName: 'Sarah Mitchell',
+    action: 'contact.deleted', actionLabel: 'Musteri sildi',
+    severity: 'critical', entityType: 'contact', entityId: 'c9',
+    entityLabel: 'Test Kullanici', entityRoute: '/clients/c9',
+    changes: [
+      { field: 'email', before: 'test.kullanici@example.com', after: null },
+      { field: 'first_name', before: 'Test', after: null },
+    ],
+  },
+  {
+    id: 'a4', source: 'human', occurredAt: new Date(mockNotifNow - 172800000).toISOString(),
+    actorId: 'u1', actorName: 'Onur Karatas',
+    action: 'document.uploaded', actionLabel: 'Belge yukledi',
+    severity: 'notable', entityType: 'document', entityId: 'd3',
+    entityLabel: 'Dubai_Marina_Brosur.pdf', entityRoute: '/documents',
+    changes: [{ field: 'name', before: null, after: 'Dubai_Marina_Brosur.pdf' }],
+  },
+];
+
 const mockNotifications: NotificationDTO[] = [
   { id: 'ev1', type: 'lead.created', kind: 'lead', label: 'Kudret Kalyoncuoğlu', occurredAt: new Date(mockNotifNow - 12 * 60000).toISOString(), unread: true },
   { id: 'ev2', type: 'meeting.created', kind: 'meeting', label: 'Yatırım Görüşmesi — Duygu Karataş', occurredAt: new Date(mockNotifNow - 3 * 3600000).toISOString(), unread: true },
@@ -987,6 +1029,25 @@ export const handlers = [
   }),
 
   // Sosyal medya (002w) — module-level mutable; oturum içinde kalıcı.
+  // Denetim konsolu (super_admin)
+  http.get('/api/admin/audit/actors', () =>
+    HttpResponse.json([
+      { id: 'u1', name: 'Onur Karatas', role: 'super_admin', isActive: true, actions: 61, lastActiveAt: new Date(mockNotifNow - 3600000).toISOString() },
+      { id: 'u2', name: 'Sarah Mitchell', role: 'consultant', isActive: true, actions: 13, lastActiveAt: new Date(mockNotifNow - 86400000).toISOString() },
+    ])),
+  http.get('/api/admin/audit/activity', ({ request }) => {
+    const url = new URL(request.url, 'http://x');
+    const actorId = url.searchParams.get('actorId');
+    const source = url.searchParams.get('source');
+    const search = (url.searchParams.get('search') || '').toLowerCase();
+    let rows = mockActivity;
+    if (actorId) rows = rows.filter((r) => r.actorId === actorId);
+    if (source) rows = rows.filter((r) => r.source === source);
+    if (search) rows = rows.filter((r) =>
+      (r.entityLabel || '').toLowerCase().includes(search) ||
+      r.actorName.toLowerCase().includes(search));
+    return HttpResponse.json({ rows, total: rows.length, hasMore: false });
+  }),
   http.get('/api/marketing/social/summary', () => {
     const platforms = Object.entries(mockSocialFollowers).map(([platform, f]) => ({
       platform, followers: f.now, deltaPct: f.prev > 0 ? Math.round(((f.now - f.prev) / f.prev) * 1000) / 10 : null,
