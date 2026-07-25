@@ -313,6 +313,79 @@ const mockActivity = [
   },
 ];
 
+const mockBrief = {
+  ok: true,
+  generatedAt: new Date().toISOString(),
+  cached: false,
+  gaps: [{ field: 'timeline', question: 'Zaman ufku ne?' }],
+  brief: {
+    headline: 'Istanbul Nisantasi bolgesinde prestijli 2+1 arayan, is ortaklarinin konaklamasini da dusunen karma amacli yatirimci.',
+    whoIsThis: 'WhatsApp uzerinden Eylul ile 28 mesaj konustu. Turkiye pazarina odakli, Istanbul Nisantasi net tercihi. Hem kendi tatili hem is insani ortaklarinin konaklamasi icin kullanmayi planliyor. Butcesi 1.5 milyon USD ve net.',
+    topicsDiscussed: [
+      { topic: 'Nisantasi 2+1 kira getirisi', detail: 'Kisa donem kiralamanin uzun doneme gore avantajini sordu; sezonluk doluluk oranlarini merak etti.' },
+      { topic: 'Is ortaklari icin konaklama', detail: 'Yurt disindan gelen is ortaklarini otelde agirlamak yerine kendi mulkunde agirlamak istiyor.' },
+      { topic: 'Vatandaslik esigi', detail: '400.000 USD esigini biliyor; butcesi zaten uzerinde oldugu icin bunu bir kisit olarak gormuyor.' },
+    ],
+    profileSummary: {
+      markets: ['Turkiye'],
+      regions: ['Istanbul', 'Nisantasi'],
+      budget: '1.500.000 USD',
+      purpose: 'Karma: tatil + is ortaklari icin konaklama',
+      timeline: 'Belirtilmedi',
+      propertyPreference: 'Prestijli konum, 2+1 veya uzeri',
+    },
+    expectations: [
+      'Sik ve prestijli bir konum — marka degeri onemli',
+      'Kendi kullanimina da uygun, kiraya da verilebilir esneklik',
+      'Sureci bastan sona takip eden bir danisman',
+    ],
+    buyingSignals: [
+      'Butceyi kendisi net soyledi: "1.5 milyon dolara kadar cikabilirim"',
+      'Semt seviyesinde netlik (Nisantasi) — arastirma yapmis',
+      '28 mesajlik aktif sohbet, sorulari somut',
+    ],
+    riskSignals: [
+      'Zaman ufku hic konusulmadi — aciliyet belirsiz',
+    ],
+    openQuestions: [
+      'Ne kadar surede karar vermeyi planliyor?',
+      'Kira getirisi mi oncelikli, kendi kullanimi mi?',
+      'Nisantasi disinda degerlendirebilecegi semt var mi?',
+      'Odeme plani mi pesin mi dusunuyor?',
+    ],
+    suggestedAgenda: [
+      'Acilis: "Nisantasi tercihinizi konusalim — neden orasi sizin icin one cikiyor?"',
+      'Kullanim dengesini netlestir: yilda kac gun kendi kullanimi, kalani kira',
+      'Kisa donem vs uzun donem kiralama farkini sahadan ornekle anlat',
+      'Zaman ufkunu ve odeme tercihini ogren',
+      'Somut 2-3 secenek uzerinde anlasip bir sonraki adimi belirle',
+    ],
+    sensitivities: [
+      'Vatandaslik esigini zaten biliyor — anlatmaya kalkmak bilgisini kucumsemek olur',
+    ],
+    scoreRationale: 'Skor 75: butce net ve yuksek, bolge tercihi semt seviyesinde belirgin, sohbet aktif. Zaman ufku bilinmedigi ve odeme plani konusulmadigi icin 85+ degil.',
+  },
+  dossier: {
+    leadId: 'l1', contactId: 'c1', name: 'Onur Nazim Karatas',
+    email: 'onur@example.com', phone: '+905551112233', preferredLang: 'tr',
+    status: 'contacted', meetingAt: null, meetingTitle: null,
+    profile: {
+      marketCode: null, city: null, district: null, propertyType: null, rooms: null,
+      budgetMin: 1500000, budgetMax: 1500000, currency: 'USD',
+      timeline: null, investmentPurpose: 'cbi', interestType: 'invest',
+    },
+    extractedCriteria: { city: 'Istanbul', market: 'Turkiye', district: 'Nisantasi' },
+    notes: null,
+    scoreHistory: [{ score: 75, reasoning: 'Profil buyuk olcude tam.', signals: {}, source: 'n8n_ai', createdAt: new Date(mockNotifNow - 86400000).toISOString() }],
+    messages: Array.from({ length: 47 }, (_, i) => ({
+      direction: i % 2 === 0 ? 'inbound' : 'outbound', channel: 'whatsapp',
+      body: 'ornek mesaj ' + i, sentAt: new Date(mockNotifNow - (47 - i) * 3600000).toISOString(),
+    })),
+    proposals: [], pastMeetings: [],
+    flags: ['Daha once analiz maili gonderilmis (2026-07-18).'],
+  },
+};
+
 const mockNotifications: NotificationDTO[] = [
   { id: 'ev1', type: 'lead.created', kind: 'lead', label: 'Kudret Kalyoncuoğlu', occurredAt: new Date(mockNotifNow - 12 * 60000).toISOString(), unread: true },
   { id: 'ev2', type: 'meeting.created', kind: 'meeting', label: 'Yatırım Görüşmesi — Duygu Karataş', occurredAt: new Date(mockNotifNow - 3 * 3600000).toISOString(), unread: true },
@@ -1029,6 +1102,10 @@ export const handlers = [
   }),
 
   // Sosyal medya (002w) — module-level mutable; oturum içinde kalıcı.
+  // Görüşme hazırlık brifingi (mock)
+  http.get('/api/leads/:id/brief', () => HttpResponse.json(mockBrief)),
+  http.get('/api/leads/:id/dossier', () => HttpResponse.json(mockBrief.dossier)),
+  http.post('/api/leads/:id/brief/regenerate', () => HttpResponse.json(mockBrief)),
   // Denetim konsolu (super_admin)
   http.get('/api/admin/audit/actors', () =>
     HttpResponse.json([

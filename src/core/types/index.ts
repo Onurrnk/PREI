@@ -1067,3 +1067,74 @@ export interface ActivityFiltersInput {
   limit?: number;
   offset?: number;
 }
+
+
+// =====================================================================
+// GÃ¶rÃ¼ÅŸme hazÄ±rlÄ±k brifingi â€” danÄ±ÅŸman toplantÄ±ya hazÄ±r girsin.
+// =====================================================================
+export interface DossierMessageDTO {
+  direction: 'inbound' | 'outbound';
+  channel: string;
+  body: string;
+  sentAt: string;
+}
+
+export interface DossierScoreDTO {
+  score: number;
+  reasoning: string | null;
+  signals: Record<string, unknown>;
+  source: string;
+  createdAt: string;
+}
+
+export interface LeadDossierDTO {
+  leadId: string;
+  contactId: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  preferredLang: string | null;
+  status: string;
+  meetingAt: string | null;
+  meetingTitle: string | null;
+  profile: {
+    marketCode: string | null; city: string | null; district: string | null;
+    propertyType: string | null; rooms: string | null;
+    budgetMin: number | null; budgetMax: number | null; currency: string | null;
+    timeline: string | null; investmentPurpose: string | null; interestType: string | null;
+  };
+  extractedCriteria: Record<string, unknown> | null;
+  notes: string | null;
+  scoreHistory: DossierScoreDTO[];
+  messages: DossierMessageDTO[];
+  proposals: { title: string; status: string; totalValue: number | null; currency: string; sentAt: string | null }[];
+  pastMeetings: { title: string; dueDate: string; status: string }[];
+  flags: string[];
+}
+
+export interface MeetingBriefDTO {
+  headline: string;
+  whoIsThis: string;
+  topicsDiscussed: { topic: string; detail: string }[];
+  profileSummary: {
+    markets: string[]; regions: string[]; budget: string;
+    purpose: string; timeline: string; propertyPreference: string;
+  };
+  expectations: string[];
+  buyingSignals: string[];
+  riskSignals: string[];
+  openQuestions: string[];
+  suggestedAgenda: string[];
+  sensitivities: string[];
+  scoreRationale: string;
+}
+
+export interface BriefResultDTO {
+  ok: boolean;
+  message?: string;
+  brief?: MeetingBriefDTO;
+  dossier: LeadDossierDTO;
+  gaps: { field: string; question: string }[];
+  generatedAt?: string;
+  cached?: boolean;
+}

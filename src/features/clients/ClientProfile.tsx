@@ -18,6 +18,7 @@ import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import i18n from '../../core/i18n/config';
+import { MeetingBriefPanel } from './components/MeetingBriefPanel';
 import styles from './ClientProfile.module.css';
 
 // ---------------------------------------------------------------------
@@ -738,9 +739,18 @@ export const ClientProfile: React.FC = () => {
                 <span className={styles.notesHint}>{t('clients.profile.aiAnalysisHint')}</span>
               </CardHeader>
               <CardBody>
-                {(!analyses || analyses.length === 0) ? (
-                  <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('clients.profile.aiAnalysisEmpty')}</p>
-                ) : (
+                {/* Görüşme hazırlık brifingi: ne konuşuldu, profil, bölgeler,
+                    beklentiler ve toplantıda sorulacak sorular. */}
+                <MeetingBriefPanel leadId={id ?? null} />
+
+                {analyses && analyses.length > 0 && (
+                  <h4 style={{ margin: '24px 0 12px', fontSize: 12, fontWeight: 600,
+                               color: 'var(--text-muted)', textTransform: 'uppercase',
+                               letterSpacing: '0.06em' }}>
+                    {t('clients.profile.pastAnalyses')}
+                  </h4>
+                )}
+                {(!analyses || analyses.length === 0) ? null : (
                   analyses.map((a) => (
                     <div key={a.id} style={{ marginBottom: 24, paddingBottom: 20, borderBottom: '1px solid var(--border-subtle, rgba(128,128,128,0.15))' }}>
                       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>

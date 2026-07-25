@@ -76,6 +76,8 @@ import type {
   ActivityPageDTO,
   AuditActorDTO,
   ActivityFiltersInput,
+  BriefResultDTO,
+  LeadDossierDTO,
 } from '../types';
 
 export const authApi = {
@@ -237,6 +239,16 @@ export const auditConsoleApi = {
   actors: () => api.get<AuditActorDTO[]>('/api/admin/audit/actors'),
   entityHistory: (id: string) =>
     api.get<ActivityPageDTO['rows']>(`/api/admin/audit/entity/${id}`),
+};
+
+/** GÃ¶rÃ¼ÅŸme hazÄ±rlÄ±k brifingi â€” danÄ±ÅŸman toplantÄ±dan Ã¶nce okur. */
+export const meetingBriefApi = {
+  brief: (leadId: string) =>
+    api.get<BriefResultDTO>(`/api/leads/${leadId}/brief`),
+  dossier: (leadId: string) =>
+    api.get<LeadDossierDTO>(`/api/leads/${leadId}/dossier`),
+  regenerate: (leadId: string) =>
+    api.post<BriefResultDTO>(`/api/leads/${leadId}/brief/regenerate`, {}),
 };
 
 export const socialApi = {

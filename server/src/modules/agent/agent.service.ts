@@ -1059,17 +1059,49 @@ export class AgentService {
   async analysisCandidates(ctx: RequestContext): Promise<Array<{
     lead_id: string; contact_id: string; name: string; score: number | null;
     trigger: 'score' | 'meeting'; meeting_at: string | null;
+    // Aşağıdakiler n8n'in mailini zenginleştirir: aday listesinin kendisi
+    // bilgi taşısın, brifingi çekmeden önce neyle karşılaşacağı belli olsun.
+    message_count: number; inbound_count: number; last_message_at: string | null;
+    score_reasoning: string | null; criteria_summary: string | null;
+    budget: string | null; email: string | null; phone: string | null;
   }>> {
     return this.db.withContext(ctx, async (c) => {
       const { rows } = await c.query<{
         lead_id: string; contact_id: string; name: string; score: number | null;
         trigger: 'score' | 'meeting'; meeting_at: string | null;
+        message_count: string; inbound_count: string; last_message_at: string | null;
+        score_reasoning: string | null; criteria_summary: string | null;
+        budget: string | null; email: string | null; phone: string | null;
       }>(
         `SELECT l.id AS lead_id, ct.id AS contact_id,
                 trim(concat(ct.first_name, ' ', coalesce(ct.last_name, ''))) AS name,
                 l.score,
                 CASE WHEN m.due_date IS NOT NULL THEN 'meeting' ELSE 'score' END AS trigger,
-                m.due_date::text AS meeting_at
+                m.due_date::text AS meeting_at,
+                ct.email, ct.phone,
+                -- Konuşma hacmi: brifingin ne kadar dolu olacağının göstergesi
+                (SELECT count(*) FROM communications cm
+                  WHERE cm.lead_id = l.id AND cm.body IS NOT NULL AND cm.body <> '')::int AS message_count,
+                (SELECT count(*) FROM communications cm
+                  WHERE cm.lead_id = l.id AND cm.direction = 'inbound'
+                    AND cm.body IS NOT NULL AND cm.body <> '')::int AS inbound_count,
+                (SELECT max(COALESCE(cm.sent_at, cm.created_at))::text FROM communications cm
+                  WHERE cm.lead_id = l.id) AS last_message_at,
+                -- Skorun GEREKÇESİ: "75" demek yetmez, neden 75 olduğu lazım
+                (SELECT ls.reasoning FROM lead_scores ls
+                  WHERE ls.lead_id = l.id ORDER BY ls.created_at DESC LIMIT 1) AS score_reasoning,
+                -- Eylül'ün sohbetten çıkardığı kriterler tek satırda
+                NULLIF(concat_ws(' · ',
+                  NULLIF(l.metadata->'criteria'->>'market', ''),
+                  NULLIF(l.metadata->'criteria'->>'city', ''),
+                  NULLIF(l.metadata->'criteria'->>'district', ''),
+                  NULLIF(l.metadata->'criteria'->>'purpose', '')), '') AS criteria_summary,
+                CASE
+                  WHEN l.budget_min IS NULL AND l.budget_max IS NULL THEN NULL
+                  WHEN l.budget_min = l.budget_max THEN concat(l.budget_min::bigint, ' ', l.currency)
+                  ELSE concat(coalesce(l.budget_min::bigint::text,'?'), '-',
+                              coalesce(l.budget_max::bigint::text,'?'), ' ', l.currency)
+                END AS budget
            FROM leads l
            JOIN contacts ct ON ct.id = l.contact_id
            LEFT JOIN LATERAL (
@@ -1087,7 +1119,14 @@ export class AgentService {
           LIMIT 20`,
         [ctx.tenantId],
       );
-      return rows;
+      return rows.map((r) => ({
+        lead_id: r.lead_id, contact_id: r.contact_id, name: r.name, score: r.score,
+        trigger: r.trigger, meeting_at: r.meeting_at,
+        message_count: Number(r.message_count), inbound_count: Number(r.inbound_count),
+        last_message_at: r.last_message_at, score_reasoning: r.score_reasoning,
+        criteria_summary: r.criteria_summary, budget: r.budget,
+        email: r.email, phone: r.phone,
+      }));
     });
   }
 
