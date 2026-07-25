@@ -66,10 +66,15 @@ export class MarketingController {
     return { deleted: true as const };
   }
 
-  /** Manuel Meta senkronu (UI "Meta'dan Çek" butonu) — kullanıcı yetkisiyle. */
+  /** Manuel Meta senkronu (UI "Meta'dan Çek" butonu) — reklam + sosyal birlikte. */
   @Post('meta-sync')
-  metaSync(@Ctx() ctx: RequestContext, @Query('datePreset') datePreset?: string) {
-    return this.marketing.syncMeta(ctx, datePreset || 'last_30d');
+  async metaSync(@Ctx() ctx: RequestContext, @Query('datePreset') datePreset?: string) {
+    const ads = await this.marketing.syncMeta(ctx, datePreset || 'last_30d');
+    const social = await this.social.syncFromMeta(ctx).catch((e) => ({
+      ok: false, configured: true, pagesFound: 0, snapshots: 0, postsUpserted: 0,
+      message: e instanceof Error ? e.message : String(e),
+    }));
+    return { ...ads, social };
   }
 
   // ---- Sosyal medya (002w): takipçi anlık görüntüleri + paylaşımlar ----

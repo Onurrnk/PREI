@@ -1058,7 +1058,7 @@ export const en = {
       spendByMarket: 'Spend by Market',
       social: {
         title: 'Social Media',
-        hint: 'Manual entry — the same tables auto-fill once APIs are connected.',
+        hint: 'Instagram/Facebook sync automatically every day (Meta). Other platforms are entered manually.',
         updateFollowers: 'Update Follower Count',
         platform: 'Platform',
         followerCount: 'Follower Count',

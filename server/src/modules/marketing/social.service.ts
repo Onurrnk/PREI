@@ -4,10 +4,22 @@
 // sayfası) veya ileride n8n/API ile girilir — ad_spend ile aynı desen.
 // Büyüme: platformun SON kaydı vs ~30 gün önceki en yakın kaydı.
 // =====================================================================
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DatabaseService } from '../../database/database.service';
 import type { RequestContext } from '../../common/request-context';
+import type { AppConfig } from '../../config/configuration';
 import type { CreateSocialPostDto, UpsertFollowersDto } from './dto/social.dto';
+import { fetchSocialPages, fetchIgPosts } from './meta-ads';
+
+export interface SocialMetaSyncResult {
+  ok: boolean;
+  configured: boolean;
+  pagesFound: number;
+  snapshots: number;          // yazılan takipçi kaydı sayısı
+  postsUpserted: number;
+  message?: string;           // 'skipped' nedeni (sayfa atanmamış vb.)
+}
 
 export interface SocialPlatformStat {
   platform: string;
@@ -44,7 +56,94 @@ export function pctDelta(current: number, previous: number | null): number | nul
 
 @Injectable()
 export class SocialService {
-  constructor(private readonly db: DatabaseService) {}
+  private readonly logger = new Logger(SocialService.name);
+
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly config: ConfigService<AppConfig, true>,
+  ) {}
+
+  /**
+   * Meta Graph'tan OTOMATİK sosyal senkron: Facebook sayfası + bağlı Instagram
+   * business hesabının takipçi sayıları (bugünün snapshot'ı) ve son IG
+   * paylaşımları (beğeni+yorum → engagements; post_ref ile upsert — elle
+   * girilen leads değeri EZİLMEZ). Sayfa, Business Manager'da PREI CRM sistem
+   * kullanıcısına atanmamışsa dürüstçe 'skipped' döner (hata değil).
+   */
+  async syncFromMeta(ctx: RequestContext): Promise<SocialMetaSyncResult> {
+    const meta = this.config.get('metaAds', { infer: true });
+    if (!meta.accessToken) {
+      return { ok: false, configured: false, pagesFound: 0, snapshots: 0, postsUpserted: 0, message: 'META_ADS_ACCESS_TOKEN tanımlı değil' };
+    }
+
+    const pages = await fetchSocialPages(meta.accessToken, meta.apiVersion);
+    if (pages.length === 0) {
+      return {
+        ok: true, configured: true, pagesFound: 0, snapshots: 0, postsUpserted: 0,
+        message: 'Erişilebilir sayfa yok — Business Manager > Sistem Kullanıcıları > PREI CRM altına Facebook sayfasını atayın.',
+      };
+    }
+
+    let snapshots = 0;
+    let postsUpserted = 0;
+
+    await this.db.withContext(ctx, async (c) => {
+      for (const p of pages) {
+        if (p.fbFollowers != null) {
+          await c.query(
+            `INSERT INTO social_follower_snapshots (tenant_id, platform, followers, snapshot_date, metadata, created_by)
+             VALUES ($1,'facebook',$2,current_date,$3,$4)
+             ON CONFLICT (tenant_id, platform, snapshot_date)
+             DO UPDATE SET followers = EXCLUDED.followers, metadata = EXCLUDED.metadata`,
+            [ctx.tenantId, p.fbFollowers, JSON.stringify({ source: 'meta_sync', page: p.pageName }), ctx.userId],
+          );
+          snapshots++;
+        }
+        if (p.igId && p.igFollowers != null) {
+          await c.query(
+            `INSERT INTO social_follower_snapshots (tenant_id, platform, followers, snapshot_date, metadata, created_by)
+             VALUES ($1,'instagram',$2,current_date,$3,$4)
+             ON CONFLICT (tenant_id, platform, snapshot_date)
+             DO UPDATE SET followers = EXCLUDED.followers, metadata = EXCLUDED.metadata`,
+            [ctx.tenantId, p.igFollowers, JSON.stringify({ source: 'meta_sync', username: p.igUsername }), ctx.userId],
+          );
+          snapshots++;
+        }
+
+        // Son IG paylaşımları — post_ref ile upsert; elle girilen leads korunur.
+        if (p.igId) {
+          const posts = await fetchIgPosts(meta.accessToken, meta.apiVersion, p.igId).catch((e) => {
+            this.logger.warn(`IG media çekilemedi (${p.igUsername ?? p.igId}): ${(e as Error).message}`);
+            return [];
+          });
+          for (const m of posts) {
+            const res = await c.query(
+              `UPDATE social_posts SET
+                 title = $3, url = $4, impressions = GREATEST(impressions, $5),
+                 engagements = $6, updated_by = $7, metadata = metadata || $8::jsonb
+               WHERE tenant_id = $1 AND post_ref = $2 AND deleted_at IS NULL`,
+              [ctx.tenantId, m.postRef, m.caption, m.permalink,
+               0, m.likeCount + m.commentsCount, ctx.userId,
+               JSON.stringify({ source: 'meta_sync', likes: m.likeCount, comments: m.commentsCount })],
+            );
+            if ((res.rowCount ?? 0) === 0) {
+              await c.query(
+                `INSERT INTO social_posts (tenant_id, platform, title, url, post_ref, posted_at, impressions, engagements, leads, metadata, created_by, updated_by)
+                 VALUES ($1,'instagram',$2,$3,$4,$5::date,0,$6,0,$7,$8,$8)`,
+                [ctx.tenantId, m.caption, m.permalink, m.postRef, m.timestamp.slice(0, 10),
+                 m.likeCount + m.commentsCount,
+                 JSON.stringify({ source: 'meta_sync', likes: m.likeCount, comments: m.commentsCount }), ctx.userId],
+              );
+            }
+            postsUpserted++;
+          }
+        }
+      }
+    });
+
+    this.logger.log(`Sosyal senkron: ${pages.length} sayfa, ${snapshots} snapshot, ${postsUpserted} paylaşım`);
+    return { ok: true, configured: true, pagesFound: pages.length, snapshots, postsUpserted };
+  }
 
   async summary(ctx: RequestContext): Promise<SocialSummary> {
     return this.db.withContext(ctx, async (c) => {

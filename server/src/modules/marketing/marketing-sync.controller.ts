@@ -9,14 +9,25 @@ import { AgentKeyGuard } from '../../auth/agent-key.guard';
 import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { MarketingService } from './marketing.service';
+import { SocialService } from './social.service';
 
 @Controller('marketing/sync')
 @UseGuards(AgentKeyGuard)
 export class MarketingSyncController {
-  constructor(private readonly marketing: MarketingService) {}
+  constructor(
+    private readonly marketing: MarketingService,
+    private readonly social: SocialService,
+  ) {}
 
+  /** Günlük senkron: reklam harcaması + sosyal (takipçi/paylaşım) birlikte.
+   *  Sosyal senkron hatası reklam senkronunu BOZMAZ (best-effort). */
   @Post('meta')
-  meta(@Ctx() ctx: RequestContext, @Query('datePreset') datePreset?: string) {
-    return this.marketing.syncMeta(ctx, datePreset || 'last_30d');
+  async meta(@Ctx() ctx: RequestContext, @Query('datePreset') datePreset?: string) {
+    const ads = await this.marketing.syncMeta(ctx, datePreset || 'last_30d');
+    const social = await this.social.syncFromMeta(ctx).catch((e) => ({
+      ok: false, configured: true, pagesFound: 0, snapshots: 0, postsUpserted: 0,
+      message: e instanceof Error ? e.message : String(e),
+    }));
+    return { ...ads, social };
   }
 }

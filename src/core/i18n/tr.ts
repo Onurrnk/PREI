@@ -1056,7 +1056,7 @@ export const tr = {
       spendByMarket: 'Pazara Göre Harcama',
       social: {
         title: 'Sosyal Medya',
-        hint: 'Elle giriş — API bağlanınca aynı tablolar otomatik beslenir.',
+        hint: 'Instagram/Facebook günlük otomatik senkronlanır (Meta). Diğer platformlar elle girilir.',
         updateFollowers: 'Takipçi Sayısını Güncelle',
         platform: 'Platform',
         followerCount: 'Takipçi Sayısı',
