@@ -717,7 +717,7 @@ export const handlers = [
       byCountry.set(t.countryCode, e);
     }
     return HttpResponse.json([...byCountry.entries()].map(([code, e]) => ({
-      countryCode: code, countryName: e.name,
+      countryCode: code, countryName: e.name, countryNameEn: e.name,
       contacts: e.contacts.size, regions: [...e.regions],
     })));
   }),

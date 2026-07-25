@@ -30,6 +30,7 @@ import type { DashboardSummaryDTO, MeetingDTO, TaskDTO, SocialSummaryDTO } from 
 import { dashboardApi, meetingsApi, tasksApi, socialApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { useTranslation } from 'react-i18next';
+import { DemandByCountry } from './components/DemandByCountry';
 import styles from './Dashboard.module.css';
 
 // ---------------------------------------------------------------------
@@ -234,6 +235,9 @@ export const Dashboard: React.FC = () => {
               </div>
             )}
           </Card>
+
+          {/* NEREDEN değil NEREYE: müşteri coğrafyası kartının karşılığı (003g) */}
+          <DemandByCountry />
 
           <Card padding="md">
             <div className={styles.cardTitleRow}>

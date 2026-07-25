@@ -274,6 +274,14 @@ export const tr = {
       pipelineMomentum: 'Pipeline İvmesi',
       portfolioByMarket: 'Pazara Göre Portföy',
       leadSources: 'Geliş Kanalları',
+      demand: {
+        title: 'Talep Edilen Pazarlar',
+        meta: '{{countries}} ülke · {{people}} kişi',
+        people_one: '{{count}} kişi',
+        people_other: '{{count}} kişi',
+        emptyTitle: 'Yatırım hedefi kaydı yok',
+        emptyDesc: 'Müşteri kartındaki "Yatırım hedefleri" bölümünden ülke ve bölge girin; Eylül görüşmeden çıkardığında da buraya düşer.',
+      },
       geo: {
         title: 'Müşteri Coğrafyası',
         countries: 'ülke',

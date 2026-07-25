@@ -1,0 +1,92 @@
+/* =====================================================================
+   DemandByCountry — talep edilen pazarlar.
+   Bar oransal: en çok talep alan ülke tam genişlik. Bölgeler barın
+   altında soluk; ülke adı öne çıkar.
+   ===================================================================== */
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.titleIcon { color: var(--color-primary-purple); }
+
+.meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.emptyWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row { display: flex; flex-direction: column; gap: 4px; }
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.flag { font-size: 0.9375rem; line-height: 1; }
+
+.country {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.count {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.track {
+  height: 6px;
+  border-radius: 999px;
+  background-color: var(--bg-app);
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  border-radius: 999px;
+  background-color: var(--color-primary-purple);
+}
+
+.regions {
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

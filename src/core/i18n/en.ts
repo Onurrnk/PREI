@@ -275,6 +275,14 @@ export const en = {
       pipelineMomentum: 'Pipeline Momentum',
       portfolioByMarket: 'Portfolio by Market',
       leadSources: 'Arrival Channels',
+      demand: {
+        title: 'Demanded Markets',
+        meta: '{{countries}} countries · {{people}} people',
+        people_one: '{{count}} person',
+        people_other: '{{count}} people',
+        emptyTitle: 'No investment targets recorded',
+        emptyDesc: 'Add a country and region from "Investment targets" on the client card; Eylül also fills this in from conversations.',
+      },
       geo: {
         title: 'Client Geography',
         countries: 'countries',

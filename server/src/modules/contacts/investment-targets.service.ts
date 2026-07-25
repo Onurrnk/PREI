@@ -86,9 +86,12 @@ export function toTarget(row: InvestmentTargetRow): InvestmentTargetResponse {
 export class InvestmentTargetsService {
   constructor(private readonly db: DatabaseService) {}
 
-  /** Seçilebilir ülke listesi — arayüz bunu kullanır, elle yazım olmaz. */
-  countries(): Array<{ code: string; name: string }> {
-    return COUNTRIES.map((c) => ({ code: c.code, name: c.tr }))
+  /**
+   * Seçilebilir ülke listesi — arayüz bunu kullanır, elle yazım olmaz.
+   * İki dil de döner: arayüz İngilizce'yken Türkçe ad görünmesin.
+   */
+  countries(): Array<{ code: string; name: string; nameEn: string }> {
+    return COUNTRIES.map((c) => ({ code: c.code, name: c.tr, nameEn: c.en }))
       .sort((a, b) => a.name.localeCompare(b.name, 'tr'));
   }
 
@@ -252,7 +255,10 @@ export class InvestmentTargetsService {
   /** Ülke bazında kaç kişi arıyor — "İspanya'da kaç müşterim var" sorusu. */
   async byCountry(
     ctx: RequestContext,
-  ): Promise<Array<{ countryCode: string; countryName: string; contacts: number; regions: string[] }>> {
+  ): Promise<Array<{
+    countryCode: string; countryName: string; countryNameEn: string;
+    contacts: number; regions: string[];
+  }>> {
     return this.db.withContext(ctx, async (c) => {
       const { rows } = await c.query<{
         country_code: string; contacts: string; regions: string[];
@@ -268,6 +274,7 @@ export class InvestmentTargetsService {
       return rows.map((r) => ({
         countryCode: r.country_code,
         countryName: countryByCode(r.country_code)?.tr ?? r.country_code,
+        countryNameEn: countryByCode(r.country_code)?.en ?? r.country_code,
         contacts: Number(r.contacts),
         regions: r.regions ?? [],
       }));

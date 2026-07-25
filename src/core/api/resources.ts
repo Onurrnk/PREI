@@ -162,7 +162,8 @@ export const contactsApi = {
 
   // Yatırım hedefleri (003g) — ülke listeden seçilir, serbest yazım yok.
   investmentCountries: () =>
-    api.get<Array<{ code: string; name: string }>>('/api/contacts/investment-countries'),
+    api.get<Array<{ code: string; name: string; nameEn?: string }>>(
+      '/api/contacts/investment-countries'),
   investmentTargets: (contactId: string) =>
     api.get<InvestmentTargetDTO[]>(`/api/contacts/${contactId}/investment-targets`),
   addInvestmentTarget: (contactId: string, input: InvestmentTargetInput) =>
@@ -173,8 +174,10 @@ export const contactsApi = {
     api.delete<{ deleted: true }>(`/api/contacts/investment-targets/${targetId}`),
   /** Ülke bazında talep dağılımı. */
   investmentSummary: () =>
-    api.get<Array<{ countryCode: string; countryName: string; contacts: number; regions: string[] }>>(
-      '/api/contacts/investment-targets/summary'),
+    api.get<Array<{
+      countryCode: string; countryName: string; countryNameEn?: string;
+      contacts: number; regions: string[];
+    }>>('/api/contacts/investment-targets/summary'),
 };
 
 export const leadsApi = {
