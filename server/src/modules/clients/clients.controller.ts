@@ -2,7 +2,7 @@
 // PREI | ClientsController — /api/clients (müşteri dizini + profil güncelleme). 'clients' izni.
 // =====================================================================
 import {
-  Controller, Get, Patch, Post, Body, Param, ParseUUIDPipe, Query,
+  BadRequestException, Controller, Get, Patch, Post, Body, Param, ParseUUIDPipe, Query,
   DefaultValuePipe, ParseIntPipe, UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -11,6 +11,7 @@ import { RequirePermission } from '../../common/require-permission.decorator';
 import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { ClientsService } from './clients.service';
+import { ENGAGEMENTS, type Engagement } from './engagement';
 import { UpdateClientDto } from './dto/client-update.dto';
 import { CreateClientNoteDto } from './dto/client-note.dto';
 
@@ -41,6 +42,20 @@ export class ClientsController {
     @Body() dto: UpdateClientDto,
   ) {
     return this.clients.update(ctx, id, dto);
+  }
+
+  /** Sıcak / normal / dondurulmuş ataması (madde 25). */
+  @Patch(':id/engagement')
+  setEngagement(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { engagement?: string },
+  ) {
+    const e = body?.engagement as Engagement;
+    if (!ENGAGEMENTS.includes(e)) {
+      throw new BadRequestException(`Geçersiz durum. Beklenen: ${ENGAGEMENTS.join(', ')}`);
+    }
+    return this.clients.setEngagement(ctx, id, e);
   }
 
   @Get(':id/notes')

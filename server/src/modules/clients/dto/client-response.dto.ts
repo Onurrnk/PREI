@@ -6,6 +6,8 @@
 import type { ClientRow } from '../clients.repository';
 
 import type { InvestmentTargetResponse } from '../../contacts/investment-targets.service';
+import { countryFromPhone } from '../../../common/phone-country';
+import type { Engagement } from '../engagement';
 
 export interface ClientResponse {
   id: string;
@@ -43,6 +45,11 @@ export interface ClientResponse {
    * investment_targets tablosundan gelir ve ülke kodu taşır.
    */
   investmentTargets: InvestmentTargetResponse[];
+  /** Sıcak / normal / dondurulmuş — leads.status+priority'den okunur (madde 25). */
+  engagement: Engagement;
+  /** Telefon alan kodundan çıkarılan ülke — İPUCU, kesin veri değil (madde 26). */
+  phoneCountryCode: string | null;
+  phoneCountryName: string | null;
 }
 
 function str(v: unknown, fallback = ''): string {
@@ -100,6 +107,8 @@ export function toClientResponse(row: ClientRow): ClientResponse {
   const manualRegions = arr(m.preferred_regions);
   const leadRegions = [str(cr.market), str(cr.city), str(cr.district)].filter(Boolean);
   const preferredRegions = manualRegions.length > 0 ? manualRegions : leadRegions;
+  // Telefon ülkesi: alan kodundan çıkarılır, çözülemezse null kalır.
+  const phoneCountry = countryFromPhone(row.phone);
 
   const leadReq = [
     str(cr.special_requests) || null,
@@ -129,6 +138,10 @@ export function toClientResponse(row: ClientRow): ClientResponse {
     preferredRegions,
     // Servis katmanı dolduruyor; mapper tek satır bilmiyor (N+1 olmasın).
     investmentTargets: [],
+    // Servis katmanı dolduruyor (lead durumu ayrı sorgu).
+    engagement: 'normal',
+    phoneCountryCode: phoneCountry?.countryCode ?? null,
+    phoneCountryName: phoneCountry?.countryName ?? null,
     investmentProfile: str(m.investment_profile, 'Balanced'),
     source: str(m.source, '—'),
     relationshipStatus: str(m.relationship_status, 'Active'),

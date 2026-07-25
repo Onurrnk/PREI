@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ClientsRepository } from './clients.repository';
 import { InvestmentTargetsService } from '../contacts/investment-targets.service';
+import { readEngagement, applyEngagement, type Engagement } from './engagement';
 import type { RequestContext } from '../../common/request-context';
 import { toClientResponse, type ClientResponse } from './dto/client-response.dto';
 import type { UpdateClientDto } from './dto/client-update.dto';
@@ -18,8 +19,13 @@ export class ClientsService {
     const rows = await this.repo.list(ctx, limit, offset);
     const clients = rows.map(toClientResponse);
     // Hedefler tek sorguda gelir — müşteri başına ayrı istek yapılmaz.
-    const byContact = await this.targets.listForContacts(ctx, clients.map((c) => c.id));
-    for (const c of clients) c.investmentTargets = byContact.get(c.id) ?? [];
+    const ids = clients.map((c) => c.id);
+    const byContact = await this.targets.listForContacts(ctx, ids);
+    const leadStates = await this.repo.leadStatesFor(ctx, ids);
+    for (const c of clients) {
+      c.investmentTargets = byContact.get(c.id) ?? [];
+      c.engagement = readEngagement(leadStates.get(c.id) ?? null);
+    }
     return clients;
   }
 
@@ -28,7 +34,28 @@ export class ClientsService {
     if (!row) throw new NotFoundException();
     const client = toClientResponse(row);
     client.investmentTargets = await this.targets.listForContact(ctx, client.id);
+    const states = await this.repo.leadStatesFor(ctx, [client.id]);
+    client.engagement = readEngagement(states.get(client.id) ?? null);
     return client;
+  }
+
+  /**
+   * Sıcak / normal / dondurulmuş ataması (madde 25).
+   * Tek kontrol, iki mevcut alana (status + priority) yazar.
+   */
+  async setEngagement(
+    ctx: RequestContext, contactId: string, next: Engagement,
+  ): Promise<ClientResponse> {
+    const states = await this.repo.leadStatesFor(ctx, [contactId]);
+    const current = states.get(contactId);
+    if (!current) {
+      throw new NotFoundException('Bu müşteriye bağlı aday kaydı yok.');
+    }
+    const patch = applyEngagement(current, next);
+    if (Object.keys(patch).length > 0) {
+      await this.repo.patchLatestLead(ctx, contactId, patch);
+    }
+    return this.findOne(ctx, contactId);
   }
 
   async update(ctx: RequestContext, id: string, dto: UpdateClientDto): Promise<ClientResponse> {

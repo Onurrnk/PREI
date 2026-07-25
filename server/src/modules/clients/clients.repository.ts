@@ -266,4 +266,61 @@ export class ClientsRepository {
       [ctx.tenantId, entityId, action, JSON.stringify(diff), ctx.correlationId, ctx.userId],
     );
   }
+
+  /**
+   * Kişi başına EN SON lead'in durum/öncelik bilgisi.
+   * Sıcak/dondurulmuş göstergesi buradan okunuyor (madde 25); liste
+   * ekranı için toplu, N+1 yapmaz.
+   */
+  async leadStatesFor(
+    ctx: RequestContext, contactIds: string[],
+  ): Promise<Map<string, { status: string; priority: string }>> {
+    if (contactIds.length === 0) return new Map();
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ contact_id: string; status: string; priority: string }>(
+        `SELECT DISTINCT ON (l.contact_id)
+                l.contact_id, l.status::text AS status, l.priority::text AS priority
+           FROM leads l
+          WHERE l.contact_id = ANY($1::uuid[]) AND l.deleted_at IS NULL
+          ORDER BY l.contact_id, l.updated_at DESC`,
+        [contactIds],
+      );
+      return new Map(rows.map((r) => [r.contact_id, { status: r.status, priority: r.priority }]));
+    });
+  }
+
+  /** En son lead'in durum/önceliğini günceller (sıcak/dondurulmuş ataması). */
+  async patchLatestLead(
+    ctx: RequestContext, contactId: string,
+    patch: { status?: string; priority?: string },
+  ): Promise<void> {
+    await this.db.withContext(ctx, async (c) => {
+      const sets: string[] = [];
+      const params: unknown[] = [contactId];
+      if (patch.status) { params.push(patch.status); sets.push(`status = $${params.length}::lead_status`); }
+      if (patch.priority) { params.push(patch.priority); sets.push(`priority = $${params.length}::priority_level`); }
+      if (sets.length === 0) return;
+      params.push(ctx.userId);
+      sets.push(`updated_by = $${params.length}`);
+
+      const { rows } = await c.query<{ id: string }>(
+        `UPDATE leads SET ${sets.join(', ')}
+          WHERE id = (
+            SELECT id FROM leads
+             WHERE contact_id = $1 AND deleted_at IS NULL
+             ORDER BY updated_at DESC LIMIT 1
+          )
+          RETURNING id`,
+        params,
+      );
+      if (rows[0]) {
+        await c.query(
+          `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+           VALUES ($1,$2,'lead.engagement_changed','lead',$3,$4,$5)`,
+          [ctx.tenantId, ctx.userId, rows[0].id, JSON.stringify(patch), ctx.correlationId],
+        );
+      }
+    });
+  }
+
 }

@@ -530,7 +530,15 @@ export const tr = {
         types: { investor: 'Yatırımcı', endUser: 'Son Kullanıcı', corporate: 'Kurumsal' },
         sources: { website: 'Web Sitesi', referral: 'Referans', event: 'Etkinlik / Fuar', campaign: 'Pazarlama Kampanyası' },
       },
-      profile: {
+      engagement: {
+      label: 'Müşteri durumu',
+      hot: 'Sıcak',
+      normal: 'Normal',
+      frozen: 'Dondurulmuş',
+      saved: { hot: 'Sıcak müşteri olarak işaretlendi', normal: 'Normal olarak işaretlendi', frozen: 'Donduruldu — yalnız kriterine uyan yeni proje bildirilecek' },
+    },
+    profile: {
+      writesFrom: 'Telefon ülkesi: {{country}}',
         gallery: {
         removeImage: 'Görseli kaldır',
         removeTitle: 'Görseli kaldır',

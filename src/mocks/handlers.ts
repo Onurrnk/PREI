@@ -456,6 +456,7 @@ const mockTimelineByClient: Record<string, ClientTimelineEntryDTO[]> = {
 const mockClients: ClientDTO[] = [
       {
         id: '1', clientId: 'CL-10024', name: 'Oliver Hartwell', type: 'VIP', nationality: 'UK',
+        engagement: 'hot', phoneCountryCode: 'GB', phoneCountryName: 'İngiltere',
         email: 'o.hartwell@hartwellestates.co.uk', phone: '+44 7700 900077', totalInvestment: 4500000,
         activeProperties: 3, preferredRegions: ['Dubai Marina', 'Downtown Dubai'],
         investmentProfile: 'Balanced', source: 'Referral', relationshipStatus: 'Active',
@@ -708,6 +709,18 @@ const MOCK_COUNTRIES = [
 ];
 
 export const handlers = [
+  // Sıcak / normal / dondurulmuş ataması (madde 25) — oturum-içi kalıcı.
+  http.patch('/api/clients/:id/engagement', async ({ params, request }) => {
+    const b = (await request.json()) as { engagement?: string };
+    const c = mockClients.find((x) => x.id === params.id);
+    if (!c) return new HttpResponse(null, { status: 404 });
+    if (!['hot', 'normal', 'frozen'].includes(b.engagement ?? '')) {
+      return HttpResponse.json({ message: 'Geçersiz durum.' }, { status: 400 });
+    }
+    c.engagement = b.engagement as ClientDTO['engagement'];
+    return HttpResponse.json<ClientDTO>(c);
+  }),
+
   // Yatırım hedefleri (003g) — ülke listeden seçilir, serbest yazım yok.
   http.get('/api/contacts/investment-countries', () => HttpResponse.json(MOCK_COUNTRIES)),
 

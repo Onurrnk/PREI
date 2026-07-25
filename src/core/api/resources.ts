@@ -199,6 +199,9 @@ export const clientsApi = {
   addNote: (id: string, body: CreateClientNoteInput) =>
     api.post<ClientNoteDTO>(`/api/clients/${id}/notes`, body),
   timeline: (id: string) => api.get<ClientTimelineEntryDTO[]>(`/api/clients/${id}/timeline`),
+  /** Sıcak / normal / dondurulmuş ataması (madde 25). */
+  setEngagement: (id: string, engagement: 'hot' | 'normal' | 'frozen') =>
+    api.patch<ClientDTO>(`/api/clients/${id}/engagement`, { engagement }),
   analyses: (id: string) => api.get<ClientAnalysisDTO[]>(`/api/clients/${id}/analyses`),
   /**
    * KALICI silme — client id = contact id; kişi + tüm lead'leri + iletişim

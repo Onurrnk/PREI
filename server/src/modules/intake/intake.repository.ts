@@ -428,7 +428,8 @@ export class IntakeRepository {
                           AND c.marketing_consent = true
                           AND c.email IS NOT NULL AND c.email <> ''
            JOIN LATERAL (
-             SELECT l.target_market_code, l.budget_min, l.budget_max, l.currency AS lead_currency
+             SELECT l.target_market_code, l.budget_min, l.budget_max,
+                    l.currency AS lead_currency, l.status::text AS status
                FROM leads l
               WHERE l.contact_id = c.id AND l.deleted_at IS NULL
               ORDER BY l.updated_at DESC LIMIT 1
@@ -438,7 +439,21 @@ export class IntakeRepository {
             AND (p.metadata->>'source') = 'developer_submission'
             AND p.created_at > now() - interval '30 days'
             AND p.market_code IS NOT NULL
-            AND ll.target_market_code = p.market_code
+            -- Eşleşme investment_targets üzerinden (003g). target_market_code
+            -- canlıda HER kayıtta boştu; bu yüzden bildirim hiç çalışmıyordu.
+            -- Eski alan hâlâ doluysa o da kabul edilir (geri uyum).
+            AND (
+              EXISTS (
+                SELECT 1 FROM investment_targets it
+                 WHERE it.contact_id = c.id AND it.deleted_at IS NULL
+                   AND it.country_code = p.market_code
+              )
+              OR ll.target_market_code = p.market_code
+            )
+            -- Kaybedilmiş/uygunsuz adaya proje maili gitmez. Dondurulmuş
+            -- (frozen) müşteri BİLEREK dahil: madde 25 — iletişimi kesmiş
+            -- müşteriye yalnız kriterine uyan yeni proje haber verilir.
+            AND ll.status NOT IN ('lost', 'unqualified', 'converted')
             AND (
               ll.lead_currency IS DISTINCT FROM p.currency
               OR (

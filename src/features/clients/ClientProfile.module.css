@@ -902,3 +902,58 @@
   line-height: 1.55;
   color: var(--text-secondary);
 }
+
+/* =====================================================================
+   Sıcak / normal / dondurulmuş seçici (madde 25) + geldiği ülke (madde 26).
+   Seçili durum renkle ayrışır: sıcak amber, dondurulmuş mavi-gri.
+   ===================================================================== */
+
+.engagementGroup {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+}
+
+.engBtn, .eng_hot, .eng_normal, .eng_frozen {
+  padding: 3px 10px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.engBtn:hover { color: var(--text-primary); }
+.engBtn:disabled, .eng_hot:disabled, .eng_normal:disabled, .eng_frozen:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.eng_hot {
+  background: rgba(201, 148, 65, 0.16);
+  color: #C99441;
+}
+
+.eng_normal {
+  background: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.eng_frozen {
+  background: rgba(91, 141, 184, 0.18);
+  color: #5B8DB8;
+}
+
+/* Telefon kodundan çıkarılan ülke — ipucu olduğu için soluk. */
+.originLine {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}

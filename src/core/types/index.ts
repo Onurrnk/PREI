@@ -525,6 +525,11 @@ export interface ClientDTO {
   preferredRegions: string[];
   /** Yapılandırılmış yatırım hedefleri — ülke kodu + bölge (003g). */
   investmentTargets?: InvestmentTargetDTO[];
+  /** Sıcak / normal / dondurulmuş (madde 25). */
+  engagement?: 'hot' | 'normal' | 'frozen';
+  /** Telefon alan kodundan çıkarılan ülke — ipucu, kesin veri değil (madde 26). */
+  phoneCountryCode?: string | null;
+  phoneCountryName?: string | null;
   investmentProfile: 'Conservative' | 'Balanced' | 'Aggressive';
   source: string;
   relationshipStatus: 'Active' | 'Dormant' | 'Churned';

@@ -531,7 +531,15 @@ export const en = {
         types: { investor: 'Investor', endUser: 'End-User', corporate: 'Corporate' },
         sources: { website: 'Website', referral: 'Referral', event: 'Event / Exhibition', campaign: 'Marketing Campaign' },
       },
-      profile: {
+      engagement: {
+      label: 'Client status',
+      hot: 'Hot',
+      normal: 'Normal',
+      frozen: 'Frozen',
+      saved: { hot: 'Marked as hot client', normal: 'Marked as normal', frozen: 'Frozen — only matching new projects will be sent' },
+    },
+    profile: {
+      writesFrom: 'Phone country: {{country}}',
         gallery: {
         removeImage: 'Remove image',
         removeTitle: 'Remove image',

@@ -356,6 +356,22 @@ export const ClientProfile: React.FC = () => {
 
   // E-posta: entegre Mail sekmesini açar (markalı Gmail kompozörü orada) —
   // masaüstünde işe yaramayan mailto: yerine uygulama-içi gerçek eylem.
+  const [savingEngagement, setSavingEngagement] = useState(false);
+  const changeEngagement = async (e: 'hot' | 'normal' | 'frozen') => {
+    if (!client || client.engagement === e) return;
+    setSavingEngagement(true);
+    try {
+      const updated = await clientsApi.setEngagement(client.id, e);
+      // Sayfa yerel override deseni kullanıyor; sunucudan dönen kaydı uygula.
+      setOverrides((prev) => ({ ...prev, engagement: updated.engagement }));
+      toast.success(t(`clients.engagement.saved.${e}`));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('common.error'));
+    } finally {
+      setSavingEngagement(false);
+    }
+  };
+
   const emailClient = () => {
     if (!client) return;
     if (!client.email || client.email === '—') { toast.info(t('clients.profile.flagEmailMissing')); return; }
@@ -452,7 +468,29 @@ export const ClientProfile: React.FC = () => {
               <span className={`${styles.statusBadge} ${styles[client.relationshipStatus.toLowerCase()]}`}>
                 {client.relationshipStatus}
               </span>
+              {/* Sıcak / dondurulmuş (madde 25) — tek kontrol, altta lead
+                  durumu+önceliğine yazılıyor. */}
+              <div className={styles.engagementGroup} role="group" aria-label={t('clients.engagement.label')}>
+                {(['hot', 'normal', 'frozen'] as const).map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    className={(client.engagement ?? 'normal') === e ? styles[`eng_${e}`] : styles.engBtn}
+                    disabled={savingEngagement}
+                    onClick={() => void changeEngagement(e)}
+                  >
+                    {t(`clients.engagement.${e}`)}
+                  </button>
+                ))}
+              </div>
             </div>
+            {/* Nereden yazıyor (telefon kodu) — nereye yatırım yapmak istediğiyle
+                karıştırılmasın diye ayrı satır (madde 26). */}
+            {client.phoneCountryName && (
+              <p className={styles.originLine}>
+                {t('clients.profile.writesFrom', { country: client.phoneCountryName })}
+              </p>
+            )}
             <p className={styles.subtitle}>{t('clients.profile.idLine', { id: client.clientId, nationality: client.nationality, source: client.source })}</p>
           </div>
         </div>
