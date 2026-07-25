@@ -1032,6 +1032,28 @@ export const handlers = [
   }),
 
   // Reklam onay kuyrugu (mock) — onay akisini gorsel dogrulamak icin
+  http.get('/api/marketing/ad-proposals/manager/report', () =>
+    HttpResponse.json({
+      run: {
+        id: 'run1',
+        runAt: new Date(mockNotifNow - 26 * 3600000).toISOString(),
+        stage: 'setup',
+        assessment: 'Takipcilerin %81i Turkiyede ve %51i Istanbulda; kitle hazir ama gosterecek icerik yok. Bu ay 0 paylasim yapildi, erisim 0. Ana darbogaz reklam butcesi degil, icerik uretimi.',
+        previousReview: 'Bu ilk calisma — kiyaslanacak gecmis yok.',
+        warnings: [
+          'Hic paylasim olmadigi icin hangi icerigin tuttugu bilinmiyor; ilk oneriler varsayima dayaniyor.',
+          'Reklam harcamasi gecmisi yok; butce onerileri kucuk test olarak verildi.',
+        ],
+        proposalsCreated: 2,
+      },
+      goals: [
+        { metric: 'followers', target: 50, actual: 12, period: 'monthly', progressPct: 24 },
+        { metric: 'reach', target: 5000, actual: 0, period: 'monthly', progressPct: 0 },
+        { metric: 'leads', target: 10, actual: 7, period: 'monthly', progressPct: 70 },
+      ],
+    })),
+  http.post('/api/marketing/ad-proposals/manager/run', () =>
+    HttpResponse.json({ ok: true, actionsCreated: 2, stage: 'setup' })),
   http.get('/api/marketing/ad-proposals', () => HttpResponse.json(mockAdProposals)),
   http.post('/api/marketing/ad-proposals/analyze', () =>
     HttpResponse.json({ ok: true, proposalsCreated: 0, message: 'mock' })),

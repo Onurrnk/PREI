@@ -11,6 +11,7 @@ import { useFetch } from '../../core/hooks/useFetch';
 import { marketingApi, socialApi } from '../../core/api/resources';
 import { ReachPanel } from './components/ReachPanel';
 import { AdApprovalQueue } from './components/AdApprovalQueue';
+import { ManagerReport } from './components/ManagerReport';
 import type { MarketingSummaryDTO, MarketingTimeframe, CreateAdSpendInput, SocialSummaryDTO, SocialPlatform } from '../../core/types';
 import {
   TrendUp, TrendDown, ChatCircle, WhatsappLogo, TelegramLogo, InstagramLogo,
@@ -443,6 +444,9 @@ export const Marketing: React.FC = () => {
 
       {/* Görünürlük + kitle: Meta'dan otomatik gelir, elle giriş yok (002y) */}
       <ReachPanel social={social ?? null} />
+
+      {/* Pazarlama yöneticisi: hedefler + haftalık değerlendirme (002z) */}
+      <ManagerReport />
 
       {/* Reklam onay kuyruğu — bütçe kararı yalnız buradan geçer (002y) */}
       <AdApprovalQueue />

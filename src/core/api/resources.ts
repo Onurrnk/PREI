@@ -71,6 +71,8 @@ import type {
   VaultDocumentDTO,
   AdProposalDTO,
   MarketingAnalysisDTO,
+  ManagerRunDTO,
+  ManagerReportDTO,
 } from '../types';
 
 export const authApi = {
@@ -241,6 +243,11 @@ export const adProposalsApi = {
     api.post<{ ok: boolean; message: string }>(`/api/marketing/ad-proposals/${id}/activate`, {}),
   pause: (id: string) =>
     api.post<{ ok: boolean; message: string }>(`/api/marketing/ad-proposals/${id}/pause`, {}),
+  // Pazarlama yöneticisi: haftalık çalışma + hedeflere ilerleme
+  runManager: () =>
+    api.post<ManagerRunDTO>('/api/marketing/ad-proposals/manager/run', {}),
+  managerReport: () =>
+    api.get<ManagerReportDTO>('/api/marketing/ad-proposals/manager/report'),
 };
 
 export const notificationsApi = {

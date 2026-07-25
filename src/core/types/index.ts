@@ -100,6 +100,46 @@ export interface AdProposalDTO {
   publishedAt: string | null;
   metaCampaignId: string | null;
   createdAt: string;
+  /** new_campaign | optimization | content | pause */
+  kind?: string;
+  /** Yöneticinin beklediği ölçülebilir etki. */
+  expectedImpact?: string | null;
+  targetCampaignRef?: string | null;
+}
+
+/** Hedef ve gerçekleşen — "artır" sözünü ölçülebilir kılar. */
+export interface GoalProgressDTO {
+  metric: string;
+  target: number;
+  actual: number;
+  period: string;
+  progressPct: number | null;
+}
+
+/** Yöneticinin bir çalışmasının raporu. */
+export interface ManagerRunDTO {
+  ok: boolean;
+  message?: string;
+  runId?: string;
+  stage?: 'setup' | 'growth' | 'optimization';
+  assessment?: string;
+  previousReview?: string;
+  warnings?: string[];
+  actionsCreated: number;
+  goals?: GoalProgressDTO[];
+}
+
+export interface ManagerReportDTO {
+  run: {
+    id: string;
+    runAt: string;
+    stage: string;
+    assessment: string | null;
+    previousReview: string | null;
+    warnings: string[];
+    proposalsCreated: number;
+  } | null;
+  goals: GoalProgressDTO[];
 }
 
 export interface MarketingAnalysisDTO {

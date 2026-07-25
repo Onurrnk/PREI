@@ -12,6 +12,7 @@ import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { AdProposalsService } from './ad-proposals.service';
 import { MarketingBrainService } from './marketing-brain.service';
+import { MarketingManagerService } from './marketing-manager.service';
 import { ApproveProposalDto, RejectProposalDto } from './dto/ad-proposal.dto';
 
 @Controller('marketing/ad-proposals')
@@ -21,7 +22,23 @@ export class AdProposalsController {
   constructor(
     private readonly proposals: AdProposalsService,
     private readonly brain: MarketingBrainService,
+    private readonly manager: MarketingManagerService,
   ) {}
+
+  /**
+   * PAZARLAMA YÖNETİCİSİ — ölç, geçen seferi gözden geçir, eylem öner.
+   * Hiçbir şey yayınlamaz; her eylem onay kuyruğuna düşer.
+   */
+  @Post('manager/run')
+  runManager(@Ctx() ctx: RequestContext) {
+    return this.manager.run(ctx);
+  }
+
+  /** Son yönetici raporu + hedeflere ilerleme. */
+  @Get('manager/report')
+  managerReport(@Ctx() ctx: RequestContext) {
+    return this.manager.latestReport(ctx);
+  }
 
   @Get()
   list(@Ctx() ctx: RequestContext, @Query('status') status?: string) {

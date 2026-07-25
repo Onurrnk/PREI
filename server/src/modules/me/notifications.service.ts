@@ -17,6 +17,7 @@ const NOTIF_KIND: Record<string, string> = {
   'proposal.follow_up_sent': 'proposal',
   'document.uploaded': 'document',
   'client.note_created': 'note',
+  'marketing.manager_run': 'marketing',
 };
 const NOTIF_TYPES = Object.keys(NOTIF_KIND);
 

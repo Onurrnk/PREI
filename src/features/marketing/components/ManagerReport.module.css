@@ -1,0 +1,158 @@
+/* =====================================================================
+   ManagerReport — haftalık pazarlama yöneticisi raporu.
+   Tasarım sistemi tokenları: --sp-N, --text-* (font kısayolu), --data-*.
+   ===================================================================== */
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.headTitle {
+  margin: 0;
+  font: var(--text-title);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.headMeta {
+  display: block;
+  margin-top: 2px;
+  font: var(--text-label);
+  color: var(--text-muted);
+}
+
+.empty {
+  margin: 0;
+  padding: var(--sp-4) 0;
+  font: var(--text-body);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* --- Hedefler --- */
+.goals {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.goalRow {
+  display: grid;
+  grid-template-columns: 130px 1fr auto;
+  align-items: center;
+  gap: var(--sp-2);
+  font: var(--text-body);
+}
+
+.goalLabel {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.goalTrack {
+  height: 7px;
+  border-radius: 4px;
+  background: var(--bg-surface-raised);
+  overflow: hidden;
+}
+
+.goalFill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  transition: width var(--dur-base) var(--ease-out);
+}
+
+.fillGood { background: var(--data-positive); }
+.fillOk   { background: var(--data-info); }
+.fillLow  { background: var(--data-warning); }
+
+.goalNums {
+  font: var(--text-label);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.goalNums b { color: var(--text-primary); }
+
+/* --- Aşama --- */
+.stageRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0;
+  flex-wrap: wrap;
+}
+
+.stage {
+  padding: 3px 10px;
+  font: var(--text-label);
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.stage_setup {
+  color: var(--data-warning);
+  background: color-mix(in srgb, var(--data-warning) 16%, transparent);
+}
+.stage_growth {
+  color: var(--data-info);
+  background: color-mix(in srgb, var(--data-info) 14%, transparent);
+}
+.stage_optimization {
+  color: var(--data-positive);
+  background: color-mix(in srgb, var(--data-positive) 14%, transparent);
+}
+
+.stageHint {
+  font: var(--text-label);
+  color: var(--text-muted);
+}
+
+/* --- Metin blokları --- */
+.block {
+  margin-top: var(--sp-3);
+}
+
+.blockTitle {
+  margin: 0 0 var(--sp-2);
+  font: var(--text-label);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.text {
+  margin: 0;
+  font: var(--text-body);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+}
+
+.warnings {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font: var(--text-body);
+  color: var(--text-secondary);
+}
+
+.warnings li::marker { color: var(--data-warning); }
+
+@media (max-width: 640px) {
+  .goalRow { grid-template-columns: 100px 1fr; }
+  .goalNums { grid-column: 1 / -1; text-align: right; }
+}
