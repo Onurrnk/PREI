@@ -171,10 +171,19 @@ export const LeadProfile: React.FC = () => {
                 <span className={styles.detailLabel}>{t('leads.profile.interestTypeLabel')}</span>
                 <span className={styles.detailValue}>{t(`leads.interestType.${lead.interestType}`)}</span>
               </div>
+              {/* Yatırım hedefi: yapılandırılmış kayıt (003g) önce gelir;
+                  yoksa eski target_market_code'a düşülür. */}
               <div className={styles.detailRow}>
                 <span className={styles.detailIcon}><MapPin size={14} /></span>
                 <span className={styles.detailLabel}>{t('leads.profile.targetMarket')}</span>
-                <span className={styles.detailValue}>{lead.targetMarketCode ?? '—'}</span>
+                <span className={styles.detailValue}>
+                  {lead.investmentTargets && lead.investmentTargets.length > 0
+                    ? lead.investmentTargets
+                        .map((tg) => [tg.countryName, tg.region, tg.district]
+                          .filter(Boolean).join(' · '))
+                        .join('  |  ')
+                    : (lead.targetMarketCode ?? '—')}
+                </span>
               </div>
               <div className={styles.detailRow}>
                 <span className={styles.detailIcon}><UserCircle size={14} /></span>

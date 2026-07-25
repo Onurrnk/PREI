@@ -13,6 +13,7 @@ import type {
   LeadScoreDTO,
   ClientDTO,
   ContactDTO,
+  InvestmentTargetDTO,
   ContractDTO,
   ContractWriteInput,
   CreateDeveloperInput,
@@ -64,7 +65,7 @@ export type * from '../core/types';
 
 const mkLead = (o: Partial<LeadDTO> & Pick<LeadDTO, 'id' | 'contactName' | 'status'>): LeadDTO => ({
   contactId: o.id, company: null, priority: 'medium', interestType: 'buy',
-  budgetMin: null, budgetMax: null, currency: 'EUR', targetMarketCode: null,
+  budgetMin: null, budgetMax: null, currency: 'EUR', targetMarketCode: null, investmentTargets: [],
   score: null, ownerId: null, notes: null, version: 1,
   createdAt: '2026-06-01T00:00:00Z', updatedAt: '2026-06-15T00:00:00Z', ...o,
 });
@@ -676,7 +677,98 @@ const mockOrgContacts: OrgContactDTO[] = [
   },
 ];
 
+const mockInvestmentTargets: InvestmentTargetDTO[] = [
+  {
+    id: 'it-1', contactId: '1', leadId: null, countryCode: 'AE',
+    countryName: 'Birleşik Arap Emirlikleri', region: 'Dubai Marina',
+    district: null, rank: 1, source: 'eylul', notes: null, warning: null,
+    createdAt: '2026-07-10T09:00:00.000Z',
+  },
+  {
+    id: 'it-2', contactId: '1', leadId: null, countryCode: 'TR',
+    countryName: 'Türkiye', region: 'İstanbul', district: 'Nişantaşı',
+    rank: 2, source: 'manual', notes: null, warning: null,
+    createdAt: '2026-07-11T09:00:00.000Z',
+  },
+];
+
+const MOCK_COUNTRIES = [
+  { code: 'US', name: 'ABD' }, { code: 'DE', name: 'Almanya' },
+  { code: 'AE', name: 'Birleşik Arap Emirlikleri' }, { code: 'FR', name: 'Fransa' },
+  { code: 'GE', name: 'Gürcistan' }, { code: 'NL', name: 'Hollanda' },
+  { code: 'GB', name: 'İngiltere' }, { code: 'ES', name: 'İspanya' },
+  { code: 'IT', name: 'İtalya' }, { code: 'QA', name: 'Katar' },
+  { code: 'CY', name: 'Kıbrıs' }, { code: 'PT', name: 'Portekiz' },
+  { code: 'SA', name: 'Suudi Arabistan' }, { code: 'TH', name: 'Tayland' },
+  { code: 'TR', name: 'Türkiye' }, { code: 'GR', name: 'Yunanistan' },
+];
+
 export const handlers = [
+  // Yatırım hedefleri (003g) — ülke listeden seçilir, serbest yazım yok.
+  http.get('/api/contacts/investment-countries', () => HttpResponse.json(MOCK_COUNTRIES)),
+
+  http.get('/api/contacts/investment-targets/summary', () => {
+    const byCountry = new Map<string, { name: string; contacts: Set<string>; regions: Set<string> }>();
+    for (const t of mockInvestmentTargets) {
+      const e = byCountry.get(t.countryCode)
+        ?? { name: t.countryName, contacts: new Set<string>(), regions: new Set<string>() };
+      e.contacts.add(t.contactId);
+      if (t.region) e.regions.add(t.region);
+      byCountry.set(t.countryCode, e);
+    }
+    return HttpResponse.json([...byCountry.entries()].map(([code, e]) => ({
+      countryCode: code, countryName: e.name,
+      contacts: e.contacts.size, regions: [...e.regions],
+    })));
+  }),
+
+  http.patch('/api/contacts/investment-targets/:targetId', async ({ params, request }) => {
+    const b = (await request.json()) as Partial<InvestmentTargetDTO>;
+    const t = mockInvestmentTargets.find((x) => x.id === params.targetId);
+    if (!t) return new HttpResponse(null, { status: 404 });
+    Object.assign(t, {
+      region: b.region !== undefined ? b.region : t.region,
+      district: b.district !== undefined ? b.district : t.district,
+    });
+    return HttpResponse.json<InvestmentTargetDTO>(t);
+  }),
+
+  http.delete('/api/contacts/investment-targets/:targetId', ({ params }) => {
+    const i = mockInvestmentTargets.findIndex((x) => x.id === params.targetId);
+    if (i < 0) return new HttpResponse(null, { status: 404 });
+    mockInvestmentTargets.splice(i, 1);
+    return HttpResponse.json({ deleted: true });
+  }),
+
+  http.get('/api/contacts/:id/investment-targets', ({ params }) =>
+    HttpResponse.json<InvestmentTargetDTO[]>(
+      mockInvestmentTargets.filter((t) => t.contactId === params.id))),
+
+  http.post('/api/contacts/:id/investment-targets', async ({ params, request }) => {
+    const b = (await request.json()) as { country?: string; region?: string; district?: string };
+    const found = MOCK_COUNTRIES.find((c) => c.code === b.country);
+    if (!found) {
+      return HttpResponse.json(
+        { message: `Ülke tanınmadı: "${b.country ?? ''}".` }, { status: 400 });
+    }
+    const dup = mockInvestmentTargets.some((t) =>
+      t.contactId === params.id && t.countryCode === found.code
+      && (t.region ?? '') === (b.region?.trim() ?? ''));
+    if (dup) {
+      return HttpResponse.json(
+        { message: 'Bu ülke/bölge bu kişide zaten kayıtlı.' }, { status: 409 });
+    }
+    const target: InvestmentTargetDTO = {
+      id: crypto.randomUUID(), contactId: String(params.id), leadId: null,
+      countryCode: found.code, countryName: found.name,
+      region: b.region?.trim() || null, district: b.district?.trim() || null,
+      rank: mockInvestmentTargets.length + 1, source: 'manual', notes: null,
+      warning: null, createdAt: new Date().toISOString(),
+    };
+    mockInvestmentTargets.push(target);
+    return HttpResponse.json<InvestmentTargetDTO>(target, { status: 201 });
+  }),
+
   // ---- Auth ----
   http.post('/api/auth/login', async ({ request }) => {
     const { email } = (await request.json()) as { email: string; password: string };
@@ -1072,7 +1164,7 @@ export const handlers = [
       id: crypto.randomUUID(), contactId: b.contact_id ?? crypto.randomUUID(),
       contactName: 'Yeni Aday', company: null, status: b.status ?? 'new', priority: b.priority ?? 'medium',
       interestType: b.interest_type ?? 'buy', budgetMin: null, budgetMax: b.budget_max ?? null,
-      currency: b.currency ?? 'EUR', targetMarketCode: b.target_market_code ?? null,
+      currency: b.currency ?? 'EUR', targetMarketCode: b.target_market_code ?? null, investmentTargets: [],
       score: null, ownerId: null, notes: b.notes ?? null, version: 1, createdAt: now, updatedAt: now,
     }, { status: 201 });
   }),

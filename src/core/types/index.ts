@@ -458,6 +458,11 @@ export interface LeadDTO {
   budgetMax: number | null;
   currency: string;
   targetMarketCode: string | null;
+  /** Yatırım hedefleri — kişiden gelir, ülke + bölge (003g). */
+  investmentTargets: Array<{
+    countryCode: string; countryName: string;
+    region: string | null; district: string | null;
+  }>;
   score: number | null; // 0..100 qualification skoru
   ownerId: string | null;
   notes: string | null;
@@ -516,6 +521,8 @@ export interface ClientDTO {
   totalInvestment: number;
   activeProperties: number;
   preferredRegions: string[];
+  /** Yapılandırılmış yatırım hedefleri — ülke kodu + bölge (003g). */
+  investmentTargets?: InvestmentTargetDTO[];
   investmentProfile: 'Conservative' | 'Balanced' | 'Aggressive';
   source: string;
   relationshipStatus: 'Active' | 'Dormant' | 'Churned';
@@ -763,6 +770,33 @@ export interface UpdateProposalInput {
 
 // GET /api/contracts sözleşmesi — backend ContractResponse ile senkron (OV-8).
 export type ContractStatus = 'Draft' | 'Active' | 'Expiring' | 'Expired' | 'Terminated' | 'Renewed';
+/** Kişinin yatırım yapmak istediği ülke/bölge — sorgulanabilir kayıt. */
+export interface InvestmentTargetDTO {
+  id: string;
+  contactId: string;
+  leadId: string | null;
+  countryCode: string;
+  countryName: string;
+  region: string | null;
+  district: string | null;
+  rank: number;
+  /** manual | eylul | web | import */
+  source: string;
+  notes: string | null;
+  /** Şehir ülkeyle çelişiyorsa açıklama (ör. Almanya + Barcelona). */
+  warning: string | null;
+  createdAt: string;
+}
+
+export interface InvestmentTargetInput {
+  country?: string;
+  region?: string | null;
+  district?: string | null;
+  rank?: number;
+  leadId?: string | null;
+  notes?: string | null;
+}
+
 export interface ContractDocRef { id: string; name: string; size: string }
 export interface ContractDTO {
   id: string;

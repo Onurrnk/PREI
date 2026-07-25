@@ -5,6 +5,8 @@
 // =====================================================================
 import type { ClientRow } from '../clients.repository';
 
+import type { InvestmentTargetResponse } from '../../contacts/investment-targets.service';
+
 export interface ClientResponse {
   id: string;
   clientId: string;
@@ -35,6 +37,12 @@ export interface ClientResponse {
   aiScore: number | null;
   /** Yatırım profili alanlarının kaynağı: manuel giriş mi Eylül çıkarımı mı. */
   profileSource: 'manual' | 'eylul' | null;
+  /**
+   * Yatırım hedefleri — ülke + bölge, yapılandırılmış (003g).
+   * preferredRegions serbest metindi ve sorgulanamıyordu; bu alan
+   * investment_targets tablosundan gelir ve ülke kodu taşır.
+   */
+  investmentTargets: InvestmentTargetResponse[];
 }
 
 function str(v: unknown, fallback = ''): string {
@@ -119,6 +127,8 @@ export function toClientResponse(row: ClientRow): ClientResponse {
     totalInvestment: Math.round(Number(row.total_investment_eur ?? 0)),
     activeProperties: row.active_properties,
     preferredRegions,
+    // Servis katmanı dolduruyor; mapper tek satır bilmiyor (N+1 olmasın).
+    investmentTargets: [],
     investmentProfile: str(m.investment_profile, 'Balanced'),
     source: str(m.source, '—'),
     relationshipStatus: str(m.relationship_status, 'Active'),

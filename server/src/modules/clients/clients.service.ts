@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ClientsRepository } from './clients.repository';
+import { InvestmentTargetsService } from '../contacts/investment-targets.service';
 import type { RequestContext } from '../../common/request-context';
 import { toClientResponse, type ClientResponse } from './dto/client-response.dto';
 import type { UpdateClientDto } from './dto/client-update.dto';
@@ -8,17 +9,26 @@ import { toClientTimelineEntry, type ClientTimelineEntryResponse } from './dto/c
 
 @Injectable()
 export class ClientsService {
-  constructor(private readonly repo: ClientsRepository) {}
+  constructor(
+    private readonly repo: ClientsRepository,
+    private readonly targets: InvestmentTargetsService,
+  ) {}
 
   async list(ctx: RequestContext, limit?: number, offset?: number): Promise<ClientResponse[]> {
     const rows = await this.repo.list(ctx, limit, offset);
-    return rows.map(toClientResponse);
+    const clients = rows.map(toClientResponse);
+    // Hedefler tek sorguda gelir — müşteri başına ayrı istek yapılmaz.
+    const byContact = await this.targets.listForContacts(ctx, clients.map((c) => c.id));
+    for (const c of clients) c.investmentTargets = byContact.get(c.id) ?? [];
+    return clients;
   }
 
   async findOne(ctx: RequestContext, id: string): Promise<ClientResponse> {
     const row = await this.repo.findById(ctx, id);
     if (!row) throw new NotFoundException();
-    return toClientResponse(row);
+    const client = toClientResponse(row);
+    client.investmentTargets = await this.targets.listForContact(ctx, client.id);
+    return client;
   }
 
   async update(ctx: RequestContext, id: string, dto: UpdateClientDto): Promise<ClientResponse> {

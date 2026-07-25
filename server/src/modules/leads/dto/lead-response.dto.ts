@@ -6,6 +6,7 @@
 // adlarından bağımsız kararlı bir kontrat sağlar.
 // =====================================================================
 import type { LeadJoinedRow } from '../leads.repository';
+import { countryByCode } from '../../../common/geo';
 
 export interface LeadResponse {
   id: string;
@@ -19,6 +20,14 @@ export interface LeadResponse {
   budgetMax: number | null;
   currency: string;
   targetMarketCode: string | null;
+  /**
+   * Yatırım hedefleri (003g) — ülke + bölge, kişiden gelir.
+   * target_market_code canlıda hep boştu; gerçek bilgi burada.
+   */
+  investmentTargets: Array<{
+    countryCode: string; countryName: string;
+    region: string | null; district: string | null;
+  }>;
   score: number | null;
   ownerId: string | null;
   notes: string | null;
@@ -51,6 +60,12 @@ export function toLeadResponse(row: LeadJoinedRow): LeadResponse {
     budgetMax: num(row.budget_max),
     currency: row.currency,
     targetMarketCode: row.target_market_code ?? null,
+    investmentTargets: (row.investment_targets ?? []).map((t) => ({
+      countryCode: t.countryCode,
+      countryName: countryByCode(t.countryCode)?.tr ?? t.countryCode,
+      region: t.region,
+      district: t.district,
+    })),
     score: row.score,
     ownerId: row.owner_id ?? null,
     notes: row.notes ?? null,

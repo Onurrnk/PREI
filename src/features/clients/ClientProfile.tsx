@@ -19,6 +19,7 @@ import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import i18n from '../../core/i18n/config';
 import { MeetingBriefPanel } from './components/MeetingBriefPanel';
+import { InvestmentTargets } from './components/InvestmentTargets';
 import styles from './ClientProfile.module.css';
 
 // ---------------------------------------------------------------------
@@ -626,6 +627,11 @@ export const ClientProfile: React.FC = () => {
                 </div>
               )}
 
+              {/* Yapılandırılmış hedefler: ülke ISO koduyla kayıtlı, sorgulanabilir (003g) */}
+              <InvestmentTargets contactId={client.id} />
+
+              {/* Serbest metin bölge etiketleri — eski kayıtlar için korunuyor,
+                  yeni girişler yukarıdaki hedeflerden yapılmalı. */}
               <div className={styles.regionsContainer}>
                 <span className={styles.blockLabel}>{t('clients.profile.regions')}</span>
                 <RegionsEditor

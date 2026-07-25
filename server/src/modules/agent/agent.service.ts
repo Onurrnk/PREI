@@ -15,6 +15,7 @@ import type { OutboundMessageDto } from './dto/outbound-message.dto';
 import type { LeadProfileDto } from './dto/lead-profile.dto';
 import type { WebLeadDto } from './dto/web-lead.dto';
 import { buildWelcomeCopy } from './welcome-email-copy';
+import { normalizeTarget } from '../../common/geo';
 import { buildMeetingTask, type MeetingEventDto } from './dto/meeting-event.dto';
 import type { KnowledgeAddDto } from './dto/knowledge-add.dto';
 import { parseCalendlyIcs } from './calendly-ics';
@@ -582,6 +583,26 @@ export class AgentService {
           [dto.lead_id, JSON.stringify(dto.criteria), ctx.userId],
         );
         updated.push('criteria');
+
+        // Yatırım hedefini SORGULANABİLİR hâle getir (003g). Kriterler
+        // jsonb'de serbest metin kalırsa "İspanya'da kaç kişi arıyor"
+        // sorusu cevaplanamıyor. Ülke ISO koduna indirgenir; çözülemezse
+        // hiçbir şey yazılmaz (yanlış ülke, boş ülkeden kötüdür).
+        const crit = dto.criteria as { market?: string; city?: string; district?: string };
+        const target = normalizeTarget(crit.market, crit.city);
+        if (target && contactId) {
+          // ON CONFLICT DO NOTHING: danışman elle düzelttiyse ezilmesin.
+          await c.query(
+            `INSERT INTO investment_targets
+               (tenant_id, contact_id, lead_id, country_code, region, district,
+                source, created_by, updated_by)
+             VALUES ($1,$2,$3,$4,$5,$6,'eylul',$7,$7)
+             ON CONFLICT DO NOTHING`,
+            [ctx.tenantId, contactId, dto.lead_id, target.countryCode,
+             target.region, (crit.district ?? '').trim() || null, ctx.userId],
+          );
+          updated.push('investment_target');
+        }
       }
 
       if (updated.length > 0) {

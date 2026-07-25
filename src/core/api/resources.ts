@@ -16,6 +16,8 @@ import type {
   ClientAnalysisDTO,
   ClientTimelineEntryDTO,
   ContactDTO,
+  InvestmentTargetDTO,
+  InvestmentTargetInput,
   ContractDTO,
   ContractWriteInput,
   CreateDeveloperInput,
@@ -157,6 +159,22 @@ export const contactsApi = {
   // Duplicate ön-kontrolü: kayıttan önce e-posta/telefonla eşleşen kişi.
   lookup: (email?: string, phone?: string) =>
     api.get<{ match: DuplicateMatch | null }>('/api/contacts/lookup', { params: { email, phone } }),
+
+  // Yatırım hedefleri (003g) — ülke listeden seçilir, serbest yazım yok.
+  investmentCountries: () =>
+    api.get<Array<{ code: string; name: string }>>('/api/contacts/investment-countries'),
+  investmentTargets: (contactId: string) =>
+    api.get<InvestmentTargetDTO[]>(`/api/contacts/${contactId}/investment-targets`),
+  addInvestmentTarget: (contactId: string, input: InvestmentTargetInput) =>
+    api.post<InvestmentTargetDTO>(`/api/contacts/${contactId}/investment-targets`, input),
+  updateInvestmentTarget: (targetId: string, input: InvestmentTargetInput) =>
+    api.patch<InvestmentTargetDTO>(`/api/contacts/investment-targets/${targetId}`, input),
+  removeInvestmentTarget: (targetId: string) =>
+    api.delete<{ deleted: true }>(`/api/contacts/investment-targets/${targetId}`),
+  /** Ülke bazında talep dağılımı. */
+  investmentSummary: () =>
+    api.get<Array<{ countryCode: string; countryName: string; contacts: number; regions: string[] }>>(
+      '/api/contacts/investment-targets/summary'),
 };
 
 export const leadsApi = {

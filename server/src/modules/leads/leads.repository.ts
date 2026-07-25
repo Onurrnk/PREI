@@ -21,6 +21,7 @@ export interface LeadRow {
   budget_max: string | null;
   currency: string;
   target_market_code: string | null;
+  investment_targets?: Array<{ countryCode: string; region: string | null; district: string | null }>;
   score: number | null;
   notes: string | null;
   version: number;
@@ -75,7 +76,18 @@ const JOINED_SELECT = `
   SELECT l.*,
          ct.first_name AS contact_first_name,
          ct.last_name  AS contact_last_name,
-         org.name      AS company
+         org.name      AS company,
+         -- Yatırım hedefleri KİŞİYE bağlı (003g): aynı kişinin başka
+         -- talebinden gelen hedef de bu adayda görünsün.
+         COALESCE((
+           SELECT jsonb_agg(jsonb_build_object(
+                    'countryCode', it.country_code,
+                    'region', it.region,
+                    'district', it.district)
+                  ORDER BY it.rank, it.country_code)
+             FROM investment_targets it
+            WHERE it.contact_id = l.contact_id AND it.deleted_at IS NULL
+         ), '[]'::jsonb) AS investment_targets
     FROM leads l
     JOIN contacts ct       ON ct.id = l.contact_id
     LEFT JOIN organizations org ON org.id = l.organization_id`;

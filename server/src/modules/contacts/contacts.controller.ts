@@ -3,7 +3,7 @@
 // JwtAuthGuard + RbacGuard; 'clients' izni (kişi/ilişki domaini).
 // =====================================================================
 import {
-  Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Query,
+  Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query,
   DefaultValuePipe, ParseIntPipe, UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -12,13 +12,66 @@ import { RequirePermission } from '../../common/require-permission.decorator';
 import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { ContactsService } from './contacts.service';
+import {
+  InvestmentTargetsService, type InvestmentTargetInput,
+} from './investment-targets.service';
 import { CreateContactDto } from './dto/contact.dto';
 
 @Controller('contacts')
 @UseGuards(JwtAuthGuard, RbacGuard)
 @RequirePermission('clients')
 export class ContactsController {
-  constructor(private readonly contacts: ContactsService) {}
+  constructor(
+    private readonly contacts: ContactsService,
+    private readonly targets: InvestmentTargetsService,
+  ) {}
+
+  // ── Yatırım hedefleri (ülke + bölge) ───────────────────────────────
+  // Not: sabit yollar ':id'den ÖNCE tanımlı olmalı, yoksa UUID pipe'ına
+  // takılırlar (lookup ucunda öğrenilmiş ders).
+
+  /** Seçim listesi — arayüz ülkeyi buradan seçer, elle yazılmaz. */
+  @Get('investment-countries')
+  countries() {
+    return this.targets.countries();
+  }
+
+  /** Ülke bazında talep dağılımı: "İspanya'da kaç kişi arıyor". */
+  @Get('investment-targets/summary')
+  targetSummary(@Ctx() ctx: RequestContext) {
+    return this.targets.byCountry(ctx);
+  }
+
+  @Patch('investment-targets/:targetId')
+  updateTarget(
+    @Ctx() ctx: RequestContext,
+    @Param('targetId', ParseUUIDPipe) targetId: string,
+    @Body() body: InvestmentTargetInput,
+  ) {
+    return this.targets.update(ctx, targetId, body ?? {});
+  }
+
+  @Delete('investment-targets/:targetId')
+  removeTarget(
+    @Ctx() ctx: RequestContext,
+    @Param('targetId', ParseUUIDPipe) targetId: string,
+  ) {
+    return this.targets.remove(ctx, targetId);
+  }
+
+  @Get(':id/investment-targets')
+  listTargets(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.targets.listForContact(ctx, id);
+  }
+
+  @Post(':id/investment-targets')
+  addTarget(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: InvestmentTargetInput,
+  ) {
+    return this.targets.create(ctx, id, body ?? {});
+  }
 
   @Get()
   list(

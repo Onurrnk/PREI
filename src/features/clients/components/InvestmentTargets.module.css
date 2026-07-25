@@ -1,0 +1,97 @@
+/* =====================================================================
+   InvestmentTargets — ülke + bölge listesi.
+   Ülke vurgulu, bölge/ilçe soluk: göz önce ülkeyi yakalasın.
+   Çelişkili şehir (Almanya + Barcelona gibi) amber uyarıyla görünür.
+   ===================================================================== */
+
+.wrap { margin-top: var(--spacing-md); }
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  margin-bottom: 6px;
+}
+
+.label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.empty {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 6px 10px;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+}
+
+.pin { color: var(--color-primary-purple); flex-shrink: 0; }
+
+.country {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.region { color: var(--text-secondary); }
+.district { color: var(--text-muted); }
+
+.srcBadge {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background-color: rgba(155, 91, 179, 0.12);
+  color: var(--color-primary-purple);
+  font-size: 0.6875rem;
+}
+
+.warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background-color: rgba(201, 148, 65, 0.14);
+  color: #C99441;
+  font-size: 0.6875rem;
+}
+
+.del {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.del:hover { color: var(--text-primary); background-color: var(--bg-surface-hover); }

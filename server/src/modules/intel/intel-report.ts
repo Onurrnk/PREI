@@ -33,17 +33,10 @@ export interface ParsedReport {
  *     karakterlerdir; naif desen İspanya ve İngiltere'yi kaçırır.
  * Bu yüzden tüm Türkçe eşleştirme katlanmış metin üzerinde yapılır.
  */
-export function foldTr(s: string): string {
-  return s
-    .normalize('NFD')
-    // Birleşen aksanları at (ayrışan İ → I + U+0307 dahil)
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[İIı]/g, 'i')
-    .replace(/[Çç]/g, 'c').replace(/[Ğğ]/g, 'g')
-    .replace(/[Öö]/g, 'o').replace(/[Şş]/g, 's')
-    .replace(/[Üü]/g, 'u')
-    .toLowerCase();
-}
+// foldTr artık ortak: yatırım hedefleri de aynı katlamayı kullanıyor.
+// İki kopya tutulursa biri düzeltilip diğeri unutulur.
+import { foldTr } from '../../common/geo';
+export { foldTr };
 
 /** Pazar adı → ISO kodu. Desenler ASCII-katlanmış metne uygulanır. */
 const MARKET_MAP: [RegExp, string][] = [
