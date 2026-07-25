@@ -359,12 +359,18 @@ export class IntakeRepository {
         propertyId = prop[0].id;
       }
 
-      // Broşür → documents_vault (yeni gönderinin broşürü; güncellemede de eklenir).
+      // Broşür → documents_vault. Kategori 'marketing': bu bir sözleşme
+      // değil, pazarlama evrakı (eskiden 'Developer Agreements'a yazılıyor
+      // ve kasada sözleşmelerle karışıyordu). Firma + proje bağı da kurulur
+      // ki evrak doğru firmanın kasasına düşsün (003e).
       if (s.brochure_path) {
         await c.query(
-          `INSERT INTO documents_vault (tenant_id, name, folder, mime_type, size_bytes, storage_path, related_type, related_id, uploaded_by)
-           VALUES ($1,$2,'Developer Agreements','application/pdf',$3,$4,'project',$5,$6)`,
-          [ctx.tenantId, f.brochureName, f.brochureSize, s.brochure_path, propertyId, ctx.userId],
+          `INSERT INTO documents_vault
+             (tenant_id, name, folder, mime_type, size_bytes, storage_path,
+              related_type, related_id, organization_id, project_id, uploaded_by)
+           VALUES ($1,$2,'marketing','application/pdf',$3,$4,'project',$5,$6,$5,$7)`,
+          [ctx.tenantId, f.brochureName, f.brochureSize, s.brochure_path,
+           propertyId, s.developer_id ?? null, ctx.userId],
         );
       }
 

@@ -9,8 +9,8 @@ import { DocumentsRepository } from './documents.repository';
 import { StorageService } from './storage.service';
 import type { RequestContext } from '../../common/request-context';
 import { toVaultDocumentResponse, type VaultDocumentResponse } from './dto/document-response.dto';
+import { buildVaultTree, normalizeCategory, type VaultCompanyNode } from './vault-taxonomy';
 
-const ALLOWED_FOLDERS = ['Root', 'Client KYC', 'Contracts', 'Marketing', 'Developer Agreements'];
 const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50MB — bucket limitiyle aynı
 
 export interface UploadedFileLike {
@@ -27,9 +27,28 @@ export class DocumentsService {
     private readonly storage: StorageService,
   ) {}
 
-  async list(ctx: RequestContext): Promise<VaultDocumentResponse[]> {
-    const rows = await this.repo.list(ctx);
+  async list(
+    ctx: RequestContext,
+    filter: { organizationId?: string; projectId?: string } = {},
+  ): Promise<VaultDocumentResponse[]> {
+    const rows = await this.repo.list(ctx, filter);
     return rows.map(toVaultDocumentResponse);
+  }
+
+  /**
+   * Kasa ağacı: Firma → Proje → Kategori.
+   * Gruplama sunucuda yapılır ki her istemci aynı sırayı görsün.
+   */
+  async tree(ctx: RequestContext): Promise<VaultCompanyNode[]> {
+    const docs = await this.list(ctx);
+    return buildVaultTree(docs.map((d) => ({
+      id: d.id, name: d.name, folder: d.folder,
+      organizationId: d.organizationId ?? null,
+      organizationName: d.organizationName ?? null,
+      projectId: d.projectId ?? null,
+      projectName: d.projectName ?? null,
+      sizeMB: d.sizeMB,
+    })));
   }
 
   async upload(
@@ -38,27 +57,31 @@ export class DocumentsService {
     folder: string,
     relatedType?: string,
     relatedId?: string,
+    organizationId?: string | null,
+    projectId?: string | null,
   ): Promise<VaultDocumentResponse> {
     if (!file || !file.buffer?.length) throw new BadRequestException('Dosya boş.');
     if (file.size > MAX_SIZE_BYTES) throw new BadRequestException('Dosya 50MB sınırını aşıyor.');
-    const targetFolder = ALLOWED_FOLDERS.includes(folder) ? folder : 'Root';
+    // Tanınmayan kategori reddedilmez, 'other' olur — yükleme kaybolmasın.
+    const category = normalizeCategory(folder);
 
-    // Storage yolu: tenant/klasör-slug/uuid-orijinalad (çakışma imkansız)
+    // Storage yolu: tenant/kategori/uuid-orijinalad (çakışma imkansız)
     const safeName = file.originalname.replace(/[^\w.\-()İıŞşĞğÜüÖöÇç ]/g, '_').slice(0, 140);
-    const folderSlug = targetFolder.toLowerCase().replace(/\s+/g, '-');
-    const storagePath = `${ctx.tenantId}/${folderSlug}/${randomUUID()}-${safeName}`;
+    const storagePath = `${ctx.tenantId}/${category}/${randomUUID()}-${safeName}`;
 
     await this.storage.upload(storagePath, file.buffer, file.mimetype || 'application/octet-stream');
 
     try {
       const row = await this.repo.create(ctx, {
         name: file.originalname,
-        folder: targetFolder,
+        folder: category,
         mimeType: file.mimetype || 'application/octet-stream',
         sizeBytes: file.size,
         storagePath,
         relatedType,
         relatedId,
+        organizationId: organizationId || null,
+        projectId: projectId || null,
       });
       return toVaultDocumentResponse(row);
     } catch (err) {

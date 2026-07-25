@@ -69,6 +69,9 @@ import type {
   UpdateMeInput,
   UserDTO,
   VaultDocumentDTO,
+  VaultCompanyNodeDTO,
+  OrgContactDTO,
+  OrgContactInput,
   AdProposalDTO,
   MarketingAnalysisDTO,
   ManagerRunDTO,
@@ -187,6 +190,14 @@ export const developersApi = {
   list: () => api.get<DeveloperDTO[]>('/api/developers'),
   create: (input: CreateDeveloperInput) => api.post<DeveloperDTO>('/api/developers', input),
   update: (id: string, input: UpdateDeveloperInput) => api.patch<DeveloperDTO>(`/api/developers/${id}`, input),
+  /** Firma kişileri — unvanlı, birden çok muhatap (003e). */
+  contacts: (id: string) => api.get<OrgContactDTO[]>(`/api/developers/${id}/contacts`),
+  addContact: (id: string, input: OrgContactInput) =>
+    api.post<OrgContactDTO>(`/api/developers/${id}/contacts`, input),
+  updateContact: (contactId: string, input: OrgContactInput) =>
+    api.patch<OrgContactDTO>(`/api/developers/contacts/${contactId}`, input),
+  removeContact: (contactId: string) =>
+    api.delete<{ deleted: true }>(`/api/developers/contacts/${contactId}`),
 };
 
 export const projectsApi = {
@@ -287,13 +298,26 @@ export const notificationsApi = {
 };
 
 export const documentsApi = {
-  list: () => api.get<VaultDocumentDTO[]>('/api/documents'),
-  upload: (file: File, folder: string, relatedType?: string, relatedId?: string) => {
+  list: (filter: { organizationId?: string; projectId?: string } = {}) => {
+    const p = new URLSearchParams();
+    if (filter.organizationId) p.set('organizationId', filter.organizationId);
+    if (filter.projectId) p.set('projectId', filter.projectId);
+    const qs = p.toString();
+    return api.get<VaultDocumentDTO[]>(`/api/documents${qs ? `?${qs}` : ''}`);
+  },
+  /** Firma → Proje → Kategori ağacı; gruplama sunucuda yapılır. */
+  tree: () => api.get<VaultCompanyNodeDTO[]>('/api/documents/tree'),
+  upload: (
+    file: File, folder: string,
+    opts: { relatedType?: string; relatedId?: string; organizationId?: string; projectId?: string } = {},
+  ) => {
     const form = new FormData();
     form.append('file', file);
     form.append('folder', folder);
-    if (relatedType) form.append('related_type', relatedType);
-    if (relatedId) form.append('related_id', relatedId);
+    if (opts.relatedType) form.append('related_type', opts.relatedType);
+    if (opts.relatedId) form.append('related_id', opts.relatedId);
+    if (opts.organizationId) form.append('organization_id', opts.organizationId);
+    if (opts.projectId) form.append('project_id', opts.projectId);
     return api.post<VaultDocumentDTO>('/api/documents', form);
   },
   downloadUrl: (id: string) => api.get<{ url: string; name: string }>(`/api/documents/${id}/download`),

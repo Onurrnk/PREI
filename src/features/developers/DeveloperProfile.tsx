@@ -13,6 +13,7 @@ import { Field, Input, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, Globe, Buildings, MapPin, FileText, Plus } from '@phosphor-icons/react';
 import { EmailClient } from '../clients/components/EmailClient';
+import { OrgContacts } from './components/OrgContacts';
 import styles from './DeveloperProfile.module.css';
 
 const toForm = (d: DeveloperDTO): CreateDeveloperInput => ({
@@ -120,25 +121,8 @@ export const DeveloperProfile: React.FC = () => {
 
       <div className={styles.content}>
         <div className={styles.sidebar}>
-          <Card>
-            <CardHeader>
-              <h3 className={styles.cardTitle}>{t('developers.keyContactPerson')}</h3>
-            </CardHeader>
-            <CardBody>
-              <div className={styles.detailRow}>
-                <span className={styles.detailLabel}>{t('developers.name')}</span>
-                <span className={styles.detailValue} style={{ fontWeight: 600 }}>{developer.keyContactName}</span>
-              </div>
-              <div className={styles.detailRow}>
-                <span className={styles.detailIcon}><EnvelopeSimple size={14} /></span>
-                <span className={styles.detailValue}>{developer.keyContactEmail}</span>
-              </div>
-              <div className={styles.detailRow}>
-                <span className={styles.detailIcon}><Phone size={14} /></span>
-                <span className={styles.detailValue}>{developer.keyContactPhone}</span>
-              </div>
-            </CardBody>
-          </Card>
+          {/* Tek "kilit kişi" yerine unvanlı çoklu muhatap listesi (003e) */}
+          <OrgContacts developerId={developer.id} />
 
           <Card>
             <CardHeader>

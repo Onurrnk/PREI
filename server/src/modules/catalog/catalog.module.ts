@@ -4,12 +4,13 @@ import { ProjectsController } from './projects.controller';
 import { ProjectsService } from './projects.service';
 import { DevelopersController } from './developers.controller';
 import { DevelopersService } from './developers.service';
+import { OrgContactsService } from './org-contacts.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RbacGuard } from '../../common/rbac.guard';
 import { StorageService } from '../documents/storage.service';
 
 @Module({
   controllers: [ProjectsController, DevelopersController],
-  providers: [CatalogRepository, ProjectsService, DevelopersService, StorageService, JwtAuthGuard, RbacGuard],
+  providers: [CatalogRepository, ProjectsService, DevelopersService, OrgContactsService, StorageService, JwtAuthGuard, RbacGuard],
 })
 export class CatalogModule {}

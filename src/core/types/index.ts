@@ -779,6 +779,8 @@ export interface ContractDTO {
   currency: string;
   propertyId: string | null;
   contactId: string | null;
+  /** Karşı taraf firma — sözleşmeler buna göre gruplanıyor (003e). */
+  organizationId: string | null;
   documents: ContractDocRef[];
 }
 
@@ -788,6 +790,8 @@ export interface ContractWriteInput {
   status?: string; // draft | active | expired | terminated | renewed
   propertyId?: string | null;
   contactId?: string | null;
+  /** Karşı taraf firma — mülk seçilmese de sözleşme firmaya bağlanabilir. */
+  organizationId?: string | null;
   startDate?: string | null; // YYYY-MM-DD
   endDate?: string | null;
   amount?: number | null;
@@ -829,15 +833,72 @@ export interface CreateMeetingInput {
 
 export type UpdateMeetingInput = Partial<CreateMeetingInput>;
 
+/** Kasa kategorileri (003e) — eski sabit klasörlerin yerine. */
+export type VaultCategory =
+  | 'contract' | 'permit' | 'legal' | 'technical'
+  | 'marketing' | 'financial' | 'kyc' | 'other';
+
 export interface VaultDocumentDTO {
   id: string;
   name: string;
-  folder: 'Client KYC' | 'Contracts' | 'Marketing' | 'Developer Agreements' | 'Root';
+  /** Kategori kodu; eski kayıtlar sunucuda normalize edilir. */
+  folder: VaultCategory;
   type: 'pdf' | 'image' | 'excel' | 'word' | 'other';
   sizeMB: number;
   uploadedAt: string;
   uploadedBy: string;
   relatedId?: string;
+  organizationId?: string;
+  organizationName?: string;
+  projectId?: string;
+  projectName?: string;
+}
+
+/** Kasa ağacı: Firma → Proje → Kategori (sunucuda gruplanır). */
+export interface VaultCategoryNodeDTO {
+  code: VaultCategory;
+  label: string;
+  count: number;
+}
+
+export interface VaultProjectNodeDTO {
+  id: string;   // proje id | '__general__'
+  name: string;
+  count: number;
+  sizeMB: number;
+  categories: VaultCategoryNodeDTO[];
+}
+
+export interface VaultCompanyNodeDTO {
+  id: string;   // firma id | '__unassigned__'
+  name: string;
+  count: number;
+  sizeMB: number;
+  projects: VaultProjectNodeDTO[];
+}
+
+/** Firma kişisi — bir firmada birden çok muhatap, her birinin unvanı. */
+export interface OrgContactDTO {
+  id: string;
+  organizationId: string;
+  fullName: string;
+  title: string | null;
+  email: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  isPrimary: boolean;
+  notes: string | null;
+  createdAt: string;
+}
+
+export interface OrgContactInput {
+  fullName?: string;
+  title?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
+  isPrimary?: boolean;
+  notes?: string | null;
 }
 
 // GET /api/gmail/threads, /api/gmail/threads/:id sözleşmesi — backend

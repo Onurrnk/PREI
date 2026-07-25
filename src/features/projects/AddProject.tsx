@@ -111,7 +111,10 @@ export const AddProject: React.FC = () => {
       // Dokümanlar: Vault'a related_type='project' ile yüklenir.
       if (documentFiles.length > 0) {
         try {
-          await Promise.all(documentFiles.map((f) => documentsApi.upload(f, 'Marketing', 'project', created.id)));
+          await Promise.all(documentFiles.map((f) => documentsApi.upload(f, 'marketing', {
+            relatedType: 'project', relatedId: created.id,
+            projectId: created.id, organizationId: developer || undefined,
+          })));
         } catch {
           toast.error(t('projects.add.documentsUploadFailed'));
         }

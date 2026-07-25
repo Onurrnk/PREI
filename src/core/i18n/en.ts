@@ -903,6 +903,10 @@ export const en = {
         actions: 'Actions',
       },
       viewDetails: 'View Details',
+      contractCount_one: '{{count}} contract',
+      contractCount_other: '{{count}} contracts',
+      expiringCount_one: '{{count}} renewal approaching',
+      expiringCount_other: '{{count}} renewals approaching',
       agreementTitle: '{{developer}} Agreement',
       detail: {
         legalEntity: 'Legal Entity',

@@ -15,7 +15,7 @@ const row = (over: Partial<ContractRow> = {}): ContractRow => ({
   amount: '500000', currency: 'AED',
   metadata: { commission: '5%', legal_entity: 'Emaar PJSC', payment_terms: '30 Gün' },
   property_id: 'p1', contact_id: 'ct1',
-  developer_name: 'Emaar', project_title: 'Beachfront', updated_at: '2026-06-15',
+  organization_id: 'org-1', developer_name: 'Emaar', project_title: 'Beachfront', updated_at: '2026-06-15',
   ...over,
 });
 
@@ -69,5 +69,14 @@ describe('toContractResponse — alanlar', () => {
     expect(r.propertyId).toBe('p1');
     expect(r.contactId).toBe('ct1');
     expect(toContractResponse(row({ property_id: null, contact_id: null })).propertyId).toBeNull();
+  });
+
+  // 003e: sözleşmeler firmaya göre ayrılıyor; gruplama bu alana dayanıyor.
+  it('firma kimliğini dışa taşır', () => {
+    expect(toContractResponse(row(), []).organizationId).toBe('org-1');
+  });
+
+  it('firma yoksa null döner (uydurma kimlik yok)', () => {
+    expect(toContractResponse(row({ organization_id: null }), []).organizationId).toBeNull();
   });
 });

@@ -15,6 +15,11 @@ export interface VaultDocumentResponse {
   uploadedAt: string; // YYYY-MM-DD
   uploadedBy: string;
   relatedId?: string;
+  /** Firma/proje bağı — kasa ağacı bunlarla kuruluyor (003e). */
+  organizationId?: string;
+  organizationName?: string;
+  projectId?: string;
+  projectName?: string;
 }
 
 function typeFromMime(mime: string): VaultDocType {
@@ -37,5 +42,9 @@ export function toVaultDocumentResponse(row: VaultDocRow): VaultDocumentResponse
     uploadedAt: new Date(row.created_at).toISOString().slice(0, 10),
     uploadedBy: row.uploaded_by_name ?? '—',
     relatedId: row.related_id ?? undefined,
+    organizationId: row.organization_id ?? undefined,
+    organizationName: row.organization_name ?? undefined,
+    projectId: row.project_id ?? undefined,
+    projectName: row.project_name ?? undefined,
   };
 }

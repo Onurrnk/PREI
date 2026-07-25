@@ -31,6 +31,7 @@ export class ContractsService {
       contractType: dto.contractType,
       status: dto.status,
       propertyId: dto.propertyId,
+      organizationId: dto.organizationId,
       contactId: dto.contactId,
       startDate: dto.startDate,
       endDate: dto.endDate,

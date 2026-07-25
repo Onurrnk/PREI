@@ -194,3 +194,50 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* =====================================================================
+   003e — Firmalara göre sözleşme grupları.
+   Her firma kendi kartında; süresi dolan/dolacak varsa başlıkta uyarı.
+   ===================================================================== */
+
+.companyGroups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.companyHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.companyTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.companyIcon { color: var(--color-primary-purple); }
+
+.companyName {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.companyCount {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.companyWarn {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: rgba(201, 148, 65, 0.14);
+  color: var(--color-warning, #C99441);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}

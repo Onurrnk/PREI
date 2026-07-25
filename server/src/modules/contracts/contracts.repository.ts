@@ -12,6 +12,8 @@ export interface ContractWriteInput {
   status?: string;
   propertyId?: string | null;
   contactId?: string | null;
+  /** Sözleşmenin karşı tarafı olan firma — mülkten bağımsız. */
+  organizationId?: string | null;
   startDate?: string | null;
   endDate?: string | null;
   amount?: number | null;
@@ -31,6 +33,7 @@ export interface ContractRow {
   metadata: Record<string, unknown> | null;
   property_id: string | null;
   contact_id: string | null;
+  organization_id: string | null;
   developer_name: string | null;
   project_title: string | null;
   updated_at: string;
@@ -43,17 +46,21 @@ export interface ContractDocRow {
   related_id: string;
 }
 
+// Firma bağı ÖNCE doğrudan (ct.organization_id), yoksa mülkün
+// geliştiricisinden. Böylece mülksüz çerçeve sözleşmesi de firmasız kalmaz.
 const CONTRACT_SELECT = `
   SELECT ct.id, ct.contract_type, ct.status,
          ct.start_date::text AS start_date, ct.end_date::text AS end_date,
          ct.amount, ct.currency, ct.metadata,
          ct.property_id, ct.contact_id,
-         org.name  AS developer_name,
+         COALESCE(ct.organization_id, prop.developer_id) AS organization_id,
+         COALESCE(dorg.name, org.name)                   AS developer_name,
          prop.title AS project_title,
          ct.updated_at
     FROM contracts ct
-    LEFT JOIN properties prop  ON prop.id = ct.property_id
-    LEFT JOIN organizations org ON org.id = prop.developer_id`;
+    LEFT JOIN properties prop   ON prop.id = ct.property_id
+    LEFT JOIN organizations org  ON org.id = prop.developer_id
+    LEFT JOIN organizations dorg ON dorg.id = ct.organization_id`;
 
 @Injectable()
 export class ContractsRepository {
@@ -94,13 +101,13 @@ export class ContractsRepository {
     return this.db.withContext(ctx, async (c) => {
       const { rows } = await c.query<{ id: string }>(
         `INSERT INTO contracts
-           (tenant_id, contract_type, status, property_id, contact_id,
+           (tenant_id, contract_type, status, property_id, contact_id, organization_id,
             start_date, end_date, amount, currency, metadata, created_by, updated_by)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$11)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11::jsonb,$12,$12)
          RETURNING id`,
         [
           ctx.tenantId, input.contractType, status,
-          input.propertyId ?? null, input.contactId ?? null,
+          input.propertyId ?? null, input.contactId ?? null, input.organizationId ?? null,
           input.startDate ?? null, input.endDate ?? null,
           input.amount ?? null, input.currency ?? 'EUR',
           JSON.stringify(input.metadataPatch ?? {}), ctx.userId,
@@ -130,16 +137,17 @@ export class ContractsRepository {
             status        = COALESCE($3, status),
             property_id   = COALESCE($4, property_id),
             contact_id    = COALESCE($5, contact_id),
-            start_date    = COALESCE($6, start_date),
-            end_date      = COALESCE($7, end_date),
-            amount        = COALESCE($8, amount),
-            currency      = COALESCE($9, currency),
-            metadata      = metadata || $10::jsonb,
-            updated_by    = $11
+            organization_id = COALESCE($6, organization_id),
+            start_date    = COALESCE($7, start_date),
+            end_date      = COALESCE($8, end_date),
+            amount        = COALESCE($9, amount),
+            currency      = COALESCE($10, currency),
+            metadata      = metadata || $11::jsonb,
+            updated_by    = $12
           WHERE id = $1 AND deleted_at IS NULL`,
         [
           id, input.contractType ?? null, input.status ?? null,
-          input.propertyId ?? null, input.contactId ?? null,
+          input.propertyId ?? null, input.contactId ?? null, input.organizationId ?? null,
           input.startDate ?? null, input.endDate ?? null,
           input.amount ?? null, input.currency ?? null,
           JSON.stringify(input.metadataPatch ?? {}), ctx.userId,

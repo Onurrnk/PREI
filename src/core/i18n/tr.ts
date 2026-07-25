@@ -901,6 +901,10 @@ export const tr = {
         actions: 'İşlemler',
       },
       viewDetails: 'Detayları Görüntüle',
+      contractCount_one: '{{count}} sözleşme',
+      contractCount_other: '{{count}} sözleşme',
+      expiringCount_one: '{{count}} yenileme yaklaşıyor',
+      expiringCount_other: '{{count}} yenileme yaklaşıyor',
       agreementTitle: '{{developer}} Anlaşması',
       detail: {
         legalEntity: 'Tüzel Kişilik',

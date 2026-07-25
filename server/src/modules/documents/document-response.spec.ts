@@ -9,6 +9,7 @@ import type { VaultDocRow } from './documents.repository';
 const row = (over: Partial<VaultDocRow> = {}): VaultDocRow => ({
   id: 'doc1', name: 'Brosur.pdf', folder: 'Contracts', mime_type: 'application/pdf',
   size_bytes: '2516582', storage_path: 't/x.pdf', related_type: 'contract', related_id: 'c1',
+  organization_id: null, organization_name: null, project_id: null, project_name: null,
   created_at: '2026-06-15T10:30:00.000Z', uploaded_by_name: 'Onur',
   ...over,
 });
@@ -36,5 +37,23 @@ describe('toVaultDocumentResponse', () => {
     const r = toVaultDocumentResponse(row({ uploaded_by_name: null, related_id: null }));
     expect(r.uploadedBy).toBe('—');
     expect(r.relatedId).toBeUndefined();
+  });
+
+  // 003e: firma/proje bağı dış sözleşmeye taşınıyor — kasa ağacı buna dayanıyor.
+  it('firma ve proje bilgisini taşır', () => {
+    const r = toVaultDocumentResponse(row({
+      organization_id: 'org1', organization_name: 'Revak Yapı',
+      project_id: 'prj1', project_name: 'Mercury Çengelköy',
+    }));
+    expect(r.organizationId).toBe('org1');
+    expect(r.organizationName).toBe('Revak Yapı');
+    expect(r.projectId).toBe('prj1');
+    expect(r.projectName).toBe('Mercury Çengelköy');
+  });
+
+  it('firma/proje yoksa alanları hiç göndermez (null yerine undefined)', () => {
+    const r = toVaultDocumentResponse(row());
+    expect(r.organizationId).toBeUndefined();
+    expect(r.projectName).toBeUndefined();
   });
 });

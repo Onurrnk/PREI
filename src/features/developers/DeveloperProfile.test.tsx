@@ -34,8 +34,11 @@ describe('DeveloperProfile — gerçek PATCH /developers/:id + Visit Website', (
     fireEvent.change(nameInput, { target: { value: 'Emaar Properties Group' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
 
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: 'Emaar Properties Group' })).toBeInTheDocument(),
+    // Sayfa artık firma kişilerini de ayrı bir istekle çekiyor (003e);
+    // tam takım koşarken varsayılan 1sn sınırına takılabiliyordu.
+    await waitFor(
+      () => expect(screen.getByRole('heading', { name: 'Emaar Properties Group' })).toBeInTheDocument(),
+      { timeout: 5000 },
     );
   });
 

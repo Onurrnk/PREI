@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardBody } from '../../core/components/Card/Card';
+import { Card, CardBody, CardHeader } from '../../core/components/Card/Card';
 import { Table, TableHead, TableBody, TableRow, TableHeader, TableCell } from '../../core/components/Table/Table';
 import { Button } from '../../core/components/Button/Button';
 import { useToast } from '../../core/components/Toast/ToastProvider';
@@ -12,6 +12,7 @@ import type { ContractDTO, ContractWriteInput, ProjectDTO, ClientDTO } from '../
 import { contractsApi, documentsApi, projectsApi, clientsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
+import { groupContractsByCompany } from './contract-grouping';
 import styles from './Contracts.module.css';
 
 const STATUS_KEY: Record<string, string> = {
@@ -155,7 +156,11 @@ export const ContractsList: React.FC = () => {
     if (!file || !selectedContractId) return;
     setIsUploading(true);
     try {
-      await documentsApi.upload(file, 'Contracts', 'contract', selectedContractId);
+      await documentsApi.upload(file, 'contract', {
+        relatedType: 'contract', relatedId: selectedContractId,
+        // Sözleşme evrağı sözleşmenin firmasının kasasına düşsün (003e).
+        organizationId: selectedContract?.organizationId ?? undefined,
+      });
       toast.success(t('contracts.uploadedToast', { name: file.name }));
       refetch();
     } catch (err) {
@@ -191,38 +196,56 @@ export const ContractsList: React.FC = () => {
           </Button>
         </div>
       ) : (
-        <Card>
-          <CardBody padding="none">
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeader>{t('contracts.table.developer')}</TableHeader>
-                  <TableHeader>{t('contracts.table.associatedProject')}</TableHeader>
-                  <TableHeader>{t('contracts.table.status')}</TableHeader>
-                  <TableHeader>{t('contracts.table.commission')}</TableHeader>
-                  <TableHeader>{t('contracts.table.expiryDate')}</TableHeader>
-                  <TableHeader>{t('contracts.table.actions')}</TableHeader>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {contracts.map((contract) => (
-                  <TableRow key={contract.id}>
-                    <TableCell>{contract.developer}</TableCell>
-                    <TableCell>{contract.project}</TableCell>
-                    <TableCell>{getStatusBadge(contract.status)}</TableCell>
-                    <TableCell><span className={styles.numCell}>{contract.commission || '—'}</span></TableCell>
-                    <TableCell><span className={styles.numCell}>{contract.expiryDate ?? '—'}</span></TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedContractId(contract.id)}>
-                        {t('contracts.viewDetails')}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardBody>
-        </Card>
+        /* Firmalara göre ayrı kartlar — düz listede hangi sözleşmenin
+           hangi firmaya ait olduğu karışıyordu (003e). */
+        <div className={styles.companyGroups}>
+          {groupContractsByCompany(contracts).map((group) => (
+            <Card key={group.key}>
+              <CardHeader className={styles.companyHead}>
+                <div className={styles.companyTitleRow}>
+                  <Buildings size={16} className={styles.companyIcon} />
+                  <h3 className={styles.companyName}>{group.name}</h3>
+                  <span className={styles.companyCount}>
+                    {t('contracts.contractCount', { count: group.contracts.length })}
+                  </span>
+                </div>
+                {group.expiringCount > 0 && (
+                  <span className={styles.companyWarn}>
+                    {t('contracts.expiringCount', { count: group.expiringCount })}
+                  </span>
+                )}
+              </CardHeader>
+              <CardBody padding="none">
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableHeader>{t('contracts.table.associatedProject')}</TableHeader>
+                      <TableHeader>{t('contracts.table.status')}</TableHeader>
+                      <TableHeader>{t('contracts.table.commission')}</TableHeader>
+                      <TableHeader>{t('contracts.table.expiryDate')}</TableHeader>
+                      <TableHeader>{t('contracts.table.actions')}</TableHeader>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {group.contracts.map((contract) => (
+                      <TableRow key={contract.id}>
+                        <TableCell>{contract.project}</TableCell>
+                        <TableCell>{getStatusBadge(contract.status)}</TableCell>
+                        <TableCell><span className={styles.numCell}>{contract.commission || '—'}</span></TableCell>
+                        <TableCell><span className={styles.numCell}>{contract.expiryDate ?? '—'}</span></TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm" onClick={() => setSelectedContractId(contract.id)}>
+                            {t('contracts.viewDetails')}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
       )}
 
       {/* Contract Details Modal */}

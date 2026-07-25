@@ -24,6 +24,10 @@ export class CreateContractDto {
   @IsOptional() @IsUUID()
   contactId?: string | null;
 
+  /** Karşı taraf firma — mülk seçilmese de sözleşme firmaya bağlanabilir. */
+  @IsOptional() @IsUUID()
+  organizationId?: string | null;
+
   @IsOptional() @IsISO8601()
   startDate?: string | null;
 
@@ -58,6 +62,10 @@ export class UpdateContractDto {
 
   @IsOptional() @IsUUID()
   contactId?: string | null;
+
+  /** Karşı taraf firma — mülk seçilmese de sözleşme firmaya bağlanabilir. */
+  @IsOptional() @IsUUID()
+  organizationId?: string | null;
 
   @IsOptional() @IsISO8601()
   startDate?: string | null;

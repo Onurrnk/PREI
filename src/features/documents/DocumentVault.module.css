@@ -318,3 +318,94 @@
   border-color: var(--color-primary-purple);
   color: white;
 }
+
+/* =====================================================================
+   003e — Firma → Proje → Kategori gezinmesi.
+   Proje satırı firmanın altında girintili durur; kategori süzgeci
+   dosya listesinin üstünde çip olarak akar.
+   ===================================================================== */
+
+.projectItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 6px var(--spacing-md) 6px calc(var(--spacing-md) + 18px);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8125rem;
+  transition: all var(--transition-fast);
+}
+
+.projectItem:hover {
+  background-color: var(--bg-surface-hover);
+  color: var(--text-primary);
+}
+
+.activeProject {
+  background-color: rgba(155, 91, 179, 0.08);
+  color: var(--color-primary-purple);
+}
+
+.sidebarEmpty {
+  margin: 0;
+  padding: var(--spacing-md);
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.crumb {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.categoryRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--spacing-md);
+}
+
+.chip, .chipActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-app);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.chip:hover { background-color: var(--bg-surface-hover); color: var(--text-primary); }
+
+.chipActive {
+  border-color: var(--color-primary-purple);
+  background-color: rgba(155, 91, 179, 0.12);
+  color: var(--color-primary-purple);
+}
+
+.chipCount { opacity: 0.75; }
+
+.categoryTag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
+
+/* Hangi firmanın hangi projesi — "Tüm firmalar" görünümünde şart. */
+.filePath {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: var(--color-primary-purple);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

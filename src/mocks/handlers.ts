@@ -48,6 +48,8 @@ import type {
   UpdateDeveloperInput,
   UpdateMeInput,
   VaultDocumentDTO,
+  VaultCompanyNodeDTO,
+  OrgContactDTO,
   AuditLogDTO,
   UserDTO,
   TaskDTO,
@@ -129,22 +131,22 @@ let mockProposals: ProposalDTO[] = [
 ];
 
 const mockVaultDocuments: VaultDocumentDTO[] = [
-  { id: 'doc1', name: 'Oliver_Hartwell_Passport.pdf', folder: 'Client KYC', type: 'pdf', sizeMB: 2.4, uploadedAt: '2026-06-15', uploadedBy: 'Elif Şahin' },
-  { id: 'doc2', name: 'Beachfront_Brochure_V2.pdf', folder: 'Marketing', type: 'pdf', sizeMB: 15.6, uploadedAt: '2026-06-10', uploadedBy: 'Marketing Team' },
-  { id: 'doc3', name: 'SPA_Template_Emaar.word', folder: 'Contracts', type: 'word', sizeMB: 1.1, uploadedAt: '2026-06-01', uploadedBy: 'Legal Dept', relatedId: 'C-1001' },
-  { id: 'doc4', name: 'Downtown_Heights_Floorplans.pdf', folder: 'Marketing', type: 'pdf', sizeMB: 8.2, uploadedAt: '2026-05-20', uploadedBy: 'Elif Şahin' },
-  { id: 'doc5', name: 'MOU_Sarah_Ahmed_Signed.pdf', folder: 'Contracts', type: 'pdf', sizeMB: 4.5, uploadedAt: '2026-06-14', uploadedBy: 'Elif Şahin', relatedId: 'C-1002' },
-  { id: 'doc6', name: 'ROI_Calculator_2026.xlsx', folder: 'Root', type: 'excel', sizeMB: 0.5, uploadedAt: '2026-01-10', uploadedBy: 'Finance' },
-  { id: 'doc7', name: 'Beachfront_Brochure.pdf', folder: 'Marketing', type: 'pdf', sizeMB: 12, uploadedAt: '2026-06-01', uploadedBy: 'Marketing Team', relatedId: 'p1' },
-  { id: 'doc8', name: 'Villa_Layouts.pdf', folder: 'Marketing', type: 'pdf', sizeMB: 10, uploadedAt: '2026-05-15', uploadedBy: 'Marketing Team', relatedId: 'p3' },
+  { id: 'doc1', name: 'Oliver_Hartwell_Passport.pdf', folder: 'kyc', type: 'pdf', sizeMB: 2.4, uploadedAt: '2026-06-15', uploadedBy: 'Elif Şahin' },
+  { id: 'doc2', name: 'Beachfront_Brochure_V2.pdf', folder: 'marketing', type: 'pdf', sizeMB: 15.6, uploadedAt: '2026-06-10', uploadedBy: 'Marketing Team', organizationId: '1', organizationName: 'Emaar Properties', projectId: 'p1', projectName: 'Beachfront Residences' },
+  { id: 'doc3', name: 'SPA_Template_Emaar.word', folder: 'contract', type: 'word', sizeMB: 1.1, uploadedAt: '2026-06-01', uploadedBy: 'Legal Dept', relatedId: 'C-1001', organizationId: '1', organizationName: 'Emaar Properties' },
+  { id: 'doc4', name: 'Downtown_Heights_Floorplans.pdf', folder: 'technical', type: 'pdf', sizeMB: 8.2, uploadedAt: '2026-05-20', uploadedBy: 'Elif Şahin', organizationId: '2', organizationName: 'DAMAC Properties', projectId: 'p2', projectName: 'DAMAC Hills 2' },
+  { id: 'doc5', name: 'MOU_Sarah_Ahmed_Signed.pdf', folder: 'contract', type: 'pdf', sizeMB: 4.5, uploadedAt: '2026-06-14', uploadedBy: 'Elif Şahin', relatedId: 'C-1002', organizationId: '2', organizationName: 'DAMAC Properties' },
+  { id: 'doc6', name: 'ROI_Calculator_2026.xlsx', folder: 'financial', type: 'excel', sizeMB: 0.5, uploadedAt: '2026-01-10', uploadedBy: 'Finance' },
+  { id: 'doc7', name: 'Beachfront_Brochure.pdf', folder: 'marketing', type: 'pdf', sizeMB: 12, uploadedAt: '2026-06-01', uploadedBy: 'Marketing Team', relatedId: 'p1', organizationId: '1', organizationName: 'Emaar Properties', projectId: 'p1', projectName: 'Beachfront Residences' },
+  { id: 'doc8', name: 'Villa_Layouts.pdf', folder: 'technical', type: 'pdf', sizeMB: 10, uploadedAt: '2026-05-15', uploadedBy: 'Marketing Team', relatedId: 'p3' },
 ];
 
 // Sözleşmeler — module-level, oturum-içi kalıcı (create/update mock modda görünür).
 let mockContracts: ContractDTO[] = [
-  { id: 'C-1001', developer: 'Emaar Properties', project: 'Downtown Views II', status: 'Active', contractType: 'pm', startDate: '2025-01-01', expiryDate: '2026-12-31', commission: '5%', legalEntity: 'Emaar Development PJSC', paymentTerms: '30 Days Net', amount: null, currency: 'AED', propertyId: null, contactId: null, documents: [] },
-  { id: 'C-1002', developer: 'Nakheel', project: 'Palm Beach Towers', status: 'Active', contractType: 'pm', startDate: '2025-06-15', expiryDate: '2027-06-14', commission: '4%', legalEntity: 'Nakheel PJSC', paymentTerms: '45 Days Net', amount: null, currency: 'AED', propertyId: null, contactId: null, documents: [] },
-  { id: 'C-1003', developer: 'Damac Properties', project: 'Damac Hills', status: 'Expiring', contractType: 'pm', startDate: '2024-08-01', expiryDate: '2026-08-20', commission: '6%', legalEntity: 'Damac Real Estate Dev.', paymentTerms: '15 Days Net', amount: null, currency: 'AED', propertyId: null, contactId: null, documents: [] },
-  { id: 'C-1004', developer: 'Meraas', project: 'City Walk', status: 'Expired', contractType: 'pm', startDate: '2024-01-01', expiryDate: '2026-01-01', commission: '5%', legalEntity: 'Meraas Holding', paymentTerms: '30 Days Net', amount: null, currency: 'AED', propertyId: null, contactId: null, documents: [] },
+  { id: 'C-1001', developer: 'Emaar Properties', project: 'Downtown Views II', status: 'Active', contractType: 'pm', startDate: '2025-01-01', expiryDate: '2026-12-31', commission: '5%', legalEntity: 'Emaar Development PJSC', paymentTerms: '30 Days Net', amount: null, currency: 'AED', propertyId: null, contactId: null, organizationId: '1', documents: [] },
+  { id: 'C-1002', developer: 'Nakheel', project: 'Palm Beach Towers', status: 'Active', contractType: 'pm', startDate: '2025-06-15', expiryDate: '2027-06-14', commission: '4%', legalEntity: 'Nakheel PJSC', paymentTerms: '45 Days Net', amount: null, currency: 'AED', propertyId: null, contactId: null, organizationId: null, documents: [] },
+  { id: 'C-1003', developer: 'Damac Properties', project: 'Damac Hills', status: 'Expiring', contractType: 'pm', startDate: '2024-08-01', expiryDate: '2026-08-20', commission: '6%', legalEntity: 'Damac Real Estate Dev.', paymentTerms: '15 Days Net', amount: null, currency: 'AED', propertyId: null, contactId: null, organizationId: '2', documents: [] },
+  { id: 'C-1004', developer: 'Meraas', project: 'City Walk', status: 'Expired', contractType: 'pm', startDate: '2024-01-01', expiryDate: '2026-01-01', commission: '5%', legalEntity: 'Meraas Holding', paymentTerms: '30 Days Net', amount: null, currency: 'AED', propertyId: null, contactId: null, organizationId: null, documents: [] },
 ];
 
 // Mock modda Gmail thread'leri — module-level, mockThreads'e gönderilen
@@ -659,6 +661,21 @@ function buildMockProposal(
 }
 
 
+const mockOrgContacts: OrgContactDTO[] = [
+  {
+    id: 'oc-1', organizationId: '1', fullName: 'Kudret Kalyoncu',
+    title: 'Satış Direktörü', email: 'kudret@mercurycengelkoy.com',
+    phone: '0531 825 52 28', whatsapp: null, isPrimary: true,
+    notes: null, createdAt: '2026-07-01T09:00:00.000Z',
+  },
+  {
+    id: 'oc-2', organizationId: '1', fullName: 'Ayşe Demir',
+    title: 'Mali İşler Müdürü', email: 'ayse@example.com',
+    phone: '0532 000 00 00', whatsapp: null, isPrimary: false,
+    notes: 'Fatura ve ödeme yazışmaları', createdAt: '2026-07-02T09:00:00.000Z',
+  },
+];
+
 export const handlers = [
   // ---- Auth ----
   http.post('/api/auth/login', async ({ request }) => {
@@ -822,8 +839,10 @@ export const handlers = [
   http.post('/api/documents', async ({ request }) => {
     const form = await request.formData();
     const file = form.get('file') as File | null;
-    const folder = (form.get('folder') as string | null) ?? 'Root';
+    const folder = (form.get('folder') as string | null) ?? 'other';
     const relatedId = (form.get('related_id') as string | null) ?? undefined;
+    const organizationId = (form.get('organization_id') as string | null) ?? undefined;
+    const projectId = (form.get('project_id') as string | null) ?? undefined;
     if (!file) return HttpResponse.json({ message: 'Dosya boş.' }, { status: 400 });
     const doc: VaultDocumentDTO = {
       id: crypto.randomUUID(),
@@ -837,9 +856,60 @@ export const handlers = [
       uploadedAt: new Date().toISOString().slice(0, 10),
       uploadedBy: 'Onur Nazım Karataş',
       relatedId,
+      organizationId,
+      organizationName: organizationId
+        ? mockVaultDocuments.find((d) => d.organizationId === organizationId)?.organizationName
+        : undefined,
+      projectId,
+      projectName: projectId
+        ? mockVaultDocuments.find((d) => d.projectId === projectId)?.projectName
+        : undefined,
     };
     mockVaultDocuments.unshift(doc);
     return HttpResponse.json<VaultDocumentDTO>(doc, { status: 201 });
+  }),
+
+  // Kasa ağacı: Firma → Proje → Kategori. Sunucu tarafındaki
+  // buildVaultTree ile aynı sıralama kuralları (adsızlar sonda).
+  http.get('/api/documents/tree', () => {
+    const CAT_ORDER = ['contract', 'permit', 'legal', 'technical', 'marketing', 'financial', 'kyc', 'other'];
+    const LABELS: Record<string, string> = {
+      contract: 'Sözleşme', permit: 'Ruhsat & İzin', legal: 'Tapu & Hukuk',
+      technical: 'Teknik & Plan', marketing: 'Broşür & Görsel', financial: 'Finansal',
+      kyc: 'KYC & Kimlik', other: 'Diğer',
+    };
+    const companies = new Map<string, VaultCompanyNodeDTO>();
+    for (const d of mockVaultDocuments) {
+      const cid = d.organizationId ?? '__unassigned__';
+      const cname = d.organizationId ? (d.organizationName ?? 'Adsız firma') : 'Firma atanmamış';
+      let comp = companies.get(cid);
+      if (!comp) { comp = { id: cid, name: cname, count: 0, sizeMB: 0, projects: [] }; companies.set(cid, comp); }
+      comp.count++; comp.sizeMB += d.sizeMB;
+      const pid = d.projectId ?? '__general__';
+      const pname = d.projectId ? (d.projectName ?? 'Adsız proje') : 'Genel (projeye bağlı değil)';
+      let proj = comp.projects.find((p) => p.id === pid);
+      if (!proj) { proj = { id: pid, name: pname, count: 0, sizeMB: 0, categories: [] }; comp.projects.push(proj); }
+      proj.count++; proj.sizeMB += d.sizeMB;
+      const cat = proj.categories.find((x) => x.code === d.folder);
+      if (cat) cat.count++;
+      else proj.categories.push({ code: d.folder, label: LABELS[d.folder] ?? 'Diğer', count: 1 });
+    }
+    const list = [...companies.values()];
+    for (const c of list) {
+      c.sizeMB = Math.round(c.sizeMB * 100) / 100;
+      const general = c.projects.filter((p) => p.id === '__general__');
+      const named = c.projects.filter((p) => p.id !== '__general__')
+        .sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+      c.projects = [...named, ...general];
+      for (const p of c.projects) {
+        p.sizeMB = Math.round(p.sizeMB * 100) / 100;
+        p.categories.sort((x, y) => CAT_ORDER.indexOf(x.code) - CAT_ORDER.indexOf(y.code));
+      }
+    }
+    const un = list.filter((c) => c.id === '__unassigned__');
+    const named = list.filter((c) => c.id !== '__unassigned__')
+      .sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+    return HttpResponse.json<VaultCompanyNodeDTO[]>([...named, ...un]);
   }),
 
   http.get('/api/documents/:id/download', ({ params }) => {
@@ -1029,7 +1099,7 @@ export const handlers = [
       commission: b.commission ?? '', legalEntity: b.legalEntity ?? '',
       paymentTerms: b.paymentTerms ?? '', amount: b.amount ?? null,
       currency: b.currency ?? 'EUR',
-      propertyId: b.propertyId ?? null, contactId: b.contactId ?? null,
+      propertyId: b.propertyId ?? null, contactId: b.contactId ?? null, organizationId: b.organizationId ?? null,
       documents: [],
     };
     mockContracts = [created, ...mockContracts];
@@ -1050,7 +1120,7 @@ export const handlers = [
       amount: b.amount ?? cur.amount, currency: b.currency ?? cur.currency,
       commission: b.commission ?? cur.commission, legalEntity: b.legalEntity ?? cur.legalEntity,
       paymentTerms: b.paymentTerms ?? cur.paymentTerms,
-      propertyId: b.propertyId ?? cur.propertyId, contactId: b.contactId ?? cur.contactId,
+      propertyId: b.propertyId ?? cur.propertyId, contactId: b.contactId ?? cur.contactId, organizationId: b.organizationId ?? cur.organizationId,
     };
     mockContracts[idx] = updated;
     return HttpResponse.json<ContractDTO>(updated);
@@ -1574,6 +1644,69 @@ export const handlers = [
     return HttpResponse.json<ClientTimelineEntryDTO[]>(mockTimelineByClient[String(params.id)] ?? []);
   }),
 
+
+  // Firma kişileri (003e) — unvanlı, çok kişili. Oturum-içi kalıcı.
+  http.get('/api/developers/:id/contacts', ({ params }) =>
+    HttpResponse.json<OrgContactDTO[]>(
+      mockOrgContacts
+        .filter((c) => c.organizationId === params.id)
+        .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary) || a.fullName.localeCompare(b.fullName, 'tr')),
+    )),
+
+  http.post('/api/developers/:id/contacts', async ({ params, request }) => {
+    const body = (await request.json()) as Partial<OrgContactDTO>;
+    if (!body.fullName?.trim()) {
+      return HttpResponse.json({ message: 'Ad soyad zorunlu.' }, { status: 400 });
+    }
+    // Birincil firma başına tek — sunucudaki unique index'in karşılığı.
+    if (body.isPrimary) {
+      for (const c of mockOrgContacts) {
+        if (c.organizationId === params.id) c.isPrimary = false;
+      }
+    }
+    const contact: OrgContactDTO = {
+      id: crypto.randomUUID(),
+      organizationId: String(params.id),
+      fullName: body.fullName.trim(),
+      title: body.title?.trim() || null,
+      email: body.email?.trim() || null,
+      phone: body.phone?.trim() || null,
+      whatsapp: body.whatsapp?.trim() || null,
+      isPrimary: body.isPrimary === true,
+      notes: body.notes?.trim() || null,
+      createdAt: new Date().toISOString(),
+    };
+    mockOrgContacts.push(contact);
+    return HttpResponse.json<OrgContactDTO>(contact, { status: 201 });
+  }),
+
+  http.patch('/api/developers/contacts/:contactId', async ({ params, request }) => {
+    const body = (await request.json()) as Partial<OrgContactDTO>;
+    const c = mockOrgContacts.find((x) => x.id === params.contactId);
+    if (!c) return new HttpResponse(null, { status: 404 });
+    if (body.isPrimary) {
+      for (const o of mockOrgContacts) {
+        if (o.organizationId === c.organizationId) o.isPrimary = false;
+      }
+    }
+    Object.assign(c, {
+      fullName: body.fullName?.trim() ?? c.fullName,
+      title: body.title !== undefined ? (body.title?.trim() || null) : c.title,
+      email: body.email !== undefined ? (body.email?.trim() || null) : c.email,
+      phone: body.phone !== undefined ? (body.phone?.trim() || null) : c.phone,
+      whatsapp: body.whatsapp !== undefined ? (body.whatsapp?.trim() || null) : c.whatsapp,
+      notes: body.notes !== undefined ? (body.notes?.trim() || null) : c.notes,
+      isPrimary: body.isPrimary ?? c.isPrimary,
+    });
+    return HttpResponse.json<OrgContactDTO>(c);
+  }),
+
+  http.delete('/api/developers/contacts/:contactId', ({ params }) => {
+    const i = mockOrgContacts.findIndex((x) => x.id === params.contactId);
+    if (i < 0) return new HttpResponse(null, { status: 404 });
+    mockOrgContacts.splice(i, 1);
+    return HttpResponse.json({ deleted: true });
+  }),
 
   http.get('/api/developers', () => {
     return HttpResponse.json<DeveloperDTO[]>(

@@ -3,7 +3,7 @@
 // Upload multipart/form-data: file + folder (+ related_type/related_id).
 // =====================================================================
 import {
-  Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post,
+  Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Query,
   UploadedFile, UseGuards, UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -21,8 +21,21 @@ export class DocumentsController {
   constructor(private readonly documents: DocumentsService) {}
 
   @Get()
-  list(@Ctx() ctx: RequestContext) {
-    return this.documents.list(ctx);
+  list(
+    @Ctx() ctx: RequestContext,
+    @Query('organizationId') organizationId?: string,
+    @Query('projectId') projectId?: string,
+  ) {
+    return this.documents.list(ctx, {
+      organizationId: organizationId || undefined,
+      projectId: projectId || undefined,
+    });
+  }
+
+  /** Kasa ağacı: Firma → Proje → Kategori (sayı ve boyut özetleriyle). */
+  @Get('tree')
+  tree(@Ctx() ctx: RequestContext) {
+    return this.documents.tree(ctx);
   }
 
   @Post()
@@ -33,8 +46,11 @@ export class DocumentsController {
     @Body('folder') folder: string,
     @Body('related_type') relatedType?: string,
     @Body('related_id') relatedId?: string,
+    @Body('organization_id') organizationId?: string,
+    @Body('project_id') projectId?: string,
   ) {
-    return this.documents.upload(ctx, file, folder ?? 'Root', relatedType, relatedId);
+    return this.documents.upload(
+      ctx, file, folder ?? 'other', relatedType, relatedId, organizationId, projectId);
   }
 
   @Get(':id/download')
