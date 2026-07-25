@@ -11,6 +11,7 @@ import { useFetch } from '../../core/hooks/useFetch';
 import { marketingApi, socialApi } from '../../core/api/resources';
 import { ReachPanel } from './components/ReachPanel';
 import { IntelArchive } from './components/IntelArchive';
+import { PublishingWeek } from './components/PublishingWeek';
 import { AdApprovalQueue } from './components/AdApprovalQueue';
 import { ManagerReport } from './components/ManagerReport';
 import type { MarketingSummaryDTO, MarketingTimeframe, CreateAdSpendInput, SocialSummaryDTO, SocialPlatform } from '../../core/types';
@@ -445,6 +446,9 @@ export const Marketing: React.FC = () => {
 
       {/* Haftalık istihbarat arşivi: bilgi bankası + sosyal içerik kaynağı (003b) */}
       <IntelArchive />
+
+      {/* Rapordan haftalık yayın akışı — hazırlanır, PAYLAŞILMAZ (003d) */}
+      <PublishingWeek />
 
       {/* Görünürlük + kitle: Meta'dan otomatik gelir, elle giriş yok (002y) */}
       <ReachPanel social={social ?? null} />

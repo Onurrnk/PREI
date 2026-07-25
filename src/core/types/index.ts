@@ -1189,3 +1189,67 @@ export interface IntelSearchHitDTO {
   sectionHeading: string | null;
   snippet: string;
 }
+
+// ── Haftalık yayın akışı ────────────────────────────────────────────
+// Sistem hazırlar, Onur paylaşır. "published" = "ben paylaştım" kaydı,
+// sistemin bir yere gönderdiği anlamına GELMEZ.
+
+export interface PlanSlideDTO {
+  index: number;
+  headline: string;
+  body: string;
+  imagePrompt: string;
+}
+
+export interface PublishingPlanItemDTO {
+  id: string;
+  scheduledDate: string;
+  dayName: string;
+  kind: 'post' | 'carousel';
+  orderIndex: number;
+  /** Yalnız postlar LinkedIn'e gider; karuseller Meta'da kalır. */
+  forLinkedin: boolean;
+  forMeta: boolean;
+  title: string;
+  hook: string | null;
+  body: string | null;
+  instagramCaption: string | null;
+  hashtags: string[];
+  marketCode: string | null;
+  sourceSection: string | null;
+  slides: PlanSlideDTO[];
+  driveFileLink: string | null;
+  status: 'ready' | 'published' | 'skipped';
+  publishedAt: string | null;
+  /** Üretilmiş karusel görseli sayısı. */
+  imageCount?: number;
+}
+
+export interface PublishingPlanDTO {
+  id: string;
+  reportId: string | null;
+  weekStart: string;
+  weekEnd: string;
+  status: string;
+  driveFolderLink: string | null;
+  skipped: Array<{ topic: string; reason: string }>;
+  items: PublishingPlanItemDTO[];
+  createdAt: string;
+}
+
+export interface PublishingGenerateResultDTO {
+  ok: boolean;
+  message?: string;
+  plan?: PublishingPlanDTO;
+  drive?: { ok: boolean; message?: string; folderLink?: string };
+  images?: { ok: boolean; message?: string; generated: number; total: number };
+}
+
+export interface PlanImageDTO {
+  itemId: string;
+  slideIndex: number;
+  /** base64 — yoksa error dolu. */
+  data: string | null;
+  mimeType: string;
+  error: string | null;
+}

@@ -9,6 +9,7 @@
 //   2. PREI'ye yükler (arşivlenir, bölümlere ayrılır, haber çıkarılır)
 //   3. PREI'den post metinleri + karusel planları ister (Claude)
 //   4. Karusel görsellerini ister (Nano Banana / Gemini)
+//   4b. Haftalık yayın akışını kurar (4 LinkedIn postu + 2-3 karusel)
 //   5. Hepsini masaüstünüzde TARİHLİ BİR KLASÖRE yazar
 //
 // Yapay zekâ işini sunucu yapar — hiçbir API anahtarı bu bilgisayara
@@ -252,13 +253,13 @@ async function main() {
 
   // 1) Rapor
   const reportPath = findLatestReport();
-  log(`  1/5  Rapor bulundu: ${path.basename(reportPath)}`);
+  log(`  1/6  Rapor bulundu: ${path.basename(reportPath)}`);
   const buf = await fsp.readFile(reportPath);
   const text = docxToText(buf);
   log(`       ${text.length.toLocaleString('tr-TR')} karakter okundu`);
 
   // 2) PREI'ye yükle
-  log('  2/5  PREI arşivine yükleniyor...');
+  log('  2/6  PREI arşivine yükleniyor...');
   const report = await callApi('POST', '/api/agent/intel/reports', {
     fileName: path.basename(reportPath), text,
   });
@@ -266,7 +267,7 @@ async function main() {
   log(`       ${report.sectionCount} bölüm · ${report.itemCount} haber · ${(report.markets ?? []).join(', ')}`);
 
   // 3) İçerik paketi
-  log('  3/5  Post metinleri ve karusel planları üretiliyor...');
+  log('  3/6  Post metinleri ve karusel planları üretiliyor...');
   let pack = null;
   try {
     pack = await callApi('POST', `/api/agent/intel/reports/${report.id}/content-pack`, {});
@@ -283,7 +284,7 @@ async function main() {
   // 4) Karusel görselleri
   let images = [];
   if (!SKIP_IMAGES && pack?.ok && pack.packId && pack.pack.carousels.length > 0) {
-    log('  4/5  Karusel görselleri üretiliyor (Nano Banana)...');
+    log('  4/6  Karusel görselleri üretiliyor (Nano Banana)...');
     try {
       const res = await callApi('POST', `/api/agent/intel/content-packs/${pack.packId}/images`, {});
       images = res.images ?? [];
@@ -294,14 +295,14 @@ async function main() {
       warn(`Görseller alınamadı: ${e.message}`);
     }
   } else {
-    log('  4/5  Görsel adımı atlandı');
+    log('  4/6  Görsel adımı atlandı');
   }
 
   // 5) Klasöre yaz
   const dateLabel = report.periodEnd ?? report.reportDate ?? new Date().toISOString().slice(0, 10);
   const dir = path.join(TARGET_ROOT, `${dateLabel} ${slug(report.title)}`);
   await fsp.mkdir(dir, { recursive: true });
-  log(`  5/5  Yazılıyor: ${dir}`);
+  log(`  5/6  Yazılıyor: ${dir}`);
 
   // Raporun kopyası
   await fsp.copyFile(reportPath, path.join(dir, path.basename(reportPath)));
@@ -340,10 +341,75 @@ async function main() {
   }
   if (written > 0) log(`       ✓ ${written} görsel`);
 
+  // 6) Haftalık yayın akışı — 4 LinkedIn postu + 2-3 karusel, günlere dağılmış.
+  // Drive yüklemesi BURADAN yapılamaz (kullanıcının Google oturumunu ister);
+  // PREI > Pazarlama > Haftalık Yayın Akışı'ndan "Drive'a yükle" ile yapılır.
+  log('  6/6  Haftalık yayın akışı kuruluyor...');
+  try {
+    const res = await callApi(
+      'POST', `/api/agent/intel/publishing/generate/${report.id}`, { generateImages: false });
+    if (res.ok && res.plan) {
+      const posts = res.plan.items.filter((i) => i.kind === 'post');
+      const cars = res.plan.items.filter((i) => i.kind === 'carousel');
+      log(`       ${res.plan.weekStart} – ${res.plan.weekEnd} · ` +
+          `${posts.length} post · ${cars.length} karusel`);
+      await fsp.writeFile(
+        path.join(dir, 'yayin-akisi.md'), planToMarkdown(res.plan), 'utf8');
+      log('       ✓ yayin-akisi.md');
+      for (const p of posts) {
+        const body = [p.hook, p.body,
+          (p.hashtags ?? []).map((h) => `#${String(h).replace(/^#/, '')}`).join(' ')]
+          .filter(Boolean).join('\n\n');
+        await fsp.writeFile(
+          path.join(dir, `linkedin-${p.scheduledDate}-${slug(p.dayName)}.txt`), body, 'utf8');
+      }
+      log(`       ✓ ${posts.length} LinkedIn metni (ayrı dosya)`);
+      log("       → Drive'a yüklemek için: PREI > Pazarlama > Haftalık Yayın Akışı");
+    } else {
+      warn(res.message ?? 'Yayın akışı üretilemedi');
+    }
+  } catch (e) {
+    warn(`Yayın akışı kurulamadı: ${e.message}`);
+  }
+
   log('');
   log('  Bitti. Klasör:');
   log(`  ${dir}`);
   log('');
+}
+
+/** Yayın akışını tek bakışta okunacak markdown'a çevirir. */
+function planToMarkdown(plan) {
+  const L = [`# Yayın Akışı — ${plan.weekStart} – ${plan.weekEnd}`, ''];
+  L.push('| Gün | Tarih | Tür | Konu | LinkedIn |');
+  L.push('|---|---|---|---|---|');
+  for (const i of plan.items) {
+    L.push(`| ${i.dayName} | ${i.scheduledDate} | ` +
+      `${i.kind === 'post' ? 'Post' : `Karusel (${i.slides.length} slayt)`} | ` +
+      `${i.title} | ${i.forLinkedin ? 'evet' : '—'} |`);
+  }
+  L.push('');
+  for (const i of plan.items) {
+    L.push(`## ${i.dayName} · ${i.scheduledDate} — ${i.title}`);
+    L.push('');
+    if (i.kind === 'post') {
+      L.push('**LinkedIn**', '', i.hook ?? '', '', i.body ?? '', '');
+      L.push('**Instagram/Facebook**', '', i.instagramCaption ?? '', '');
+    } else {
+      L.push('**Slaytlar**', '');
+      for (const s of i.slides) L.push(`${s.index}. **${s.headline}** — ${s.body}`);
+      L.push('', '**Metin**', '', i.instagramCaption ?? '', '');
+    }
+    if ((i.hashtags ?? []).length > 0) {
+      L.push(i.hashtags.map((h) => `#${String(h).replace(/^#/, '')}`).join(' '), '');
+    }
+    L.push('---', '');
+  }
+  if ((plan.skipped ?? []).length > 0) {
+    L.push('## Bu hafta kullanılmayanlar', '');
+    for (const s of plan.skipped) L.push(`- **${s.topic}** — ${s.reason}`);
+  }
+  return L.join('\n');
 }
 
 main().catch((e) => {

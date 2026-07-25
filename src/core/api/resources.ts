@@ -82,6 +82,10 @@ import type {
   IntelReportDetailDTO,
   IntelItemDTO,
   IntelSearchHitDTO,
+  PublishingPlanDTO,
+  PublishingPlanItemDTO,
+  PublishingGenerateResultDTO,
+  PlanImageDTO,
 } from '../types';
 
 export const authApi = {
@@ -282,6 +286,29 @@ export const intelApi = {
   fromText: (title: string, text: string) =>
     api.post<IntelReportDetailDTO>('/api/intel/reports/text', { title, text }),
   remove: (id: string) => api.delete<{ deleted: true }>(`/api/intel/reports/${id}`),
+};
+
+/**
+ * Haftalık yayın akışı. Dikkat: burada "yayınla" ucu YOK — sistem
+ * hiçbir yere paylaşım yapmaz, yalnız hazırlar. markItem bir kayıt.
+ */
+export const publishingApi = {
+  list: (limit?: number) =>
+    api.get<PublishingPlanDTO[]>(`/api/intel/publishing${limit ? `?limit=${limit}` : ''}`),
+  today: () => api.get<PublishingPlanItemDTO[]>('/api/intel/publishing/today'),
+  get: (id: string) => api.get<PublishingPlanDTO>(`/api/intel/publishing/${id}`),
+  generate: (reportId: string, body: { weekStart?: string; generateImages?: boolean } = {}) =>
+    api.post<PublishingGenerateResultDTO>(`/api/intel/publishing/generate/${reportId}`, body),
+  pushDrive: (id: string) =>
+    api.post<{ ok: boolean; message?: string; folderLink?: string }>(
+      `/api/intel/publishing/${id}/drive`, {}),
+  buildImages: (id: string) =>
+    api.post<{ ok: boolean; message?: string; generated: number; total: number }>(
+      `/api/intel/publishing/${id}/images`, {}),
+  itemImages: (itemId: string) =>
+    api.get<PlanImageDTO[]>(`/api/intel/publishing/items/${itemId}/images`),
+  markItem: (itemId: string, status: PublishingPlanItemDTO['status']) =>
+    api.patch<{ ok: true }>(`/api/intel/publishing/items/${itemId}`, { status }),
 };
 
 export const socialApi = {

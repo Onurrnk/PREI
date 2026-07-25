@@ -101,6 +101,10 @@ export default (): AppConfig => ({
       ...(process.env.GOOGLE_CALENDAR_ENABLED === 'true'
         ? ['https://www.googleapis.com/auth/calendar.events']
         : []),
+      // drive.file: YALNIZ PREI'nin oluşturduğu dosyalara erişir.
+      // Mevcut Drive dosyalarınızı görmez, okumaz, silemez — haftalık
+      // yayın akışı dosyalarını yüklemek için en dar kapsam.
+      'https://www.googleapis.com/auth/drive.file',
       'https://www.googleapis.com/auth/userinfo.email',
       'openid',
     ],

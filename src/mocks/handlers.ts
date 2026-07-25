@@ -54,6 +54,8 @@ import type {
   ThreadDetailDTO,
   ThreadSummaryDTO,
   AdProposalDTO,
+  PublishingPlanDTO,
+  PublishingPlanItemDTO,
 } from '../core/types';
 
 // Re-export domain types for backward compatibility. The canonical source
@@ -658,7 +660,137 @@ function buildMockProposal(
   };
 }
 
+
+// --- Haftalık yayın akışı (003d) ---------------------------------------
+// Sistem hiçbir yere paylaşım YAPMAZ; mock da bunu yansıtır — "published"
+// yalnızca "ben paylaştım" kaydıdır.
+const mockPlanItems: PublishingPlanItemDTO[] = [
+  {
+    id: '46d9ba3b-1623-4684-9fef-6260533bd302', scheduledDate: '2026-07-27', dayName: 'Pazartesi',
+    kind: 'post', orderIndex: 1, forLinkedin: true, forMeta: true,
+    title: "Türkiye Konut Satış Rakamları",
+    hook: "Türkiye'de Haziran 2026'da konut satışı 129.979 adet olarak gerçekleşti.",
+    body: "Haziran 2026'da Türkiye'de konut satışları 129.979 adet oldu. İpotekli satışlar, yıllık %72,1 artış gösterdi. Ancak, bu artış takvim etkisi ve TFS işlemlerinin de dahil edilmesi nedeniyle daha güçlü görünüyor. Detaylı analizimiz, piyasada finansmanlı alımların arttığını ve nakit alıcılar için pazarlık fırsatlarının oluştuğunu gösteriyor.",
+    instagramCaption: "Haziran 2026'da Türkiye'de 129.979 konut satıldı. İpotekli satışlarda %72,1 artış dikkat çekiyor. Ancak, bu oran takvim etkisiyle şişkin olabilir. Detaylar ve analizler yayında! #Türkiye #KonutSatışı #Emlak",
+    hashtags: ["#Türkiye","#KonutSatışı","#Emlak","#Finans"], marketCode: "TR",
+    sourceSection: "3.1 Türkiye",
+    slides: [],
+    driveFileLink: null, status: 'ready', publishedAt: null, imageCount: 0,
+  },
+  {
+    id: '557dd365-f364-445a-9bf5-362739e302cd', scheduledDate: '2026-07-28', dayName: 'Salı',
+    kind: 'post', orderIndex: 2, forLinkedin: true, forMeta: true,
+    title: "BAE Emlak Durumu",
+    hook: "BAE ekonomisi dirençli, ancak emlak sektöründe soğuma bekleniyor.",
+    body: "IMF, BAE'nin İran-ABD gerilimi ortamında dirençli bir ekonomi olduğunu, ancak emlak sektöründe soğuma yaşandığını bildirdi. Dubai'deki satışlar önceki yılın %12 gerisinde kalırken, Abu Dabi %112 işlem değeri artışıyla ayrıştı. Bu durum, BAE emlak piyasasında yatırımcıların dikkatini çekecek trendlerin ortaya çıktığının bir göstergesi.",
+    instagramCaption: "BAE'de emlak piyasasında soğuma var. Dubai satışları düştü, ama Abu Dabi yükselişte. Yatırımcılar için dikkat çekici bir trend değişiyor. #BAE #Emlak #Yatırım",
+    hashtags: ["#BAE","#Emlak","#Yatırım","#Ekonomi"], marketCode: "AE",
+    sourceSection: "4.1 BAE",
+    slides: [],
+    driveFileLink: null, status: 'ready', publishedAt: null, imageCount: 0,
+  },
+  {
+    id: 'c50ab11f-160b-4f7a-8afd-abc00dfee456', scheduledDate: '2026-07-29', dayName: 'Çarşamba',
+    kind: 'carousel', orderIndex: 1, forLinkedin: false, forMeta: true,
+    title: "Dubai Emlak Piyasası Raporu",
+    hook: null,
+    body: null,
+    instagramCaption: "Dubai'de emlak piyasasının durumu, H1 2026 verileri ile dikkat çekiyor.",
+    hashtags: ["#Dubai","#Emlak","#PiyasaAnalizi"], marketCode: "AE",
+    sourceSection: "4.2 Dubai",
+    slides: [{"body":"Toplam emlak işlemleri bu değere ulaştı, satış değeri ise %12 düştü.","index":1,"headline":"Dubai H1 2026'da 419,9 Milyar AED İşlem","imagePrompt":"Modern Dubai skyline with skyscrapers, emphasizing the real estate sector."},{"body":"139,75 milyar AED ile off-plan satışlar belirleyici olmaya devam ediyor.","index":2,"headline":"Off-Plan Satışlar Hâkim","imagePrompt":"Computer rendering of luxury off-plan apartments in Dubai."},{"body":"Kira getirisi %6,58 seviyesinde; fiyatlar genel seviyenin üzerinde seyretti.","index":3,"headline":"Fiyatlar ve Kira Getirisi Durumu","imagePrompt":"Dubai residential district with focus on family living and community facilities."},{"body":"Yatırımcılar için pazarlık alanı ve uzun vadeli avantajlar mevcut.","index":4,"headline":"Sonuç ve Fırsatlar","imagePrompt":"Financial analysts in a meeting room discussing Dubai real estate opportunities."}],
+    driveFileLink: null, status: 'ready', publishedAt: null, imageCount: 0,
+  },
+  {
+    id: 'f771d809-d7a1-47c1-beff-fc9180e0d09e', scheduledDate: '2026-07-30', dayName: 'Perşembe',
+    kind: 'post', orderIndex: 3, forLinkedin: true, forMeta: true,
+    title: "İngiltere Konut Piyasası",
+    hook: "İngiltere konut piyasasında arz son 12 yılın zirvesinde.",
+    body: "İngiltere’nin konut piyasasında arz 12 yılın zirvesine ulaştı ve bu, istenen fiyatlardaki %1,0'lık düşüş ile birleşti. BoE politika faizi %3,75’te kalırken, mortgage faiz oranlarında yükseliş baskısı devam ediyor. Bu durum, konut alıcıları için pazarlık fırsatlarını artırıyor.",
+    instagramCaption: "İngiltere'de konut arzı son 12 yılın zirvesinde! Bu durum, alıcılar için pazarlık fırsatları sunuyor. Faiz oranlarındaki değişimler ise dikkat çekici. #İngiltere #KonutPiyasası #Arz",
+    hashtags: ["#İngiltere","#KonutPiyasası","#Arz","#Faiz"], marketCode: "GB",
+    sourceSection: "6.1 İngiltere",
+    slides: [],
+    driveFileLink: null, status: 'ready', publishedAt: null, imageCount: 0,
+  },
+  {
+    id: 'c07bb8c6-513b-470d-9940-46e52c376160', scheduledDate: '2026-07-31', dayName: 'Cuma',
+    kind: 'post', orderIndex: 4, forLinkedin: true, forMeta: true,
+    title: "İspanya'da Fiyat Artışı",
+    hook: "İspanya konut fiyatları 42 çeyrektir kesintisiz artıyor.",
+    body: "INE'nin 2026 1. çeyrek verilerine göre, İspanya'da konut fiyatları %13 artış gösterdi. Fiyat artışı süreci, toplam 42 çeyrektir kesintisiz devam ediyor. Yabancı alıcıların yüksek harcama düzeyi, iç pazarı da olumlu etkiliyor. Bu devam eden artış, İspanya'yı Avrupa'nın en güçlü konut pazarlarından biri haline getiriyor.",
+    instagramCaption: "İspanya, konut fiyatlarında %13 artışla Avrupa'nın en güçlü pazarlarından biri. 42 çeyrektir kesintisiz artış devam ediyor! #İspanya #Konut #FiyatArtışı",
+    hashtags: ["#İspanya","#Konut","#FiyatArtışı","#Yatırım"], marketCode: "ES",
+    sourceSection: "5.1 İspanya",
+    slides: [],
+    driveFileLink: null, status: 'ready', publishedAt: null, imageCount: 0,
+  },
+  {
+    id: 'a16f0b63-6f46-4a81-9467-671b2826bd73', scheduledDate: '2026-08-01', dayName: 'Cumartesi',
+    kind: 'carousel', orderIndex: 2, forLinkedin: false, forMeta: true,
+    title: "Almanya'da Gayrimenkul Durumu",
+    hook: null,
+    body: null,
+    instagramCaption: "Almanya emlak piyasası hakkında detaylı bilgi edinin.",
+    hashtags: ["#Almanya","#Gayrimenkul","#PiyasaAnalizi"], marketCode: "DE",
+    sourceSection: "8. Almanya",
+    slides: [{"body":"Almanya emlak piyasasında toparlanma zayıf seyrediyor.","index":1,"headline":"Piyasa Trendleri","imagePrompt":"Urban housing blocks in a major German city, reflecting market trends."},{"body":"Mietpreisbremse uygulaması uzatıldı, arz krizi çözülemiyor.","index":2,"headline":"Arz Krizi Derinleşiyor","imagePrompt":"Overcrowded German residential area with housing crisis symbolism."},{"body":"Gelişmeler ışığında dikkat edilmesi gereken noktalar.","index":3,"headline":"Yatırım Fırsatları ve Riskler","imagePrompt":"Professional real estate investors evaluating opportunities in Germany."}],
+    driveFileLink: null, status: 'ready', publishedAt: null, imageCount: 0,
+  },
+  {
+    id: 'ab347220-0554-47cf-ac74-4119eb2fae7a', scheduledDate: '2026-08-02', dayName: 'Pazar',
+    kind: 'carousel', orderIndex: 3, forLinkedin: false, forMeta: true,
+    title: "İspanya'da Fiyat Momentum Analizi",
+    hook: null,
+    body: null,
+    instagramCaption: "İspanya'daki konut fiyat trendlerini keşfedin.",
+    hashtags: ["#İspanya","#FiyatMomentumu","#Emlak"], marketCode: "ES",
+    sourceSection: "5.1 İspanya",
+    slides: [{"body":"INE verilerine göre yıllık fiyat artışı bu oranda gerçekleşti.","index":1,"headline":"Fiyatlar %13 Arttı","imagePrompt":"Spanish coastal city with vibrant housing reflecting price increase."},{"body":"Yabancı talebi pazarı canlı tutuyor, yerli alıcılar zorlanıyor.","index":2,"headline":"Satıcı Piyasası ve Yabancı Etkisi","imagePrompt":"Foreign home buyers inspecting Spanish properties with a local agent."},{"body":"Kısa ve uzun dönem etkileri değerlendiriliyor.","index":3,"headline":"Regülasyon ve Gelecek Beklentileri","imagePrompt":"Legal documents and discussions representing real estate regulation impacts in Spain."}],
+    driveFileLink: null, status: 'ready', publishedAt: null, imageCount: 0,
+  },];
+
+const mockPlan: PublishingPlanDTO = {
+  id: 'plan-2026-w31',
+  reportId: 'rep-1',
+  weekStart: '2026-07-27',
+  weekEnd: '2026-08-02',
+  status: 'ready',
+  driveFolderLink: null,
+  skipped: [
+    { topic: 'Tayland, Yabancı Condo Kotası Artışı', reason: 'rapor bunu spekülatif olarak etiketlemiş' },
+    { topic: 'İspanya Yeni Konut Kararnamesi', reason: 'rapor bunu spekülatif olarak etiketlemiş' },
+  ],
+  items: mockPlanItems,
+  createdAt: '2026-07-25T14:15:40.000Z',
+};
+
 export const handlers = [
+
+  http.get('/api/intel/publishing', () => HttpResponse.json<PublishingPlanDTO[]>([mockPlan])),
+
+  http.get('/api/intel/publishing/today', () => {
+    const today = new Date().toISOString().slice(0, 10);
+    return HttpResponse.json(mockPlanItems.filter((i) => i.scheduledDate === today));
+  }),
+
+  http.get('/api/intel/publishing/:id', () => HttpResponse.json<PublishingPlanDTO>(mockPlan)),
+
+  http.post('/api/intel/publishing/:id/drive', () =>
+    HttpResponse.json({ ok: false, message: 'Mock ortamda Drive yüklemesi yapılmaz.' })),
+
+  http.post('/api/intel/publishing/:id/images', () =>
+    HttpResponse.json({ ok: false, message: 'Mock ortamda görsel üretilmez.', generated: 0, total: 0 })),
+
+  http.get('/api/intel/publishing/items/:itemId/images', () => HttpResponse.json([])),
+
+  http.patch('/api/intel/publishing/items/:itemId', async ({ params, request }) => {
+    const body = (await request.json()) as { status: PublishingPlanItemDTO['status'] };
+    const item = mockPlanItems.find((i) => i.id === params.itemId);
+    if (item) item.status = body.status;
+    return HttpResponse.json({ ok: true });
+  }),
+
   // ---- Auth ----
   http.post('/api/auth/login', async ({ request }) => {
     const { email } = (await request.json()) as { email: string; password: string };

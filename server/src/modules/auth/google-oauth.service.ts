@@ -135,6 +135,22 @@ export class GoogleOAuthService {
     return { connected: !!stored, email: stored?.email ?? null };
   }
 
+  /**
+   * Verilen kapsam kullanıcının onayında VAR MI?
+   *
+   * Neden gerekli: uygulamaya yeni bir kapsam (ör. drive.file) eklediğimizde
+   * ESKİ token'lar onu taşımaz. O token'la Drive çağrısı yapmak 403 verir ve
+   * hata mesajı kullanıcıya bir şey anlatmaz. Bunu önceden bilip "Google'ı
+   * yeniden bağlayın" demek daha dürüst.
+   *
+   * Not: Google onaylanan kapsamları boşlukla ayrılmış tek metin olarak döner.
+   */
+  async hasScope(userId: string, scope: string): Promise<boolean> {
+    const stored = await this.tokens.get(userId);
+    if (!stored?.scope) return false;
+    return stored.scope.split(/\s+/).includes(scope);
+  }
+
   async disconnect(userId: string): Promise<void> {
     await this.tokens.delete(userId);
   }
