@@ -36,6 +36,33 @@ const TARGETS = {
   yearlyRevenueEur: 20_000_000,
 };
 
+/**
+ * Pazarlama ↔ Finansal köprüsü.
+ * Reklam harcaması artık P&L'in parçası: komisyon gelirinden düşülür,
+ * müşteri edinme maliyeti (CAC) ve reklam getirisi (ROAS) buradan çıkar.
+ * Harcama yoksa oranlar null döner — 0'a bölüp sahte rakam üretmeyiz.
+ */
+export interface MarketingFinancials {
+  /** Dönemde gerçekleşen reklam harcaması (kısmi dönemler gün bazında oranlanır). */
+  spendEur: number;
+  spendDeltaPct: number | null;
+  /** Komisyon − reklam harcaması. İşin gerçek net katkısı. */
+  netContributionEur: number;
+  /** Reklam harcaması / dönemde oluşan lead. Bir müşteri adayı kaça mal oldu. */
+  cacEur: number | null;
+  /** Reklam harcaması / kazanılan satış. Bir satış kaça mal oldu. */
+  costPerSaleEur: number | null;
+  /** Ciro / reklam harcaması. 1 TL reklam kaç TL ciro getirdi. */
+  roas: number | null;
+  /** Komisyon / reklam harcaması. Cepteki paraya göre gerçek getiri. */
+  commissionRoas: number | null;
+  /** Reklam harcamasının komisyona oranı (%). */
+  spendToCommissionPct: number | null;
+  byMarket: { code: string; name: string; spendEur: number; leads: number; cacEur: number | null }[];
+  byChannel: { channel: string; spendEur: number }[];
+  hasSpendData: boolean;
+}
+
 export interface FinancialsSummary {
   kpis: {
     totalRevenueEur: number; totalRevenueDeltaPct: number | null;
@@ -43,7 +70,10 @@ export interface FinancialsSummary {
     conversionRatePct: number; conversionRateDeltaPct: number | null;
     avgDealSizeEur: number; avgDealSizeDeltaPct: number | null;
     commissionEarnedEur: number; commissionEarnedDeltaPct: number | null;
+    marketingSpendEur: number; marketingSpendDeltaPct: number | null;
+    netContributionEur: number; netContributionDeltaPct: number | null;
   };
+  marketing: MarketingFinancials;
   targets: {
     monthlyLeads: { actual: number; target: number };
     monthlySales: { actual: number; target: number };
@@ -89,6 +119,13 @@ function timeframeRange(tf: Timeframe, now: Date): { from: string; to: string; p
 const deltaPct = (actual: number, prev: number): number | null =>
   prev > 0 ? ((actual - prev) / prev) * 100 : null;
 
+/**
+ * Payda 0/negatifse null döner. Finansal oranlarda 0'a bölüp "sonsuz getiri"
+ * ya da 0 göstermek yanıltıcıdır — veri yoksa açıkça "veri yok" demek doğru.
+ */
+export const ratio = (numerator: number, denominator: number): number | null =>
+  denominator > 0 ? numerator / denominator : null;
+
 @Injectable()
 export class FinancialsService {
   constructor(private readonly db: DatabaseService) {}
@@ -100,7 +137,8 @@ export class FinancialsService {
     return this.db.withContext(ctx, async (c) => {
       const periodTotals = async (fromD: string, toD: string) => {
         const { rows } = await c.query<{
-          revenue_eur: string; sales: string; leads_created: string; commission_eur: string;
+          revenue_eur: string; sales: string; leads_created: string;
+          commission_eur: string; marketing_eur: string;
         }>(
           `SELECT
              (SELECT COALESCE(SUM(fx.amount_eur),0) FROM deals d
@@ -115,21 +153,79 @@ export class FinancialsService {
              (SELECT COALESCE(SUM(fx.amount_eur),0) FROM financials f
                 LEFT JOIN LATERAL fx_to_eur(f.amount, f.currency) fx ON true
                WHERE f.deleted_at IS NULL AND f.type = 'commission' AND f.status = 'paid'
-                 AND f.paid_at::date BETWEEN $1 AND $2) AS commission_eur`,
+                 AND f.paid_at::date BETWEEN $1 AND $2) AS commission_eur,
+             -- Reklam harcaması: kampanya dönemi aralığı kısmen taşıyorsa
+             -- GÜN BAZINDA oranlanır (Meta senkronu zaten günlük satır yazar,
+             -- elle girilen aylık kampanyalar için bu oranlama şart).
+             (SELECT COALESCE(SUM(
+                fx.amount_eur *
+                (GREATEST(0, LEAST(a.period_end, $2::date) - GREATEST(a.period_start, $1::date) + 1)::numeric
+                 / GREATEST(1, a.period_end - a.period_start + 1))
+              ),0)
+                FROM ad_spend a
+                LEFT JOIN LATERAL fx_to_eur(a.spend, a.currency) fx ON true
+               WHERE a.deleted_at IS NULL
+                 AND a.period_start <= $2::date AND a.period_end >= $1::date) AS marketing_eur`,
           [fromD, toD],
         );
         const r = rows[0];
         const revenue = Number(r.revenue_eur);
         const sales = Number(r.sales);
         const leadsCreated = Number(r.leads_created);
+        const commission = Number(r.commission_eur);
+        const marketing = Number(r.marketing_eur);
         return {
-          revenue, sales, commission: Number(r.commission_eur), leadsCreated,
+          revenue, sales, commission, leadsCreated, marketing,
+          netContribution: commission - marketing,
           conversionRate: leadsCreated > 0 ? (sales / leadsCreated) * 100 : 0,
           avgDealSize: sales > 0 ? revenue / sales : 0,
         };
       };
 
       const [cur, prev] = await Promise.all([periodTotals(from, to), periodTotals(prevFrom, prevTo)]);
+
+      // Pazar bazında reklam harcaması + o pazardan gelen lead sayısı.
+      // İkisi yan yana olmadan "hangi pazara reklam vermeli" sorusu yanıtlanamaz.
+      const { rows: mkByMarket } = await c.query<{ code: string; spend_eur: string; leads: string }>(
+        `WITH spend AS (
+           SELECT COALESCE(a.market_code,'XX') AS code,
+                  SUM(fx.amount_eur *
+                      (GREATEST(0, LEAST(a.period_end, $2::date) - GREATEST(a.period_start, $1::date) + 1)::numeric
+                       / GREATEST(1, a.period_end - a.period_start + 1))) AS spend_eur
+             FROM ad_spend a
+             LEFT JOIN LATERAL fx_to_eur(a.spend, a.currency) fx ON true
+            WHERE a.deleted_at IS NULL
+              AND a.period_start <= $2::date AND a.period_end >= $1::date
+            GROUP BY 1
+         ), lead_counts AS (
+           SELECT COALESCE(l.target_market_code,'XX') AS code, count(*) AS leads
+             FROM leads l
+            WHERE l.deleted_at IS NULL AND l.created_at::date BETWEEN $1 AND $2
+            GROUP BY 1
+         )
+         SELECT COALESCE(s.code, lc.code) AS code,
+                COALESCE(s.spend_eur, 0) AS spend_eur,
+                COALESCE(lc.leads, 0) AS leads
+           FROM spend s FULL OUTER JOIN lead_counts lc ON lc.code = s.code
+          WHERE COALESCE(s.spend_eur,0) > 0
+          ORDER BY spend_eur DESC`,
+        [from, to],
+      );
+
+      const { rows: mkByChannel } = await c.query<{ channel: string; spend_eur: string }>(
+        `SELECT a.channel,
+                SUM(fx.amount_eur *
+                    (GREATEST(0, LEAST(a.period_end, $2::date) - GREATEST(a.period_start, $1::date) + 1)::numeric
+                     / GREATEST(1, a.period_end - a.period_start + 1))) AS spend_eur
+           FROM ad_spend a
+           LEFT JOIN LATERAL fx_to_eur(a.spend, a.currency) fx ON true
+          WHERE a.deleted_at IS NULL
+            AND a.period_start <= $2::date AND a.period_end >= $1::date
+          GROUP BY a.channel
+         HAVING SUM(fx.amount_eur) > 0
+          ORDER BY spend_eur DESC`,
+        [from, to],
+      );
 
       const { rows: monthly } = await c.query<{ month: string; value_eur: string }>(
         `SELECT to_char(date_trunc('month', d.closed_at), 'YYYY-MM') AS month,
@@ -205,6 +301,29 @@ export class FinancialsService {
           conversionRatePct: cur.conversionRate, conversionRateDeltaPct: deltaPct(cur.conversionRate, prev.conversionRate),
           avgDealSizeEur: cur.avgDealSize, avgDealSizeDeltaPct: deltaPct(cur.avgDealSize, prev.avgDealSize),
           commissionEarnedEur: cur.commission, commissionEarnedDeltaPct: deltaPct(cur.commission, prev.commission),
+          marketingSpendEur: cur.marketing, marketingSpendDeltaPct: deltaPct(cur.marketing, prev.marketing),
+          netContributionEur: cur.netContribution,
+          netContributionDeltaPct: deltaPct(cur.netContribution, prev.netContribution),
+        },
+        marketing: {
+          spendEur: cur.marketing,
+          spendDeltaPct: deltaPct(cur.marketing, prev.marketing),
+          netContributionEur: cur.netContribution,
+          cacEur: ratio(cur.marketing, cur.leadsCreated),
+          costPerSaleEur: ratio(cur.marketing, cur.sales),
+          roas: ratio(cur.revenue, cur.marketing),
+          commissionRoas: ratio(cur.commission, cur.marketing),
+          spendToCommissionPct: cur.commission > 0 ? (cur.marketing / cur.commission) * 100 : null,
+          byMarket: mkByMarket.map((m) => {
+            const spendEur = Number(m.spend_eur);
+            const leads = Number(m.leads);
+            return {
+              code: m.code, name: MARKET_NAME[m.code] ?? m.code,
+              spendEur, leads, cacEur: ratio(spendEur, leads),
+            };
+          }),
+          byChannel: mkByChannel.map((c) => ({ channel: c.channel, spendEur: Number(c.spend_eur) })),
+          hasSpendData: cur.marketing > 0 || mkByChannel.length > 0,
         },
         targets: {
           monthlyLeads: { actual: monthTotals.leadsCreated, target: TARGETS.monthlyLeads },

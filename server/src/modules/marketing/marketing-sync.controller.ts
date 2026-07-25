@@ -26,6 +26,7 @@ export class MarketingSyncController {
     const ads = await this.marketing.syncMeta(ctx, datePreset || 'last_30d');
     const social = await this.social.syncFromMeta(ctx).catch((e) => ({
       ok: false, configured: true, pagesFound: 0, snapshots: 0, postsUpserted: 0,
+      insightsWritten: 0, audienceRows: 0,
       message: e instanceof Error ? e.message : String(e),
     }));
     return { ...ads, social };

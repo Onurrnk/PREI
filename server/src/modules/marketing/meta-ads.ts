@@ -193,3 +193,163 @@ export async function fetchIgPosts(token: string, v: string, igId: string, limit
     commentsCount: m.comments_count ?? 0,
   }));
 }
+
+// =====================================================================
+// TAM METRİK KATMANI — reklam harcaması dışındaki her şey.
+// Meta'nın insights cevapları iki farklı biçimde gelir; ayrıştırma saf
+// fonksiyonlarda tutulur (birim testle kilitli), fetch* yalnız HTTP yapar.
+// Bir metrik erişilemezse SIFIR döner, akış çökmez — kısmi veri, veri
+// yokluğundan iyidir; hangi metriğin gelmediği ayrıca raporlanır.
+// =====================================================================
+
+/** Hesap seviyesi günlük özet. */
+export interface MetaIgDaily {
+  reach: number;
+  profileViews: number;
+  accountsEngaged: number;
+  websiteClicks: number;
+}
+
+/** Kitle kırılımı satırı (ülke/şehir/yaş/cinsiyet). */
+export interface MetaAudienceRow {
+  dimension: string;
+  bucket: string;
+  value: number;
+}
+
+/** Paylaşım başına performans. */
+export interface MetaPostInsight {
+  reach: number;
+  impressions: number;
+  saves: number;
+  shares: number;
+  videoViews: number;
+  totalInteractions: number;
+}
+
+interface InsightNode {
+  name?: string;
+  total_value?: { value?: number; breakdowns?: Array<{
+    dimension_keys?: string[];
+    results?: Array<{ dimension_values?: string[]; value?: number }>;
+  }> };
+  values?: Array<{ value?: number }>;
+}
+
+/** Bir metriğin sayısal değeri: önce total_value, yoksa values[] toplamı. */
+function metricValue(node: InsightNode | undefined): number {
+  if (!node) return 0;
+  const tv = node.total_value?.value;
+  if (typeof tv === 'number') return tv;
+  const sum = (node.values ?? []).reduce((a, v) => a + (Number(v?.value) || 0), 0);
+  return Number.isFinite(sum) ? sum : 0;
+}
+
+/** Günlük hesap metriklerini ayrıştırır. Eksik metrik = 0. */
+export function parseIgDailyInsights(json: { data?: InsightNode[] } | null | undefined): MetaIgDaily {
+  const byName = new Map<string, InsightNode>();
+  for (const n of json?.data ?? []) if (n?.name) byName.set(n.name, n);
+  return {
+    reach: metricValue(byName.get('reach')),
+    profileViews: metricValue(byName.get('profile_views')),
+    accountsEngaged: metricValue(byName.get('accounts_engaged')),
+    websiteClicks: metricValue(byName.get('website_clicks')),
+  };
+}
+
+/**
+ * Demografi kırılımını düz satırlara çevirir.
+ * Meta: total_value.breakdowns[].results[].dimension_values[] = value
+ */
+export function parseIgDemographics(
+  json: { data?: InsightNode[] } | null | undefined,
+  dimension: string,
+): MetaAudienceRow[] {
+  const out: MetaAudienceRow[] = [];
+  for (const node of json?.data ?? []) {
+    for (const b of node.total_value?.breakdowns ?? []) {
+      for (const r of b.results ?? []) {
+        const bucket = (r.dimension_values ?? []).join('|').trim();
+        const value = Number(r.value) || 0;
+        if (bucket) out.push({ dimension, bucket, value });
+      }
+    }
+  }
+  // Büyükten küçüğe: arayüz zaten ilk N'i gösteriyor.
+  return out.sort((a, b) => b.value - a.value);
+}
+
+/** Paylaşım metriklerini ayrıştırır (medya tipine göre bazıları gelmez). */
+export function parseIgPostInsights(json: { data?: InsightNode[] } | null | undefined): MetaPostInsight {
+  const byName = new Map<string, InsightNode>();
+  for (const n of json?.data ?? []) if (n?.name) byName.set(n.name, n);
+  return {
+    reach: metricValue(byName.get('reach')),
+    impressions: metricValue(byName.get('impressions')),
+    saves: metricValue(byName.get('saved')),
+    shares: metricValue(byName.get('shares')),
+    // Reels'te 'views', eski videolarda 'video_views' adıyla gelir.
+    videoViews: metricValue(byName.get('views')) || metricValue(byName.get('video_views')),
+    totalInteractions: metricValue(byName.get('total_interactions')),
+  };
+}
+
+/** Hesap seviyesi günlük metrikler. Erişilemezse hepsi 0 döner. */
+export async function fetchIgDaily(token: string, v: string, igId: string): Promise<MetaIgDaily> {
+  try {
+    const j = await graphGet<{ data?: InsightNode[] }>(
+      `${GRAPH}/${v}/${igId}/insights?metric=reach,profile_views,accounts_engaged,website_clicks` +
+      `&period=day&metric_type=total_value&access_token=${encodeURIComponent(token)}`);
+    return parseIgDailyInsights(j);
+  } catch {
+    return { reach: 0, profileViews: 0, accountsEngaged: 0, websiteClicks: 0 };
+  }
+}
+
+/**
+ * Takipçi demografisi — ülke, şehir, yaş, cinsiyet.
+ * Her kırılım ayrı istek ister (Meta tek istekte birden çok breakdown almaz).
+ */
+export async function fetchIgAudience(token: string, v: string, igId: string): Promise<MetaAudienceRow[]> {
+  const dims: Array<[string, string]> = [
+    ['country', 'country'], ['city', 'city'], ['age', 'age'], ['gender', 'gender'],
+  ];
+  const out: MetaAudienceRow[] = [];
+  for (const [dim, breakdown] of dims) {
+    try {
+      const j = await graphGet<{ data?: InsightNode[] }>(
+        `${GRAPH}/${v}/${igId}/insights?metric=follower_demographics&period=lifetime` +
+        `&metric_type=total_value&breakdown=${breakdown}&access_token=${encodeURIComponent(token)}`);
+      out.push(...parseIgDemographics(j, dim));
+    } catch { /* bu kırılım kapalıysa diğerleri devam etsin */ }
+  }
+  return out;
+}
+
+/** Tek bir paylaşımın performansı. */
+export async function fetchIgPostInsights(
+  token: string, v: string, mediaId: string,
+): Promise<MetaPostInsight> {
+  const empty = { reach: 0, impressions: 0, saves: 0, shares: 0, videoViews: 0, totalInteractions: 0 };
+  try {
+    const j = await graphGet<{ data?: InsightNode[] }>(
+      `${GRAPH}/${v}/${mediaId}/insights?metric=reach,saved,shares,views,total_interactions` +
+      `&access_token=${encodeURIComponent(token)}`);
+    return parseIgPostInsights(j);
+  } catch {
+    return empty;
+  }
+}
+
+/** Sayfa takipçi sayısı (Page Insights metrikleri bu sürümde kapalı). */
+export async function fetchPageFollowers(
+  token: string, v: string, pageId: string,
+): Promise<number | null> {
+  try {
+    const j = await graphGet<{ followers_count?: number; fan_count?: number }>(
+      `${GRAPH}/${v}/${pageId}?fields=followers_count,fan_count&access_token=${encodeURIComponent(token)}`);
+    return j.followers_count ?? j.fan_count ?? null;
+  } catch {
+    return null;
+  }
+}
