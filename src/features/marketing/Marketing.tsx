@@ -22,13 +22,13 @@ const MARKETS = ['TR', 'AE', 'ES', 'GB', 'TH', 'DE'];
 const CHANNELS = ['meta', 'instagram', 'google', 'other'];
 const CURRENCIES = ['EUR', 'USD', 'GBP', 'AED', 'TRY'];
 
-const SOCIAL_PLATFORMS: { value: SocialPlatform; label: string }[] = [
-  { value: 'instagram', label: 'Instagram' },
+// Instagram + Facebook Meta'dan OTOMATİK senkronlanır — elle giriş listesinde
+// yer almazlar (elle girilse ertesi sabah senkron ezerdi; kafa karışıklığı olmasın).
+const MANUAL_PLATFORMS: { value: SocialPlatform; label: string }[] = [
   { value: 'linkedin', label: 'LinkedIn' },
   { value: 'x', label: 'X (Twitter)' },
   { value: 'youtube', label: 'YouTube' },
   { value: 'tiktok', label: 'TikTok' },
-  { value: 'facebook', label: 'Facebook' },
   { value: 'telegram', label: 'Telegram' },
 ];
 
@@ -112,10 +112,10 @@ export const Marketing: React.FC = () => {
 
   // ---- Sosyal medya (002w): takipçi güncelle + paylaşım ekle/sil ----
   const { data: social, refetch: refetchSocial } = useFetch<SocialSummaryDTO>(() => socialApi.summary(), []);
-  const [snapPlatform, setSnapPlatform] = useState<SocialPlatform>('instagram');
+  const [snapPlatform, setSnapPlatform] = useState<SocialPlatform>('linkedin');
   const [snapCount, setSnapCount] = useState('');
   const [snapSaving, setSnapSaving] = useState(false);
-  const [postPlatform, setPostPlatform] = useState<SocialPlatform>('instagram');
+  const [postPlatform, setPostPlatform] = useState<SocialPlatform>('linkedin');
   const [postTitle, setPostTitle] = useState('');
   const [postUrl, setPostUrl] = useState('');
   const [postDate, setPostDate] = useState('');
@@ -173,6 +173,20 @@ export const Marketing: React.FC = () => {
     }
   };
 
+  // Paylaşım lead sayısı — inline düzenleme (blur'da kaydeder; değişmediyse no-op).
+  const handleLeadsBlur = async (post: { id: string; leads: number }, raw: string) => {
+    const n = parseInt(raw, 10);
+    if (!Number.isFinite(n) || n < 0 || n === post.leads) return;
+    try {
+      await socialApi.updatePostLeads(post.id, n);
+      toast.success(t('marketing.social.leadsUpdated'));
+      refetchSocial();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t('marketing.form.saveError'));
+      refetchSocial();
+    }
+  };
+
   const handleSave = async () => {
     if (!form.name.trim() || !form.periodStart || !form.periodEnd) {
       toast.error(t('marketing.form.required'));
@@ -223,6 +237,7 @@ export const Marketing: React.FC = () => {
       } else {
         toast.success(t('marketing.meta.synced', { campaigns: r.campaigns, rows: r.rows }));
         refetch();
+        refetchSocial(); // uç artık sosyal senkronu da çalıştırıyor
       }
     } catch (e) {
       toast.error(`${t('marketing.meta.error')}: ${e instanceof Error ? e.message : String(e)}`);
@@ -428,16 +443,20 @@ export const Marketing: React.FC = () => {
       <Card padding="md">
         <div className={styles.cardTitleRow}>
           <h2 className={styles.cardTitle}>{t('marketing.social.title')}</h2>
-          <span className={styles.cardMeta}>{t('marketing.social.hint')}</span>
+          <span className={styles.cardMeta} style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: 'var(--data-positive)' }}>●</span>
+            {t('marketing.social.autoStatus')}
+            {social?.metaLastSyncAt && ` · ${t('marketing.social.lastSync')} ${relTime(social.metaLastSyncAt, i18n.language)}`}
+          </span>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,2fr)', gap: 'var(--sp-4)', alignItems: 'start' }}>
           {/* Takipçi güncelle */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
-            <Field label={t('marketing.social.updateFollowers')}>
+            <Field label={t('marketing.social.updateFollowers')} hint={t('marketing.social.manualOnly')}>
               <SelectMenu
                 value={snapPlatform}
-                options={SOCIAL_PLATFORMS}
+                options={MANUAL_PLATFORMS}
                 onChange={(v) => setSnapPlatform(v as SocialPlatform)}
                 aria-label={t('marketing.social.platform')}
               />
@@ -461,7 +480,7 @@ export const Marketing: React.FC = () => {
               <Field label={t('marketing.social.platform')}>
                 <SelectMenu
                   value={postPlatform}
-                  options={SOCIAL_PLATFORMS}
+                  options={MANUAL_PLATFORMS}
                   onChange={(v) => setPostPlatform(v as SocialPlatform)}
                   aria-label={t('marketing.social.platform')}
                 />
@@ -511,13 +530,28 @@ export const Marketing: React.FC = () => {
               <TableBody>
                 {social!.topPosts.map((p) => (
                   <TableRow key={p.id}>
-                    <TableCell><span className={styles.marketChip}>{p.platform}</span></TableCell>
+                    <TableCell>
+                      <span className={styles.marketChip}>{p.platform}</span>{' '}
+                      <span className={styles.cardMeta} style={{ fontSize: '0.625rem' }}>
+                        {p.source === 'auto' ? t('marketing.social.sourceAuto') : t('marketing.social.sourceManual')}
+                      </span>
+                    </TableCell>
                     <TableCell style={{ fontWeight: 500 }}>
                       {p.url ? <a href={p.url} target="_blank" rel="noreferrer" style={{ color: 'inherit' }}>{p.title}</a> : p.title}
                     </TableCell>
                     <TableCell align="right"><span className={styles.numCell}>{p.impressions.toLocaleString()}</span></TableCell>
                     <TableCell align="right"><span className={styles.numCell}>{p.engagements.toLocaleString()}</span></TableCell>
-                    <TableCell align="right"><span className={styles.numCell}>{p.leads}</span></TableCell>
+                    <TableCell align="right">
+                      <input
+                        type="number"
+                        min={0}
+                        defaultValue={p.leads}
+                        key={`${p.id}-${p.leads}`}
+                        onBlur={(e) => void handleLeadsBlur(p, e.target.value)}
+                        title={t('marketing.social.leadsEditHint')}
+                        style={{ width: 64, textAlign: 'right', background: 'var(--bg-inset)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-control)', color: 'var(--text-primary)', padding: '3px 6px', fontFamily: 'var(--font-mono)' }}
+                      />
+                    </TableCell>
                     <TableCell align="right">
                       <button className={styles.rowDelete} onClick={() => handleDeletePost(p.id)} aria-label={t('common.delete')}>
                         <Trash size={15} />

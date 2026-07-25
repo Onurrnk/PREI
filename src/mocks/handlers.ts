@@ -232,9 +232,9 @@ const mockSocialFollowers: Record<string, { now: number; prev: number }> = {
   youtube: { now: 210, prev: 214 },
 };
 const mockSocialPosts: SocialPostDTO[] = [
-  { id: 'sp1', platform: 'instagram', title: 'Dubai Marina proje tanıtımı', url: null, postedAt: '2026-07-18', impressions: 8400, engagements: 412, leads: 3 },
-  { id: 'sp2', platform: 'linkedin', title: 'İstanbul pazar analizi — 2026 Q3', url: null, postedAt: '2026-07-15', impressions: 3100, engagements: 187, leads: 1 },
-  { id: 'sp3', platform: 'instagram', title: 'Golden Visa rehberi (Reels)', url: null, postedAt: '2026-07-10', impressions: 12600, engagements: 356, leads: 0 },
+  { id: 'sp1', platform: 'instagram', title: 'Dubai Marina proje tanıtımı', url: null, postedAt: '2026-07-18', impressions: 8400, engagements: 412, leads: 3, source: 'auto' },
+  { id: 'sp2', platform: 'linkedin', title: 'İstanbul pazar analizi — 2026 Q3', url: null, postedAt: '2026-07-15', impressions: 3100, engagements: 187, leads: 1, source: 'manual' },
+  { id: 'sp3', platform: 'instagram', title: 'Golden Visa rehberi (Reels)', url: null, postedAt: '2026-07-10', impressions: 12600, engagements: 356, leads: 0, source: 'auto' },
 ];
 
 // Bildirim merkezi mock verisi (gerçekte /api/me/notifications events'ten türetir)
@@ -952,6 +952,7 @@ export const handlers = [
         engagements: mockSocialPosts.reduce((s, p) => s + p.engagements, 0),
         leads: mockSocialPosts.reduce((s, p) => s + p.leads, 0),
       },
+      metaLastSyncAt: new Date(mockNotifNow - 2 * 3600000).toISOString(),
     });
   }),
 
@@ -967,10 +968,18 @@ export const handlers = [
     const post: SocialPostDTO = {
       id: `sp${Date.now()}`, platform: b.platform, title: b.title, url: b.url ?? null,
       postedAt: b.postedAt ?? new Date().toISOString().slice(0, 10),
-      impressions: b.impressions ?? 0, engagements: b.engagements ?? 0, leads: b.leads ?? 0,
+      impressions: b.impressions ?? 0, engagements: b.engagements ?? 0, leads: b.leads ?? 0, source: 'manual',
     };
     mockSocialPosts.unshift(post);
     return HttpResponse.json<SocialPostDTO>(post, { status: 201 });
+  }),
+
+  http.patch('/api/marketing/social/posts/:id', async ({ params, request }) => {
+    const i = mockSocialPosts.findIndex((p) => p.id === params.id);
+    if (i === -1) return new HttpResponse(null, { status: 404 });
+    const b = (await request.json()) as { leads: number };
+    mockSocialPosts[i] = { ...mockSocialPosts[i], leads: b.leads };
+    return HttpResponse.json({ ok: true });
   }),
 
   http.delete('/api/marketing/social/posts/:id', ({ params }) => {

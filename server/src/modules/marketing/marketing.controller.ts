@@ -18,7 +18,7 @@ import type { RequestContext } from '../../common/request-context';
 import { MarketingService } from './marketing.service';
 import { SocialService } from './social.service';
 import { CreateAdSpendDto, ImportAdSpendDto, UpdateAdSpendDto } from './dto/ad-spend.dto';
-import { CreateSocialPostDto, UpsertFollowersDto } from './dto/social.dto';
+import { CreateSocialPostDto, UpdatePostLeadsDto, UpsertFollowersDto } from './dto/social.dto';
 import { MARKETING_TIMEFRAMES, type MarketingTimeframe } from './marketing.util';
 
 @Controller('marketing')
@@ -91,6 +91,15 @@ export class MarketingController {
   @Post('social/posts')
   socialCreatePost(@Ctx() ctx: RequestContext, @Body() dto: CreateSocialPostDto) {
     return this.social.createPost(ctx, dto);
+  }
+
+  @Patch('social/posts/:id')
+  socialUpdatePostLeads(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdatePostLeadsDto,
+  ) {
+    return this.social.updatePostLeads(ctx, id, dto.leads);
   }
 
   @Delete('social/posts/:id')

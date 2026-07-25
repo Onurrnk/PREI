@@ -37,6 +37,7 @@ export interface SocialPostItem {
   impressions: number;
   engagements: number;
   leads: number;
+  source: 'auto' | 'manual';          // meta_sync → auto (UI: elle girişten ayrışsın)
 }
 
 export interface SocialSummary {
@@ -46,6 +47,7 @@ export interface SocialSummary {
   platforms: SocialPlatformStat[];
   topPosts: SocialPostItem[];         // etkileşime göre ilk 5 (son 90 gün)
   totals30d: { posts: number; engagements: number; leads: number };
+  metaLastSyncAt: string | null;      // Meta otomatik senkronunun son çalışma zamanı
 }
 
 /** Yüzde değişim; önceki 0/yok ise null (yanıltıcı ∞ göstermeyiz). */
@@ -165,10 +167,10 @@ export class SocialService {
 
       const { rows: posts } = await c.query<{
         id: string; platform: string; title: string; url: string | null;
-        posted_at: string; impressions: string; engagements: string; leads: string;
+        posted_at: string; impressions: string; engagements: string; leads: string; src: string | null;
       }>(
         `SELECT id, platform, title, url, to_char(posted_at,'YYYY-MM-DD') AS posted_at,
-                impressions, engagements, leads
+                impressions, engagements, leads, metadata->>'source' AS src
            FROM social_posts
           WHERE deleted_at IS NULL AND posted_at >= current_date - interval '90 days'
           ORDER BY engagements DESC, posted_at DESC
@@ -179,6 +181,11 @@ export class SocialService {
         `SELECT count(*) AS posts, COALESCE(SUM(engagements),0) AS engagements, COALESCE(SUM(leads),0) AS leads
            FROM social_posts
           WHERE deleted_at IS NULL AND posted_at >= current_date - interval '30 days'`,
+      );
+
+      const { rows: sync } = await c.query<{ last: string | null }>(
+        `SELECT max(created_at)::text AS last FROM social_follower_snapshots
+          WHERE metadata->>'source' = 'meta_sync'`,
       );
 
       const platforms: SocialPlatformStat[] = plat.map((p) => ({
@@ -202,12 +209,14 @@ export class SocialService {
           id: p.id, platform: p.platform, title: p.title, url: p.url,
           postedAt: p.posted_at,
           impressions: Number(p.impressions), engagements: Number(p.engagements), leads: Number(p.leads),
+          source: (p.src === 'meta_sync' ? 'auto' : 'manual') as 'auto' | 'manual',
         })),
         totals30d: {
           posts: Number(tot[0]?.posts ?? 0),
           engagements: Number(tot[0]?.engagements ?? 0),
           leads: Number(tot[0]?.leads ?? 0),
         },
+        metaLastSyncAt: sync[0]?.last ?? null,
       };
     });
   }
@@ -242,8 +251,25 @@ export class SocialService {
       return {
         id: r.id, platform: r.platform, title: r.title, url: r.url, postedAt: r.posted_at,
         impressions: Number(r.impressions), engagements: Number(r.engagements), leads: Number(r.leads),
+        source: 'manual' as const,
       };
     });
+  }
+
+  /** Paylaşımın lead sayısını günceller — otomatik senkronlanan (Meta) paylaşımlarda
+   *  da kullanılır: atıf otomasyonu gelene dek "bu paylaşım kaç lead getirdi"
+   *  bilgisini danışman girer; meta_sync bu alanı EZMEZ. */
+  async updatePostLeads(ctx: RequestContext, id: string, leads: number): Promise<{ ok: true }> {
+    const n = await this.db.withContext(ctx, async (c) => {
+      const res = await c.query(
+        `UPDATE social_posts SET leads = $2, updated_by = $3
+          WHERE id = $1 AND deleted_at IS NULL`,
+        [id, leads, ctx.userId],
+      );
+      return res.rowCount ?? 0;
+    });
+    if (n === 0) throw new NotFoundException('Paylaşım bulunamadı');
+    return { ok: true };
   }
 
   async removePost(ctx: RequestContext, id: string): Promise<{ deleted: true }> {

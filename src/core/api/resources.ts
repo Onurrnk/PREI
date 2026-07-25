@@ -219,6 +219,7 @@ export const socialApi = {
   summary: () => api.get<SocialSummaryDTO>('/api/marketing/social/summary'),
   upsertFollowers: (input: UpsertFollowersInput) => api.post<{ ok: true }>('/api/marketing/social/followers', input),
   createPost: (input: CreateSocialPostInput) => api.post<SocialPostDTO>('/api/marketing/social/posts', input),
+  updatePostLeads: (id: string, leads: number) => api.patch<{ ok: true }>(`/api/marketing/social/posts/${id}`, { leads }),
   removePost: (id: string) => api.delete<{ deleted: true }>(`/api/marketing/social/posts/${id}`),
 };
 

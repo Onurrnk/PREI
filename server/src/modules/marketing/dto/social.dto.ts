@@ -16,6 +16,11 @@ export class UpsertFollowersDto {
   snapshotDate?: string;
 }
 
+export class UpdatePostLeadsDto {
+  @IsInt() @Min(0)
+  leads!: number;
+}
+
 export class CreateSocialPostDto {
   @IsIn(SOCIAL_PLATFORMS as unknown as string[])
   platform!: string;

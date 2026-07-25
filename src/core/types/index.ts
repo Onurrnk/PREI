@@ -46,6 +46,7 @@ export interface SocialPostDTO {
   impressions: number;
   engagements: number;
   leads: number;
+  source: 'auto' | 'manual';   // auto = Meta günlük senkronundan
 }
 
 export interface SocialSummaryDTO {
@@ -55,6 +56,7 @@ export interface SocialSummaryDTO {
   platforms: SocialPlatformStatDTO[];
   topPosts: SocialPostDTO[];
   totals30d: { posts: number; engagements: number; leads: number };
+  metaLastSyncAt: string | null; // Meta otomatik senkronunun son çalışması
 }
 
 export interface UpsertFollowersInput {
