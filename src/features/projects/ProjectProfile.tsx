@@ -215,8 +215,14 @@ export const ProjectProfile: React.FC = () => {
               )}
             </div>
             <p className={styles.subtitle}>
-              <Buildings size={14} className={styles.inlineIcon} /> {t('projects.by', { developer: project.developerName })} &bull;
-              <MapPin size={14} className={styles.inlineIcon} style={{ marginLeft: '8px' }} /> {project.location}
+              {/* Geliştirici atanmadıysa "— tarafından" gibi boş kalıp gösterme;
+                  satır yalnız konumla devam eder. */}
+              {project.developerName && project.developerName !== '—' && (
+                <>
+                  <Buildings size={14} className={styles.inlineIcon} /> {t('projects.by', { developer: project.developerName })} &bull;{' '}
+                </>
+              )}
+              <MapPin size={14} className={styles.inlineIcon} /> {project.location}
             </p>
           </div>
         </div>
