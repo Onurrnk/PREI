@@ -192,6 +192,8 @@ export interface ImportContactsInput {
   /** Ülke kodsuz yerel numaralar için varsayılan alan kodu ("90"). */
   defaultDialCode?: string;
   delimiter?: string;
+  /** Bu dosyadakiler Müşteri mi Aday mı (003h). Varsayılan prospect. */
+  lifecycle?: 'prospect' | 'customer';
 }
 
 export interface ImportRowResultDTO {
@@ -236,6 +238,10 @@ export const clientsApi = {
   /** Sıcak / normal / dondurulmuş ataması (madde 25). */
   setEngagement: (id: string, engagement: 'hot' | 'normal' | 'frozen') =>
     api.patch<ClientDTO>(`/api/clients/${id}/engagement`, { engagement }),
+  /** Adayı Müşteriye çevir — "kayıt alındı" (003h). */
+  convert: (id: string) =>
+    api.post<{ result: 'converted' | 'already'; client: ClientDTO }>(
+      `/api/clients/${id}/convert`, {}),
   analyses: (id: string) => api.get<ClientAnalysisDTO[]>(`/api/clients/${id}/analyses`),
   /**
    * KALICI silme — client id = contact id; kişi + tüm lead'leri + iletişim

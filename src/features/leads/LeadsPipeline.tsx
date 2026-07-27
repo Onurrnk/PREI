@@ -19,8 +19,10 @@ import { useTranslation } from 'react-i18next';
 // Kanban kolonları = backend lead_status enum (8 değer). Dondurulmuş 9-aşamalı
 // tasarım Faz 1'de DB'nin tek doğruluk kaynağına hizalandı; 'frozen' 002i ile
 // eklendi (welcome takibi yanıtsız → otomasyon dondurur).
+// 'converted' BİLEREK yok (003h): dönüşen kişi artık Müşteri, Aday değil —
+// Müşteriler dizininde görünür, pipeline'dan düşer. Aday/müşteri karışmasın.
 const PIPELINE_STAGES: LeadStatus[] = [
-  'new', 'contacted', 'qualified', 'nurturing', 'converted', 'unqualified', 'lost', 'frozen',
+  'new', 'contacted', 'qualified', 'nurturing', 'unqualified', 'lost', 'frozen',
 ];
 
 type ViewMode = 'kanban' | 'list';
@@ -76,7 +78,9 @@ export const LeadsPipeline: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { data, loading, error, refetch } = useFetch<LeadDTO[]>(() => leadsApi.list(), []);
-  const leads = data ?? [];
+  // Dönüşenler Adaylar'da görünmez (003h) — hem kanban hem liste görünümü
+  // için kaynakta süzülür; onlar artık Müşteriler dizininde.
+  const leads = (data ?? []).filter((l) => l.status !== 'converted');
 
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const savedMode = localStorage.getItem('prei_leads_viewMode');

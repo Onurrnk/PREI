@@ -23,4 +23,12 @@ export class ImportContactsDto {
   /** Ayırıcı; verilmezse dosyadan ölçülerek seçilir. */
   @IsOptional() @IsIn([',', ';', '\t', '|'])
   delimiter?: string;
+
+  /**
+   * Bu dosyadakiler Müşteri mi Aday mı (003h). Mevcut müşteri listesi
+   * yüklerken 'customer', yeni aday listesi yüklerken 'prospect'.
+   * Verilmezse 'prospect' (güvenli varsayılan — yanlışlıkla müşteri sayma).
+   */
+  @IsOptional() @IsIn(['prospect', 'customer'])
+  lifecycle?: 'prospect' | 'customer';
 }

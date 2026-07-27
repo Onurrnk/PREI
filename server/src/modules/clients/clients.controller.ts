@@ -58,6 +58,12 @@ export class ClientsController {
     return this.clients.setEngagement(ctx, id, e);
   }
 
+  /** Adayı Müşteriye çevir — "kayıt alındı". lifecycle→customer + açık lead'ler converted. */
+  @Post(':id/convert')
+  convert(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.clients.convertToCustomer(ctx, id);
+  }
+
   @Get(':id/notes')
   listNotes(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
     return this.clients.listNotes(ctx, id);

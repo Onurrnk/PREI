@@ -28,6 +28,7 @@ export interface ClientRow {
   lead_currency: string | null;
   lead_criteria: Record<string, unknown> | null;
   lead_score: number | null;
+  lifecycle_stage: string;
 }
 
 export interface TimelineCommunicationRow {
@@ -61,6 +62,7 @@ const NOTE_SELECT = `
 // SELECT gövdesi (WHERE hariç) — list/detail kendi WHERE'ini ekler.
 const CLIENT_SELECT = `
   SELECT c.id, c.first_name, c.last_name, c.email, c.phone, c.metadata, c.updated_at,
+         c.lifecycle_stage,
          COALESCE((SELECT SUM(fx.amount_eur)
             FROM deals d JOIN leads l ON l.id = d.lead_id
             LEFT JOIN LATERAL fx_to_eur(d.amount, d.currency) fx ON true
@@ -91,9 +93,13 @@ export class ClientsRepository {
 
   async list(ctx: RequestContext, limit = 200, offset = 0): Promise<ClientRow[]> {
     return this.db.withContext(ctx, async (c) => {
+      // Müşteriler dizini YALNIZ dönüşmüş kişileri gösterir (aday/müşteri
+      // karışmasın). Adaylar Leads pipeline'ında; kişi "Müşteriye çevir"
+      // ile buraya geçer.
       const { rows } = await c.query<ClientRow>(
         `${CLIENT_SELECT}
           WHERE c.deleted_at IS NULL AND c.merged_into_id IS NULL
+            AND c.lifecycle_stage = 'customer'
           ORDER BY c.updated_at DESC LIMIT $1 OFFSET $2`,
         [limit, offset],
       );
@@ -320,6 +326,47 @@ export class ClientsRepository {
           [ctx.tenantId, ctx.userId, rows[0].id, JSON.stringify(patch), ctx.correlationId],
         );
       }
+    });
+  }
+
+  /**
+   * Adayı Müşteriye çevirir (madde: "kayıt alındıktan sonra müşteri").
+   * Tek transaction'da: lifecycle_stage='customer' + açık lead'ler
+   * 'converted' (böylece Adaylar pipeline'ından düşer). Zaten müşteriyse
+   * 'already' döner (idempotent — düğmeye iki kez basmak zararsız).
+   */
+  async convertToCustomer(
+    ctx: RequestContext, contactId: string,
+  ): Promise<'converted' | 'already' | 'not_found'> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows: cur } = await c.query<{ lifecycle_stage: string }>(
+        `SELECT lifecycle_stage FROM contacts
+          WHERE id = $1 AND deleted_at IS NULL AND merged_into_id IS NULL`,
+        [contactId],
+      );
+      if (cur.length === 0) return 'not_found';
+      if (cur[0].lifecycle_stage === 'customer') return 'already';
+
+      await c.query(
+        `UPDATE contacts SET lifecycle_stage = 'customer', updated_by = $2, updated_at = now()
+          WHERE id = $1`,
+        [contactId, ctx.userId],
+      );
+      // Açık lead'leri kapat: terminal olmayanlar (lost/unqualified/converted
+      // dışı) 'converted' olur — kişi artık müşteri, aktif aday değil.
+      await c.query(
+        `UPDATE leads SET status = 'converted', updated_by = $2, updated_at = now()
+          WHERE contact_id = $1 AND deleted_at IS NULL
+            AND status NOT IN ('converted','lost','unqualified')`,
+        [contactId, ctx.userId],
+      );
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'contact.converted_to_customer','contact',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, contactId,
+         JSON.stringify({ from: cur[0].lifecycle_stage, to: 'customer' }), ctx.correlationId],
+      );
+      return 'converted';
     });
   }
 

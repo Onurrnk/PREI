@@ -57,6 +57,8 @@ export interface ImportReport {
 export interface RunOptions {
   defaultDialCode?: string;
   delimiter?: string;
+  /** Bu dosyadakiler Müşteri mi Aday mı (003h). Varsayılan prospect. */
+  lifecycle?: 'prospect' | 'customer';
 }
 
 @Injectable()
@@ -98,7 +100,7 @@ export class ContactImportService {
     const rows = await this.db.withContext(ctx, async (c) => {
       const out: ImportRowResult[] = [];
       for (const d of drafts) {
-        out.push(await this.processRow(c, ctx, d, dryRun));
+        out.push(await this.processRow(c, ctx, d, dryRun, opts.lifecycle ?? 'prospect'));
       }
       // Burada ROLLBACK YOK ve gerek de yok: dryRun yolunda tek bir yazma
       // ifadesi çalışmaz (processRow yeni kayıtta erken döner, insertTargets
@@ -129,6 +131,7 @@ export class ContactImportService {
 
   private async processRow(
     c: PoolClient, ctx: RequestContext, d: ContactDraft, dryRun: boolean,
+    lifecycle: 'prospect' | 'customer',
   ): Promise<ImportRowResult> {
     const base = {
       rowNumber: d.rowNumber,
@@ -154,7 +157,7 @@ export class ContactImportService {
           targetsAdded: d.targets.length,
         };
       }
-      contactId = await this.insertContact(c, ctx, d);
+      contactId = await this.insertContact(c, ctx, d, lifecycle);
     }
 
     const targetsAdded = contactId
@@ -196,16 +199,17 @@ export class ContactImportService {
 
   private async insertContact(
     c: PoolClient, ctx: RequestContext, d: ContactDraft,
+    lifecycle: 'prospect' | 'customer',
   ): Promise<string> {
     const { rows } = await c.query<{ id: string }>(
       `INSERT INTO contacts
          (tenant_id, first_name, last_name, email, phone, whatsapp,
           preferred_lang, marketing_consent, consent_source, notes,
-          created_by, updated_by)
-       VALUES ($1,$2,$3,$4,$5,$6, COALESCE($7,'tr'), $8, $9, $10, $11,$11)
+          lifecycle_stage, created_by, updated_by)
+       VALUES ($1,$2,$3,$4,$5,$6, COALESCE($7,'tr'), $8, $9, $10, $11, $12,$12)
        RETURNING id`,
       [ctx.tenantId, d.firstName, d.lastName, d.email, d.phone, d.whatsapp,
-       d.lang, d.consent, d.consent ? 'import' : null, d.notes, ctx.userId],
+       d.lang, d.consent, d.consent ? 'import' : null, d.notes, lifecycle, ctx.userId],
     );
     const id = rows[0].id;
 

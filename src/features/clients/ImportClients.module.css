@@ -111,6 +111,35 @@
 
 .dial small { color: var(--text-muted); font: var(--text-label); }
 
+/* Aday / Müşteri segmented kontrolü */
+.segmented {
+  display: inline-flex;
+  width: fit-content;
+  padding: 2px;
+  gap: 2px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.seg, .segActive {
+  padding: var(--sp-1) var(--sp-4);
+  font: var(--text-label);
+  border: none;
+  border-radius: calc(var(--radius-control) - 2px);
+  cursor: pointer;
+  background: none;
+  color: var(--text-muted);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.seg:hover { color: var(--text-primary); }
+
+.segActive {
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+}
+
 .actions {
   display: flex;
   gap: var(--sp-3);

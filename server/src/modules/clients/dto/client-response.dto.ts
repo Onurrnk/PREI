@@ -50,6 +50,8 @@ export interface ClientResponse {
   /** Telefon alan kodundan çıkarılan ülke — İPUCU, kesin veri değil (madde 26). */
   phoneCountryCode: string | null;
   phoneCountryName: string | null;
+  /** Aday mı müşteri mi (003h). Müşteriler dizini yalnız 'customer' gösterir. */
+  lifecycleStage: 'prospect' | 'customer';
 }
 
 function str(v: unknown, fallback = ''): string {
@@ -142,6 +144,7 @@ export function toClientResponse(row: ClientRow): ClientResponse {
     engagement: 'normal',
     phoneCountryCode: phoneCountry?.countryCode ?? null,
     phoneCountryName: phoneCountry?.countryName ?? null,
+    lifecycleStage: row.lifecycle_stage === 'customer' ? 'customer' : 'prospect',
     investmentProfile: str(m.investment_profile, 'Balanced'),
     source: str(m.source, '—'),
     relationshipStatus: str(m.relationship_status, 'Active'),

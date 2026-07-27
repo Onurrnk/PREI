@@ -2,14 +2,14 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import type { LeadCommunicationDTO, LeadDTO, LeadScoreDTO, UserDTO } from '../../core/types';
-import { leadsApi, usersApi } from '../../core/api/resources';
+import { leadsApi, usersApi, clientsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import {
   ArrowLeft, CurrencyDollar, Tag, Flag, MapPin, CalendarBlank, UserCircle,
   WhatsappLogo, EnvelopeSimple, Phone, ChatCircleDots, ArrowDown, ArrowUp, ChatCircle,
-  Sparkle, TelegramLogo, Trash,
+  Sparkle, TelegramLogo, Trash, UserCheck,
 } from '@phosphor-icons/react';
 import { useAuth } from '../../core/auth/AuthContext';
 import { useToast } from '../../core/components/Toast/ToastProvider';
@@ -57,6 +57,28 @@ export const LeadProfile: React.FC = () => {
   const [confirmingDelete, setConfirmingDelete] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
   const canDelete = user?.role === 'super_admin';
+
+  // Müşteriye çevir (003h) — "kayıt alındı". Kişi Adaylar'dan çıkar,
+  // Müşteriler'e geçer; açık lead'ler converted olur.
+  const [converting, setConverting] = React.useState(false);
+  const [converted, setConverted] = React.useState(false);
+  const handleConvert = async () => {
+    if (!lead?.contactId) return;
+    setConverting(true);
+    try {
+      const res = await clientsApi.convert(lead.contactId);
+      setConverted(true);
+      toast.success(
+        res.result === 'already' ? t('leads.convert.already') : t('leads.convert.done'),
+      );
+      // Müşteri kartına götür — artık orada yaşıyor.
+      navigate(`/clients/${lead.contactId}`);
+    } catch (e) {
+      toast.error(`${t('leads.convert.failed')}: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setConverting(false);
+    }
+  };
 
   // Danışman atama (super_admin) — owner_id PATCH; version optimistic lock.
   const [assignedOwnerId, setAssignedOwnerId] = React.useState<string | null>(null);
@@ -131,8 +153,15 @@ export const LeadProfile: React.FC = () => {
             </p>
           </div>
         </div>
-        {canDelete && (
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Müşteriye çevir — dönüşmüş/kayıp lead'lerde gösterme. */}
+          {!['converted', 'lost', 'unqualified'].includes(lead.status) && (
+            <Button variant="primary" onClick={handleConvert} disabled={converting || converted}>
+              <UserCheck size={16} /> {converting ? t('leads.convert.working') : t('leads.convert.action')}
+            </Button>
+          )}
+          {canDelete && (
+            <>
             {confirmingDelete ? (
               <>
                 <span style={{ fontSize: 13, color: 'var(--color-danger)' }}>
@@ -152,8 +181,9 @@ export const LeadProfile: React.FC = () => {
                 <Trash size={16} /> {t('leads.profile.delete')}
               </Button>
             )}
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
 
       <div className={styles.content}>

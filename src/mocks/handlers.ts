@@ -1739,7 +1739,20 @@ export const handlers = [
 
   // Mock müşteri listesi module-level: PATCH oturum içinde kalıcıdır.
   http.get('/api/clients', () => {
-    return HttpResponse.json<ClientDTO[]>(mockClients);
+    // Müşteriler dizini yalnız dönüşmüş kişileri gösterir (003h). Eski mock
+    // kayıtlarda alan yoksa 'customer' say (geriye dönük mock uyumu).
+    return HttpResponse.json<ClientDTO[]>(
+      mockClients.filter((c) => (c.lifecycleStage ?? 'customer') === 'customer'),
+    );
+  }),
+
+  // Adayı Müşteriye çevir (003h) — lifecycle→customer.
+  http.post('/api/clients/:id/convert', ({ params }) => {
+    const c = mockClients.find((x) => x.id === params.id);
+    if (!c) return HttpResponse.json({ message: 'not found' }, { status: 404 });
+    const already = (c.lifecycleStage ?? 'customer') === 'customer';
+    c.lifecycleStage = 'customer';
+    return HttpResponse.json({ result: already ? 'already' : 'converted', client: c });
   }),
 
   http.patch('/api/clients/:id', async ({ params, request }) => {

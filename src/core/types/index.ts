@@ -527,6 +527,8 @@ export interface ClientDTO {
   investmentTargets?: InvestmentTargetDTO[];
   /** Sıcak / normal / dondurulmuş (madde 25). */
   engagement?: 'hot' | 'normal' | 'frozen';
+  /** Aday mı müşteri mi (003h). Müşteriler dizini yalnız 'customer' gösterir. */
+  lifecycleStage?: 'prospect' | 'customer';
   /** Telefon alan kodundan çıkarılan ülke — ipucu, kesin veri değil (madde 26). */
   phoneCountryCode?: string | null;
   phoneCountryName?: string | null;

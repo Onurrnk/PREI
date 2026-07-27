@@ -64,6 +64,15 @@ export class ClientsService {
     return toClientResponse(row);
   }
 
+  /** Adayı Müşteriye çevirir (kayıt alındı). Güncel kaydı döndürür. */
+  async convertToCustomer(
+    ctx: RequestContext, id: string,
+  ): Promise<{ result: 'converted' | 'already'; client: ClientResponse }> {
+    const result = await this.repo.convertToCustomer(ctx, id);
+    if (result === 'not_found') throw new NotFoundException('Kişi bulunamadı.');
+    return { result, client: await this.findOne(ctx, id) };
+  }
+
   async listNotes(ctx: RequestContext, contactId: string): Promise<ClientNoteResponse[]> {
     const rows = await this.repo.listNotes(ctx, contactId);
     return rows.map(toClientNoteResponse);

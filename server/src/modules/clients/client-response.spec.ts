@@ -12,7 +12,7 @@ const row = (over: Partial<ClientRow> = {}): ClientRow => ({
   updated_at: '2026-07-18T10:00:00Z', total_investment_eur: null,
   active_properties: 0, consultant: null, last_contact: null,
   lead_budget_min: null, lead_budget_max: null, lead_currency: null,
-  lead_criteria: null, lead_score: null,
+  lead_criteria: null, lead_score: null, lifecycle_stage: 'customer',
   ...over,
 });
 

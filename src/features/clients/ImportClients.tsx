@@ -47,6 +47,8 @@ export const ImportClients: React.FC<Props> = ({ onImported }) => {
   const [fileName, setFileName] = useState('');
   const [csv, setCsv] = useState('');
   const [dialCode, setDialCode] = useState('90');
+  // Bu dosyadakiler Müşteri mi Aday mı (003h). Varsayılan Aday (güvenli).
+  const [lifecycle, setLifecycle] = useState<'prospect' | 'customer'>('prospect');
   const [report, setReport] = useState<ImportReportDTO | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -71,7 +73,7 @@ export const ImportClients: React.FC<Props> = ({ onImported }) => {
   const run = async (commit: boolean) => {
     setBusy(true);
     try {
-      const input = { csv, defaultDialCode: dialCode.trim() || undefined };
+      const input = { csv, defaultDialCode: dialCode.trim() || undefined, lifecycle };
       const r = commit
         ? await contactsApi.importCommit(input)
         : await contactsApi.importPreview(input);
@@ -111,7 +113,29 @@ export const ImportClients: React.FC<Props> = ({ onImported }) => {
         )}
       </div>
 
-      {/* ── 2. Ayar ──────────────────────────────────────────────── */}
+      {/* ── 2a. Bu dosyadakiler kim? (aday/müşteri ayrımı, 003h) ──── */}
+      <div className={styles.dial}>
+        <span>{k('lifecycleLabel')}</span>
+        <div className={styles.segmented}>
+          <button
+            type="button"
+            className={lifecycle === 'prospect' ? styles.segActive : styles.seg}
+            onClick={() => setLifecycle('prospect')}
+          >
+            {k('lifecycleProspect')}
+          </button>
+          <button
+            type="button"
+            className={lifecycle === 'customer' ? styles.segActive : styles.seg}
+            onClick={() => setLifecycle('customer')}
+          >
+            {k('lifecycleCustomer')}
+          </button>
+        </div>
+        <small>{k('lifecycleHint')}</small>
+      </div>
+
+      {/* ── 2b. Ayar ─────────────────────────────────────────────── */}
       <label className={styles.dial}>
         <span>{k('dialLabel')}</span>
         <div className={styles.dialInput}>
