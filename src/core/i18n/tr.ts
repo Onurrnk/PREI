@@ -762,26 +762,9 @@ export const tr = {
         bulletList: 'Madde işaretli liste',
         numberList: 'Numaralı liste',
         templateLabel: 'Şablon ekle…',
+        templateLangLabel: 'Şablon dili',
         signatureLabel: 'İmza',
         signatureHint: 'Markalı e-postaya otomatik eklenir — ad/unvan bilgisini Ayarlar\'dan düzenleyebilirsiniz.',
-        templates: {
-          followUp: {
-            title: 'Takip mesajı',
-            body: 'Son görüşmemizin ardından, ele aldığımız seçenekleri değerlendirme fırsatı bulup bulmadığınızı öğrenmek istedim. Bu süreçte aklınıza takılan bir soru olduysa detayları birlikte gözden geçirmekten memnuniyet duyarım.\n\nBu hafta kısa bir görüşme sizin için uygun olur mu?',
-          },
-          portfolio: {
-            title: 'Portföy güncellemesi',
-            body: 'Yatırım profilinize ve tercih ettiğiniz pazarlara göre hazırladığımız güncel portföy seçkisini ekte bulabilirsiniz. Her seçenek, güncel ödeme planı ve öngörülen teslim tarihiyle birlikte sunuluyor.\n\nİlginizi çeken herhangi bir proje için size uygun bir zamanda yerinde görüntüleme organize etmekten memnuniyet duyarım.',
-          },
-          meetingInvite: {
-            title: 'Toplantı daveti',
-            body: 'Süregelen ilginiz için teşekkür ederim. Güncel fırsatları detaylıca değerlendirmek ve açık kalan sorularınızı yanıtlamak üzere kısa bir toplantı önermek isterim — yüz yüze veya çevrim içi, size hangisi uygunsa.\n\nBu hafta uygun olduğunuz birkaç zaman dilimini paylaşabilir misiniz?',
-          },
-          paymentPlan: {
-            title: 'Ödeme planı detayları',
-            body: 'Projeye gösterdiğiniz ilgi için teşekkür ederim. Talebiniz üzerine ödeme yapısı şu şekilde işliyor: rezervasyonda başlangıç peşinatı, inşaat sürecine bağlı ara ödemeler ve teslimde kalan bakiye. Kesin oranlar üniteye ve geliştiricinin güncel kampanyasına göre değişir.\n\nDetaylı ödeme takvimini ekte bulabilirsiniz; her türlü açıklama için hizmetinizdeyim.',
-          },
-        },
       },
     },
     tasks: {

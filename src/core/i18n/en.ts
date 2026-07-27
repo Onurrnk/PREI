@@ -763,26 +763,9 @@ export const en = {
         bulletList: 'Bullet list',
         numberList: 'Numbered list',
         templateLabel: 'Insert template…',
+        templateLangLabel: 'Template language',
         signatureLabel: 'Signature',
         signatureHint: 'Automatically appended to the branded email — edit your name/title in Settings.',
-        templates: {
-          followUp: {
-            title: 'Follow-up',
-            body: 'Following our recent conversation, I wanted to see whether you have had the chance to review the options we discussed. Should any questions have come up in the meantime, I would be glad to walk you through the details.\n\nWould a brief call this week suit you?',
-          },
-          portfolio: {
-            title: 'Portfolio update',
-            body: 'Please find enclosed the latest portfolio selection, prepared around your investment profile and preferred markets. Each option is presented with its current payment plan and projected handover date.\n\nI would be glad to arrange a viewing for any project that draws your interest, at a time that suits you.',
-          },
-          meetingInvite: {
-            title: 'Meeting invitation',
-            body: 'Thank you for your continued interest. I would like to propose a short meeting to review the current opportunities in detail and address any outstanding questions — in person or online, whichever is more convenient for you.\n\nCould you share a few times that work for you this week?',
-          },
-          paymentPlan: {
-            title: 'Payment plan details',
-            body: 'Thank you for your interest in the project. As requested, the payment structure is as follows: an initial deposit on reservation, construction-linked instalments through the build phase, and the remaining balance on handover. Exact proportions vary by unit and by the developer\'s current campaign.\n\nThe full schedule is enclosed; I remain at your disposal for any clarification.',
-          },
-        },
       },
     },
     tasks: {

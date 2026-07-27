@@ -12,6 +12,9 @@ import { Button } from '../../../core/components/Button/Button';
 import { SelectMenu } from '../../../core/components/Form/SelectMenu';
 import { useToast } from '../../../core/components/Toast/ToastProvider';
 import styles from './EmailClient.module.css';
+// Hazır şablonlar — TR ve EN ayrı setler, arayüz dilinden bağımsız
+// (Türk müşteriye TR, BAE/UK müşterisine EN yazılır).
+import { templatesFor, templateById } from './email-templates';
 
 const formatThreadDate = (iso: string, locale: string): string => {
   const date = new Date(iso);
@@ -52,11 +55,6 @@ const MAX_TOTAL_ATTACHMENT_BYTES = 15 * 1024 * 1024;
 interface PendingAttachment extends EmailAttachmentInput {
   sizeBytes: number;
 }
-
-// Hazır şablon gövdeleri — {client} alıcı adıyla değiştirilir. Şablon
-// başlıkları i18n'den gelir; gövde her iki dilde de i18n'de tutulur.
-const TEMPLATE_KEYS = ['followUp', 'portfolio', 'meetingInvite', 'paymentPlan'] as const;
-type TemplateKey = typeof TEMPLATE_KEYS[number];
 
 export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> = ({ clientEmail, clientName }) => {
   const { t, i18n: i18nInstance } = useTranslation();
@@ -113,6 +111,11 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
   const [editorFocused, setEditorFocused] = useState(false);
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
+  // Şablon dili — arayüz dilinden BAĞIMSIZ (Onur: TR ve EN ayrı dursun).
+  // Varsayılan arayüz diliyle başlar; danışman tek tıkla değiştirir.
+  const [templateLang, setTemplateLang] = useState<'tr' | 'en'>(
+    i18nInstance.language?.startsWith('tr') ? 'tr' : 'en',
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -151,17 +154,26 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
     syncEditorEmpty();
   };
 
-  const applyTemplate = (key: string) => {
-    setSelectedTemplate(key);
-    if (!key || !editorRef.current) return;
-    const body = t(`clients.email.templates.${key as TemplateKey}.body`, { client: clientName });
+  const applyTemplate = (id: string) => {
+    setSelectedTemplate(id);
+    const tpl = templateById(id);
+    if (!tpl || !editorRef.current) return;
+    const body = tpl.body.replaceAll('{client}', clientName);
     // Şablon paragrafları <p> olarak yerleştirilir; danışman üstüne yazabilir.
     editorRef.current.innerHTML = body
       .split('\n\n')
       .map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`)
       .join('');
+    // Yeni e-postada konu boşsa şablonun konusu dolar (yazılmışsa EZİLMEZ).
+    if (composingNew && !newSubject.trim()) setNewSubject(tpl.subject);
     editorRef.current.focus();
     syncEditorEmpty();
+  };
+
+  // Dil değişince seçim sıfırlanır — TR seçimi EN listesinde asılı kalmasın.
+  const switchTemplateLang = (lang: 'tr' | 'en') => {
+    setTemplateLang(lang);
+    setSelectedTemplate('');
   };
 
   const handleFiles = (files: FileList | null) => {
@@ -428,18 +440,34 @@ export const EmailClient: React.FC<{ clientEmail: string; clientName: string }> 
                     </button>
                   </div>
                   <div className={styles.templatePicker}>
+                    {/* Şablon dili — arayüz dilinden bağımsız TR|EN anahtarı */}
+                    <div className={styles.templateLangSeg} role="group" aria-label={t('clients.email.templateLangLabel')}>
+                      <button type="button"
+                        className={templateLang === 'tr' ? styles.langSegActive : styles.langSeg}
+                        onClick={() => switchTemplateLang('tr')}>TR</button>
+                      <button type="button"
+                        className={templateLang === 'en' ? styles.langSegActive : styles.langSeg}
+                        onClick={() => switchTemplateLang('en')}>EN</button>
+                    </div>
                     <SelectMenu
                       aria-label={t('clients.email.templateLabel')}
                       value={selectedTemplate}
                       onChange={applyTemplate}
                       placeholder={t('clients.email.templateLabel')}
-                      options={TEMPLATE_KEYS.map((key) => ({
-                        value: key,
-                        label: t(`clients.email.templates.${key}.title`),
+                      options={templatesFor(templateLang).map((tpl) => ({
+                        value: tpl.id,
+                        label: tpl.name,
                       }))}
                     />
                   </div>
                 </div>
+
+                {/* Seçilen şablonun kısa açıklaması — ne zaman kullanılır */}
+                {selectedTemplate && templateById(selectedTemplate) && (
+                  <p className={styles.templateHint}>
+                    {templateById(selectedTemplate)!.description}
+                  </p>
+                )}
 
                 <div
                   ref={editorRef}

@@ -506,3 +506,40 @@
   color: var(--brand-primary);
   font-weight: 600;
 }
+
+/* Şablon dili anahtarı — TR|EN, arayüz dilinden bağımsız. */
+.templateLangSeg {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  margin-right: var(--sp-2);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  flex-shrink: 0;
+}
+
+.langSeg, .langSegActive {
+  padding: 3px 10px;
+  font: var(--text-label);
+  border: none;
+  border-radius: calc(var(--radius-control) - 2px);
+  cursor: pointer;
+  background: none;
+  color: var(--text-muted);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.langSeg:hover { color: var(--text-primary); }
+
+.langSegActive {
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+}
+
+/* Seçilen şablonun "ne zaman kullanılır" ipucu satırı. */
+.templateHint {
+  margin: var(--sp-1) 0 0;
+  font: var(--text-label);
+  color: var(--text-muted);
+}
