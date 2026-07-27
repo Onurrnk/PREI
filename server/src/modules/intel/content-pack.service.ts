@@ -14,6 +14,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { DatabaseService } from '../../database/database.service';
 import type { AppConfig } from '../../config/configuration';
 import type { RequestContext } from '../../common/request-context';
+import { friendlyAiError } from '../../common/ai-error';
 import type { ReportSection } from './intel-report';
 import {
   CONTENT_SCHEMA, CONTENT_SYSTEM, buildContentPrompt, imagePromptFor,
@@ -114,7 +115,7 @@ export class ContentPackService {
       }
       pack = JSON.parse(text.text) as ContentPack;
     } catch (e) {
-      const message = (e as Error).message;
+      const message = friendlyAiError(e);
       this.logger.error(`İçerik paketi üretilemedi (${reportId}): ${message}`);
       return { ok: false, message, reportTitle: report.title, periodLabel };
     }

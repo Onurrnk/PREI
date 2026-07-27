@@ -15,6 +15,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { DatabaseService } from '../../database/database.service';
 import type { AppConfig } from '../../config/configuration';
 import type { RequestContext } from '../../common/request-context';
+import { friendlyAiError } from '../../common/ai-error';
 import type { ReportSection } from './intel-report';
 import { buildContentPrompt } from './content-pack';
 import { DriveService, type DriveFile } from './drive.service';
@@ -143,7 +144,7 @@ export class PublishingPlanService {
         }
         return { ok: true, plan: JSON.parse(text.text) as PlanOutput, model };
       } catch (e) {
-        const message = (e as Error).message;
+        const message = friendlyAiError(e);
         this.logger.error(`Claude ile plan üretilemedi: ${message}`);
         return { ok: false, message };
       }
@@ -191,7 +192,7 @@ export class PublishingPlanService {
       if (!content) return { ok: false, message: 'OpenAI metin döndürmedi.' };
       return { ok: true, plan: JSON.parse(content) as PlanOutput, model: openai.chatModel };
     } catch (e) {
-      const message = (e as Error).message;
+      const message = friendlyAiError(e);
       this.logger.error(`OpenAI ile plan üretilemedi: ${message}`);
       return { ok: false, message };
     }

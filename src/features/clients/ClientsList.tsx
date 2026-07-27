@@ -6,18 +6,20 @@ import { useFetch } from '../../core/hooks/useFetch';
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
 import { Button } from '../../core/components/Button/Button';
-import { Plus, DotsThree, FunnelSimple, DownloadSimple, MagnifyingGlass, CheckCircle, UploadSimple } from '@phosphor-icons/react';
+import { Plus, DotsThree, FunnelSimple, DownloadSimple, MagnifyingGlass, CheckCircle, UploadSimple, UserCircle, Trash } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '../../core/components/Modal/Modal';
 import { ClientForm, emptyClientForm, clientFormToPatch, type ClientFormValue } from './ClientForm';
 import { ImportClients } from './ImportClients';
 import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
+import { useAuth } from '../../core/auth/AuthContext';
 import styles from './Clients.module.css';
 
 type ModalKind = 'addClient' | 'import' | 'export' | 'filter' | 'rowActions' | null;
 
 export const ClientsList: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
   const { data, loading, refetch } = useFetch<ClientDTO[]>(() => clientsApi.list(), []);
   const clients = data ?? [];
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,7 +31,9 @@ export const ClientsList: React.FC = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [modalKind, setModalKind] = useState<ModalKind>(null);
-  const [rowActionsFor, setRowActionsFor] = useState('');
+  // İşlemler menüsü artık gerçek aksiyon için id+ad taşır (yalnız ad değil).
+  const [rowActionsFor, setRowActionsFor] = useState<{ id: string; name: string } | null>(null);
+  const [deletingRow, setDeletingRow] = useState(false);
 
   const handleSaveClient = async () => {
     const name = form.name.trim();
@@ -65,10 +69,29 @@ export const ClientsList: React.FC = () => {
     }
   };
 
-  const handleActionClick = (kind: ModalKind, rowClientName?: string) => {
+  const handleActionClick = (kind: ModalKind, row?: { id: string; name: string }) => {
     setModalKind(kind);
-    if (rowClientName) setRowActionsFor(rowClientName);
+    if (row) setRowActionsFor(row);
     setShowModal(true);
+  };
+
+  // İşlemler menüsü: kalıcı sil (super_admin). Müşteri kartını açmak için
+  // satıra tıklamak zaten yeterli; menü "tehlikeli" aksiyonu barındırır.
+  const canDelete = user?.role === 'super_admin';
+  const handleDeleteRow = async () => {
+    if (!rowActionsFor) return;
+    setDeletingRow(true);
+    try {
+      await clientsApi.remove(rowActionsFor.id);
+      toast.success(t('clients.deleted', { name: rowActionsFor.name }));
+      setShowModal(false);
+      setRowActionsFor(null);
+      refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDeletingRow(false);
+    }
   };
 
   if (loading) {
@@ -89,7 +112,7 @@ export const ClientsList: React.FC = () => {
     : modalKind === 'import' ? t('clients.import.title')
     : modalKind === 'export' ? t('clients.export')
     : modalKind === 'filter' ? t('clients.filter')
-    : modalKind === 'rowActions' ? rowActionsFor
+    : modalKind === 'rowActions' ? (rowActionsFor?.name ?? '')
     : '';
 
   return (
@@ -187,7 +210,7 @@ export const ClientsList: React.FC = () => {
                       className={styles.moreButton}
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleActionClick('rowActions', client.name);
+                        handleActionClick('rowActions', { id: client.id, name: client.name });
                       }}
                     >
                       <DotsThree size={18} weight="bold" />
@@ -243,8 +266,27 @@ export const ClientsList: React.FC = () => {
             <p>{t('clients.exportStarted')}</p>
           </div>
         )}
-        {(modalKind === 'filter' || modalKind === 'rowActions') && (
+        {modalKind === 'filter' && (
           <p className={styles.mutedText}>{t('clients.underDevelopment')}</p>
+        )}
+        {modalKind === 'rowActions' && rowActionsFor && (
+          <div className={styles.rowActions}>
+            <button
+              className={styles.rowAction}
+              onClick={() => { setShowModal(false); navigate(`/clients/${rowActionsFor.id}`); }}
+            >
+              <UserCircle size={18} /> {t('clients.actions.openProfile')}
+            </button>
+            {canDelete && (
+              <button
+                className={`${styles.rowAction} ${styles.rowActionDanger}`}
+                onClick={handleDeleteRow}
+                disabled={deletingRow}
+              >
+                <Trash size={18} /> {deletingRow ? t('clients.actions.deleting') : t('clients.actions.delete')}
+              </button>
+            )}
+          </div>
         )}
       </Modal>
     </div>

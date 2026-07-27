@@ -16,6 +16,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { DatabaseService } from '../../database/database.service';
 import type { AppConfig } from '../../config/configuration';
 import type { RequestContext } from '../../common/request-context';
+import { friendlyAiError } from '../../common/ai-error';
 import { PROPOSAL_SCHEMA, MARKETING_SYSTEM, buildAnalysisPrompt, type BrainOutput, type MarketingSnapshot } from './marketing-brain';
 
 @Injectable()
@@ -145,7 +146,7 @@ export class MarketingBrainService {
       }
       parsed = JSON.parse(text.text) as BrainOutput;
     } catch (e) {
-      const message = (e as Error).message;
+      const message = friendlyAiError(e);
       this.logger.error(`Pazarlama analizi başarısız: ${message}`);
       return { ok: false, message, proposalsCreated: 0 };
     }

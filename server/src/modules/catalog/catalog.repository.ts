@@ -248,6 +248,28 @@ export class CatalogRepository {
     });
   }
 
+  /**
+   * Projeyi siler (soft delete — deleted_at). Test projesi/yanlış giriş
+   * temizliği için. Liste ve detay deleted_at IS NULL filtresiyle çalıştığı
+   * için proje her yerden düşer. Bulunamazsa false.
+   */
+  async deleteProject(ctx: RequestContext, id: string): Promise<boolean> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rowCount } = await c.query(
+        `UPDATE properties SET deleted_at = now(), updated_by = $2, updated_at = now()
+          WHERE id = $1 AND deleted_at IS NULL`,
+        [id, ctx.userId],
+      );
+      if (!rowCount) return false;
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'project.deleted','property',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, id, JSON.stringify({ soft: true }), ctx.correlationId],
+      );
+      return true;
+    });
+  }
+
   /** Vault'a related_type='project' ile bağlanmış gerçek dosyalar. */
   async documentsByProjectIds(ctx: RequestContext, ids: string[]): Promise<ProjectDocRow[]> {
     if (ids.length === 0) return [];

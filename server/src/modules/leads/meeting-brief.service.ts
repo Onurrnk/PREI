@@ -17,6 +17,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { DatabaseService } from '../../database/database.service';
 import type { AppConfig } from '../../config/configuration';
 import type { RequestContext } from '../../common/request-context';
+import { friendlyAiError } from '../../common/ai-error';
 import {
   BRIEF_SCHEMA, BRIEF_SYSTEM, buildBriefPrompt, profileGaps,
   type LeadDossier, type ProfileGap,
@@ -269,9 +270,9 @@ export class MeetingBriefService {
       }
       brief = JSON.parse(text.text) as MeetingBrief;
     } catch (e) {
-      const message = (e as Error).message;
-      this.logger.error(`Görüşme brifingi üretilemedi (${leadId}): ${message}`);
-      return { ok: false, message, dossier, gaps };
+      // Ham AI hatasını (400 credit JSON vb.) ekrana DÖKME — zarif mesaj.
+      this.logger.error(`Görüşme brifingi üretilemedi (${leadId}): ${(e as Error).message}`);
+      return { ok: false, message: friendlyAiError(e), dossier, gaps };
     }
 
     const generatedAt = new Date().toISOString();

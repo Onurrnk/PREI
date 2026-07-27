@@ -16,6 +16,7 @@ import { ConfigService } from '@nestjs/config';
 import { DatabaseService } from '../../database/database.service';
 import type { AppConfig } from '../../config/configuration';
 import type { RequestContext } from '../../common/request-context';
+import { friendlyAiError } from '../../common/ai-error';
 
 const GRAPH = 'https://graph.facebook.com';
 
@@ -182,7 +183,7 @@ export class AdProposalsService {
       }
       campaignId = json.id;
     } catch (e) {
-      return { ok: false, message: (e as Error).message };
+      return { ok: false, message: friendlyAiError(e) };
     }
 
     const updated = await this.db.withContext(ctx, async (c) => {
@@ -229,7 +230,7 @@ export class AdProposalsService {
         return { ok: false, message: json.error?.message ?? `HTTP ${res.status}` };
       }
     } catch (e) {
-      return { ok: false, message: (e as Error).message };
+      return { ok: false, message: friendlyAiError(e) };
     }
 
     await this.db.withContext(ctx, (c) =>
@@ -258,7 +259,7 @@ export class AdProposalsService {
       const json = (await res.json()) as { error?: { message?: string } };
       if (!res.ok || json.error) return { ok: false, message: json.error?.message ?? `HTTP ${res.status}` };
     } catch (e) {
-      return { ok: false, message: (e as Error).message };
+      return { ok: false, message: friendlyAiError(e) };
     }
 
     await this.db.withContext(ctx, (c) =>

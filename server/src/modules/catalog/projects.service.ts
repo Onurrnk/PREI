@@ -91,6 +91,13 @@ export class ProjectsService {
     return toProjectResponse(row);
   }
 
+  /** Projeyi siler (soft delete). Test/yanlış giriş temizliği. */
+  async remove(ctx: RequestContext, id: string): Promise<{ deleted: true }> {
+    const ok = await this.repo.deleteProject(ctx, id);
+    if (!ok) throw new NotFoundException('Proje bulunamadı.');
+    return { deleted: true };
+  }
+
   /** Proje görsellerini media bucket'ına yükler, public URL'leri metadata'ya ekler. */
   async uploadImages(ctx: RequestContext, id: string, files: UploadedImageLike[]): Promise<ProjectResponse> {
     if (!files || files.length === 0) throw new BadRequestException('Görsel dosyası gelmedi.');

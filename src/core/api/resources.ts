@@ -234,6 +234,10 @@ export const clientsApi = {
   notes: (id: string) => api.get<ClientNoteDTO[]>(`/api/clients/${id}/notes`),
   addNote: (id: string, body: CreateClientNoteInput) =>
     api.post<ClientNoteDTO>(`/api/clients/${id}/notes`, body),
+  updateNote: (id: string, noteId: string, body: CreateClientNoteInput) =>
+    api.patch<ClientNoteDTO>(`/api/clients/${id}/notes/${noteId}`, body),
+  deleteNote: (id: string, noteId: string) =>
+    api.delete<{ deleted: true }>(`/api/clients/${id}/notes/${noteId}`),
   timeline: (id: string) => api.get<ClientTimelineEntryDTO[]>(`/api/clients/${id}/timeline`),
   /** Sıcak / normal / dondurulmuş ataması (madde 25). */
   setEngagement: (id: string, engagement: 'hot' | 'normal' | 'frozen') =>
@@ -279,6 +283,8 @@ export const projectsApi = {
   setLifecycle: (id: string, status: ProjectDTO['lifecycleStatus']) =>
     api.patch<ProjectDTO>(`/api/projects/${id}/lifecycle`, { status }),
   update: (id: string, input: UpdateProjectInput) => api.patch<ProjectDTO>(`/api/projects/${id}`, input),
+  /** Projeyi sil (soft delete) — test/yanlış giriş temizliği. */
+  remove: (id: string) => api.delete<{ deleted: true }>(`/api/projects/${id}`),
 };
 
 export const proposalsApi = {

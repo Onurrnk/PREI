@@ -1793,6 +1793,25 @@ export const handlers = [
     return HttpResponse.json<ClientNoteDTO>(note, { status: 201 });
   }),
 
+  // Not düzenle (metin/etiket/görüşme detayları).
+  http.patch('/api/clients/:id/notes/:noteId', async ({ params, request }) => {
+    const body = (await request.json()) as Partial<ClientNoteDTO>;
+    const key = String(params.id);
+    const list = mockNotesByClient[key] ?? [];
+    const i = list.findIndex((n) => n.id === params.noteId);
+    if (i === -1) return HttpResponse.json({ message: 'not found' }, { status: 404 });
+    list[i] = { ...list[i], ...body, id: list[i].id };
+    return HttpResponse.json<ClientNoteDTO>(list[i]);
+  }),
+
+  // Not sil.
+  http.delete('/api/clients/:id/notes/:noteId', ({ params }) => {
+    const key = String(params.id);
+    const list = mockNotesByClient[key] ?? [];
+    mockNotesByClient[key] = list.filter((n) => n.id !== params.noteId);
+    return HttpResponse.json({ deleted: true });
+  }),
+
   http.get('/api/clients/:id/timeline', ({ params }) => {
     return HttpResponse.json<ClientTimelineEntryDTO[]>(mockTimelineByClient[String(params.id)] ?? []);
   }),
@@ -1928,6 +1947,14 @@ export const handlers = [
     const b = (await request.json()) as { status: ProjectDTO['lifecycleStatus'] };
     mockProjects[idx] = { ...mockProjects[idx], lifecycleStatus: b.status };
     return HttpResponse.json<ProjectDTO>(mockProjects[idx]);
+  }),
+
+  // Projeyi sil (soft delete → mock'ta listeden çıkar).
+  http.delete('/api/projects/:id', ({ params }) => {
+    const i = mockProjects.findIndex((p) => p.id === params.id);
+    if (i === -1) return new HttpResponse(null, { status: 404 });
+    mockProjects.splice(i, 1);
+    return HttpResponse.json({ deleted: true });
   }),
 
   http.patch('/api/projects/:id', async ({ params, request }) => {

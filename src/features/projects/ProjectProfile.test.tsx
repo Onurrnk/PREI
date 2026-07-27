@@ -4,6 +4,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { setupServer } from 'msw/node';
 import { ProjectProfile } from './ProjectProfile';
 import { ToastProvider } from '../../core/components/Toast/ToastProvider';
+import { AuthProvider } from '../../core/auth/AuthContext';
 import { handlers } from '../../mocks/handlers';
 import '../../core/i18n/config';
 
@@ -13,15 +14,18 @@ beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }));
 afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
+// AuthProvider gerekli: profil, silme yetkisi için useAuth kullanıyor (super_admin).
 const renderProjectProfile = () =>
   render(
-    <ToastProvider>
-      <MemoryRouter initialEntries={['/projects/p1']}>
-        <Routes>
-          <Route path="/projects/:id" element={<ProjectProfile />} />
-        </Routes>
-      </MemoryRouter>
-    </ToastProvider>,
+    <AuthProvider>
+      <ToastProvider>
+        <MemoryRouter initialEntries={['/projects/p1']}>
+          <Routes>
+            <Route path="/projects/:id" element={<ProjectProfile />} />
+          </Routes>
+        </MemoryRouter>
+      </ToastProvider>
+    </AuthProvider>,
   );
 
 describe('ProjectProfile — Send Email to Client composer', () => {

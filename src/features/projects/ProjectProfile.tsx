@@ -10,11 +10,13 @@ import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form
 import { useToast } from '../../core/components/Toast/ToastProvider';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { ArrowLeft, MapPin, Buildings, CalendarBlank, CurrencyDollar, CheckCircle, FileText, FilePdf, Table, DownloadSimple, PaperPlaneTilt, Paperclip, PencilSimple, Trash } from '@phosphor-icons/react';
+import { useAuth } from '../../core/auth/AuthContext';
+import { ArrowLeft, MapPin, Buildings, CalendarBlank, CurrencyDollar, CheckCircle, FileText, FilePdf, Table, DownloadSimple, PaperPlaneTilt, Paperclip, PencilSimple, Trash, Plus } from '@phosphor-icons/react';
 import styles from './ProjectProfile.module.css';
 
 export const ProjectProfile: React.FC = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data, loading, refetch } = useFetch<ProjectDTO[]>(() => projectsApi.list(), [id]);
@@ -74,6 +76,13 @@ export const ProjectProfile: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [removeTarget, setRemoveTarget] = useState<string | null>(null);
   const [removingImage, setRemovingImage] = useState<string | null>(null);
+  // Projeyi sil (soft) — yalnız super_admin; iki aşamalı onay.
+  const canDelete = user?.role === 'super_admin';
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  // Foto ekle — gizli input, "Fotoğraf ekle" düğmesi tetikler.
+  const fileRef = React.useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const confirmRemoveImage = async () => {
     if (!project || !removeTarget) return;
@@ -91,6 +100,35 @@ export const ProjectProfile: React.FC = () => {
       setRemovingImage(null);
     }
   };
+  const handleDeleteProject = async () => {
+    if (!project) return;
+    setDeleting(true);
+    try {
+      await projectsApi.remove(project.id);
+      toast.success(t('projects.delete.done', { name: project.name }));
+      navigate('/projects');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('projects.delete.failed'));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleAddPhotos = async (files: FileList | null) => {
+    if (!project || !files || files.length === 0) return;
+    setUploading(true);
+    try {
+      await projectsApi.uploadImages(project.id, Array.from(files));
+      toast.success(t('projects.gallery.added'));
+      refetch();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('projects.gallery.addFailed'));
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
   const [shareClient, setShareClient] = useState('');
   const [emailSubject, setEmailSubject] = useState<string | null>(null);
   const [emailBody, setEmailBody] = useState<string | null>(null);
@@ -183,8 +221,30 @@ export const ProjectProfile: React.FC = () => {
             />
           </div>
           <Button variant="outline" onClick={openEdit}><PencilSimple size={16} /> {t('projects.edit.button')}</Button>
+          {/* Foto ekle — gizli çoklu dosya girişi */}
+          <input ref={fileRef} type="file" accept="image/*" multiple hidden
+            onChange={(e) => handleAddPhotos(e.target.files)} />
+          <Button variant="outline" disabled={uploading} onClick={() => fileRef.current?.click()}>
+            <Plus size={16} /> {uploading ? t('projects.gallery.adding') : t('projects.gallery.add')}
+          </Button>
           <Button variant="outline" onClick={() => handleActionClick('Download Full Media Kit')}><FileText size={16} /> {t('projects.mediaKit')}</Button>
-          <Button variant="primary" onClick={() => handleActionClick('Reserve Unit')}>{t('projects.reserveUnit')}</Button>
+          {canDelete && (
+            confirmDelete ? (
+              <>
+                <Button variant="outline" disabled={deleting} onClick={handleDeleteProject}
+                  style={{ color: 'var(--data-negative)', borderColor: 'var(--data-negative)' }}>
+                  <Trash size={16} /> {deleting ? t('projects.delete.deleting') : t('projects.delete.confirm')}
+                </Button>
+                <Button variant="ghost" disabled={deleting} onClick={() => setConfirmDelete(false)}>
+                  {t('projects.delete.cancel')}
+                </Button>
+              </>
+            ) : (
+              <Button variant="ghost" onClick={() => setConfirmDelete(true)} style={{ color: 'var(--data-negative)' }}>
+                <Trash size={16} /> {t('projects.delete.button')}
+              </Button>
+            )
+          )}
         </div>
       </div>
 

@@ -59,6 +59,12 @@ export class ProjectsController {
     return this.projects.setLifecycle(ctx, id, dto.status);
   }
 
+  /** Projeyi sil (soft delete) — test/yanlış giriş temizliği. */
+  @Delete(':id')
+  remove(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.projects.remove(ctx, id);
+  }
+
   /** Beğenilmeyen görseli kaldır — galeri + kategorili gösterim + depo. */
   @Delete(':id/images')
   removeImage(

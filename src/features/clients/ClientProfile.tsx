@@ -154,6 +154,14 @@ const InteractionFields: React.FC<{
 }> = ({ v, onChange }) => {
   const { t } = useTranslation();
   const set = (patch: Partial<InteractionValue>) => onChange({ ...v, ...patch });
+  // "Şimdi" → yerel datetime-local biçimi (YYYY-MM-DDTHH:mm). Kullanıcı
+  // tarih/saati scroll ederek girmek zorunda kalmasın; en sık durum
+  // "az önce görüştüm" — tek tıkla dolar. Elle de düzenlenebilir.
+  const setNow = () => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    set({ occurredAt: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}` });
+  };
   return (
     <>
       <FormRow>
@@ -166,14 +174,17 @@ const InteractionFields: React.FC<{
           />
         </Field>
         <Field label={t('clients.profile.interaction.occurredAt')}>
-          <Input type="datetime-local" value={v.occurredAt} onChange={(e) => set({ occurredAt: e.target.value })} />
+          <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center' }}>
+            <Input type="datetime-local" value={v.occurredAt} onChange={(e) => set({ occurredAt: e.target.value })} />
+            <Button variant="ghost" size="sm" type="button" onClick={setNow}>
+              {t('clients.profile.interaction.now')}
+            </Button>
+          </div>
         </Field>
       </FormRow>
       <FormRow>
-        <Field label={t('clients.profile.interaction.location')}>
-          <Input value={v.location} placeholder={t('clients.profile.interaction.locationPh')}
-            onChange={(e) => set({ location: e.target.value })} />
-        </Field>
+        {/* "Nerede" (location) kaldırıldı — WhatsApp/telefon görüşmesinde
+            alakasızdı. Tek serbest alan: Konu (eski "Amaç"). */}
         <Field label={t('clients.profile.interaction.purpose')}>
           <Input value={v.purpose} placeholder={t('clients.profile.interaction.purposePh')}
             onChange={(e) => set({ purpose: e.target.value })} />
@@ -183,14 +194,14 @@ const InteractionFields: React.FC<{
   );
 };
 
-/** Görüşme meta satırı — kanal · tarih/saat · yer · amaç chip'leri. */
+/** Görüşme meta satırı — kanal · tarih/saat · konu chip'leri. */
 const InteractionMeta: React.FC<{ n: ClientNoteDTO }> = ({ n }) => {
   const { t } = useTranslation();
-  if (!n.channel && !n.occurredAt && !n.location && !n.purpose) return null;
+  if (!n.channel && !n.occurredAt && !n.purpose) return null;
   const bits: string[] = [];
   if (n.channel) bits.push(t(`clients.profile.interaction.channels.${n.channel}`, { defaultValue: n.channel }));
   if (n.occurredAt) bits.push(new Date(n.occurredAt).toLocaleString(i18n.language === 'tr' ? 'tr-TR' : 'en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }));
-  if (n.location) bits.push(n.location);
+  // "Nerede" (location) artık gösterilmiyor — WhatsApp/telefonda alakasızdı.
   if (n.purpose) bits.push(`${t('clients.profile.interaction.purposeShort')}: ${n.purpose}`);
   return (
     <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginBottom: 4, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -202,6 +213,14 @@ const InteractionMeta: React.FC<{ n: ClientNoteDTO }> = ({ n }) => {
 /** datetime-local → ISO (boşsa undefined). */
 const localToIso = (v: string): string | undefined =>
   v ? new Date(v).toISOString() : undefined;
+
+/** ISO → datetime-local (YYYY-MM-DDTHH:mm, yerel saat). Düzenlemede kullanılır. */
+const isoToLocal = (iso: string | null | undefined): string => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
 
 // İç not zamanı: ISO → göreli etiket (listede kompakt okunur). Modül seviyesinde
 // olduğu için hook kullanamaz; canlı dil değişimini yakalamak için i18n'i
@@ -217,6 +236,127 @@ function noteTimeAgo(iso: string): string {
   if (d < 14) return i18n.t('clients.profile.daysAgo', { d });
   return new Date(iso).toLocaleDateString(i18n.language === 'tr' ? 'tr-TR' : 'en-GB');
 }
+
+const NOTE_TAGS = ['Meeting', 'Call', 'General'] as const;
+
+/**
+ * Tek iç not — görüntüle / düzenle / sil. AI analiz notları bu akışta
+ * değil (ayrı sekmede); buradaki tüm notlar elle girilmiş text notu.
+ */
+const NoteItem: React.FC<{
+  n: ClientNoteDTO;
+  clientId: string;
+  onChanged: () => void;
+}> = ({ n, clientId, onChanged }) => {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const [editing, setEditing] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [text, setText] = useState(n.text);
+  const [tag, setTag] = useState<ClientNoteDTO['tag']>(n.tag);
+  const [inter, setInter] = useState<InteractionValue>({
+    channel: n.channel || 'phone', occurredAt: isoToLocal(n.occurredAt),
+    location: n.location ?? '', purpose: n.purpose ?? '',
+  });
+
+  const save = async () => {
+    if (!text.trim()) return;
+    setBusy(true);
+    try {
+      await clientsApi.updateNote(clientId, n.id, {
+        text: text.trim(), tag,
+        channel: inter.channel || undefined,
+        occurredAt: localToIso(inter.occurredAt),
+        purpose: inter.purpose.trim() || undefined,
+      });
+      setEditing(false);
+      onChanged();
+      toast.success(t('clients.profile.noteUpdated'));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally { setBusy(false); }
+  };
+
+  const remove = async () => {
+    setBusy(true);
+    try {
+      await clientsApi.deleteNote(clientId, n.id);
+      onChanged();
+      toast.success(t('clients.profile.noteDeleted'));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <div className={styles.noteItem}>
+      <span className={styles.noteAvatar}>
+        {n.author.split(' ').map(w => w[0]).slice(0, 2).join('')}
+      </span>
+      <div className={styles.noteBody}>
+        <div className={styles.noteHead}>
+          <span className={styles.noteAuthor}>{n.author}</span>
+          <span className={styles.noteRole}>{n.role}</span>
+          <span className={`${styles.noteTagChip} ${styles[`noteTag${n.tag}`] ?? ''}`}>{n.tag}</span>
+          <span className={styles.noteTime}>{noteTimeAgo(n.createdAt)}</span>
+          {!editing && (
+            <span style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
+              <button className={styles.noteIconBtn} title={t('clients.profile.noteEdit')}
+                onClick={() => setEditing(true)}>
+                <PencilSimple size={14} />
+              </button>
+              <button className={`${styles.noteIconBtn} ${styles.noteIconDanger}`}
+                title={t('clients.profile.noteDelete')} onClick={() => setConfirmDel(true)}>
+                <Trash size={14} />
+              </button>
+            </span>
+          )}
+        </div>
+
+        {editing ? (
+          <div className={styles.noteEdit}>
+            <InteractionFields v={inter} onChange={setInter} />
+            <Textarea rows={3} value={text} onChange={(e) => setText(e.target.value)} />
+            <div className={styles.noteComposerRow}>
+              <div className={styles.noteTagSelect}>
+                <SelectMenu aria-label="tag" value={tag}
+                  onChange={(v) => setTag(v as ClientNoteDTO['tag'])}
+                  options={NOTE_TAGS.map((tg) => ({ value: tg, label: t(`clients.profile.noteTypes.${tg.toLowerCase()}`) }))}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
+                <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={busy}>
+                  {t('clients.profile.noteCancel')}
+                </Button>
+                <Button variant="primary" size="sm" onClick={save} disabled={busy || !text.trim()}>
+                  {t('clients.profile.noteSave')}
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <InteractionMeta n={n} />
+            <p className={styles.noteText}>{n.text}</p>
+            {confirmDel && (
+              <div className={styles.noteConfirm}>
+                <span>{t('clients.profile.noteDeleteConfirm')}</span>
+                <Button variant="ghost" size="sm" onClick={remove} disabled={busy}
+                  style={{ color: 'var(--data-negative)' }}>
+                  {t('clients.profile.noteDelete')}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setConfirmDel(false)} disabled={busy}>
+                  {t('clients.profile.noteCancel')}
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export const ClientProfile: React.FC = () => {
   const { t } = useTranslation();
@@ -255,10 +395,11 @@ export const ClientProfile: React.FC = () => {
   const clientProposals = (allProposals ?? []).filter(
     (p) => p.contactId === id || (fetched && p.clientName === fetched.name),
   );
-  // Danışman iç notları — meeting_notes tablosundan (mock modda MSW)
-  const { data: fetchedNotes } = useFetch<ClientNoteDTO[]>(() => clientsApi.notes(id!), [id]);
-  const [addedNotes, setAddedNotes] = useState<ClientNoteDTO[]>([]);
-  const notes: ClientNoteDTO[] = [...addedNotes, ...(fetchedNotes ?? [])];
+  // Danışman iç notları — meeting_notes tablosundan (mock modda MSW).
+  // Tek kaynak + refetch: ekle/düzenle/sil sonrası tazelenir (optimistic
+  // yerine — düzenleme/silme ile tutarlı kalsın).
+  const { data: fetchedNotes, refetch: refetchNotes } = useFetch<ClientNoteDTO[]>(() => clientsApi.notes(id!), [id]);
+  const notes: ClientNoteDTO[] = fetchedNotes ?? [];
   // AI Analiz raporları — n8n analiz workflow'u üretir, meeting_notes'ta saklanır.
   const { data: analyses } = useFetch<ClientAnalysisDTO[]>(() => clientsApi.analyses(id!), [id]);
   const [noteDraft, setNoteDraft] = useState('');
@@ -344,8 +485,8 @@ export const ClientProfile: React.FC = () => {
       location: actInter.location.trim() || undefined,
       purpose: actInter.purpose.trim() || undefined,
     })
-      .then((created) => {
-        setAddedNotes(prev => [created, ...prev]);
+      .then(() => {
+        refetchNotes();
         toast.success(t('clients.profile.activitySaved', { type: activityTypeLabel(activityType) }));
         setShowActivityModal(false);
         setActivityNote('');
@@ -915,13 +1056,12 @@ export const ClientProfile: React.FC = () => {
                           text, tag: noteTag,
                           channel: noteInter.channel || undefined,
                           occurredAt: localToIso(noteInter.occurredAt),
-                          location: noteInter.location.trim() || undefined,
                           purpose: noteInter.purpose.trim() || undefined,
                         })
-                          .then((created) => {
-                            setAddedNotes(prev => [created, ...prev]);
+                          .then(() => {
                             setNoteDraft('');
                             setNoteInter(emptyInteraction);
+                            refetchNotes();
                             toast.success(t('clients.profile.noteSaved'));
                           })
                           .catch(() => toast.error(t('clients.profile.noteSaveFailed')));
@@ -932,24 +1072,10 @@ export const ClientProfile: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Not akışı — en yeni üstte */}
+                {/* Not akışı — en yeni üstte; her not düzenle/sil taşır */}
                 <div className={styles.notesThread}>
                   {notes.map((n) => (
-                    <div key={n.id} className={styles.noteItem}>
-                      <span className={styles.noteAvatar}>
-                        {n.author.split(' ').map(w => w[0]).slice(0, 2).join('')}
-                      </span>
-                      <div className={styles.noteBody}>
-                        <div className={styles.noteHead}>
-                          <span className={styles.noteAuthor}>{n.author}</span>
-                          <span className={styles.noteRole}>{n.role}</span>
-                          <span className={`${styles.noteTagChip} ${styles[`noteTag${n.tag}`] ?? ''}`}>{n.tag}</span>
-                          <span className={styles.noteTime}>{noteTimeAgo(n.createdAt)}</span>
-                        </div>
-                        <InteractionMeta n={n} />
-                        <p className={styles.noteText}>{n.text}</p>
-                      </div>
-                    </div>
+                    <NoteItem key={n.id} n={n} clientId={client.id} onChanged={refetchNotes} />
                   ))}
                 </div>
               </CardBody>

@@ -88,6 +88,27 @@ export class ClientsService {
     return toClientNoteResponse(row);
   }
 
+  async updateNote(
+    ctx: RequestContext, contactId: string, noteId: string, dto: CreateClientNoteDto,
+  ): Promise<ClientNoteResponse> {
+    const row = await this.repo.updateNote(ctx, contactId, noteId, dto.text.trim(), dto.tag, {
+      channel: dto.channel ?? null,
+      occurred_at: dto.occurredAt ?? null,
+      location: dto.location?.trim() || null,
+      purpose: dto.purpose?.trim() || null,
+    });
+    if (!row) throw new NotFoundException('Not bulunamadı veya düzenlenemez.');
+    return toClientNoteResponse(row);
+  }
+
+  async deleteNote(
+    ctx: RequestContext, contactId: string, noteId: string,
+  ): Promise<{ deleted: true }> {
+    const ok = await this.repo.deleteNote(ctx, contactId, noteId);
+    if (!ok) throw new NotFoundException('Not bulunamadı veya silinemez.');
+    return { deleted: true };
+  }
+
   async timeline(ctx: RequestContext, contactId: string): Promise<ClientTimelineEntryResponse[]> {
     const rows = await this.repo.listTimeline(ctx, contactId);
     return rows.map(toClientTimelineEntry);

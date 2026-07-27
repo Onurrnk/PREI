@@ -15,6 +15,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { DatabaseService } from '../../database/database.service';
 import type { AppConfig } from '../../config/configuration';
 import type { RequestContext } from '../../common/request-context';
+import { friendlyAiError } from '../../common/ai-error';
 import { MarketingBrainService } from './marketing-brain.service';
 import {
   MANAGER_SCHEMA, MANAGER_SYSTEM, buildManagerPrompt, detectStage,
@@ -230,7 +231,7 @@ export class MarketingManagerService {
       }
       out = JSON.parse(text.text) as ManagerOutput;
     } catch (e) {
-      const message = (e as Error).message;
+      const message = friendlyAiError(e);
       this.logger.error(`Pazarlama yöneticisi çalışamadı: ${message}`);
       return { ok: false, actionsCreated: 0, message };
     }

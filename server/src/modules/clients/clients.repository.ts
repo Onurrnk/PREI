@@ -257,6 +257,50 @@ export class ClientsRepository {
     });
   }
 
+  /**
+   * İç not günceller (metin/etiket/görüşme detayları). YALNIZ elle girilen
+   * notlar (source_type='text'); AI analiz notları (kind='ai_analysis')
+   * korunur — düzenlenemez/silinemez. Bulunamazsa null.
+   */
+  async updateNote(
+    ctx: RequestContext, contactId: string, noteId: string,
+    text: string, tag: string, interaction: Record<string, unknown> = {},
+  ): Promise<NoteRow | null> {
+    return this.db.withContext(ctx, async (c) => {
+      const extra = Object.fromEntries(Object.entries(interaction).filter(([, v]) => v != null && v !== ''));
+      const { rows } = await c.query<{ id: string }>(
+        `UPDATE meeting_notes
+            SET raw_content = $3,
+                metadata = jsonb_build_object('tag',$4::text,'source','internal') || $5::jsonb,
+                updated_at = now()
+          WHERE id = $2 AND contact_id = $1 AND deleted_at IS NULL
+            AND source_type = 'text'
+          RETURNING id`,
+        [contactId, noteId, text, tag, JSON.stringify(extra)],
+      );
+      if (rows.length === 0) return null;
+      await this.writeAuditAndEvent(c, ctx, 'client.note_updated', contactId, { noteId, tag });
+      const { rows: joined } = await c.query<NoteRow>(`${NOTE_SELECT} WHERE mn.id = $1`, [noteId]);
+      return joined[0] ?? null;
+    });
+  }
+
+  /** İç notu siler (soft delete). Yalnız source_type='text'. Bulunamazsa false. */
+  async deleteNote(
+    ctx: RequestContext, contactId: string, noteId: string,
+  ): Promise<boolean> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rowCount } = await c.query(
+        `UPDATE meeting_notes SET deleted_at = now()
+          WHERE id = $2 AND contact_id = $1 AND deleted_at IS NULL AND source_type = 'text'`,
+        [contactId, noteId],
+      );
+      if (!rowCount) return false;
+      await this.writeAuditAndEvent(c, ctx, 'client.note_deleted', contactId, { noteId });
+      return true;
+    });
+  }
+
   /** audit_log (forensics) + events (outbox) — aynı transaction, correlation_id bağlı. */
   private async writeAuditAndEvent(
     c: PoolClient, ctx: RequestContext, action: string, entityId: string, diff: unknown,

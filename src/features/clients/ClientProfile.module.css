@@ -903,6 +903,42 @@
   color: var(--text-secondary);
 }
 
+/* Not düzenle/sil ikon düğmeleri (not başlığında, sağda) */
+.noteIconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.noteIconBtn:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+.noteIconDanger:hover { color: var(--data-negative); background: rgba(194, 85, 79, 0.1); }
+
+/* Düzenleme kutusu — composer'la aynı boşluk ritmi */
+.noteEdit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+
+/* Silme onayı satırı */
+.noteConfirm {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  font-size: 0.75rem;
+  color: var(--data-negative);
+}
+
 /* =====================================================================
    Sıcak / normal / dondurulmuş seçici (madde 25) + geldiği ülke (madde 26).
    Seçili durum renkle ayrışır: sıcak amber, dondurulmuş mavi-gri.

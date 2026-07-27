@@ -2,7 +2,7 @@
 // PREI | ClientsController — /api/clients (müşteri dizini + profil güncelleme). 'clients' izni.
 // =====================================================================
 import {
-  BadRequestException, Controller, Get, Patch, Post, Body, Param, ParseUUIDPipe, Query,
+  BadRequestException, Controller, Get, Patch, Post, Delete, Body, Param, ParseUUIDPipe, Query,
   DefaultValuePipe, ParseIntPipe, UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -82,6 +82,27 @@ export class ClientsController {
     @Body() dto: CreateClientNoteDto,
   ) {
     return this.clients.createNote(ctx, id, dto);
+  }
+
+  /** İç notu düzenle — yalnız elle girilen not (AI analiz notu korunur). */
+  @Patch(':id/notes/:noteId')
+  updateNote(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('noteId', ParseUUIDPipe) noteId: string,
+    @Body() dto: CreateClientNoteDto,
+  ) {
+    return this.clients.updateNote(ctx, id, noteId, dto);
+  }
+
+  /** İç notu sil (soft delete) — yalnız elle girilen not. */
+  @Delete(':id/notes/:noteId')
+  deleteNote(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('noteId', ParseUUIDPipe) noteId: string,
+  ) {
+    return this.clients.deleteNote(ctx, id, noteId);
   }
 
   @Get(':id/timeline')

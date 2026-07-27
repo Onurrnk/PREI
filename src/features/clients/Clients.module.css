@@ -210,3 +210,32 @@
 .mutedText {
   color: var(--text-secondary);
 }
+
+/* İşlemler menüsü — dikey aksiyon listesi. */
+.rowActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.rowAction {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3);
+  font: var(--text-body);
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast);
+}
+
+.rowAction:hover { background: var(--bg-surface-hover); }
+.rowAction:disabled { opacity: 0.6; cursor: default; }
+
+.rowActionDanger { color: var(--data-negative); }
+.rowActionDanger:hover { background: rgba(194, 85, 79, 0.1); }
