@@ -11,7 +11,7 @@ import { useToast } from '../../core/components/Toast/ToastProvider';
 import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { useAuth } from '../../core/auth/AuthContext';
-import { ArrowLeft, MapPin, Buildings, CalendarBlank, CurrencyDollar, CheckCircle, FileText, FilePdf, Table, DownloadSimple, PaperPlaneTilt, Paperclip, PencilSimple, Trash, Plus } from '@phosphor-icons/react';
+import { ArrowLeft, MapPin, Buildings, CalendarBlank, CurrencyDollar, CheckCircle, FileText, FilePdf, Table, DownloadSimple, PaperPlaneTilt, Paperclip, PencilSimple, Trash, Plus, DotsThreeVertical } from '@phosphor-icons/react';
 import styles from './ProjectProfile.module.css';
 
 export const ProjectProfile: React.FC = () => {
@@ -83,6 +83,19 @@ export const ProjectProfile: React.FC = () => {
   // Foto ekle — gizli input, "Fotoğraf ekle" düğmesi tetikler.
   const fileRef = React.useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+
+  // İşlemler kebap menüsü (Onur: düğmeler yan yana kalabalıktı) —
+  // ClientProfile'daki desenle aynı: dışarı tıklayınca kapanır.
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (!moreOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [moreOpen]);
 
   const confirmRemoveImage = async () => {
     if (!project || !removeTarget) return;
@@ -220,31 +233,62 @@ export const ProjectProfile: React.FC = () => {
               }))}
             />
           </div>
-          <Button variant="outline" onClick={openEdit}><PencilSimple size={16} /> {t('projects.edit.button')}</Button>
-          {/* Foto ekle — gizli çoklu dosya girişi */}
+          {/* Foto ekle — gizli çoklu dosya girişi (menüden tetiklenir) */}
           <input ref={fileRef} type="file" accept="image/*" multiple hidden
             onChange={(e) => handleAddPhotos(e.target.files)} />
-          <Button variant="outline" disabled={uploading} onClick={() => fileRef.current?.click()}>
-            <Plus size={16} /> {uploading ? t('projects.gallery.adding') : t('projects.gallery.add')}
-          </Button>
-          <Button variant="outline" onClick={() => handleActionClick('Download Full Media Kit')}><FileText size={16} /> {t('projects.mediaKit')}</Button>
-          {canDelete && (
-            confirmDelete ? (
-              <>
-                <Button variant="outline" disabled={deleting} onClick={handleDeleteProject}
-                  style={{ color: 'var(--data-negative)', borderColor: 'var(--data-negative)' }}>
-                  <Trash size={16} /> {deleting ? t('projects.delete.deleting') : t('projects.delete.confirm')}
-                </Button>
-                <Button variant="ghost" disabled={deleting} onClick={() => setConfirmDelete(false)}>
-                  {t('projects.delete.cancel')}
-                </Button>
-              </>
-            ) : (
-              <Button variant="ghost" onClick={() => setConfirmDelete(true)} style={{ color: 'var(--data-negative)' }}>
-                <Trash size={16} /> {t('projects.delete.button')}
+
+          {/* Silme onayı menü dışında görünür kalır (yanlışlıkla kapanmasın) */}
+          {confirmDelete && (
+            <>
+              <Button variant="outline" disabled={deleting} onClick={handleDeleteProject}
+                style={{ color: 'var(--data-negative)', borderColor: 'var(--data-negative)' }}>
+                <Trash size={16} /> {deleting ? t('projects.delete.deleting') : t('projects.delete.confirm')}
               </Button>
-            )
+              <Button variant="ghost" disabled={deleting} onClick={() => setConfirmDelete(false)}>
+                {t('projects.delete.cancel')}
+              </Button>
+            </>
           )}
+
+          {/* Tüm işlemler tek kebap menüsünde (Onur: yan yana kalabalıktı) */}
+          <div className={styles.moreWrap} ref={moreRef}>
+            <Button
+              variant="outline"
+              aria-label={t('projects.moreActions')}
+              aria-haspopup="menu"
+              aria-expanded={moreOpen}
+              onClick={() => setMoreOpen((o) => !o)}
+            >
+              <DotsThreeVertical size={18} weight="bold" />
+            </Button>
+            {moreOpen && (
+              <div className={styles.moreMenu} role="menu">
+                <button type="button" role="menuitem" className={styles.moreItem}
+                  onClick={() => { setMoreOpen(false); openEdit(); }}>
+                  <PencilSimple size={16} /> {t('projects.edit.button')}
+                </button>
+                <button type="button" role="menuitem" className={styles.moreItem}
+                  disabled={uploading}
+                  onClick={() => { setMoreOpen(false); fileRef.current?.click(); }}>
+                  <Plus size={16} /> {uploading ? t('projects.gallery.adding') : t('projects.gallery.add')}
+                </button>
+                <button type="button" role="menuitem" className={styles.moreItem}
+                  onClick={() => { setMoreOpen(false); handleActionClick('Download Full Media Kit'); }}>
+                  <FileText size={16} /> {t('projects.mediaKit')}
+                </button>
+                {canDelete && (
+                  <>
+                    <div className={styles.moreDivider} />
+                    <button type="button" role="menuitem"
+                      className={`${styles.moreItem} ${styles.moreItemDanger}`}
+                      onClick={() => { setMoreOpen(false); setConfirmDelete(true); }}>
+                      <Trash size={16} /> {t('projects.delete.button')}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

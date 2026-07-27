@@ -1580,6 +1580,7 @@ export const en = {
         addFailed: 'Could not add photos',
         empty: 'No images for this project.',
       },
+      moreActions: 'More actions',
       delete: {
         button: 'Delete project',
         confirm: 'Yes, delete',

@@ -1578,6 +1578,7 @@ export const tr = {
         addFailed: 'Fotoğraf eklenemedi',
         empty: 'Bu projede görsel yok.',
       },
+      moreActions: 'Daha Fazla',
       delete: {
         button: 'Projeyi sil',
         confirm: 'Evet, sil',
