@@ -71,6 +71,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ open = false, onClose }) => {
     {open && <div className={styles.overlay} onClick={onClose} aria-hidden="true" />}
     <aside className={`${styles.sidebar} ${open ? styles.open : ''}`}>
       <div className={styles.logoContainer}>
+        {/* Resmi P işareti + yazı (yazı CSS'te: koyu temada da doğru okunur). */}
+        <img src="/brand/prei-mark-256.png" alt="" className={styles.logoMark} />
         <h2 className={styles.logoText}>PREI <span className={styles.logoSub}>Smart Suites</span></h2>
       </div>
       <nav className={styles.nav}>

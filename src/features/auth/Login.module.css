@@ -27,6 +27,13 @@
   color: var(--accent-primary, var(--text-primary));
 }
 
+/* Resmi P işareti — kalkan ikonunun yerini aldı. */
+.brandMark {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
 .title {
   font-size: 1.4rem;
   font-weight: 700;

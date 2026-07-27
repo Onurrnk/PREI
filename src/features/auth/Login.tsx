@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../core/auth/AuthContext';
 import { Button } from '../../core/components/Button/Button';
-import { ShieldCheck } from '@phosphor-icons/react';
 import styles from './Login.module.css';
 import { useTranslation } from 'react-i18next';
 
@@ -40,7 +39,8 @@ export const Login: React.FC = () => {
     <div className={styles.page}>
       <form className={styles.card} onSubmit={handleSubmit}>
         <div className={styles.brand}>
-          <ShieldCheck size={28} />
+          {/* Resmi P işareti (public/brand) — jenerik kalkan ikonu yerine. */}
+          <img src="/brand/prei-mark-256.png" alt="PREI" className={styles.brandMark} />
           <h1 className={styles.title}>PREI <span className={styles.sub}>Smart Suites</span></h1>
         </div>
         <p className={styles.subtitle}>{t('login.subtitle')}</p>

@@ -46,6 +46,14 @@
   align-items: center;
 }
 
+.logoMark {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
 .logoText {
   color: var(--text-primary);
   font-size: 1.25rem;
