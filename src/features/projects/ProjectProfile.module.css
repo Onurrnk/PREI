@@ -643,6 +643,18 @@
 .moreWrap {
   position: relative;
   display: inline-flex;
+  /* Satır çocukları 'stretch' hizalanıyor; kebap tepeye yapışıp Yaşam
+     Döngüsü seçicisinden 18px yukarıda kalıyordu (Onur: "hizasız").
+     flex-end → taban çizgisi seçiciyle aynı olur. */
+  align-self: flex-end;
+}
+
+/* Kebap düğmesi: seçiciyle aynı yükseklikte (44px) net bir kare. */
+.moreWrap > button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  justify-content: center;
 }
 
 .moreMenu {
