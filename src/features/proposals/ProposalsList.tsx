@@ -6,6 +6,7 @@ import { proposalsApi } from '../../core/api/resources';
 import { useFetch } from '../../core/hooks/useFetch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../core/components/Table/Table';
 import { Button } from '../../core/components/Button/Button';
+import { EmptyState } from '../../core/components/EmptyState/EmptyState';
 import { Plus, MagnifyingGlass, PenNib, Eye, CalendarBlank } from '@phosphor-icons/react';
 import styles from './ProposalsList.module.css';
 
@@ -57,6 +58,18 @@ export const ProposalsList: React.FC = () => {
         </div>
       </div>
 
+      {proposals.length === 0 ? (
+        // 0 teklifte boş tablo yerine davetkâr boş-durum: "Gerçek Hafta"nın
+        // ilk günü Teklifler açıldığında kolon başlıklarının altında boşluk
+        // değil, ilk teklife yönlendiren bir çağrı görünsün.
+        <EmptyState
+          icon={<PenNib size={40} weight="thin" />}
+          title={t('proposals.emptyTitle')}
+          description={t('proposals.emptyBody')}
+          actionLabel={t('proposals.createProposal')}
+          onAction={() => navigate('/proposals/new')}
+        />
+      ) : (
       <div className={styles.tableWrapper}>
         <Table>
           <TableHead>
@@ -100,6 +113,7 @@ export const ProposalsList: React.FC = () => {
           </TableBody>
         </Table>
       </div>
+      )}
 
       {/* Slide-over Drawer for ProposalView */}
       {selectedProposalId && (

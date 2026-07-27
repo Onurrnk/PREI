@@ -987,6 +987,8 @@ export const en = {
     proposals: {
       title: 'Proposal Center',
       subtitle: 'Generate and track custom property pitches and financial offers',
+      emptyTitle: 'No proposals yet',
+      emptyBody: 'Create your first proposal — a tailored property pitch with ROI and payment plan is ready in a few steps.',
       client: 'Client',
       project: 'Project',
       totalValue: 'Total Value',

@@ -985,6 +985,8 @@ export const tr = {
     proposals: {
       title: 'Teklif Merkezi',
       subtitle: 'Kişiye özel mülk sunumları ve finansal teklifler oluşturun, takip edin',
+      emptyTitle: 'Henüz teklif yok',
+      emptyBody: 'İlk teklifinizi oluşturun; müşteriye özel mülk sunumu, ROI ve ödeme planı birkaç adımda hazır olur.',
       client: 'Müşteri',
       project: 'Proje',
       totalValue: 'Toplam Değer',
