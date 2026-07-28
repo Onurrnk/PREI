@@ -14,6 +14,7 @@ import type { AppConfig } from '../../config/configuration';
 import type { RequestContext } from '../../common/request-context';
 import { EYLUL_PERSONA, EYLUL_RULES } from './eylul-persona';
 import { buildPrompt, detectLang, stripFiller, toPlainText, type ChatMessage } from './eylul-brain';
+import { withProvenance } from './provenance';
 
 const OPENAI = 'https://api.openai.com/v1';
 const HISTORY_LIMIT = 12;
@@ -93,11 +94,17 @@ export class EylulBrainService {
     if (!embedding) return '';
     try {
       return await this.db.withContext(ctx, async (c) => {
-        const { rows } = await c.query<{ content: string }>(
-          `SELECT content FROM match_documents($1::vector, $2, '{}'::jsonb)`,
+        // Metadata da alınır: her pasajın KÜNYESİ (kaynak, doğrulama tarihi,
+        // güvenilirlik, tazelik notu) modele gösterilir. Eskiden yalnız
+        // content seçiliyordu; Eylül bir rakamın 8 ay mı 8 gün mü eski
+        // olduğunu bilemiyor, eski veriyi tam güvenle söylüyordu.
+        const { rows } = await c.query<{
+          content: string; metadata: Record<string, unknown> | null;
+        }>(
+          `SELECT content, metadata FROM match_documents($1::vector, $2, '{}'::jsonb)`,
           [`[${embedding.join(',')}]`, RAG_MATCHES],
         );
-        return rows.map((r) => r.content).join('\n\n---\n\n');
+        return rows.map((r) => withProvenance(r.content, r.metadata)).join('\n\n---\n\n');
       });
     } catch (e) {
       this.logger.warn(`Bilgi bankası araması başarısız: ${(e as Error).message}`);
