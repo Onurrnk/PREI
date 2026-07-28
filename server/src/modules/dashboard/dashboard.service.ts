@@ -81,9 +81,13 @@ export class DashboardService {
            (SELECT COALESCE(SUM(fx.amount_eur),0) FROM leads l
               LEFT JOIN LATERAL fx_to_eur(l.budget_max, l.currency) fx ON true
               WHERE l.deleted_at IS NULL AND l.status IN ${ACTIVE_STATUSES}) AS pipeline_eur,
-           (SELECT COALESCE(SUM(fx.amount_eur),0) FROM leads l
-              LEFT JOIN LATERAL fx_to_eur(l.budget_max, l.currency) fx ON true
-              WHERE l.deleted_at IS NULL AND l.status = 'converted') AS closed_won_eur,
+           -- Kapanan satış = GERÇEK kazanılmış anlaşma (deals.status='won'),
+           -- lead bütçesi DEĞİL. Eskiden leads.status='converted' toplamıydı;
+           -- "Müşteriye çevir" o statüyü yazınca bütçeler sahte ciro olarak
+           -- görünüyordu. Tek doğru kaynak: deals.amount.
+           (SELECT COALESCE(SUM(fx.amount_eur),0) FROM deals d
+              LEFT JOIN LATERAL fx_to_eur(d.amount, d.currency) fx ON true
+              WHERE d.deleted_at IS NULL AND d.status = 'won') AS closed_won_eur,
            (SELECT count(*) FROM proposals
               WHERE deleted_at IS NULL AND status IN ('sent','viewed','accepted')) AS proposals_active,
            (SELECT count(*) FROM tasks
@@ -142,10 +146,12 @@ export class DashboardService {
            (SELECT count(*) FROM tasks
              WHERE deleted_at IS NULL AND task_type = 'meeting'
                AND due_date >= week_start AND due_date < week_start + interval '7 days') AS meetings,
-           (SELECT COALESCE(SUM(fx.amount_eur),0) FROM leads l
-              LEFT JOIN LATERAL fx_to_eur(l.budget_max, l.currency) fx ON true
-             WHERE l.deleted_at IS NULL AND l.status = 'converted'
-               AND l.updated_at < week_start + interval '7 days') AS closed_won_eur
+           -- Haftalık birikimli kapanan satış — gerçek anlaşmalardan
+           -- (closed_at yoksa updated_at'e düşer).
+           (SELECT COALESCE(SUM(fx.amount_eur),0) FROM deals d
+              LEFT JOIN LATERAL fx_to_eur(d.amount, d.currency) fx ON true
+             WHERE d.deleted_at IS NULL AND d.status = 'won'
+               AND COALESCE(d.closed_at, d.updated_at) < week_start + interval '7 days') AS closed_won_eur
            FROM weeks ORDER BY week_start`,
       );
 

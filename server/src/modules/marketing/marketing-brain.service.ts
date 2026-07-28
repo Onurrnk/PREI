@@ -81,9 +81,16 @@ export class MarketingBrainService {
       );
 
       const { rows: leads } = await c.query<{ market: string; leads: string; won: string }>(
+        // won = GERÇEK kazanılmış anlaşması olan lead sayısı (deals.status='won').
+        // Eskiden leads.status='converted' sayılıyordu; 'converted' artık
+        // satış anlamına gelmiyor (bkz. clients.repository convertToCustomer).
         `SELECT COALESCE(l.target_market_code,'?') AS market,
                 count(*)::text AS leads,
-                count(*) FILTER (WHERE l.status = 'converted')::text AS won
+                count(*) FILTER (
+                  WHERE EXISTS (SELECT 1 FROM deals d
+                                 WHERE d.lead_id = l.id AND d.status = 'won'
+                                   AND d.deleted_at IS NULL)
+                )::text AS won
            FROM leads l WHERE l.deleted_at IS NULL AND l.created_at >= current_date - 90
           GROUP BY 1 ORDER BY count(*) DESC`,
       );

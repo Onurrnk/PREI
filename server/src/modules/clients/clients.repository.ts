@@ -374,10 +374,15 @@ export class ClientsRepository {
   }
 
   /**
-   * Adayı Müşteriye çevirir (madde: "kayıt alındıktan sonra müşteri").
-   * Tek transaction'da: lifecycle_stage='customer' + açık lead'ler
-   * 'converted' (böylece Adaylar pipeline'ından düşer). Zaten müşteriyse
-   * 'already' döner (idempotent — düğmeye iki kez basmak zararsız).
+   * Adayı Müşteriye çevirir = "bu kişiyle çalışmaya/görüşmeye başladık".
+   *
+   * SATIŞ DEĞİLDİR. Lead'in pipeline durumuna BİLEREK DOKUNMAZ: müşteriye
+   * çevirmek satışı kapatmaz, kişi hâlâ boru hattında ilerliyor olabilir.
+   * (Önceki sürüm lead'leri 'converted' yapıyordu; dashboard 'converted'ı
+   * kapanan satış saydığı için bütçeleri sahte ciro olarak gösteriyordu.)
+   *
+   * Gerçek satış = deals kaydı (status='won'); kapanan satış oradan okunur.
+   * Zaten müşteriyse 'already' döner (idempotent).
    */
   async convertToCustomer(
     ctx: RequestContext, contactId: string,
@@ -396,14 +401,8 @@ export class ClientsRepository {
           WHERE id = $1`,
         [contactId, ctx.userId],
       );
-      // Açık lead'leri kapat: terminal olmayanlar (lost/unqualified/converted
-      // dışı) 'converted' olur — kişi artık müşteri, aktif aday değil.
-      await c.query(
-        `UPDATE leads SET status = 'converted', updated_by = $2, updated_at = now()
-          WHERE contact_id = $1 AND deleted_at IS NULL
-            AND status NOT IN ('converted','lost','unqualified')`,
-        [contactId, ctx.userId],
-      );
+      // NOT: lead.status'e DOKUNULMAZ (yukarıdaki açıklama). Pipeline
+      // aşamasını danışman Kanban'dan yönetir; satış deals ile kaydedilir.
       await c.query(
         `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
          VALUES ($1,$2,'contact.converted_to_customer','contact',$3,$4,$5)`,
