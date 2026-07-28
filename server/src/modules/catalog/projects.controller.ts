@@ -36,6 +36,16 @@ export class ProjectsController {
     return this.projects.findOne(ctx, id);
   }
 
+  /** Bu proje kimlere sunuldu — müşteri kartındaki kaydın ters görünümü. */
+  @Get(':id/audience')
+  audience(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('lang') lang?: string,
+  ) {
+    return this.projects.audience(ctx, id, lang === 'en' ? 'en' : 'tr');
+  }
+
   @Post()
   create(@Ctx() ctx: RequestContext, @Body() dto: CreateProjectDto) {
     return this.projects.create(ctx, dto);

@@ -29,6 +29,19 @@ export interface ProjectDocRow {
   related_id: string;
 }
 
+/** Projenin sunulduğu kişi — presented_properties + contacts birleşimi. */
+export interface AudienceRow {
+  id: string;
+  contact_id: string;
+  contact_name: string | null;
+  lifecycle_stage: string | null;
+  stage: string;
+  price: string | null;
+  currency: string;
+  presented_at: string;
+  deal_id: string | null;
+}
+
 export interface DeveloperRow {
   id: string;
   name: string;
@@ -280,6 +293,29 @@ export class CatalogRepository {
           WHERE related_type = 'project' AND related_id = ANY($1) AND deleted_at IS NULL
           ORDER BY created_at DESC`,
         [ids],
+      );
+      return rows;
+    });
+  }
+
+  /**
+   * "Bu proje kimlere sunuldu?" — Sunulan Ürünler kaydının ters yönü.
+   * Müşteri kartından projeye bakabiliyorduk; buradan da projeden müşteriye.
+   * Silinmiş sunumlar ve silinmiş kişiler dışarıda.
+   */
+  async presentedAudience(ctx: RequestContext, projectId: string): Promise<AudienceRow[]> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<AudienceRow>(
+        `SELECT pp.id, pp.contact_id, pp.stage, pp.price, pp.currency,
+                pp.presented_at::text, pp.deal_id,
+                NULLIF(TRIM(COALESCE(ct.first_name,'') || ' ' || COALESCE(ct.last_name,'')), '')
+                  AS contact_name,
+                ct.lifecycle_stage
+           FROM presented_properties pp
+           JOIN contacts ct ON ct.id = pp.contact_id AND ct.deleted_at IS NULL
+          WHERE pp.property_id = $1 AND pp.deleted_at IS NULL
+          ORDER BY pp.presented_at DESC`,
+        [projectId],
       );
       return rows;
     });

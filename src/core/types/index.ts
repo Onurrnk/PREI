@@ -1402,6 +1402,27 @@ export interface PresentedDTO {
   dealId: string | null;
 }
 
+/** Ters görünüm: bu proje kimlere sunuldu (proje kartında). */
+export interface ProjectAudienceEntry {
+  presentedId: string;
+  contactId: string;
+  name: string;
+  isCustomer: boolean;
+  stage: PresentedStage;
+  stageLabel: string;
+  price: number | null;
+  currency: string;
+  presentedAt: string;
+  dealId: string | null;
+}
+
+export interface ProjectAudienceDTO {
+  total: number;
+  sold: number;
+  rejected: number;
+  people: ProjectAudienceEntry[];
+}
+
 export interface PresentedInput {
   propertyId?: string | null;
   externalTitle?: string | null;

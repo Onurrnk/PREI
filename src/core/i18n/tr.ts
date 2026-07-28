@@ -1666,6 +1666,18 @@ export const tr = {
       unitsCount: '{{available}} / {{total}} Ünite',
       handover: 'Teslim',
       amenitiesTitle: 'Olanaklar',
+      // "Bu proje kimlere sunuldu" — müşteri kartındaki kaydın ters yönü.
+      audience: {
+        title: 'Kimlere Sunuldu',
+        presentedCount: 'kişiye sunuldu',
+        soldCount: 'satıldı',
+        rejectedCount: 'beğenmedi',
+        customer: 'Müşteri',
+        prospect: 'Aday',
+        openClient: 'Müşteri kartını aç',
+        emptyTitle: 'Henüz kimseye sunulmadı',
+        emptyDesc: 'Bir müşteri kartındaki "Sunulan Ürünler" bölümünden bu projeyi eklediğinizde burada görünür.',
+      },
       paymentPlanTitle: 'Ödeme Planı',
       documentsTitle: 'Sunumlar ve Dokümanlar',
       noDocuments: 'Henüz doküman eklenmedi.',

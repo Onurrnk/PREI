@@ -59,6 +59,7 @@ import type {
   LoginResponse,
   MeResponse,
   ProjectDTO,
+  ProjectAudienceDTO,
   ProposalDTO,
   RoleOptionDTO,
   UpdateTeamMemberInput,
@@ -295,6 +296,9 @@ export const projectsApi = {
   setLifecycle: (id: string, status: ProjectDTO['lifecycleStatus']) =>
     api.patch<ProjectDTO>(`/api/projects/${id}/lifecycle`, { status }),
   update: (id: string, input: UpdateProjectInput) => api.patch<ProjectDTO>(`/api/projects/${id}`, input),
+  /** Bu proje kimlere sunuldu (müşteri kartındaki kaydın ters yönü). */
+  audience: (id: string, lang: string) =>
+    api.get<ProjectAudienceDTO>(`/api/projects/${id}/audience?lang=${lang === 'en' ? 'en' : 'tr'}`),
   /** Projeyi sil (soft delete) — test/yanlış giriş temizliği. */
   remove: (id: string) => api.delete<{ deleted: true }>(`/api/projects/${id}`),
 };

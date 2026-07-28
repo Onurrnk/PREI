@@ -6,6 +6,7 @@ import type { RequestContext } from '../../common/request-context';
 import { toProjectResponse, type ProjectResponse } from './dto/project-response.dto';
 import type { CreateProjectDto } from './dto/create-project.dto';
 import type { UpdateProjectDto } from './dto/update-project.dto';
+import { toAudience, type AudienceSummary } from './audience';
 
 export interface UploadedImageLike {
   originalname: string;
@@ -35,6 +36,13 @@ export class ProjectsService {
     if (!row) throw new NotFoundException();
     const docs = await this.repo.documentsByProjectIds(ctx, [id]);
     return toProjectResponse(row, docs);
+  }
+
+  /** Bu proje kimlere sunuldu (Sunulan Ürünler kaydının ters yönü). */
+  async audience(ctx: RequestContext, id: string, lang: 'tr' | 'en' = 'tr'): Promise<AudienceSummary> {
+    const row = await this.repo.findProject(ctx, id);
+    if (!row) throw new NotFoundException();
+    return toAudience(await this.repo.presentedAudience(ctx, id), lang);
   }
 
   async create(ctx: RequestContext, dto: CreateProjectDto): Promise<ProjectResponse> {

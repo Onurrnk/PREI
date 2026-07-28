@@ -3,6 +3,7 @@ import { computeRoi } from '../features/proposals/roi';
 import type {
   ClientNoteDTO,
   PresentedDTO,
+  ProjectAudienceDTO,
   PresentedInput,
   ClientTimelineEntryDTO,
   ActivityDTO,
@@ -421,6 +422,20 @@ export let mockTasks: TaskDTO[] = [
 const day = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
 // Sunulan ürünler (003j) — kişi bazlı, oturum içi kalıcı.
 const mockPresented: Record<string, PresentedDTO[]> = {};
+
+// Aşama etiketi: gerçek backend Türkçe etiket döner (presented.model.ts).
+// Mock ham 'offer'/'sold' dönerse yerel QA rozeti yanlış gösterir.
+const PRESENTED_LABELS: Record<string, string> = {
+  presented: 'Sunuldu',
+  interested: 'İlgilendi',
+  rejected: 'Beğenmedi',
+  offer: 'Teklif verildi',
+  reserved: 'Rezerve edildi',
+  contract: 'Sözleşme aşaması',
+  sold: 'Satış tamamlandı',
+};
+const presentedLabel = (s?: string | null): string =>
+  PRESENTED_LABELS[s ?? 'presented'] ?? PRESENTED_LABELS.presented;
 
 const mockNotesByClient: Record<string, ClientNoteDTO[]> = {
   '1': [
@@ -1775,7 +1790,7 @@ export const handlers = [
       price: b.price ?? null,
       currency: b.currency ?? 'EUR',
       stage: b.stage ?? 'presented',
-      stageLabel: b.stage ?? 'presented',
+      stageLabel: presentedLabel(b.stage),
       notes: b.notes ?? null,
       presentedAt: new Date().toISOString(),
       dealId: null,
@@ -1794,7 +1809,7 @@ export const handlers = [
     list[i] = {
       ...list[i],
       stage: b.stage ?? list[i].stage,
-      stageLabel: b.stage ?? list[i].stageLabel,
+      stageLabel: presentedLabel(b.stage ?? list[i].stage),
       notes: b.notes ?? list[i].notes,
       price: b.price ?? list[i].price,
       features: b.features ?? list[i].features,
@@ -1991,6 +2006,37 @@ export const handlers = [
         .map((d) => ({ id: d.id, title: d.name, type: docType(d.type), size: `${d.sizeMB} MB` })),
     }));
     return HttpResponse.json<ProjectDTO[]>(withDocs);
+  }),
+
+  // "Bu proje kimlere sunuldu" — gerçek uçta olduğu gibi sunum kaydının
+  // TERSİNDEN türetilir, sabit veri değil: mock'ta eklenen sunum burada çıkar.
+  http.get('/api/projects/:id/audience', ({ params }) => {
+    const projectId = String(params.id);
+    const people = Object.entries(mockPresented).flatMap(([contactId, items]) =>
+      items
+        .filter((it) => it.propertyId === projectId)
+        .map((it) => {
+          const c = mockClients.find((x) => x.id === contactId);
+          return {
+            presentedId: it.id,
+            contactId,
+            name: c?.name ?? 'İsimsiz kişi',
+            isCustomer: (c?.lifecycleStage ?? 'customer') === 'customer',
+            stage: it.stage,
+            stageLabel: it.stageLabel,
+            price: it.price,
+            currency: it.currency,
+            presentedAt: it.presentedAt,
+            dealId: it.dealId,
+          };
+        }),
+    );
+    return HttpResponse.json<ProjectAudienceDTO>({
+      total: people.length,
+      sold: people.filter((p) => p.stage === 'sold').length,
+      rejected: people.filter((p) => p.stage === 'rejected').length,
+      people,
+    });
   }),
 
   http.post('/api/projects/:id/images', async ({ params, request }) => {

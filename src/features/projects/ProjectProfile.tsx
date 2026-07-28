@@ -12,6 +12,7 @@ import { Card, CardHeader, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
 import { useAuth } from '../../core/auth/AuthContext';
 import { ArrowLeft, MapPin, Buildings, CalendarBlank, CurrencyDollar, CheckCircle, FileText, FilePdf, Table, DownloadSimple, PaperPlaneTilt, Paperclip, PencilSimple, Trash, Plus, DotsThreeVertical } from '@phosphor-icons/react';
+import { ProjectAudience } from './components/ProjectAudience';
 import styles from './ProjectProfile.module.css';
 
 export const ProjectProfile: React.FC = () => {
@@ -492,6 +493,15 @@ export const ProjectProfile: React.FC = () => {
                     </div>
                   ))}
                 </div>
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <h3 className={styles.cardTitle}>{t('projects.audience.title')}</h3>
+              </CardHeader>
+              <CardBody>
+                <ProjectAudience projectId={project.id} />
               </CardBody>
             </Card>
 
