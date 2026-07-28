@@ -19,9 +19,10 @@ Backend (204.168.178.96) ve DB (157.180.120.75) **ayrı makineler**.
 
 ```bash
 # 1) Yerelde çıkar (unpdf + exceljs gerekir)
-node scripts/rag/extract.mjs          # → chunks.json
-node scripts/rag/extract-dld.mjs      # → chunks-dld.json
-# ikisini all-chunks.json olarak birleştir
+node scripts/rag/extract.mjs          # → chunks.json      (piyasa raporları)
+node scripts/rag/extract-dld.mjs      # → chunks-dld.json  (Dubai bölge tablosu)
+node scripts/rag/extract-books.mjs    # → chunks-books.json (İGD e-kitapları)
+# aynı partide gidecekleri tek dosyada birleştir
 
 # 2) Backend konteynerinde göm
 scp all-chunks.json scripts/rag/embed.mjs deploy@204.168.178.96:/tmp/
@@ -45,3 +46,9 @@ yeniden çalıştırmak mükerrer kayıt üretmez.
   (harf oranı 0.58–0.74 vs 0.72; benzersiz kelime 0.65–0.68 vs 0.74 — eşik ayırmıyor).
   Bilinçli karar: agresif elemek yerine künye + persona kuralı ile korunuyoruz.
 - **`row.values` 1-tabanlı:** ExcelJS'te başta `null` var; `slice(1)` kullan.
+- **Kategori ayrımı işe yarıyor:** e-kitaplar `category='education'`, raporlar
+  `market_intel`. Ölçüldü — "Dubai JVC kira getirisi" sorgusu ilk üçte yalnız
+  `market_intel` döndürüyor, e-kitaplar veri sorgularını boğmuyor.
+- **Yayın tarihini uydurma:** e-kitaplarda tarih PDF'in kendi `CreationDate`
+  alanından okunuyor (`pdfDate`); okunamazsa dosya atlanıyor. Yanlış tarih,
+  tazelik uyarısını sessizce bozar.

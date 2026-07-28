@@ -2,8 +2,9 @@
 // OpenAI anahtarı ortam değişkeninden gelir; ekrana asla basılmaz.
 import fs from 'node:fs';
 
-const IN = '/tmp/all-chunks.json';
-const OUT = '/tmp/docs.sql';
+// Girdi/çıktı argümanla değiştirilebilir: aynı betikle farklı partiler gömülür.
+const IN = process.argv[2] || '/tmp/all-chunks.json';
+const OUT = process.argv[3] || '/tmp/docs.sql';
 const MODEL = process.env.OPENAI_EMBED_MODEL || 'text-embedding-3-small';
 const KEY = process.env.OPENAI_API_KEY;
 if (!KEY) { console.error('OPENAI_API_KEY yok'); process.exit(1); }
