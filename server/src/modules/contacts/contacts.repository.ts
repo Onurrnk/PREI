@@ -8,6 +8,7 @@ import type { PoolClient } from 'pg';
 import { DatabaseService } from '../../database/database.service';
 import type { RequestContext } from '../../common/request-context';
 import type { CreateContactDto } from './dto/contact.dto';
+import { ensureProspectLead } from './prospect-lead';
 
 export interface ContactRow {
   id: string;
@@ -88,6 +89,9 @@ export class ContactsRepository {
         ],
       );
       const contact = rows[0];
+      // Aday pipeline kaydı olmadan hiçbir listede görünmüyor — bkz.
+      // prospect-lead.ts. Elle eklenen kişi de "yeni aday" olarak doğar.
+      await ensureProspectLead(c, ctx, contact.id, 'manual_contact');
       await this.writeAuditAndEvent(c, ctx, 'contact.created', contact.id, { after: contact });
       return contact;
     });

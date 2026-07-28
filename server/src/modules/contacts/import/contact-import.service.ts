@@ -15,16 +15,22 @@
 // Eşleşen kişiye de yatırım hedefi YAZILIR: yeniden yükleme bir
 // zenginleştirme turu olur (ON CONFLICT DO NOTHING, mevcut hedef ezilmez).
 //
-// Kapsam sınırı (bilinçli): bu sürüm lead/fırsat AÇMAZ. Kişi rehberi ve
-// yatırım hedefleri girer, satış hattı girmez. CSV'den "bu kişi hangi
-// aşamada" çıkarmak tahmin olurdu; boru hattını uydurma kayıtla doldurmak
-// boş bırakmaktan kötüdür. Gerçek aktarım sonrası ihtiyaç görülürse eklenir.
+// Lead açma kararı — ÖNCEKİ KARAR DEĞİŞTİ (2026-07-29):
+// Bu dosya önce "lead/fırsat AÇMAZ" diyordu; gerekçe, CSV'den "bu kişi
+// hangi aşamada" çıkarmanın tahmin olması ve boru hattını uydurma kayıtla
+// doldurmanın boş bırakmaktan kötü olmasıydı. Gerekçe hâlâ doğru, sonucu
+// yanlıştı: lead'i olmayan aday NE Müşteriler'de NE Adaylar'da görünüyor,
+// yani içe aktarılan kişi tamamen kayboluyordu (canlıda doğrulandı).
+// Çözüm aşamayı tahmin etmiyor: status='new' — "yeni geldi, henüz
+// işlenmedi" zaten doğru olan tek aşama. Bkz. prospect-lead.ts.
+// Müşteri olarak aktarılanlara lead açılmaz; onlar dizinde görünüyor.
 // =====================================================================
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { DatabaseService } from '../../../database/database.service';
 import type { RequestContext } from '../../../common/request-context';
 import { draftsFromCsv, type ContactDraft, type Field } from './contact-import';
+import { ensureProspectLead } from '../prospect-lead';
 
 /** Tek seferde kabul edilen azami satır. Üstü tek işlemde tutulamaz. */
 export const MAX_ROWS = 5000;
@@ -224,6 +230,12 @@ export class ContactImportService {
        VALUES ($1,'contact',$2,'contact.imported',$3,$4,$5)`,
       [ctx.tenantId, id, JSON.stringify(diff), ctx.correlationId, ctx.userId],
     );
+    // Aday olarak içe aktarılan kişiye pipeline kaydı açılır; yoksa ne
+    // Müşteriler'de ne Adaylar'da görünür (bkz. prospect-lead.ts). Müşteri
+    // olarak aktarılan kişi Müşteriler dizininde zaten görünür, lead açılmaz.
+    if (lifecycle === 'prospect') {
+      await ensureProspectLead(c, ctx, id, 'contact_import');
+    }
     return id;
   }
 

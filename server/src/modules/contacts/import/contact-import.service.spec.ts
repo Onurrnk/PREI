@@ -99,6 +99,32 @@ describe('ContactImportService', () => {
     expect(r.summary).toMatchObject({ total: 2, created: 2, matched: 0, skipped: 0, targets: 2 });
   });
 
+  // Lead'siz aday hiçbir listede görünmüyordu (canlıda 10 gün kayıp kayıt).
+  // Aday olarak aktarılan herkese status='new' pipeline kaydı açılmalı.
+  it('aday olarak aktarılan kişiye lead açılır', async () => {
+    const svc = makeService(client);
+    await svc.run(ctx, CSV, { defaultDialCode: '90', lifecycle: 'prospect' }, false);
+
+    const leadWrites = client.writes().filter((w) => w.startsWith('INSERT INTO leads'));
+    expect(leadWrites).toHaveLength(2);
+    // Aşama tahmin edilmez: yeni gelen, henüz işlenmemiş.
+    expect(leadWrites[0]).toContain("'new'");
+    // Idempotent olmalı — aynı kişiye ikinci lead açılmasın.
+    expect(leadWrites[0]).toContain('WHERE NOT EXISTS');
+  });
+
+  it('müşteri olarak aktarılan kişiye lead AÇILMAZ', async () => {
+    const svc = makeService(client);
+    await svc.run(ctx, CSV, { defaultDialCode: '90', lifecycle: 'customer' }, false);
+    expect(client.writes().filter((w) => w.startsWith('INSERT INTO leads'))).toHaveLength(0);
+  });
+
+  it('önizlemede lead de yazılmaz', async () => {
+    const svc = makeService(client);
+    await svc.run(ctx, CSV, { defaultDialCode: '90', lifecycle: 'prospect' }, true);
+    expect(client.writes()).toHaveLength(0);
+  });
+
   // Toplu aktarımda mükerrer, tekil kayıttan FARKLI davranır: mevcut dosyaya
   // "🔁 Mükerrer kayıt" notu DÜŞMEZ. Aksi hâlde her yeniden yükleme
   // yüzlerce not biriktirirdi.
