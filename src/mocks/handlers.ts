@@ -2,6 +2,8 @@ import { http, HttpResponse } from 'msw';
 import { computeRoi } from '../features/proposals/roi';
 import type {
   ClientNoteDTO,
+  PresentedDTO,
+  PresentedInput,
   ClientTimelineEntryDTO,
   ActivityDTO,
   BrandingSettingsDTO,
@@ -417,6 +419,9 @@ export let mockTasks: TaskDTO[] = [
 
 // İç notlar (meeting_notes mock'u) — module-level: POST oturum içinde kalıcı.
 const day = (n: number) => new Date(Date.now() - n * 86400000).toISOString();
+// Sunulan ürünler (003j) — kişi bazlı, oturum içi kalıcı.
+const mockPresented: Record<string, PresentedDTO[]> = {};
+
 const mockNotesByClient: Record<string, ClientNoteDTO[]> = {
   '1': [
     {
@@ -1747,6 +1752,64 @@ export const handlers = [
   }),
 
   // Adayı Müşteriye çevir (003h) — lifecycle→customer.
+  // Sunulan ürünler (003j) — oturum içi kalıcı.
+  http.get('/api/clients/:id/presented', ({ params }) =>
+    HttpResponse.json<PresentedDTO[]>(mockPresented[String(params.id)] ?? [])),
+
+  http.post('/api/clients/:id/presented', async ({ params, request }) => {
+    const b = (await request.json()) as PresentedInput;
+    if (!b.propertyId && !b.externalTitle?.trim()) {
+      return HttpResponse.json({ message: 'Bir proje seçin ya da dış ilan başlığı yazın.' }, { status: 400 });
+    }
+    const proj = b.propertyId ? mockProjects.find((p) => p.id === b.propertyId) : null;
+    const item: PresentedDTO = {
+      id: `pp${Date.now()}`,
+      source: b.propertyId ? 'project' : 'listing',
+      title: proj?.name ?? b.externalTitle ?? '—',
+      propertyId: b.propertyId ?? null,
+      listingNo: b.externalListingNo ?? null,
+      url: b.externalUrl ?? null,
+      listingSource: b.externalSource ?? null,
+      location: b.location ?? proj?.location ?? null,
+      features: b.features ?? null,
+      price: b.price ?? null,
+      currency: b.currency ?? 'EUR',
+      stage: b.stage ?? 'presented',
+      stageLabel: b.stage ?? 'presented',
+      notes: b.notes ?? null,
+      presentedAt: new Date().toISOString(),
+      dealId: null,
+    };
+    const k = String(params.id);
+    mockPresented[k] = [item, ...(mockPresented[k] ?? [])];
+    return HttpResponse.json<PresentedDTO>(item, { status: 201 });
+  }),
+
+  http.patch('/api/clients/:id/presented/:pid', async ({ params, request }) => {
+    const b = (await request.json()) as PresentedInput;
+    const k = String(params.id);
+    const list = mockPresented[k] ?? [];
+    const i = list.findIndex((x) => x.id === params.pid);
+    if (i === -1) return HttpResponse.json({ message: 'not found' }, { status: 404 });
+    list[i] = {
+      ...list[i],
+      stage: b.stage ?? list[i].stage,
+      stageLabel: b.stage ?? list[i].stageLabel,
+      notes: b.notes ?? list[i].notes,
+      price: b.price ?? list[i].price,
+      features: b.features ?? list[i].features,
+      // 'sold' → gerçek backend deal açar; mock'ta sahte kimlik yeter.
+      dealId: b.stage === 'sold' ? (list[i].dealId ?? `deal-${Date.now()}`) : null,
+    };
+    return HttpResponse.json<PresentedDTO>(list[i]);
+  }),
+
+  http.delete('/api/clients/:id/presented/:pid', ({ params }) => {
+    const k = String(params.id);
+    mockPresented[k] = (mockPresented[k] ?? []).filter((x) => x.id !== params.pid);
+    return HttpResponse.json({ deleted: true });
+  }),
+
   http.post('/api/clients/:id/convert', ({ params }) => {
     const c = mockClients.find((x) => x.id === params.id);
     if (!c) return HttpResponse.json({ message: 'not found' }, { status: 404 });

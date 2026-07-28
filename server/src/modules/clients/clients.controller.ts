@@ -11,6 +11,8 @@ import { RequirePermission } from '../../common/require-permission.decorator';
 import { Ctx } from '../../auth/context.decorator';
 import type { RequestContext } from '../../common/request-context';
 import { ClientsService } from './clients.service';
+import { PresentedService } from './presented/presented.service';
+import type { PresentedInput } from './presented/presented.model';
 import { ENGAGEMENTS, type Engagement } from './engagement';
 import { UpdateClientDto } from './dto/client-update.dto';
 import { CreateClientNoteDto } from './dto/client-note.dto';
@@ -19,7 +21,10 @@ import { CreateClientNoteDto } from './dto/client-note.dto';
 @UseGuards(JwtAuthGuard, RbacGuard)
 @RequirePermission('clients')
 export class ClientsController {
-  constructor(private readonly clients: ClientsService) {}
+  constructor(
+    private readonly clients: ClientsService,
+    private readonly presented: PresentedService,
+  ) {}
 
   @Get()
   list(
@@ -56,6 +61,41 @@ export class ClientsController {
       throw new BadRequestException(`Geçersiz durum. Beklenen: ${ENGAGEMENTS.join(', ')}`);
     }
     return this.clients.setEngagement(ctx, id, e);
+  }
+
+  // ── Sunulan ürünler (003j) — "bu müşteriye ne sunduk" ─────────────
+
+  @Get(':id/presented')
+  listPresented(@Ctx() ctx: RequestContext, @Param('id', ParseUUIDPipe) id: string) {
+    return this.presented.list(ctx, id);
+  }
+
+  @Post(':id/presented')
+  addPresented(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: PresentedInput,
+  ) {
+    return this.presented.create(ctx, id, body ?? {});
+  }
+
+  @Patch(':id/presented/:presentedId')
+  updatePresented(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('presentedId', ParseUUIDPipe) presentedId: string,
+    @Body() body: PresentedInput,
+  ) {
+    return this.presented.update(ctx, id, presentedId, body ?? {});
+  }
+
+  @Delete(':id/presented/:presentedId')
+  removePresented(
+    @Ctx() ctx: RequestContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('presentedId', ParseUUIDPipe) presentedId: string,
+  ) {
+    return this.presented.remove(ctx, id, presentedId);
   }
 
   /** Adayı Müşteriye çevir — "kayıt alındı". lifecycle→customer + açık lead'ler converted. */

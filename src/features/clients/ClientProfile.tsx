@@ -12,7 +12,7 @@ import { Button } from '../../core/components/Button/Button';
 import { EmailClient } from './components/EmailClient';
 import { DocumentVault } from '../documents/DocumentVault';
 import { Modal } from '../../core/components/Modal/Modal';
-import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, CurrencyDollar, FolderOpen, WhatsappLogo, TelegramLogo, PencilSimple, NotePencil, Trash, Sparkle, DotsThreeVertical, UserPlus } from '@phosphor-icons/react';
+import { ArrowLeft, EnvelopeSimple, Phone, CalendarBlank, ChatCircle, FileText, MapPin, BuildingOffice, Buildings, CurrencyDollar, FolderOpen, WhatsappLogo, TelegramLogo, PencilSimple, NotePencil, Trash, Sparkle, DotsThreeVertical, UserPlus } from '@phosphor-icons/react';
 import { useAuth } from '../../core/auth/AuthContext';
 import { Field, Input, Textarea, FormRow } from '../../core/components/Form/Form';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
@@ -20,6 +20,7 @@ import { TableSkeleton } from '../../core/components/Skeleton/Skeleton';
 import i18n from '../../core/i18n/config';
 import { MeetingBriefPanel } from './components/MeetingBriefPanel';
 import { InvestmentTargets } from './components/InvestmentTargets';
+import { PresentedProperties } from './components/PresentedProperties';
 import styles from './ClientProfile.module.css';
 
 // ---------------------------------------------------------------------
@@ -389,7 +390,7 @@ export const ClientProfile: React.FC = () => {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const canDelete = user?.role === 'super_admin';
-  const [activeTab, setActiveTab] = useState<'communication' | 'email' | 'vault' | 'notes' | 'analysis' | 'proposals'>('communication');
+  const [activeTab, setActiveTab] = useState<'communication' | 'email' | 'vault' | 'notes' | 'analysis' | 'proposals' | 'presented'>('communication');
   // Müşteri-360: bu müşteriye gönderilmiş teklifler (contactId ile filtre).
   const { data: allProposals } = useFetch<ProposalDTO[]>(() => proposalsApi.list(), [id]);
   const clientProposals = (allProposals ?? []).filter(
@@ -874,7 +875,26 @@ export const ClientProfile: React.FC = () => {
               <FileText size={16} /> {t('clients.profile.proposalsTab')}
               <span className={styles.tabCount}>{clientProposals.length}</span>
             </button>
+            <button
+              className={`${styles.tabBtn} ${activeTab === 'presented' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('presented')}
+            >
+              <Buildings size={16} /> {t('clients.presented.tab')}
+            </button>
           </div>
+
+          {/* Sunulan ürünler (003j) — ne sunduk, hangi aşamada */}
+          {activeTab === 'presented' && (
+            <Card>
+              <CardHeader>
+                <h3 className={styles.cardTitle}>{t('clients.presented.tab')}</h3>
+                <span className={styles.notesHint}>{t('clients.presented.hint')}</span>
+              </CardHeader>
+              <CardBody>
+                <PresentedProperties clientId={client.id} />
+              </CardBody>
+            </Card>
+          )}
 
           {activeTab === 'proposals' && (
             <Card>

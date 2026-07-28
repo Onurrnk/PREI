@@ -1,0 +1,191 @@
+/* =====================================================================
+   PREI | Sunulan Ürünler — Private Banking Terminal dili.
+   Yalnız tasarım sistemi jetonları; altın/gradyan yok.
+   ===================================================================== */
+
+.wrap { display: flex; flex-direction: column; gap: var(--sp-4); }
+
+.muted { color: var(--text-muted); font: var(--text-body); }
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.stats {
+  display: flex;
+  gap: var(--sp-4);
+  font: var(--text-label);
+  color: var(--text-muted);
+}
+.stats b { color: var(--text-primary); font: var(--text-numeric); }
+.okText b { color: var(--data-positive); }
+.mutedText b { color: var(--text-muted); }
+
+/* ── Form ─────────────────────────────────────────────────────── */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-surface);
+}
+
+.modeSeg {
+  display: inline-flex;
+  width: fit-content;
+  padding: 2px;
+  gap: 2px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+}
+
+.seg, .segActive {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-3);
+  font: var(--text-label);
+  border: none;
+  border-radius: calc(var(--radius-control) - 2px);
+  cursor: pointer;
+  background: none;
+  color: var(--text-muted);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.seg:hover { color: var(--text-primary); }
+.segActive { background: var(--brand-primary-soft); color: var(--brand-primary); }
+
+.priceRow {
+  display: grid;
+  /* minmax(0,1fr): çıplak 1fr uzun sayıda taşmaya yol açıyor (FINDING-002). */
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: var(--sp-2);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
+
+/* ── Liste ────────────────────────────────────────────────────── */
+
+.list { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+.item {
+  display: flex;
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  transition: border-color var(--transition-fast);
+}
+.item:hover { border-color: var(--border-strong); }
+
+/* Elenen kayıt görünür ama geri planda. */
+.dim { opacity: 0.62; }
+
+.itemMain { flex: 1; min-width: 0; }
+
+.itemHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.srcIcon { color: var(--brand-primary); display: inline-flex; }
+
+.itemTitle {
+  font: var(--text-body);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font: var(--text-label);
+  color: var(--brand-primary);
+  text-decoration: none;
+}
+.link:hover { text-decoration: underline; }
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-1);
+  font: var(--text-label);
+  color: var(--text-muted);
+}
+
+.price { color: var(--text-secondary); font: var(--text-numeric); }
+
+.note {
+  margin: var(--sp-2) 0 0;
+  font: var(--text-label);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.itemSide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+  min-width: 190px;
+}
+
+.badge {
+  padding: 2px var(--sp-2);
+  font: var(--text-label);
+  border-radius: var(--radius-control);
+  white-space: nowrap;
+}
+
+/* Aşama renkleri: erken mor, geç (rezerve/sözleşme) sarı, satış yeşil. */
+.stEarly    { color: var(--brand-primary);  background: var(--brand-primary-soft); }
+.stLate     { color: var(--data-warning);   background: rgba(201, 148, 65, 0.12); }
+.stSold     { color: var(--data-positive);  background: rgba(63, 163, 114, 0.14); }
+.stRejected { color: var(--text-muted);     background: var(--bg-inset); }
+
+.stageSelect { width: 100%; }
+
+.rowBtns { display: flex; gap: var(--sp-1); }
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.iconBtn:hover { background: var(--bg-surface-hover); color: var(--text-primary); }
+.danger:hover { color: var(--data-negative); background: rgba(194, 85, 79, 0.1); }
+
+.confirm {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font: var(--text-label);
+  color: var(--data-negative);
+}

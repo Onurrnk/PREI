@@ -12,6 +12,8 @@ import type {
   BrandingSettingsDTO,
   ClientDTO,
   ClientNoteDTO,
+  PresentedDTO,
+  PresentedInput,
   CreateClientNoteInput,
   ClientAnalysisDTO,
   ClientTimelineEntryDTO,
@@ -242,6 +244,16 @@ export const clientsApi = {
   /** Sıcak / normal / dondurulmuş ataması (madde 25). */
   setEngagement: (id: string, engagement: 'hot' | 'normal' | 'frozen') =>
     api.patch<ClientDTO>(`/api/clients/${id}/engagement`, { engagement }),
+  // Sunulan ürünler (003j) — "bu müşteriye ne sunduk"
+  presented: (id: string) =>
+    api.get<PresentedDTO[]>(`/api/clients/${id}/presented`),
+  addPresented: (id: string, input: PresentedInput) =>
+    api.post<PresentedDTO>(`/api/clients/${id}/presented`, input),
+  updatePresented: (id: string, presentedId: string, input: PresentedInput) =>
+    api.patch<PresentedDTO>(`/api/clients/${id}/presented/${presentedId}`, input),
+  removePresented: (id: string, presentedId: string) =>
+    api.delete<{ deleted: true }>(`/api/clients/${id}/presented/${presentedId}`),
+
   /** Adayı Müşteriye çevir — "kayıt alındı" (003h). */
   convert: (id: string) =>
     api.post<{ result: 'converted' | 'already'; client: ClientDTO }>(

@@ -1376,3 +1376,43 @@ export interface PlanImageDTO {
   mimeType: string;
   error: string | null;
 }
+
+// ── Sunulan ürünler (003j) — müşteriye gösterilen iç proje / dış ilan ──
+export type PresentedStage =
+  | 'presented' | 'interested' | 'rejected' | 'offer' | 'reserved' | 'contract' | 'sold';
+
+export interface PresentedDTO {
+  id: string;
+  /** İç katalog projesi mi, dış ilan mı. */
+  source: 'project' | 'listing';
+  title: string;
+  propertyId: string | null;
+  listingNo: string | null;
+  url: string | null;
+  listingSource: string | null;
+  location: string | null;
+  features: string | null;
+  price: number | null;
+  currency: string;
+  stage: PresentedStage;
+  stageLabel: string;
+  notes: string | null;
+  presentedAt: string;
+  /** 'sold' aşamasında doğan gerçek anlaşma kaydı. */
+  dealId: string | null;
+}
+
+export interface PresentedInput {
+  propertyId?: string | null;
+  externalTitle?: string | null;
+  externalListingNo?: string | null;
+  externalUrl?: string | null;
+  externalSource?: string | null;
+  location?: string | null;
+  features?: string | null;
+  price?: number | null;
+  currency?: string | null;
+  stage?: PresentedStage;
+  notes?: string | null;
+  leadId?: string | null;
+}
