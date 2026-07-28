@@ -21,14 +21,25 @@ import type { KnowledgeAddDto } from './dto/knowledge-add.dto';
 import { parseCalendlyIcs } from './calendly-ics';
 
 /**
- * Bilgi bankası mükerrer eşiği (kosinüs benzerliği, 0..1).
+ * Bilgi bankası benzerlik eşikleri (kosinüs, 0..1).
  *
- * 0.92: aynı sorunun farklı kelimelerle sorulmuş hâlini yakalar ama aynı
- * konudaki FARKLI bilgiyi (örn. "Dubai komisyon" vs "Türkiye komisyon")
- * mükerrer saymaz. Düşürülürse gerçek yeni bilgi elenir; yükseltilirse
- * tekrar sızar.
+ * ÖLÇÜLDÜ (2026-07-28, canlı bilgi bankası, 5 örnek Q&A):
+ *   zaten bilinen  → 0.6931 / 0.7104 / 0.7538
+ *   gerçekten yeni → 0.6131 / 0.6742
+ * İki küme arasındaki boşluk yalnız 0.019. Kısa Q&A'yı uzun factsheet
+ * parçalarıyla karşılaştırdığımız için skorlar genelde düşük ve aralık dar.
+ *
+ * Bu yüzden TEK EŞİKLE OTOMATİK ELEME YAPMIYORUZ — öyle bir eşik bir gün
+ * gerçek yeni bilgiyi sessizce eler. Bunun yerine:
+ *   · AUTO ≥ 0.95 → neredeyse birebir aynı metin; güvenle reddedilir
+ *     (aynı Q&A'nın ikinci kez gönderilmesi)
+ *   · SIMILAR ≥ 0.68 → "bunu zaten biliyor olabilirsin"; ENGELLEMEZ,
+ *     komşu içeriği geri döndürür ki onay ekranında görünsün ve KARARI
+ *     insan versin (Onur'un asıl şikâyeti buydu: zaten bildiğini
+ *     göremeden onay istenmesi).
  */
-const KNOWLEDGE_DUPLICATE_THRESHOLD = 0.92;
+const KNOWLEDGE_DUPLICATE_THRESHOLD = 0.95;
+const KNOWLEDGE_SIMILAR_THRESHOLD = 0.68;
 
 export interface IngestResult {
   contact_id: string;
@@ -1241,27 +1252,37 @@ export class AgentService {
    */
   async addKnowledge(
     ctx: RequestContext, dto: KnowledgeAddDto,
-  ): Promise<{ id: string | null; duplicate?: boolean; similarity?: number; existing?: string }> {
+  ): Promise<{
+    id: string | null;
+    duplicate?: boolean;
+    similarity?: number;
+    /** Yakın mevcut içerikler — onay ekranı "bunu zaten biliyor olabilirsin" der. */
+    similar?: Array<{ similarity: number; preview: string }>;
+  }> {
     return this.db.withContext(ctx, async (c) => {
-      // MÜKERRER KONTROLÜ: haftalık döngü yalnız o haftanın konuşmalarına
-      // bakıyor, mevcut 2400+ dokümanı görmüyordu; "ProDuality nedir",
-      // "komisyon kaç" gibi ZATEN BİLİNEN şeyleri her hafta yeniden
-      // öneriyordu. Yazmadan önce Eylül'ün kendi aramasıyla sor.
+      // Haftalık döngü yalnız o haftanın konuşmalarına bakıyor, mevcut
+      // 2400+ dokümanı görmüyordu; "ProDuality nedir", "komisyon kaç" gibi
+      // ZATEN kürasyonu yapılmış konuları tekrar öneriyordu. Yazmadan önce
+      // Eylül'ün kendi aramasıyla komşuları çıkar.
       const { rows: near } = await c.query<{ content: string; similarity: number }>(
-        `SELECT content, similarity FROM match_documents($1::vector, 1, '{}'::jsonb)`,
+        `SELECT content, similarity FROM match_documents($1::vector, 3, '{}'::jsonb)`,
         [`[${dto.embedding.join(',')}]`],
       );
+      const similar = near
+        .filter((r) => Number(r.similarity) >= KNOWLEDGE_SIMILAR_THRESHOLD)
+        .map((r) => ({
+          similarity: Number(Number(r.similarity).toFixed(4)),
+          preview: r.content.slice(0, 200),
+        }));
+
       const top = near[0];
+      // Yalnız NEREDEYSE BİREBİR aynı metni reddet (aynı Q&A'nın ikinci kez
+      // gönderilmesi). Konu benzerliği tek başına eleme sebebi değil.
       if (top && Number(top.similarity) >= KNOWLEDGE_DUPLICATE_THRESHOLD) {
         this.logger.log(
-          `Q&A zaten biliniyor (benzerlik ${Number(top.similarity).toFixed(3)}) — eklenmedi.`,
+          `Q&A neredeyse birebir mevcut (${Number(top.similarity).toFixed(3)}) — eklenmedi.`,
         );
-        return {
-          id: null,
-          duplicate: true,
-          similarity: Number(top.similarity),
-          existing: top.content.slice(0, 200),
-        };
+        return { id: null, duplicate: true, similarity: Number(top.similarity), similar };
       }
 
       const { rows } = await c.query<{ id: string }>(
@@ -1290,7 +1311,9 @@ export class AgentService {
         [ctx.tenantId, ctx.userId, rows[0].id,
          JSON.stringify({ preview: dto.content.slice(0, 120) }), ctx.correlationId],
       );
-      return { id: rows[0].id };
+      // similar de dönülür: eklendi ama "şuna benziyor" bilgisi onay
+      // ekranında/logda görünsün, ileride kürasyon kararına yardım etsin.
+      return { id: rows[0].id, ...(similar.length ? { similar } : {}) };
     });
   }
 
