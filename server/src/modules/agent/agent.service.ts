@@ -20,6 +20,16 @@ import { buildMeetingTask, type MeetingEventDto } from './dto/meeting-event.dto'
 import type { KnowledgeAddDto } from './dto/knowledge-add.dto';
 import { parseCalendlyIcs } from './calendly-ics';
 
+/**
+ * Bilgi bankası mükerrer eşiği (kosinüs benzerliği, 0..1).
+ *
+ * 0.92: aynı sorunun farklı kelimelerle sorulmuş hâlini yakalar ama aynı
+ * konudaki FARKLI bilgiyi (örn. "Dubai komisyon" vs "Türkiye komisyon")
+ * mükerrer saymaz. Düşürülürse gerçek yeni bilgi elenir; yükseltilirse
+ * tekrar sızar.
+ */
+const KNOWLEDGE_DUPLICATE_THRESHOLD = 0.92;
+
 export interface IngestResult {
   contact_id: string;
   lead_id: string;
@@ -1229,8 +1239,31 @@ export class AgentService {
    * bir sonraki sorudan itibaren bu içeriği görür. Yalnız Onur'un Telegram'dan
    * onayladığı içerik gelir (n8n akışı onay kapılı).
    */
-  async addKnowledge(ctx: RequestContext, dto: KnowledgeAddDto): Promise<{ id: string }> {
+  async addKnowledge(
+    ctx: RequestContext, dto: KnowledgeAddDto,
+  ): Promise<{ id: string | null; duplicate?: boolean; similarity?: number; existing?: string }> {
     return this.db.withContext(ctx, async (c) => {
+      // MÜKERRER KONTROLÜ: haftalık döngü yalnız o haftanın konuşmalarına
+      // bakıyor, mevcut 2400+ dokümanı görmüyordu; "ProDuality nedir",
+      // "komisyon kaç" gibi ZATEN BİLİNEN şeyleri her hafta yeniden
+      // öneriyordu. Yazmadan önce Eylül'ün kendi aramasıyla sor.
+      const { rows: near } = await c.query<{ content: string; similarity: number }>(
+        `SELECT content, similarity FROM match_documents($1::vector, 1, '{}'::jsonb)`,
+        [`[${dto.embedding.join(',')}]`],
+      );
+      const top = near[0];
+      if (top && Number(top.similarity) >= KNOWLEDGE_DUPLICATE_THRESHOLD) {
+        this.logger.log(
+          `Q&A zaten biliniyor (benzerlik ${Number(top.similarity).toFixed(3)}) — eklenmedi.`,
+        );
+        return {
+          id: null,
+          duplicate: true,
+          similarity: Number(top.similarity),
+          existing: top.content.slice(0, 200),
+        };
+      }
+
       const { rows } = await c.query<{ id: string }>(
         `INSERT INTO documents (content, embedding, metadata)
          VALUES ($1, $2::vector, $3) RETURNING id`,
@@ -1239,7 +1272,12 @@ export class AgentService {
           JSON.stringify(dto.embedding),
           JSON.stringify({
             ...(dto.metadata ?? {}),
-            source: 'conversation_qa',
+            // Künye alanları backfill ile aynı sözleşmede (bkz. provenance.ts):
+            // yeni kayıtlar da tarihli doğsun, tazelik uyarısı çalışsın.
+            source: 'Müşteri Konuşmaları',
+            source_type: 'conversation_qa',
+            last_verified: new Date().toISOString().slice(0, 10),
+            confidence: 'high',
             category: 'faq',
             added_by: 'eylul_self_improve',
             added_at: new Date().toISOString(),
