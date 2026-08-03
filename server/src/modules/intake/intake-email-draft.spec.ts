@@ -97,13 +97,13 @@ describe('createEmailDraft → otomatik geliştirici daveti', () => {
     });
     expect(t.createInvite).toHaveBeenCalled();
 
-    const mail = t.sendEmail.mock.calls[0][1] as Record<string, unknown>;
+    const mail = (t.sendEmail.mock.calls[0] as unknown[])[1] as Record<string, unknown>;
     expect(mail.to).toBe('sales@marina.ae');
     expect(mail.subject).toContain('Marina Bay Towers');
     expect(mail.ctaUrl).toBe('https://prei.produality.com/submit/TOK');
     expect(String(mail.body)).toContain('yapay zekâ');
 
-    const attach = t.attachInviteToSubmission.mock.calls[0][2] as Record<string, unknown>;
+    const attach = (t.attachInviteToSubmission.mock.calls[0] as unknown[])[2] as Record<string, unknown>;
     expect(attach.developerId).toBe('dev1');
     expect(attach.inviteId).toBe('inv1');
     expect(String(attach.note)).toContain('Davet linki');
@@ -115,7 +115,7 @@ describe('createEmailDraft → otomatik geliştirici daveti', () => {
     await flush();
 
     expect(t.createInvite).not.toHaveBeenCalled();
-    const mail = t.sendEmail.mock.calls[0][1] as Record<string, unknown>;
+    const mail = (t.sendEmail.mock.calls[0] as unknown[])[1] as Record<string, unknown>;
     expect(mail.ctaUrl).toBe('https://prei.produality.com/submit/ESKI');
   });
 
@@ -125,7 +125,7 @@ describe('createEmailDraft → otomatik geliştirici daveti', () => {
       ...dto, sourceEmail: '"Ahmet Yılmaz" <ahmet@marina.ae>',
     } as never);
     await flush();
-    const mail = t.sendEmail.mock.calls[0][1] as Record<string, unknown>;
+    const mail = (t.sendEmail.mock.calls[0] as unknown[])[1] as Record<string, unknown>;
     expect(mail.greeting).toBe('Sayın Ahmet Yılmaz,');
     expect(t.ensureOrgContact).toHaveBeenCalledWith(ctx, 'dev1', {
       fullName: 'Ahmet Yılmaz', email: 'ahmet@marina.ae',
@@ -139,7 +139,7 @@ describe('createEmailDraft → otomatik geliştirici daveti', () => {
       title: 'Palm Residences',
     } as never);
     await flush();
-    const mail = t.sendEmail.mock.calls[0][1] as Record<string, unknown>;
+    const mail = (t.sendEmail.mock.calls[0] as unknown[])[1] as Record<string, unknown>;
     expect(mail.greeting).toBe('Hello,');
     expect(String(mail.body)).toContain('AI automation');
   });
