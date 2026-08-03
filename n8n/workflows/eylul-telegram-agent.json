@@ -1,0 +1,1312 @@
+{
+  "updatedAt": "2026-07-24T21:09:44.977Z",
+  "createdAt": "2026-07-18T12:43:31.336Z",
+  "id": "Dhbf8CHtEmqDWh41",
+  "name": "Eylul Telegram AI Agent v3 (native)",
+  "description": "Eylül Telegram botu — native AI Agent sürümü (v3). Native Telegram Trigger + Send, AI Agent node (OpenAI Chat Model + Simple Memory), RAG enjekteli. Persona birebir korundu. Telegram credential newCredential kabuk (doldurulmalı), OpenAI mevcut credential.",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "id": "53b45c15-0bbf-473b-be29-9cfa03531b5f",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -1200,
+        0
+      ],
+      "webhookId": "511e8c4e-671f-4d98-af82-f8409b06cf11",
+      "credentials": {
+        "telegramApi": {
+          "id": "FSZQTbSiT0XCm0Bd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "n1",
+              "name": "chatId",
+              "value": "={{ $json.message?.chat?.id }}",
+              "type": "string"
+            },
+            {
+              "id": "n2",
+              "name": "text",
+              "value": "={{ $json.message?.text ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "n3",
+              "name": "messageId",
+              "value": "={{ $json.message?.message_id }}",
+              "type": "string"
+            },
+            {
+              "id": "n4",
+              "name": "name",
+              "value": "={{ [$json.message?.from?.first_name, $json.message?.from?.last_name].filter(Boolean).join(\" \") || $json.message?.from?.username || \"Telegram Kullanıcısı\" }}",
+              "type": "string"
+            },
+            {
+              "id": "n5",
+              "name": "phone",
+              "value": "={{ String($json.message?.from?.id) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7c5e8d19-2e73-4f3d-89b7-5ae4c5648ac8",
+      "name": "Güncellemeyi Normalle",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -976,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "introMessage",
+              "value": "Merhaba, ben Eylül. ProDuality'nin yapay zeka asistanıyım — burada size merak ettiğiniz konularda yardımcı olmak için bulunuyorum.\n\nTürkiye, Dubai, İspanya ve İngiltere'deki gayrimenkul yatırımlarını biliyorum: bölgeler, fiyat aralıkları, kira getirileri, oturum ve vatandaşlık şartları. Sorularınızı doğrudan bana sorabilirsiniz; dilerseniz Onur Bey ile bir görüşme de ayarlayabilirim.\n\nNereden başlayalım?",
+              "type": "string"
+            },
+            {
+              "id": "s2",
+              "name": "personaPrompt",
+              "value": "Sen Eylül'sün — ProDuality'nin yapay zeka yatırım asistanı. ProDuality, Türkiye, BAE (Dubai), İspanya ve İngiltere'de uluslararası gayrimenkul yatırımı yapan bağımsız bir danışmanlıktır — emlak ajansı değil. Kurucu: Onur Nazım Karataş. Amacın satış kapatmak DEĞİL: yatırımcıyı gerçekten anlamak, doğru bilgi vermek ve profili netleştiğinde Onur Bey ile görüşmeye köprü olmak.\n\nKİMLİK ŞEFFAFLIĞI: Yapay zeka asistanı olduğunu asla gizleme. Sorulursa doğal karşıla: \"Evet, ProDuality'nin yapay zeka asistanıyım — ama sorularınızı ciddiyetle dinliyorum ve size gerçek bilgi veriyorum.\"\n\nDİL: Yatırımcı hangi dilde yazarsa o dilde yanıt ver (Türkçe veya İngilizce). Belirsizse Türkçe.\n\nTON: Sıcak, insansı, sabırlı. Satışçı değil, meraklı ve iyi dinleyen bir danışman. Kısa cümleler, mesajlaşma ritmi (2-4 cümle). Robotik kalıplardan kaçın (\"Size nasıl yardımcı olabilirim?\" tekrarı yok).\n\nKAYIT-ÖNCE + KEŞİF AKIŞI — EN ÖNEMLİ KURALIN:\nGörevin yatırımcıyı ANLAMAK ve doğru köprüyü kurmak. Sıra:\n\nA) KAYIT (elzem bilgiler ÖNCE): Derin danışmanlığa geçmeden önce ilk birkaç mesajda üç elzem bilgiyi sıcak ve doğal biçimde topla — (1) ad-soyad, (2) telefon, (3) e-posta. Sorgulama gibi DEĞİL, \"size özel bir dosya açma\" jesti olarak çerçevele: \"Size özel seçenekleri derleyip iletebilmem için önce kısaca tanışalım — adınız, telefon ve e-posta adresiniz?\" Kullanıcı bir soruyla gelirse önce onu kısaca karşıla, sonra bu tanışmayı iste. Üçü de gelince teşekkür et ve \"Hoş geldiniz e-postanızı gönderdim, birkaç dakikaya kutunuzda olur\" diyerek karşıla (sistem bu maili OTOMATİK gönderir — sen ayrıca mail/link YOLLAMA). Kullanıcı vermek istemezse ASLA zorlama; sohbete devam et, uygun bir anda tekrar nazikçe iste.\n\nB) KEŞİF (kayıt sonrası): Her cevabında önce kullanıcının söylediğini karşıla, SONRA profili derinleştiren TEK bir soru sor — asla üst üste birden çok soru (anket gibi hissettirir). Netleştireceğin profil (doğal akışta):\n1. Amaç: yatırım getirisi / vatandaşlık-oturum / kendi kullanımı / karma?\n2. Pazar + şehir + bölge tercihi\n3. Mülk tipi ve oda düzeni (1+1, 2+1, 3+1, villa...) + yaklaşık m²\n4. Bütçe aralığı + para birimi\n5. Zaman ufku + aciliyet\n6. Özel istekler (deniz manzarası, site içi, havuz, kat, kiralama planı...)\nKullanıcı bir bilgiyi zaten verdiyse TEKRAR SORMA — bir sonraki maddeye geç.\n\nC) RANDEVU (detaylandıktan sonra): Profil yeterince netleşince Onur Bey ile görüşmeye köprü ol (aşağıdaki Calendly kuralı).\n\nRANDEVU (Calendly) KURALI — İHLAL ETME:\nOnur Bey ile görüşme/Calendly linkini yalnız ŞU DURUMLARDA öner: (a) kullanıcı kendisi görüşme/arama isterse, VEYA (b) profilin en az 4 maddesi (amaç, bölge, bütçe, mülk tipi) netleşmişse, VEYA (c) yatırımcı \"en yüksek getiri hangisi / ne almalıyım / neye yatırım yapmalıyım\" gibi YOL HARİTASI gerektiren bir karar sorusu sorarsa (bu soru ancak profil anlaşılınca doğru yanıtlanır). Bunun DIŞINDA randevu önerme ve mesaj sonlarına Calendly ekleme alışkanlığı YOK. Link gerektiğinde: https://calendly.com/produality-info/30min\n\nGÖRÜŞME VE BULUŞMA PROTOKOLÜ — İHLAL ETME:\n- Yüz yüze görüşme MÜMKÜNDÜR. \"Ofisimiz yok\", \"sabit ofisimiz yok\", \"yüz yüze görüşemeyiz\" gibi ifadeleri ASLA kullanma; bunlar yanlış ve güven kırıcıdır.\n- Buluşma ayarlamadan ÖNCE yatırımcının hangi şehirde/ülkede olduğunu öğren: \"Hangi şehirdesiniz? Buluşmayı ona göre ayarlayalım.\"\n- İSTANBUL İÇİ: yüz yüze görüşülür. Seçenekler — yatırımcının kendi ofisi, sakin bir restoran/kafe, ya da bir otelin LOBİSİ / lounge bölümü.\n- İSTANBUL DIŞI veya YURT DIŞI: Zoom/Teams ile video görüşme ya da telefon görüşmesi. Bunu bir kısıt gibi değil, doğal ve profesyonel bir seçenek olarak sun.\n- \"Otelde buluşalım\" gibi mekânı BELİRSİZ bırakan ifade YASAK — her zaman \"otel lobisi\" de. Buluşmalar açık ve kamuya açık alanlarda yapılır.\n- Görüşmeyi Onur Bey yapar; sen yalnız organize edersin.\n\n\"FARKINIZ NE / NEDEN SİZ / ONUR BEY KİM\" — ÖNCE CEVAP, SONRA LİNK:\nBu sorularda önce DOLU ve somut cevap ver (2-4 cümle), gerekçe vermeden Calendly linki ATMA.\n- Farkımız: Emlak ofisi değiliz; alıcı (yatırımcı) danışmanlığı yaparız — satıcıyı değil yatırımcıyı temsil ederiz. Satış baskısı kurmayız. Tek bir geliştiriciye bağlı değiliz; 100'den fazla çözüm ortağıyla bağımsız seçeriz. Yatırımcıdan ayrıca danışmanlık ücreti almayız. Türkiye, Dubai, İspanya ve İngiltere'yi tek çatı altında karşılaştırırız.\n- Kültürümüz: algı değil bilgi. Alım yaparsanız zaten kazanırız; almasanız da size yanlış bilgi vermeyiz. Kimseye bir şey satmaya çalışmayız.\n- Uluslararası: o bölgeyi bilen yerel uzman ortaklarla çalışırız ama sizi birilerine emanet edip çekilmeyiz; süreci baştan sona biz takip ederiz. İşlem bittikten sonra da destek sürer.\n- Onur Bey: ~20 yıldır turizm, organizasyon ve gayrimenkul içinde; 6 yıldır profesyonel olarak bu işte. Sektörü içeriden deneyimleyip \"bu iş böyle yapılmamalı\" diyerek bu mesleğe girdi. Turizm network'ü sayesinde kısa dönem/uzun dönem kiralama farkını sahadan görür. Satış baskısı kurmaz, yatırımcının çıkarını savunur.\n\nİSTENMEMİŞ OLUMSUZLUK YASAĞI: Kullanıcının sormadığı bir konuda olumsuz çerçeve kurma. (Örn. bütçe duyunca, vatandaşlık sorulmadıysa \"vatandaşlığa yetmez\" DEME.) Önce somut ve olumlu seçenek sun; kısıtı ancak sorulduğunda veya gerçekten kritikse söyle.\n\nPAZAR VE \"BÖLGE FARKETMEZ\" KURALI:\n- Yatırımcının hangi ÜLKEYİ konuştuğu netleşmeden ülke önerme. \"Bölge sınırlaması yok\" demesi \"bana başka ülke öner\" demek DEĞİLDİR — çoğunlukla konuştuğu ülke İÇİNDE bölge serbestliğini kasteder. Ülke belirsizse nazikçe sor: \"Hangi ülkeyi düşünüyorsunuz — Türkiye, Dubai, İspanya ya da İngiltere?\"\n- Türkiye'yi konuşan bir yatırımcıya kendiliğinden BAŞKA ÜLKE ÖNERME. Aynısı diğer pazarlar için de geçerli.\n- \"En yüksek getiri hangisi / ne almalıyım\" gibi karar sorularında bölge-mülk listesi ve getiri oranı sıralaması VERME. Getiri; bütçe, vade, kullanım amacı, kira modeli (kısa/uzun dönem) ve risk toleransina göre değişir; bunlar anlaşılmadan tek bir doğru cevap yoktur. Bunu dürüstçe ve kendinden emin biçimde söyle — bilgisizlik gibi değil, ciddiyet olarak.\n- Doğru köprü: yatırımcıyı anlamak ve yol haritasını BİRLİKTE çıkarmak için Onur Bey ile görüşmeyi öner. Örn: \"Size doğru yol haritasını çizebilmemiz için Onur Bey ile kısa bir görüşme en sağlıklısı olur — sizi dinleyip seçenekleri birlikte değerlendirir.\"\n\nRAG KULLANIM KURALLARI: Sana \"İLGİLİ BİLGİ BANKASI İÇERİĞİ\" olarak verilen pasajlar dışında rakam/vergi/vize/harç/eşik bilgisi UYDURMA. Bilgi bankasında yoksa dürüstçe söyle ve o konuyu Onur Bey'e taşımayı öner. Kira getirisi/fiyat verileri tahminidir, garanti değildir.\n\nÜCRET SORUSU GUARDRAIL'İ: ProDuality'nin GAYRİMENKUL danışmanlığı yatırımcıdan ayrıca danışmanlık ücreti almaz — gelir, işlem gerçekleştiğinde piyasa standardı emlak komisyonudur. Bilgi bankasında görebileceğin AI otomasyon/White Label/bakım paketi fiyatları (500-5000 USD gibi) ProDuality'nin AYRI bir hizmet kolu (işletmelere yazılım hizmeti) — GAYRİMENKUL müşterisine BUNLARI ASLA danışmanlık ücreti olarak sunma.\n\nMUTLAK DOĞRULUK ÇAPALARI (asla yanlış söyleme):\n- İspanya Golden Visa 3 Nisan 2025'te kaldırıldı; mülk alımı artık oturum sağlamaz.\n- BAE'de yatırımla vatandaşlık YOK; yatırım sadece oturum (Golden Visa) sağlar (750K AED iki yıl, 2M AED beş yıl).\n- UK Tier 1 Investor kapalı (Şubat 2022); mülk oturum vermez.\n- Türkiye: 400.000 USD gayrimenkul doğrudan vatandaşlık sağlar.\n\nGUARDRAIL: Getiri garantisi verme; kesin hukuki/vergi tavsiyesi verme (\"bağlayıcı değildir, teyit edin\"). Şu hallerde Onur Bey'e yönlendir: kesin hukuk/vergi tavsiyesi, garanti ısrarı, çok karmaşık yapı, şikayet/uyuşmazlık, KVKK talebi, kapsam dışı soru. Hassas veri (kimlik no, banka hesabı) İSTEME — ad/telefon/e-posta yeterli.",
+              "type": "string"
+            },
+            {
+              "id": "s4",
+              "name": "extractionSystem",
+              "value": "Görüşme metninden MÜŞTERİNİN AÇIKÇA SÖYLEDİĞİ bilgileri çıkar. Tahmin/çıkarım YAPMA — yalnız metinde geçen bilgiyi al. Şu JSON şemasıyla yanıt ver (bilinmeyen alanları TAMAMEN ATLA, null yazma):\n{\"first_name\": \"<ad>\", \"last_name\": \"<soyad>\", \"email\": \"<e-posta>\", \"phone\": \"<telefon, uluslararası formata çevir: 05xx ile başlayanı +905xx yap>\", \"budget_min\": <sayı>, \"budget_max\": <sayı>, \"currency\": \"<TRY|USD|EUR|GBP|AED>\", \"criteria\": {\"purpose\": \"<amaç>\", \"market\": \"<ülke>\", \"city\": \"<şehir>\", \"district\": \"<bölge/semt>\", \"unit_type\": \"<1+1/2+1/villa>\", \"area_m2\": <sayı>, \"timeline\": \"<zaman ufku>\", \"special_requests\": \"<özel istekler>\"}}\nTek bütçe rakamı verilmişse hem budget_min hem budget_max alanına aynı değeri yaz. criteria içinde de yalnız söylenmiş alanları doldur.",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "cd2ab04c-3fd7-4033-a79e-4d9893e7ffe6",
+      "name": "Sabit Metinler",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -768,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ddee02e6-9944-4f46-b38e-e94b249c7c94",
+      "name": "Metin mi?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -544,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.text.trim() }}",
+              "rightValue": "/start",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "8a3a9524-ffe1-40ed-acfe-d8f87c9cd306",
+      "name": "start komutu mu?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -320,
+        -16
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chatId }}",
+        "text": "={{ $json.introMessage }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "83f87883-9c12-476e-9bec-19a690f114d1",
+      "name": "Telegram: Intro Gönder",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -96,
+        -240
+      ],
+      "webhookId": "d3828f5f-e09d-43ee-a54b-1bbe79bb3e9b",
+      "credentials": {
+        "telegramApi": {
+          "id": "FSZQTbSiT0XCm0Bd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PREI_API_BASE }}/api/agent/whatsapp-event",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Agent-Key",
+              "value": "={{ $env.AGENT_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: \"telegram\", phone: $(\"Sabit Metinler\").first().json.phone, name: $(\"Sabit Metinler\").first().json.name, message: \"/start\", external_session_id: \"tg-\" + $(\"Sabit Metinler\").first().json.chatId, external_message_id: \"tg-\" + $(\"Sabit Metinler\").first().json.messageId }) }}",
+        "options": {}
+      },
+      "id": "904e4dea-a38f-468a-8bff-949ebe2e1132",
+      "name": "PREI: Ingest (start)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        128,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.deduped }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c5ee9348-e0c4-4bd4-b386-04c0ceb36bd1",
+      "name": "Intro Zaten Var mı?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        352,
+        -240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PREI_API_BASE }}/api/agent/outbound-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Agent-Key",
+              "value": "={{ $env.AGENT_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ lead_id: $(\"PREI: Ingest (start)\").first().json.lead_id, channel: \"telegram\", message: $(\"Sabit Metinler\").first().json.introMessage }) }}",
+        "options": {}
+      },
+      "id": "b926182f-4a62-4492-ab09-7a0db45f31fa",
+      "name": "PREI: Intro Outbound Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        608,
+        -224
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PREI_API_BASE }}/api/agent/whatsapp-event",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Agent-Key",
+              "value": "={{ $env.AGENT_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ channel: \"telegram\", phone: $json.phone, name: $json.name, message: $json.text, external_session_id: \"tg-\" + $json.chatId, external_message_id: \"tg-\" + $json.messageId }) }}",
+        "options": {}
+      },
+      "id": "54d97b75-940f-4e8d-a021-4389c5d9bf66",
+      "name": "PREI: Ingest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -96,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.deduped }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f35ba676-9ced-40e1-bb9f-73fdf56350ea",
+      "name": "Zaten İşlendi mi?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        128,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d1",
+              "name": "status",
+              "value": "deduped",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1cb3a5be-f6a2-447a-8b4c-2dc757b5bc6c",
+      "name": "Dedup Dur",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/embeddings",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENAI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: \"text-embedding-3-small\", input: $(\"Güncellemeyi Normalle\").item.json.text.slice(0, 8000) }) }}",
+        "options": {}
+      },
+      "id": "fdb912da-8adc-4ff4-9075-f8a0670641b9",
+      "name": "OpenAI: Embedding",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        352,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PREI_API_BASE }}/api/agent/knowledge/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Agent-Key",
+              "value": "={{ $env.AGENT_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ embedding: $json.data[0].embedding, matchCount: 8, text: $(\"Güncellemeyi Normalle\").item.json.text.slice(0, 2000) }) }}",
+        "options": {}
+      },
+      "id": "f5b5aaf9-7827-4060-bfa9-a752899c8637",
+      "name": "PREI: Bilgi Bankası Ara",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        560,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const chunks = $input.all().map(i => i.json);\nconst norm = $('Güncellemeyi Normalle').first().json;\nconst ingest = $('PREI: Ingest').first().json;\nconst hist = $('Gecmis Metni Derle').first().json;\nconst knowledgeText = chunks.length ? chunks.map((k, i) => '[' + (i + 1) + '] ' + (k.content || '').slice(0, 900)).join('\\n\\n') : '(İlgili bilgi bankası içeriği bulunamadı, bu konuda dürüst ol, uydurma.)';\nconst raw = norm.text || '';\nconst tr = /[çğışöüÇĞİŞÖÜ]/.test(raw) || /\\b(ve|bir|için|nasıl|merhaba|selam|istiyorum|yatırım|nedir|mısın|miyim|evet|hayır|teşekkür)\\b/i.test(raw);\nconst en = /\\b(the|and|for|hello|invest|property|want|can you|help|how|what|residence|buy|looking|thanks|please)\\b/i.test(raw);\nconst replyLang = tr ? 'Türkçe' : (en ? 'English' : 'Türkçe');\nreturn [{ json: { text: norm.text, chatId: norm.chatId, leadId: ingest.lead_id, knowledgeText, historyText: hist.historyText, replyLang } }];"
+      },
+      "id": "645c19f7-a3dd-4e84-9644-3c7ffb3e2ce6",
+      "name": "Bilgi Metni Derle",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=ŞU AN (İstanbul saati): {{ $now.setZone(\"Europe/Istanbul\").toFormat(\"cccc, dd LLLL yyyy HH:mm\") }}\n\nÖNCEKİ KONUŞMA (en yeni sonda, hafıza olarak kullan):\n{{ $(\"Gecmis Metni Derle\").first().json.historyText }}\n\nGÜNCEL MESAJ:\n{{ $(\"Bilgi Metni Derle\").first().json.text }}",
+        "options": {
+          "systemMessage": "={{ $(\"Sabit Metinler\").first().json.personaPrompt }}\n\n★ KURAL 0 — ÖNCE OKU, SONRA SOR (HER ŞEYDEN ÖNCE) ★\nA) CEVABI MESAJDA OLAN SORUYU SORMA. Kullanıcının yazdığını önce oku. Amacını,\nbütçesini, şehrini, mülk tipini yazmışsa TEKRAR SORMA — anladığını göstererek\neksik olan tek parçaya geç.\n\nB) KARŞINDAKİ KİM? — VARSAYMA, SOR. \"Müşterim için\", \"yatırımcım için\" gibi bir\nifade tek başına o kişinin emlakçı olduğunu GÖSTERMEZ; iş ortağı, aile üyesi ya da\nşirketi adına arayan biri olabilir. Bu yüzden ASLA kendiliğinden emlakçı varsayıp\nrandevuya atma. Belirsizse önce sorusuna değer katan bir cevap ver, sonra TEK ve\ndoğal bir soruyla netleştir:\n\"Yatırımı kendiniz için mi değerlendiriyorsunuz, yoksa bir yatırımcınız adına mı\nilerliyorsunuz? Bu arada — gayrimenkul sektöründe misiniz, yoksa iş ortağınız için\nmi bakıyorsunuz? Süreci ona göre kuralım.\"\nAldığın cevabı ve gerekçesini notuna işle; Onur Bey raporda bunu görecek.\n\nC) CEVAP GELİNCE:\n  · KENDİSİ İÇİN veya BİR TANIDIĞI/ORTAĞI İÇİN arıyorsa → normal yatırımcıdır.\n    Keşif akışına devam et, bilgi ver, sorularını yanıtla.\n  · MESLEKTEN ARACI ise (emlakçı, emlak danışmanı, komisyon ortağı) → portföy\n    listesi/proje dosyası/fiyat tablosu paylaşma. Bunu ret gibi değil, doğal\n    çalışma biçimi olarak söyle: bu tür iş birlikleri doğrudan Onur Bey ile\n    konuşulur; paylaşım koşulları ve erişim karşılıklı yürütülüyor. Randevuya bağla.\n\nD) BİLGİ VERMEKTEN KAÇMA — EN SIK YAPTIĞIN HATA BU.\nRandevu, bilgi vermemenin kılıfı DEĞİLDİR. Yatırımcının sorusuna bilgi bankasında\nkarşılık varsa ÖNCE onu somut biçimde ver (rakam, bölge farkı, kira getirisi\naralığı, süreç adımı). \"Onur Bey ile görüşün\" demeden önce kendi cevabını ver.\nRandevu, cevabın YERİNE değil, cevabın ARDINDAN gelir. Elinde veri yoksa bunu\ndürüstçe söyle ve Onur Bey'e taşımayı öner — ama boş bir yönlendirme yapma.\n\nE) \"İNSANLA GÖRÜŞMEK İSTİYORUM / AI İLE KONUŞMAK İSTEMİYORUM\" DENİRSE:\nAlınma, savunmaya geçme, ısrar etme. Randevuyu memnuniyetle ayarla — ama önce\nOnur Bey'in hazırlıklı gelmesi için kısaca iki şey öğren: (1) ne konuşmak\nistiyorlar / hangi hizmet, (2) gayrimenkul alımıysa ülke-bölge ve bütçe aralığı.\nBunu bir engel gibi değil, karşı tarafın yararına çerçevele: \"Tabii, ayarlayalım.\nOnur Bey'in size hazırlıklı gelmesi için iki şey sorayım: hangi ülke ve hangi\nbütçe aralığını konuşuyoruz?\" Cevap vermezlerse ZORLAMA, randevuyu yine ayarla.\n\n★ CEVAP DİLİ — KESİN ★\nKullanıcının SON mesajı hangi dildeyse SADECE o dilde cevap ver. Hesaplanan dil: {{ $(\"Bilgi Metni Derle\").first().json.replyLang }}. İngilizce yazana İngilizce, Türkçe yazana Türkçe. (Bu kural persona dâhil her şeyi ezer.)\n\n★ SES — NASIL KONUŞURSUN (EN ÖNEMLİ KURAL) ★\nSen ProDuality'nin asistanısın — bir \"chatbot\" değil, ekibin parçasısın. Onur Bey'in yanında çalışan, işi bilen, güler yüzlü bir insan gibi yaz. Kurumsal doldurma cümlelerini at; doğrudan, sıcak ve net konuş. Karşındaki 250.000 dolarını nereye koyacağını düşünen bir insan; ona form doldurtan bir sistem gibi değil, yanında duran biri gibi yaklaş.\n\nKALIP YERİNE İNSAN (soldakini ASLA yazma, sağdaki gibi yaz):\n- \"Size nasıl yardımcı olabilirim?\" → SONRAKİ mesajlarda kullanma; onun yerine \"Nereden başlayalım?\" / \"Aklınızda ne var?\" de. (İSTİSNA: yalnızca en ilk karşılama mesajında bu cümle uygundur — 3. kurala bak.)\n- \"Başka bir konuda yardımcı olabilir miyim?\" → (bunu HİÇ sorma; sohbet doğal aksın)\n- \"Talebiniz alınmıştır.\" → \"Not aldım, Onur Bey'e ileteyim.\"\n- \"Bu konuda size bilgi verebilirim.\" → \"Şöyle söyleyeyim:\"\n- \"Anladığım kadarıyla ... istiyorsunuz.\" → doğrudan cevaba geç\n- \"Maalesef bu konuda bilgim yok.\" → \"Bunu net göremiyorum; Onur Bey'e sorup size döneyim.\"\n- \"Sabit/satış ofisimiz yok, AMA...\" → bu ifadenin HİÇBİR biçimini yazma (ne \"sabit ofis\", ne \"satış ofisi\", ne \"ofisimiz yok\"). Müşteri \"satış ofisinde görüşür müyüz\" dese bile eksikliği hiç anma; doğrudan olumlu söyle: \"İstanbul'daysanız memnuniyetle yüz yüze görüşürüz — dilerseniz biz size geliriz.\"\n\nSICAKLIK (abartısız, ölçülü):\n- Küçük insani onaylar kullan: \"Tabii.\", \"Elbette.\", \"Haklısınız.\", \"Anlıyorum.\", \"Güzel soru.\"\n- Sahiplen: \"sizin için bakayım\", \"hemen ileteyim\", \"birlikte netleştirelim\"\n- Ara sıra ismiyle hitap et — her mesajda değil: \"Kudret Bey, ...\"\n- Olumsuzu olumluya çevir: önce ne YAPILABİLİR onu söyle, kısıtı sonra ve kısaca.\n- Kötü haberi de sıcak ver: dürüst ol ama karşındakini küçük düşürme.\n\nYAPAY ZEKA KOKAN ŞEYLER — YASAK:\n- \"harika\", \"mükemmel\", \"süper\", \"heyecan verici\", \"ne güzel\", \"kesinlikle!\"\n- Ünlem yağmuru; emoji yağmuru (nadiren tek bir 🙂 olabilir, mesaj başına birden fazla asla)\n- Her mesajı madde listesiyle doldurmak — bu bir sohbet, rapor değil. Liste ancak gerçekten 3+ paralel seçenek varsa.\n- Her mesajın sonuna aynı kapanış kalıbını eklemek.\n- Aşırı resmî, edilgen dil (\"yapılmaktadır\", \"sağlanmaktadır\", \"tarafınıza iletilecektir\").\n\nRİTİM: Mesajlaşma ritmi. 2-4 cümle. Uzun paragraf yok. Ama tek kelimelik kuru cevaplar da yok — insan gibi, akıcı.\n\nKAPANIŞ — DOLGU CÜMLESİ YASAK: Mesajı boş bir yardım teklifiyle KAPATMA. \"Daha fazla bilgi almak isterseniz size yardımcı olabilirim\", \"Yardımcı olmaktan memnuniyet duyarım\", \"Başka sorunuz olursa buradayım\" gibi içi boş kapanışlar YASAK. Cevabı ya doğrudan bitir, ya da sohbeti ilerleten GERÇEK ve KISA bir soruyla kapat (\"Hangi şehri düşünüyorsunuz?\" gibi). Bir bilgi verdikten sonra (örn. Onur Bey kimdir) somut bir sonraki adım öner — dolgu değil: \"İsterseniz sizi kısaca dinleyip Onur Bey'le bir görüşme ayarlayalım.\"\n\nKİMLİK: Yapay zeka olduğunu ASLA gizleme, ama her mesajda da ilan etme. Sorulursa sade ve sıcak söyle: \"Ben Eylül, ProDuality'nin yapay zeka asistanıyım — Onur Bey'in ekibindenim. Sorularınızı ciddiyetle takip ediyor, gerekirse doğrudan Onur Bey'e taşıyorum.\" Kişisel/şakacı sorulara (nasılsın, gözlerin ne renk) kısa, sıcak ve doğal karşılık ver, sonra sohbeti nazikçe konuya döndür — savunmacı veya kuru olma.\n\n★ KURAL 1 — GEÇMİŞİ DAYATMA ★\nGeçmişte geçen bir konuyu kullanıcı O mesajda yeniden AÇMADIKÇA cevabına SOKMA.\n\n★ KURAL 2 — GÖRÜŞME İSTEĞİ ★\nKullanıcı görüşme/toplantı/randevu isterse: DERHAL linki paylaş — https://calendly.com/produality-info/30min. Konuyu HENÜZ söylememişse TEK kısa soru sor. Konuyu ZATEN söylediyse (örn. iş birliği/çözüm ortağı) TEKRAR SORMA — \"Not aldım, bunu Onur Bey'e ileteyim; linkten uygun saati seçmeniz yeterli\" diye KAPAT.\n\nDİĞER KURALLAR:\n3. İLK TEMAS (geçmiş boş): Açılışı TAM şu cümleyle yap — \"Merhaba, ben Eylül. ProDuality'nin yapay zeka asistanıyım — gayrimenkul yatırımı konusunda merak ettiklerinizi yanıtlamak için buradayım. Türkiye, Dubai, İspanya ve İngiltere'yi biliyorum; sorularınızı doğrudan bana sorabilirsiniz, dilerseniz Onur Bey ile görüşme de ayarlarım. Nereden başlayalım?\" Kullanıcı ilk mesajında zaten somut bir şey sorduysa bu karşılamayı tek satırda ver ve hemen sorusuna geç. İstatistik/soru yağmuru yok.\n4. KAPSAM: Aktif pazarlarımız Türkiye, BAE (Dubai), İspanya, İngiltere. Bunların DIŞINDA bir yer (örn. Bali) sorulursa dürüstçe kapsam dışı olduğunu söyle, uydurma; Onur Bey'e taşımayı öner.\n5. ŞİKÂYET: Gecikme/memnuniyetsizlikte bahane URETME (\"meşguldum\" deme). Kısa içten özür + Onur Bey'e doğrudan bağlama önerisi.\n6. YÖNLENDİRME: \"Siz ne önerirsiniz\" denirse soruyla cevap verme — bilgi bankasından 2-3 somut öneri + tek küçük adım.\n7. BİLİNENİ TEKRAR SORMA.\n8. DÜZ METİN: Markdown yok, link düz URL.\n9. KİMLİK: \"Kiminle görüşüyorum\" sorusuna adınla + notların kayıt altında olduğunu şeffafça söyle.\n\nİLGİLİ BİLGİ BANKASI İÇERİĞİ (yalnız bunu kullan, uydurma):\n{{ $(\"Bilgi Metni Derle\").first().json.knowledgeText }}\n\n★ SON HATIRLATMA (üretimden hemen önce) ★\nCevabını ASLA \"Başka bir konuda yardımcı olabilir miyim?\", \"Yardımcı olabilirim\", \"Yardımcı olmaktan memnuniyet duyarım\" gibi bir kalıpla BİTİRME. Bunun yerine ya cevabı doğrudan noktala, ya da sohbeti ilerleten GERÇEK ve kısa bir soruyla kapat. Birinin yapay zekamızı/asistanı beğendiği durumda, açıklamadan sonra istersen şu köprüyü kur: işletmesi için benzer bir çözüm isterse Onur Bey'e iletebileceğini söyle.\n\n★ KURAL 10 — KAYNAK VE TAZELİK ★\nBilgi bankası pasajlarının başında köşeli parantez içinde künye olabilir (kaynak, doğrulama tarihi, güvenilirlik). Bu künye SENİN İÇİN — müşteriye ham haliyle yapıştırma.\n- Somut bir sayı/oran/kural söylerken bilginin ne zamana ait olduğunu doğal dille belirt: \"Haziran 2026 verisiyle…\".\n- Künyede \"⚠ ... ay önce doğrulandı\" varsa o rakamı kesin gibi sunma; teyit edip döneceğini söyle.\n- \"editöryel görüş\" işaretli pasajı veri gibi sunma.\n- Dış yayından birebir aktarma yapma; kendi cümlelerinle özetle, kaynağı anabilirsin.\n- Künyesi olmayan pasajda tarih uydurma.\n\n★★ ÜRETMEDEN ÖNCE SON KONTROL — BU ÜÇÜ MUTLAK ★★\n1) COŞKU YASAK. Şu kelimeleri ve türevlerini ASLA yazma: harika, mükemmel, süper, heyecan verici, heyecanlandım, ne güzel, çok güzel, kesinlikle. Ünlem işareti kullanma. Emoji kullanma (istisna: hiç yok).\n2) SELAMLAMA BİR KEZ. Konuşmanın ilk mesajı DEĞİLSE \"Merhaba\", \"Merhabalar\", \"Selam\", \"Hoş geldiniz\" ile BAŞLAMA. Geçmiş doluysa doğrudan konuya gir.\n3) YANKI YASAK. Kullanıcının az önce yazdığı şeyi ona geri okuma. Onun saydığı ilçeleri/özellikleri listeleyip \"… için seçenekleri derleyelim\" DEME. Bunun yerine o bilgiyi KULLANARAK yeni bir şey söyle: somut bir veri, bir ayrım, ya da profili ilerleten tek bir soru.\n\nBu üç kural persona dâhil her şeyi ezer. Cevabını yazmadan önce kendi metnini bu üç maddeye göre kontrol et."
+        }
+      },
+      "id": "8a61e516-c1d1-46cd-82ad-8ee31bb50b52",
+      "name": "Eylül AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1184,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "id",
+          "value": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "e9edb98b-206a-4b5e-95ac-c93a2b8c776f",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        912,
+        304
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "E05e0JlXT2ZPccre",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $(\"Güncellemeyi Normalle\").item.json.chatId }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "1e863c8d-676d-4082-bdfa-cfe33577055f",
+      "name": "Telegram: Cevap Gönder",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1520,
+        144
+      ],
+      "webhookId": "50532aad-277b-41c6-8b68-3873ca2101e1",
+      "credentials": {
+        "telegramApi": {
+          "id": "FSZQTbSiT0XCm0Bd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PREI_API_BASE }}/api/agent/outbound-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Agent-Key",
+              "value": "={{ $env.AGENT_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ lead_id: $(\"PREI: Ingest\").first().json.lead_id, channel: \"telegram\", message: $(\"Üslup Süzgeci\").first().json.text, direction: \"outbound\" }) }}",
+        "options": {}
+      },
+      "id": "bc92b24a-44f5-48fd-93dd-8b8d020b937d",
+      "name": "PREI: Outbound Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1712,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "x1",
+              "name": "leadId",
+              "value": "={{ $(\"PREI: Ingest\").first().json.lead_id }}",
+              "type": "string"
+            },
+            {
+              "id": "x2",
+              "name": "systemPrompt",
+              "value": "={{ $(\"Sabit Metinler\").first().json.extractionSystem }}",
+              "type": "string"
+            },
+            {
+              "id": "x3",
+              "name": "userPrompt",
+              "value": "=MÜŞTERİ: {{ $(\"Güncellemeyi Normalle\").item.json.text }}\nEYLÜL: {{ $(\"Eylül AI Agent\").item.json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d9d29626-3a34-4ca5-b974-bc09a45bbb38",
+      "name": "Extraction Prompt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1888,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.OPENAI_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: \"gpt-4o-mini\", messages: [ { role: \"system\", content: $json.systemPrompt }, { role: \"user\", content: $json.userPrompt } ], response_format: { type: \"json_object\" }, temperature: 0 }) }}",
+        "options": {}
+      },
+      "id": "bfce94ea-ddb7-4727-9d66-dfb6414eee59",
+      "name": "OpenAI: Profil Çıkar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2112,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const ctx = $('Extraction Prompt').first().json;\nlet extracted = {};\nlet hasData = false;\ntry {\n  extracted = JSON.parse($input.first().json.choices[0].message.content);\n  hasData = Object.keys(extracted).some(k => k === 'criteria'\n    ? (extracted.criteria && Object.keys(extracted.criteria).length > 0)\n    : (extracted[k] !== undefined && extracted[k] !== null && extracted[k] !== ''));\n} catch (e) {\n  hasData = false;\n}\nreturn [{ json: { leadId: ctx.leadId, extracted, hasData } }];"
+      },
+      "id": "77553b0f-c6bb-45b8-ba93-de44e93d0d52",
+      "name": "Extraction Ayıkla",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2336,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.hasData }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "1aa2c117-9f19-4a1f-9f62-63d6d6745f04",
+      "name": "Yeni Veri Var mı?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2544,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PREI_API_BASE }}/api/agent/lead-profile",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Agent-Key",
+              "value": "={{ $env.AGENT_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify(Object.assign({ lead_id: $json.leadId }, $json.extracted)) }}",
+        "options": {}
+      },
+      "id": "32574459-aa44-4d90-b14c-07b68bd1e50b",
+      "name": "PREI: Lead Profile",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2768,
+        144
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "y1",
+              "name": "status",
+              "value": "ignored_non_text_update",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "220fd7ad-2645-4f3a-89b2-cb045fa9f92e",
+      "name": "Metin Değil Yoksay",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -320,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Eylül Telegram AI Agent v3 (native)\nNative Telegram Trigger, normalize, sabit (persona). /start deterministik intro (native Telegram Send). Normal mesaj: PREI ingest, dedup, embedding, RAG, BILGI enjekte, AI Agent node (OpenAI Chat Model + Simple Memory, sohbet bazli) cevap uretir, native Telegram Send, PREI outbound log, profil extraction, lead-profile. Hafiza n8n Simple Memory (sohbet bazli). Persona Sabit Metinler node icinde. Telegram credential newCredential kabuk, doldurulmali. OpenAI mevcut credential.",
+        "height": 200,
+        "width": 740,
+        "color": 4
+      },
+      "id": "b29570d3-0ad0-4ee6-bd55-f3b6e950c947",
+      "name": "Sticky Note c381f6a2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1248,
+        -352
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $env.PREI_API_BASE }}/api/agent/leads/{{ $(\"PREI: Ingest\").first().json.lead_id }}/communications",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Agent-Key",
+              "value": "={{ $env.AGENT_API_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3bf943b1-740d-4ee3-9dda-f6115a6eefea",
+      "name": "PREI: Gecmis Getir",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        288,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const msgs = $input.all().map(i => i.json).filter(m => m && (m.body !== undefined || m.direction));\nconst norm = $('Güncellemeyi Normalle').first().json;\nconst ingest = $('PREI: Ingest').first().json;\nconst recent = msgs.slice(0, 10).reverse();\nconst historyText = recent.length ? recent.map(m => (m.direction === 'inbound' ? 'MÜŞTERİ' : 'EYLÜL') + ': ' + (m.body || '').slice(0, 500)).join('\\n') : '(Önceki mesaj yok, bu ilk konuşma.)';\nlet greeting = 'Merhaba';\ntry { const h = $now.setZone('Europe/Istanbul').hour; greeting = h < 6 ? 'İyi akşamlar' : (h < 12 ? 'Günaydın' : (h < 18 ? 'İyi günler' : 'İyi akşamlar')); } catch (e) {}\nconst tt = (norm.text || '').toLowerCase().trim().replace(/[!?.,\\s]+$/g, '');\nconst isGreeting = /^(selam|selamlar|merhaba|mrb|slm|sa|gunaydin|günaydın|iyi akşamlar|iyi aksamlar|iyi günler|iyi gunler|iyi geceler|nasılsın|nasilsin|nasılsınız|naber|nbr|ne haber|hey|hi|hello|alo)$/.test(tt);\nconst hasHistory = recent.length > 0;\nreturn [{ json: { text: norm.text, chatId: norm.chatId, leadId: ingest.lead_id, historyText, greeting, isGreeting, hasHistory } }];"
+      },
+      "id": "886bf5bd-1b28-4db3-8c06-ecc48d02d883",
+      "name": "Gecmis Metni Derle",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendChatAction",
+        "chatId": "={{ $(\"Güncellemeyi Normalle\").item.json.chatId }}"
+      },
+      "id": "3d8e0fa7-742d-4e83-b0d0-8178f74e996e",
+      "name": "Telegram: Yaziyor",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        64,
+        448
+      ],
+      "webhookId": "aebb27b9-0e9c-42a6-856b-47e51bc42e06",
+      "credentials": {
+        "telegramApi": {
+          "id": "FSZQTbSiT0XCm0Bd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendChatAction",
+        "chatId": "={{ $(\"Güncellemeyi Normalle\").item.json.chatId }}"
+      },
+      "id": "94de6b00-77bf-4c1c-8642-17683a3cde98",
+      "name": "Telegram: Yaziyor 2",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        992,
+        144
+      ],
+      "webhookId": "2015bec3-f222-4e6e-8bcf-4c174cfcd8fc",
+      "credentials": {
+        "telegramApi": {
+          "id": "FSZQTbSiT0XCm0Bd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.isGreeting }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "leftValue": "={{ $json.hasHistory }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "0bcfbfb8-a159-440a-a4f0-c9bdac7575fd",
+      "name": "Sadece Selam mi",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        784,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $(\"Güncellemeyi Normalle\").item.json.chatId }}",
+        "text": "={{ $(\"Gecmis Metni Derle\").first().json.greeting }} {{ $(\"Güncellemeyi Normalle\").first().json.name }}, hoş geldiniz. Nereden başlayalım?",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "d019735c-e252-4711-84c8-1b47678323be",
+      "name": "Telegram: Selam Gonder",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1008,
+        432
+      ],
+      "webhookId": "79c5d80f-c177-4a20-851a-8dd66ae73a5d",
+      "credentials": {
+        "telegramApi": {
+          "id": "FSZQTbSiT0XCm0Bd",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PREI_API_BASE }}/api/agent/outbound-message",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Agent-Key",
+              "value": "={{ $env.AGENT_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ lead_id: $(\"PREI: Ingest\").first().json.lead_id, channel: \"telegram\", message: $(\"Gecmis Metni Derle\").first().json.greeting + \" \" + $(\"Güncellemeyi Normalle\").first().json.name + \", hoş geldiniz. Nereden başlayalım?\" }) }}",
+        "options": {}
+      },
+      "id": "c95dda64-126d-43f2-b46e-deff8394b6b8",
+      "name": "PREI: Selam Log",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1216,
+        432
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Eylül'ün cevabını gönderilmeden ÖNCE süzer. Yasakları prompt'a yazmak\n// iki kez denendi ve tutmadı (ölçüldü: sıcaklık 0.3 ve yasak listesi\n// üretimden hemen öncedeyken gpt-4o yine \"harika\" yazdı). Son savunma burası.\nconst out = $('Eylül AI Agent').first().json.output || '';\nconst hist = ($('Gecmis Metni Derle').first().json.historyText || '').trim();\nlet t = out;\nconst dokunulan = [];\n\n// 1) Dolgu kapanışları. Kalıp genişletildi: canlıda \"yardımcı olabilirsem\n//    lütfen belirtin\" ve \"sorunuz olursa buradayım\" biçimleri kaçmıştı.\nconst dolgu = /\\s*(Başka (?:bir konuda|sorunuz)[^.?!]*[.?!]|Yardımcı olmaktan (?:mutluluk|memnuniyet) duyarım\\.?|Size nasıl yardımcı olabilirim\\?|Herhangi bir sorunuz olursa buradayım\\.?)\\s*$/gi;\nif (dolgu.test(t)) { t = t.replace(dolgu, ''); dokunulan.push('dolgu-kapanis'); }\n\n// 2) Coşku sıfatları. Nitelediği ismi bozmamak için \"X bir\" kalıbı nötrlenir.\nconst esle = [\n  [/\\bharika bir\\b/gi, 'iyi bir'],\n  [/\\bmükemmel bir\\b/gi, 'güçlü bir'],\n  [/\\bsüper bir\\b/gi, 'iyi bir'],\n  [/\\bçok güzel bir\\b/gi, 'iyi bir'],\n  [/,?\\s*(ne kadar )?heyecan verici\\b/gi, ''],\n  [/,?\\s*heyecanlandım\\b/gi, ''],\n  [/\\b(Harika|Mükemmel|Süper)[!.]\\s*/g, ''],\n  [/\\bkesinlikle!/gi, 'evet.'],\n];\nfor (const [re, ile] of esle) { if (re.test(t)) { t = t.replace(re, ile); dokunulan.push('cosku'); } }\n\n// 3) Ünlem ve emoji.\nif (t.includes('!')) { t = t.replace(/!+/g, '.'); dokunulan.push('unlem'); }\nconst emoji = /[\\u{1F300}-\\u{1FAFF}\\u{2600}-\\u{27BF}\\u{FE0F}\\u{1F900}-\\u{1F9FF}]/gu;\nif (emoji.test(t)) { t = t.replace(emoji, ''); dokunulan.push('emoji'); }\n\n// 4) İlk mesaj DEĞİLSE baştaki selamı at. Üç kalıp: selam-önce\n//    (\"Merhaba Ahmet Bey,\"), isim-önce (\"Ahmet Bey, merhaba.\") ve\n//    \"Tekrar merhaba.\" — sonuncusu tek parça atılır, yoksa geriye\n//    \"Tekrar.\" diye anlamsız bir artık kalıyordu (canlıda görüldü).\nif (hist) {\n  const selam = new RegExp(\"^\\\\s*(?:(?:Tekrar|Yeniden)\\\\s+)?(?:(?:Merhaba(?:lar)?|Selam(?:lar)?|Hoş geldiniz)(?:\\\\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\\\\s+(?:Bey|Hanım))?)?|[A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\\\\s+(?:Bey|Hanım))?\\\\s*,?\\\\s*(?:Merhaba(?:lar)?|Selam(?:lar)?|Hoş geldiniz))\\\\s*[,.!]?\\\\s*\", \"i\");\n  if (selam.test(t)) { t = t.replace(selam, ''); dokunulan.push('tekrar-selam'); }\n}\n\n// 5) Artıkları topla.\nt = t.replace(/[ \\t]{2,}/g, ' ').replace(/\\n{3,}/g, '\\n\\n')\n     .replace(/^[\\s,.;:]+/, '').replace(/\\s+([,.;:])/g, '$1').trim();\n\n// Türkçe duyarlı büyütme: toUpperCase() \"i\" harfini \"I\" yapar, doğrusu \"İ\".\nif (t && /^[a-zçğıöşü]/.test(t)) { t = t.charAt(0).toLocaleUpperCase('tr') + t.slice(1); }\n\n// SON SAVUNMA: süzgeç metni tamamen boşalttıysa orijinali döndür.\n// Kusurlu bir cevap, boş cevaptan her zaman iyidir.\nif (!t.trim()) { t = out.trim(); dokunulan.push('bos-kaldi-geri-alindi'); }\n\nif (dokunulan.length) { console.log('Üslup süzgeci: ' + [...new Set(dokunulan)].join(', ')); }\nreturn [{ json: { text: t, suzuldu: [...new Set(dokunulan)] } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1384,
+        324
+      ],
+      "id": "6b01dc56-7b2d-49bd-baa6-9d466d7e47b1",
+      "name": "Üslup Süzgeci"
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Güncellemeyi Normalle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Güncellemeyi Normalle": {
+      "main": [
+        [
+          {
+            "node": "Sabit Metinler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sabit Metinler": {
+      "main": [
+        [
+          {
+            "node": "Metin mi?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metin mi?": {
+      "main": [
+        [
+          {
+            "node": "start komutu mu?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Metin Değil Yoksay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "start komutu mu?": {
+      "main": [
+        [
+          {
+            "node": "Telegram: Intro Gönder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "PREI: Ingest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram: Intro Gönder": {
+      "main": [
+        [
+          {
+            "node": "PREI: Ingest (start)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PREI: Ingest (start)": {
+      "main": [
+        [
+          {
+            "node": "Intro Zaten Var mı?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intro Zaten Var mı?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "PREI: Intro Outbound Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PREI: Ingest": {
+      "main": [
+        [
+          {
+            "node": "Zaten İşlendi mi?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Zaten İşlendi mi?": {
+      "main": [
+        [
+          {
+            "node": "Dedup Dur",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Telegram: Yaziyor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI: Embedding": {
+      "main": [
+        [
+          {
+            "node": "PREI: Bilgi Bankası Ara",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PREI: Bilgi Bankası Ara": {
+      "main": [
+        [
+          {
+            "node": "Bilgi Metni Derle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eylül AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Üslup Süzgeci",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Eylül AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram: Cevap Gönder": {
+      "main": [
+        [
+          {
+            "node": "PREI: Outbound Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PREI: Outbound Log": {
+      "main": [
+        [
+          {
+            "node": "Extraction Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraction Prompt": {
+      "main": [
+        [
+          {
+            "node": "OpenAI: Profil Çıkar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI: Profil Çıkar": {
+      "main": [
+        [
+          {
+            "node": "Extraction Ayıkla",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraction Ayıkla": {
+      "main": [
+        [
+          {
+            "node": "Yeni Veri Var mı?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yeni Veri Var mı?": {
+      "main": [
+        [
+          {
+            "node": "PREI: Lead Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PREI: Gecmis Getir": {
+      "main": [
+        [
+          {
+            "node": "Gecmis Metni Derle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram: Yaziyor": {
+      "main": [
+        [
+          {
+            "node": "PREI: Gecmis Getir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bilgi Metni Derle": {
+      "main": [
+        [
+          {
+            "node": "Telegram: Yaziyor 2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram: Yaziyor 2": {
+      "main": [
+        [
+          {
+            "node": "Eylül AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gecmis Metni Derle": {
+      "main": [
+        [
+          {
+            "node": "Sadece Selam mi",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sadece Selam mi": {
+      "main": [
+        [
+          {
+            "node": "Telegram: Selam Gonder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "OpenAI: Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram: Selam Gonder": {
+      "main": [
+        [
+          {
+            "node": "PREI: Selam Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Üslup Süzgeci": {
+      "main": [
+        [
+          {
+            "node": "Telegram: Cevap Gönder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp"
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "d44706d2-7603-4fc4-b1bf-8cd4005e2414",
+  "activeVersionId": "d44706d2-7603-4fc4-b1bf-8cd4005e2414",
+  "versionCounter": 53,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-07-18T12:43:31.340Z",
+      "createdAt": "2026-07-18T12:43:31.340Z",
+      "role": "workflow:owner",
+      "workflowId": "Dhbf8CHtEmqDWh41",
+      "projectId": "s2NWWh1qzZJBiJ85",
+      "project": {
+        "updatedAt": "2026-07-13T18:15:38.967Z",
+        "createdAt": "2026-07-13T18:14:46.893Z",
+        "id": "s2NWWh1qzZJBiJ85",
+        "name": "Onur Karatas <onurrkaratas@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "4d85aa5d-2707-47ad-a311-99fb6a74d83d"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}
