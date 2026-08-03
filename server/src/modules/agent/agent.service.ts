@@ -16,6 +16,7 @@ import type { LeadProfileDto } from './dto/lead-profile.dto';
 import type { WebLeadDto } from './dto/web-lead.dto';
 import { buildWelcomeCopy } from './welcome-email-copy';
 import { normalizeTarget, detectCountryInText } from '../../common/geo';
+import { isAnswerableChunk } from './knowledge-filter';
 import { buildMeetingTask, type MeetingEventDto } from './dto/meeting-event.dto';
 import type { KnowledgeAddDto } from './dto/knowledge-add.dto';
 import { parseCalendlyIcs } from './calendly-ics';
@@ -823,25 +824,27 @@ export class AgentService {
 
     return this.db.withContext(ctx, async (c) => {
       const vectorLiteral = `[${dto.embedding.join(',')}]`;
+      // Aday havuzu geniş tutulur: eleme sonrası elde limit kadar kalsın.
       const ara = async (filter: string, n: number) => {
         const { rows } = await c.query<KnowledgeChunk>(
           `SELECT id, content, metadata, similarity FROM match_documents($1::vector, $2, $3::jsonb)`,
           [vectorLiteral, n, filter],
         );
-        return rows;
+        return rows.filter(isAnswerableChunk);
       };
 
-      if (!country) return ara('{}', limit);
+      const havuz = limit * 3;
+      if (!country) return (await ara('{}', havuz)).slice(0, limit);
 
-      const dar = await ara(JSON.stringify({ country }), limit);
+      const dar = await ara(JSON.stringify({ country }), havuz);
       if (dar.length >= limit) {
-        this.logger.log(`Bilgi araması ${country} ile daraltıldı (${dar.length} sonuç).`);
-        return dar;
+        this.logger.log(`Bilgi araması ${country} ile daraltıldı (${dar.length} aday).`);
+        return dar.slice(0, limit);
       }
 
       // Eksiği filtresizden tamamla; aynı parça iki kez girmesin.
       const gorulen = new Set(dar.map((r) => r.id));
-      const genis = (await ara('{}', limit * 2)).filter((r) => !gorulen.has(r.id));
+      const genis = (await ara('{}', havuz)).filter((r) => !gorulen.has(r.id));
       const sonuc = [...dar, ...genis].slice(0, limit);
       this.logger.log(
         `Bilgi araması ${country}: ${dar.length} daraltılmış + ${sonuc.length - dar.length} genel.`,
