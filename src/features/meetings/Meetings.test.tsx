@@ -22,7 +22,10 @@ const renderPage = () =>
 describe('Meetings — gerçek POST /meetings', () => {
   it('başlık/tarih/saat girilip Schedule Appointment ile gerçek randevu oluşturur', async () => {
     const { container } = renderPage();
-    await screen.findByText(/Viewing: Marina Vista/);
+    // Baslik HEM takvim hucresinde HEM "Yaklasan" listesinde gecer; findByText
+    // "birden cok eleman" diye patliyordu. Varligini dogrulamak yeterli.
+    // Sure de artirildi: yuklu makinede ilk cizim ~2 sn suruyor.
+    await screen.findAllByText(/Viewing: Marina Vista/, {}, { timeout: 8000 });
 
     fireEvent.click(screen.getByRole('button', { name: /new appointment/i }));
 
@@ -38,15 +41,18 @@ describe('Meetings — gerçek POST /meetings', () => {
     fireEvent.click(screen.getByRole('button', { name: /schedule appointment/i }));
 
     expect(await screen.findByText('Investor Call: Aldar Towers')).toBeInTheDocument();
-  });
+  }, 20000);
 
   it('başlıksız gönderilemez', async () => {
     renderPage();
-    await screen.findByText(/Viewing: Marina Vista/);
+    // Baslik HEM takvim hucresinde HEM "Yaklasan" listesinde gecer; findByText
+    // "birden cok eleman" diye patliyordu. Varligini dogrulamak yeterli.
+    // Sure de artirildi: yuklu makinede ilk cizim ~2 sn suruyor.
+    await screen.findAllByText(/Viewing: Marina Vista/, {}, { timeout: 8000 });
 
     fireEvent.click(screen.getByRole('button', { name: /new appointment/i }));
     fireEvent.click(screen.getByRole('button', { name: /schedule appointment/i }));
 
     await waitFor(() => expect(screen.getByText('Meeting title is required.')).toBeInTheDocument());
-  });
+  }, 20000);
 });

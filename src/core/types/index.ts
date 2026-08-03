@@ -1402,6 +1402,22 @@ export interface PresentedDTO {
   dealId: string | null;
 }
 
+/** Ayarlar > Entegrasyonlar — tek uçtan beslenen sağlayıcı listesi. */
+export interface IntegrationDTO {
+  id: string;
+  label: string;
+  description: string;
+  scope: 'user' | 'tenant';
+  /** Dış onaylar tamamlandı mı (Meta App Review, Google doğrulaması...). */
+  available: boolean;
+  /** Hazır değilse nedeni — kullanıcı boşuna uğraşmasın. */
+  blockedReason: string | null;
+  connected: boolean;
+  accountLabel: string | null;
+  connectedAt: string | null;
+  lastError: string | null;
+}
+
 /** Ters görünüm: bu proje kimlere sunuldu (proje kartında). */
 export interface ProjectAudienceEntry {
   presentedId: string;

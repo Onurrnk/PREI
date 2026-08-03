@@ -219,6 +219,8 @@ export const en = {
         bayutDesc: 'Sync Dubai property inventory directly with Bayut.',
         whatsappDesc: 'Send automated messages and proposals via WhatsApp.',
         gcalDesc: 'Sync your PREI appointments with Google Calendar. Connects via the same Google account as Gmail — no separate connection needed.',
+        scopeUser: 'personal',
+        scopeTenant: 'company',
         gmailDesc: 'Send and track emails directly from the CRM. This connection also covers Google Calendar sync.',
         telegramDesc: 'Receive instant notifications and system alerts via Telegram.',
         configure: 'Configure',

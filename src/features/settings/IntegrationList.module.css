@@ -1,0 +1,75 @@
+.list { display: flex; flex-direction: column; gap: var(--sp-3); }
+
+.muted { font: var(--text-body); color: var(--text-muted); }
+
+/* minmax(0,1fr) bilinçli: uzun açıklama kartı taşırmasın (FINDING-002). */
+.card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-surface);
+}
+
+.info { display: flex; align-items: flex-start; gap: var(--sp-3); min-width: 0; }
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  background: var(--bg-inset);
+  border-radius: var(--radius-control);
+}
+.icon[data-connected='true'] { color: var(--data-positive); background: rgba(63, 163, 114, 0.12); }
+
+.text { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font: var(--text-title);
+  color: var(--text-primary);
+}
+
+.scope {
+  padding: 1px var(--sp-2);
+  font: var(--text-label);
+  color: var(--text-muted);
+  background: var(--bg-inset);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.desc { font: var(--text-body); color: var(--text-secondary); }
+
+.connected {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font: var(--text-label);
+  color: var(--data-positive);
+}
+
+.blocked {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font: var(--text-label);
+  color: var(--data-warning);
+}
+
+.connectedTag {
+  font: var(--text-label);
+  color: var(--data-positive);
+  white-space: nowrap;
+}

@@ -1996,6 +1996,27 @@ export const handlers = [
     });
   }),
 
+  // Entegrasyon listesi — gercek uc gibi: bagli olan Google, digerleri
+  // hazir degil ve NEDENI yazili.
+  http.get('/api/integrations', () => HttpResponse.json([
+    { id: 'google', label: 'Google (Gmail + Takvim)', description: 'Kendi Gmail kutunuzdan mail gonderin.',
+      scope: 'user', available: true, blockedReason: null, connected: true,
+      accountLabel: 'info@produality.com', connectedAt: '2026-08-01', lastError: null },
+    { id: 'meta_ads', label: 'Meta Reklamlar', description: 'Facebook/Instagram reklam verisi.',
+      scope: 'tenant', available: false, blockedReason: 'Meta App Review onayi bekleniyor.',
+      connected: false, accountLabel: null, connectedAt: null, lastError: null },
+    { id: 'instagram', label: 'Instagram (Is Hesabi)', description: 'Gelen DM leri PREI de yanitlayin.',
+      scope: 'tenant', available: false, blockedReason: 'Meta App Review ve Facebook Sayfasi baglantisi gerekiyor.',
+      connected: false, accountLabel: null, connectedAt: null, lastError: null },
+    { id: 'youtube', label: 'YouTube', description: 'Kanal videolarini ve izlenme verisini getirin.',
+      scope: 'tenant', available: false, blockedReason: 'Google dogrulamasi tamamlaninca acilacak.',
+      connected: false, accountLabel: null, connectedAt: null, lastError: null },
+    { id: 'linkedin', label: 'LinkedIn (Sirket Sayfasi)', description: 'Sirket sayfasi gonderileri.',
+      scope: 'tenant', available: false,
+      blockedReason: 'LinkedIn Community Management API erisimi partner basvurusu gerektiriyor; onay garanti degil.',
+      connected: false, accountLabel: null, connectedAt: null, lastError: null },
+  ])),
+
   http.get('/api/projects', () => {
     const docType = (t: VaultDocumentDTO['type']): 'PDF' | 'Image' | 'Spreadsheet' =>
       t === 'excel' ? 'Spreadsheet' : t === 'image' ? 'Image' : 'PDF';

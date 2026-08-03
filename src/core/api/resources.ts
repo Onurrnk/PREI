@@ -60,6 +60,7 @@ import type {
   MeResponse,
   ProjectDTO,
   ProjectAudienceDTO,
+  IntegrationDTO,
   ProposalDTO,
   RoleOptionDTO,
   UpdateTeamMemberInput,
@@ -301,6 +302,14 @@ export const projectsApi = {
     api.get<ProjectAudienceDTO>(`/api/projects/${id}/audience?lang=${lang === 'en' ? 'en' : 'tr'}`),
   /** Projeyi sil (soft delete) — test/yanlış giriş temizliği. */
   remove: (id: string) => api.delete<{ deleted: true }>(`/api/projects/${id}`),
+};
+
+export const integrationsApi = {
+  /** Tüm sağlayıcılar + bağlı olup olmadıkları (tek uç). */
+  list: (lang: string) =>
+    api.get<IntegrationDTO[]>(`/api/integrations?lang=${lang === 'en' ? 'en' : 'tr'}`),
+  disconnect: (provider: string) =>
+    api.delete<{ ok: true }>(`/api/integrations/${provider}`),
 };
 
 export const proposalsApi = {

@@ -23,6 +23,7 @@ import { FinancialsModule } from './modules/financials/financials.module';
 import { MarketingModule } from './modules/marketing/marketing.module';
 import { IntelModule } from './modules/intel/intel.module';
 import { IntakeModule } from './modules/intake/intake.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { UsersModule } from './modules/users/users.module';
@@ -71,6 +72,7 @@ import { MeModule } from './modules/me/me.module';
     MarketingModule,
     IntelModule,
     IntakeModule,
+    IntegrationsModule,
     AdminModule,
     DocumentsModule,
     UsersModule,

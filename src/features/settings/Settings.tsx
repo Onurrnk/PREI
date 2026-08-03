@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Card, CardBody } from '../../core/components/Card/Card';
 import { Button } from '../../core/components/Button/Button';
-import { User, GearSix as SettingsIcon, Palette, Plug, UsersThree, FloppyDisk, ChatCircle, Globe, Buildings, CheckCircle, Plus, EnvelopeSimple, CalendarBlank, PaperPlaneTilt, Camera, CircleNotch } from '@phosphor-icons/react';
+import { User, GearSix as SettingsIcon, Palette, Plug, UsersThree, FloppyDisk, Buildings, CheckCircle, Plus, EnvelopeSimple, CalendarBlank, PaperPlaneTilt, Camera, CircleNotch } from '@phosphor-icons/react';
 import { Modal } from '../../core/components/Modal/Modal';
 import { SelectMenu } from '../../core/components/Form/SelectMenu';
 import { useToast } from '../../core/components/Toast/ToastProvider';
@@ -14,6 +14,7 @@ import { useAuth } from '../../core/auth/AuthContext';
 import { useTheme } from '../../core/theme/ThemeContext';
 import { supabase } from '../../core/auth/supabaseClient';
 import { ApiError } from '../../core/api/client';
+import { IntegrationList } from './IntegrationList';
 import styles from './Settings.module.css';
 
 type Tab = 'profile' | 'preferences' | 'branding' | 'team' | 'integrations';
@@ -622,45 +623,6 @@ export const Settings: React.FC = () => {
                 <div className={styles.integrationCard}>
                   <div className={styles.integrationInfo}>
                     <div className={styles.integrationIcon}>
-                      <Globe size={24} color="var(--data-info)" />
-                    </div>
-                    <div>
-                      <div className={styles.integrationName}>PropertyFinder API</div>
-                      <div className={styles.integrationDesc}>{t('settings.integrations.propertyFinderDesc')}</div>
-                    </div>
-                  </div>
-                  <Button variant="outline" onClick={() => toast.info(t('settings.integrations.comingSoon'))}>{t('settings.integrations.configure')}</Button>
-                </div>
-
-                <div className={styles.integrationCard}>
-                  <div className={styles.integrationInfo}>
-                    <div className={styles.integrationIcon}>
-                      <Globe size={24} color="var(--data-positive)" />
-                    </div>
-                    <div>
-                      <div className={styles.integrationName}>Bayut API</div>
-                      <div className={styles.integrationDesc}>{t('settings.integrations.bayutDesc')}</div>
-                    </div>
-                  </div>
-                  <Button variant="outline" onClick={() => toast.info(t('settings.integrations.comingSoon'))}>{t('settings.integrations.configure')}</Button>
-                </div>
-
-                <div className={styles.integrationCard}>
-                  <div className={styles.integrationInfo}>
-                    <div className={styles.integrationIcon}>
-                      <ChatCircle size={24} color="#25D366" />
-                    </div>
-                    <div>
-                      <div className={styles.integrationName}>WhatsApp Business</div>
-                      <div className={styles.integrationDesc}>{t('settings.integrations.whatsappDesc')}</div>
-                    </div>
-                  </div>
-                  <Button variant="outline" onClick={() => toast.info(t('settings.integrations.comingSoon'))}>{t('settings.integrations.manage')}</Button>
-                </div>
-
-                <div className={styles.integrationCard}>
-                  <div className={styles.integrationInfo}>
-                    <div className={styles.integrationIcon}>
                       <CalendarBlank size={24} color="#4285F4" />
                     </div>
                     <div>
@@ -724,6 +686,10 @@ export const Settings: React.FC = () => {
                   </div>
                   <Button variant="outline" onClick={() => toast.info(t('settings.integrations.comingSoon'))}>{t('settings.integrations.connect')}</Button>
                 </div>
+
+                {/* Geri kalan sağlayıcılar backend kayıt defterinden gelir —
+                    durumlarıyla ve hazır değillerse gerekçeleriyle. */}
+                <IntegrationList />
               </div>
             </div>
           </div>

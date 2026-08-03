@@ -218,6 +218,8 @@ export const tr = {
         bayutDesc: "Dubai mülk envanterinizi doğrudan Bayut ile eşitleyin.",
         whatsappDesc: 'WhatsApp üzerinden otomatik mesaj ve teklif gönderin.',
         gcalDesc: 'PREI randevularınızı Google Takvim ile eşitleyin. Gmail ile aynı Google hesabından bağlanır — ayrı bağlantı gerekmez.',
+        scopeUser: 'kişisel',
+        scopeTenant: 'şirket',
         gmailDesc: "E-postaları doğrudan CRM'den gönderin/takip edin. Bu bağlantı Google Takvim eşitlemesini de kapsar.",
         telegramDesc: 'Telegram üzerinden anlık bildirim ve sistem uyarıları alın.',
         configure: 'Yapılandır',
