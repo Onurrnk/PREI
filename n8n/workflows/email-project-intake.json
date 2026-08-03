@@ -1,0 +1,273 @@
+{
+  "updatedAt": "2026-07-29T09:20:51.000Z",
+  "createdAt": "2026-07-20T00:19:28.316Z",
+  "id": "k0Hkxk5WmtRciS7X",
+  "name": "PREI E-posta Proje Girisi (info@)",
+  "description": "Faz 3: info@produality.com kutusuna gelen mail (IMAP trigger, anlik) OpenAI ile ayiklanir → gayrimenkul projesiyse PREI onay kuyruguna TASLAK dusulur (POST /api/intake/ingest/email, X-Agent-Key). Otomatik aktiflesme yok; Onur onaylar. IMAP credential Onur",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {},
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        112
+      ],
+      "id": "0f27a954-b2a9-4ad6-9c14-2eff2021ea86",
+      "name": "info@ Gelen Mail (Gmail)",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "MBabioGfSN28a1hB",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Konu: {{ $json.subject || $json.Subject || ($json.headers || {}).subject || '' }}\nGonderen: {{ $json.from || $json.From || ($json.headers || {}).from || '' }}\n\nMail metni:\n{{ $json.text || $json.textPlain || $json.textHtml || $json.snippet || '' }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Sen ProDuality gayrimenkul danismanligi icin gelen e-postalari ayiklayan bir asistansin. Gelen mail bir gelistirici/emlakci tarafindan sunulan bir GAYRIMENKUL PROJESI teklifi mi belirle.\n\nSADECE su alanlari kullan, baska alan UYDURMA:\n  is_project (boolean), title, city, district, marketCode, priceMin, priceMax,\n  currency, commissionPct, unitTypes, description, developerName\n\nKurallar:\n- Proje teklifi degilse (spam, bulten, fatura, genel soru, kisisel yazisma) is_project=false ve diger tum alanlar null olsun.\n- marketCode YALNIZ sunlardan biri: TR, AE, ES, GB, TH, DE. Belirsizse null.\n- unitTypes virgulle ayrilmis METIN olsun (or. \"1+1, 2+1, Villa\").\n- priceMin, priceMax, commissionPct SAYI olsun (binlik ayirici kullanma). Bilinmiyorsa null.\n- commissionPct 0-100 arasi.\n- currency ISO kodu olsun (AED, EUR, TRY, USD, GBP). Bilinmiyorsa null.\n- title projenin adi olsun, mailin konusu degil.\n- Emin olmadigin alani UYDURMA, null birak."
+        }
+      },
+      "id": "2ed0f30d-ccae-45c5-8cf6-aee75db71ee0",
+      "name": "Projeyi Ayikla (OpenAI)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        112
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "bb19f454-cf11-4833-ac9c-7cd5bdf9664d",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        240,
+        336
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "E05e0JlXT2ZPccre",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"required\": [\n    \"is_project\"\n  ],\n  \"additionalProperties\": false,\n  \"properties\": {\n    \"is_project\": {\n      \"type\": \"boolean\"\n    },\n    \"title\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"city\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"district\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"marketCode\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"priceMin\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ]\n    },\n    \"priceMax\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ]\n    },\n    \"currency\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"commissionPct\": {\n      \"type\": [\n        \"number\",\n        \"null\"\n      ]\n    },\n    \"unitTypes\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"description\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    },\n    \"developerName\": {\n      \"type\": [\n        \"string\",\n        \"null\"\n      ]\n    }\n  }\n}"
+      },
+      "id": "463a39f8-8566-4c96-8e2c-16109df57dd8",
+      "name": "Proje Alanlari (JSON)",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        368,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.output.is_project }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "leftValue": "={{ $json.output.title }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "fb17be07-faf6-490f-8ab9-8f259de7a2a5",
+      "name": "Proje mi?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        576,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.PREI_API_BASE }}/api/intake/ingest/email",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Agent-Key",
+              "value": "={{ $env.AGENT_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ title: $json.output.title, city: $json.output.city, district: $json.output.district, marketCode: $json.output.marketCode, priceMin: $json.output.priceMin, priceMax: $json.output.priceMax, currency: $json.output.currency, commissionPct: $json.output.commissionPct, unitTypes: $json.output.unitTypes, description: $json.output.description, developerName: $json.output.developerName, sourceEmail: (($(\"info@ Gelen Mail (Gmail)\").item.json.from||{}).text || $(\"info@ Gelen Mail (Gmail)\").item.json.from), sourceSubject: $(\"info@ Gelen Mail (Gmail)\").item.json.subject }) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "f0b3c477-0b1d-4551-91e0-a9436b312dbd",
+      "name": "PREI: E-posta Taslagi Gonder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        800,
+        96
+      ]
+    }
+  ],
+  "connections": {
+    "Projeyi Ayikla (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "Proje mi?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Projeyi Ayikla (OpenAI)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Proje Alanlari (JSON)": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Projeyi Ayikla (OpenAI)",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Proje mi?": {
+      "main": [
+        [
+          {
+            "node": "PREI: E-posta Taslagi Gonder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "info@ Gelen Mail (Gmail)": {
+      "main": [
+        [
+          {
+            "node": "Projeyi Ayikla (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": true,
+    "binaryMode": "separate"
+  },
+  "meta": {
+    "aiBuilderAssisted": true,
+    "builderVariant": "mcp",
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "39c18252-20c2-4b0f-9a85-3229e2a4ddd3",
+  "activeVersionId": "39c18252-20c2-4b0f-9a85-3229e2a4ddd3",
+  "versionCounter": 4,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-07-20T00:19:28.320Z",
+      "createdAt": "2026-07-20T00:19:28.320Z",
+      "role": "workflow:owner",
+      "workflowId": "k0Hkxk5WmtRciS7X",
+      "projectId": "s2NWWh1qzZJBiJ85",
+      "project": {
+        "updatedAt": "2026-07-13T18:15:38.967Z",
+        "createdAt": "2026-07-13T18:14:46.893Z",
+        "id": "s2NWWh1qzZJBiJ85",
+        "name": "Onur Karatas <onurrkaratas@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "4d85aa5d-2707-47ad-a311-99fb6a74d83d"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}
