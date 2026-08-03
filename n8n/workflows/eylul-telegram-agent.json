@@ -413,7 +413,8 @@
       "position": [
         352,
         144
-      ]
+      ],
+      "disabled": true
     },
     {
       "parameters": {
@@ -434,7 +435,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ embedding: $json.data[0].embedding, matchCount: 8, text: $(\"Güncellemeyi Normalle\").item.json.text.slice(0, 2000) }) }}",
+        "jsonBody": "={{ JSON.stringify({ text: $(\"Güncellemeyi Normalle\").item.json.text.slice(0, 2000), matchCount: 8 }) }}",
         "options": {}
       },
       "id": "f5b5aaf9-7827-4060-bfa9-a752899c8637",
@@ -1062,17 +1063,6 @@
         ]
       ]
     },
-    "OpenAI: Embedding": {
-      "main": [
-        [
-          {
-            "node": "PREI: Bilgi Bankası Ara",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "PREI: Bilgi Bankası Ara": {
       "main": [
         [
@@ -1238,7 +1228,7 @@
         ],
         [
           {
-            "node": "OpenAI: Embedding",
+            "node": "PREI: Bilgi Bankası Ara",
             "type": "main",
             "index": 0
           }

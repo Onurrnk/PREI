@@ -4,6 +4,8 @@
 // tekrarında sessizce no-op. Reklam atıfı varsa lead_attributions'a yazar (K-5).
 // =====================================================================
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { AppConfig } from '../../config/configuration';
 import type { PoolClient } from 'pg';
 import { DatabaseService } from '../../database/database.service';
 import { GmailService, GmailReauthRequiredException } from '../gmail/gmail.service';
@@ -17,6 +19,7 @@ import type { WebLeadDto } from './dto/web-lead.dto';
 import { buildWelcomeCopy } from './welcome-email-copy';
 import { normalizeTarget, detectCountryInText } from '../../common/geo';
 import { isAnswerableChunk } from './knowledge-filter';
+import { buildTopicQuery } from './search-query';
 import { buildMeetingTask, type MeetingEventDto } from './dto/meeting-event.dto';
 import type { KnowledgeAddDto } from './dto/knowledge-add.dto';
 import { parseCalendlyIcs } from './calendly-ics';
@@ -110,7 +113,36 @@ export class AgentService {
   constructor(
     private readonly db: DatabaseService,
     private readonly gmail: GmailService,
+    private readonly config: ConfigService<AppConfig, true>,
   ) {}
+
+  /**
+   * Metni vektore cevirir (bilgi bankasi aramasi icin).
+   * KORPUSLA AYNI MODEL sart: text-embedding-3-small, 1536 boyut.
+   * Baska model secilirse benzerlikler anlamsizlasir.
+   */
+  private async embed(text: string): Promise<number[] | null> {
+    const { apiKey, embedModel } = this.config.get('openai', { infer: true });
+    if (!apiKey) return null;
+    try {
+      const res = await fetch('https://api.openai.com/v1/embeddings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({ model: embedModel, input: text }),
+      });
+      const json = (await res.json()) as {
+        data?: Array<{ embedding: number[] }>; error?: { message?: string };
+      };
+      if (!res.ok || !json.data?.[0]) {
+        this.logger.warn(`Gomme basarisiz: ${json.error?.message ?? res.status}`);
+        return null;
+      }
+      return json.data[0].embedding;
+    } catch (e) {
+      this.logger.warn(`Gomme ag hatasi: ${(e as Error).message}`);
+      return null;
+    }
+  }
 
   /**
    * Web sitesi formu (iletişim / ROI Calculator) → contact+lead+communication.
@@ -822,8 +854,25 @@ export class AgentService {
     const limit = dto.matchCount ?? 5;
     const country = detectCountryInText(dto.text);
 
+    // Gömme YOKSA metinden kendimiz üretiriz — ve ham cümleyi değil, konu
+    // sorgusunu gömeriz. Ölçüldü: ham sohbet cümlesi 0,48-0,50 skorla
+    // e-kitap altbilgisi getiriyordu; konu sorgusu 0,57-0,65 ile Bebek ve
+    // Boğaz dosyalarını getirdi. Bkz. search-query.ts.
+    let embedding = dto.embedding;
+    if (!embedding?.length) {
+      const sorgu = buildTopicQuery({ message: dto.text ?? '' });
+      if (!sorgu) return [];
+      const v = await this.embed(sorgu);
+      if (!v) {
+        this.logger.warn('Bilgi araması: gömme üretilemedi.');
+        return [];
+      }
+      this.logger.log(`Bilgi araması sorgusu: "${sorgu.slice(0, 120)}"`);
+      embedding = v;
+    }
+
     return this.db.withContext(ctx, async (c) => {
-      const vectorLiteral = `[${dto.embedding.join(',')}]`;
+      const vectorLiteral = `[${embedding.join(',')}]`;
       // Aday havuzu geniş tutulur: eleme sonrası elde limit kadar kalsın.
       const ara = async (filter: string, n: number) => {
         const { rows } = await c.query<KnowledgeChunk>(

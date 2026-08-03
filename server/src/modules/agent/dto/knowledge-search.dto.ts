@@ -8,8 +8,12 @@
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 export class KnowledgeSearchDto {
-  @IsArray() @ArrayMinSize(1536) @ArrayMaxSize(1536) @IsNumber({}, { each: true })
-  embedding!: number[];
+  /**
+   * Hazir gomme (n8n eski akisi). Verilmezse backend `text` alanindan
+   * KONU SORGUSU kurup kendisi gomer — bkz. search-query.ts.
+   */
+  @IsOptional() @IsArray() @ArrayMinSize(1536) @ArrayMaxSize(1536) @IsNumber({}, { each: true })
+  embedding?: number[];
 
   @IsOptional() @IsInt() @Min(1) @Max(20)
   matchCount?: number;

@@ -42,7 +42,7 @@ function makeClient(opts: { sessionContactId?: string }) {
 
 function makeService(client: unknown) {
   const db = { withContext: async (_c: unknown, fn: (cl: unknown) => unknown) => fn(client) };
-  return new AgentService(db as never, { } as never);
+  return new AgentService(db as never, { } as never, { get: () => ({}) } as never);
 }
 
 const dto = {
