@@ -20,6 +20,11 @@ import { normalizeAmenities, amenityLabels } from './amenities';
 import {
   buildMatchEmailHtml, buildMatchEmailText, type MatchProject,
 } from './match-email';
+import {
+  parseSender, firmName, detectLang, buildInviteCopy,
+} from './developer-invite';
+import { GmailService } from '../gmail/gmail.service';
+import { DatabaseService } from '../../database/database.service';
 
 const MARKET_NAME: Record<string, string> = {
   TR: 'Türkiye', AE: 'Dubai (BAE)', ES: 'İspanya', GB: 'İngiltere', TH: 'Tayland', DE: 'Almanya',
@@ -181,6 +186,8 @@ export class IntakeService {
     private readonly repo: IntakeRepository,
     private readonly storage: StorageService,
     private readonly config: ConfigService<AppConfig, true>,
+    private readonly gmail: GmailService,
+    private readonly db: DatabaseService,
   ) {}
 
   private inviteUrl(token: string): string {
@@ -433,6 +440,17 @@ export class IntakeService {
     });
 
     this.logger.log(`E-posta taslağı gönderimi: ${submissionId}`);
+
+    // Firmayı kaydet + davet linkini gönder. BEKLEMEDEN: n8n'in HTTP çağrısı
+    // mail gönderimi yüzünden yavaşlamasın; hata olursa taslak yine de durur.
+    void this.autoInviteDeveloper(ctx, {
+      submissionId,
+      sourceEmail: dto.sourceEmail ?? null,
+      developerName: dto.developerName ?? null,
+      title: dto.title.trim(),
+      langHints: [dto.sourceSubject, dto.description, dto.title],
+    }).catch((e) => this.logger.warn(`Geliştirici daveti başarısız: ${(e as Error).message}`));
+
     this.notifyAdminNewSubmission({
       title: dto.title.trim(),
       developerName: dto.developerName?.trim() || null,
@@ -440,6 +458,103 @@ export class IntakeService {
       isDuplicate: !!duplicate,
     });
     return { ok: true as const, submissionId };
+  }
+
+  /**
+   * E-posta ile gelen proje teklifinde geliştiriciyi sisteme alır ve
+   * self-servis form davetini gönderir — Onur hiçbir şey yapmadan.
+   *
+   * Zincir: gönderen ayrıştır → firma (yetkili firma) bul/aç → yetkili kişi
+   * ekle → geçerli davet varsa YENİDEN KULLAN, yoksa üret → markalı mail →
+   * gönderiyi firmaya bağla ve kuyruk notuna işle.
+   *
+   * Sessizce atlanan durumlar (hata değil, tasarım):
+   *   · gönderen adresi yoksa → kime göndereceğimizi bilmiyoruz
+   *   · firma adı çıkarılamıyorsa → gmail.com gibi serbest adresten firma
+   *     uydurmak yanlış kayıt üretir (bkz. firmName)
+   *   · Gmail bağlı kullanıcı yoksa → gönderecek kimlik yok
+   */
+  private async autoInviteDeveloper(
+    ctx: RequestContext,
+    input: {
+      submissionId: string; sourceEmail: string | null; developerName: string | null;
+      title: string; langHints: Array<string | null | undefined>;
+    },
+  ): Promise<'sent' | 'skipped'> {
+    const sender = parseSender(input.sourceEmail);
+    if (!sender.email) {
+      this.logger.log('Davet atlandı: gönderen adresi yok.');
+      return 'skipped';
+    }
+    const firm = firmName(input.developerName, sender);
+    if (!firm) {
+      this.logger.log(`Davet atlandı: firma adı çıkarılamadı (${sender.email}).`);
+      return 'skipped';
+    }
+
+    const senderUserId = await this.firstGmailUser(ctx);
+    if (!senderUserId) {
+      this.logger.warn('Davet atlandı: Gmail bağlı kullanıcı yok.');
+      return 'skipped';
+    }
+
+    const dev = await this.repo.findOrCreateDeveloper(ctx, { name: firm, email: sender.email });
+    await this.repo.ensureOrgContact(ctx, dev.id, {
+      fullName: sender.name ?? sender.email, email: sender.email,
+    });
+
+    // Aynı firma ikinci projeyi gönderdiğinde ikinci link üretmeyiz —
+    // geliştirici tek adresi kullanmaya devam etsin.
+    let invite = await this.repo.activeInviteForDeveloper(ctx, dev.id);
+    if (!invite) {
+      const row = await this.repo.createInvite(ctx, {
+        developerId: dev.id,
+        label: `${firm} — e-posta teklifi`,
+        token: randomBytes(24).toString('base64url'),
+        expiresAt: new Date(Date.now() + 90 * 86_400_000).toISOString(),
+        maxUses: null,
+      });
+      invite = { id: row.id, token: row.token };
+    }
+
+    const url = this.inviteUrl(invite.token);
+    const lang = detectLang(...input.langHints);
+    const copy = buildInviteCopy(lang, {
+      contactName: sender.name, firm, projectTitle: input.title, url,
+    });
+
+    await this.gmail.sendEmail(senderUserId, {
+      to: sender.email,
+      subject: copy.subject,
+      body: copy.paragraphs.join('\n\n'),
+      bodyAfterCta: copy.paragraphsAfterCta.join('\n\n'),
+      recipientName: sender.name ?? undefined,
+      greeting: copy.greeting,
+      ctaLabel: copy.ctaLabel,
+      ctaUrl: copy.ctaUrl,
+    });
+
+    await this.repo.attachInviteToSubmission(ctx, input.submissionId, {
+      developerId: dev.id,
+      inviteId: invite.id,
+      note: `🔗 Davet linki ${sender.email} adresine gönderildi (${firm}${dev.created ? ', firma yeni açıldı' : ''}).`,
+      payload: { inviteSentTo: sender.email, inviteUrl: url, developerFirm: firm, inviteLang: lang },
+    });
+
+    this.logger.log(`Geliştirici daveti gönderildi: ${sender.email} · ${firm}`);
+    return 'sent';
+  }
+
+  /** Gönderen kimlik: Gmail bağlamış ilk aktif kullanıcı (pratikte info@). */
+  private async firstGmailUser(ctx: RequestContext): Promise<string | null> {
+    const rows = await this.db.raw<{ id: string }>(
+      `SELECT id FROM users
+        WHERE tenant_id = $1 AND metadata ? 'googleOAuth'
+          AND is_active = true AND deleted_at IS NULL
+        ORDER BY created_at ASC LIMIT 1`,
+      [ctx.tenantId],
+    );
+    return rows[0]?.id ?? null;
   }
 
   // ---- Onay kuyruğu ----

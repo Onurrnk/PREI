@@ -12,8 +12,11 @@ import { AgentKeyGuard } from '../../auth/agent-key.guard';
 import { StorageService } from '../documents/storage.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { RbacGuard } from '../../common/rbac.guard';
+import { GmailModule } from '../gmail/gmail.module';
 
 @Module({
+  // Geliştirici davet maili GmailService üzerinden gider (markalı şablon).
+  imports: [GmailModule],
   controllers: [IntakeController, PublicIntakeController, AmenitiesController, PublicUnsubscribeController, IntakeNotifyController, IntakeIngestController],
   providers: [IntakeService, IntakeRepository, StorageService, SubmissionTokenGuard, AgentKeyGuard, JwtAuthGuard, RbacGuard],
 })

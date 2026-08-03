@@ -75,6 +75,109 @@ export class IntakeRepository {
     });
   }
 
+  /**
+   * Geliştirici firmasını bulur, yoksa açar (yetkili firma = org_type
+   * 'developer'). Ad üzerinden eşleşir: aynı firma ikinci bir mail
+   * gönderdiğinde yeni kayıt açılmasın.
+   */
+  async findOrCreateDeveloper(
+    ctx: RequestContext, input: { name: string; email: string | null },
+  ): Promise<{ id: string; created: boolean }> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows: found } = await c.query<{ id: string }>(
+        `SELECT id FROM organizations
+          WHERE tenant_id = $1 AND org_type = 'developer'
+            AND lower(name) = lower($2) AND deleted_at IS NULL
+          LIMIT 1`,
+        [ctx.tenantId, input.name],
+      );
+      if (found.length > 0) return { id: found[0].id, created: false };
+
+      const { rows } = await c.query<{ id: string }>(
+        `INSERT INTO organizations (tenant_id, name, org_type, email, metadata, created_by, updated_by)
+         VALUES ($1,$2,'developer',$3,$4,$5,$5) RETURNING id`,
+        [ctx.tenantId, input.name, input.email,
+         JSON.stringify({ source: 'email_intake', auto_created: true }), ctx.userId],
+      );
+      await c.query(
+        `INSERT INTO audit_log (tenant_id, actor_id, action, entity_type, entity_id, diff, correlation_id)
+         VALUES ($1,$2,'developer.created','organization',$3,$4,$5)`,
+        [ctx.tenantId, ctx.userId, rows[0].id,
+         JSON.stringify({ name: input.name, via: 'email_intake' }), ctx.correlationId],
+      );
+      return { id: rows[0].id, created: true };
+    });
+  }
+
+  /** Firmanın yetkili kişisi — aynı e-posta varsa yeniden eklenmez. */
+  async ensureOrgContact(
+    ctx: RequestContext,
+    organizationId: string,
+    input: { fullName: string; email: string },
+  ): Promise<boolean> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rowCount } = await c.query(
+        `SELECT 1 FROM organization_contacts
+          WHERE tenant_id = $1 AND organization_id = $2
+            AND lower(email) = lower($3) AND deleted_at IS NULL LIMIT 1`,
+        [ctx.tenantId, organizationId, input.email],
+      );
+      if (rowCount) return false;
+
+      // İlk kişi otomatik birincil olur; sonrakiler değil.
+      const { rows: cnt } = await c.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM organization_contacts
+          WHERE tenant_id = $1 AND organization_id = $2 AND deleted_at IS NULL`,
+        [ctx.tenantId, organizationId],
+      );
+      await c.query(
+        `INSERT INTO organization_contacts
+           (tenant_id, organization_id, full_name, email, is_primary, notes, created_by, updated_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$7)`,
+        [ctx.tenantId, organizationId, input.fullName, input.email,
+         cnt[0].n === '0', 'E-posta ile gelen proje teklifinden otomatik eklendi.', ctx.userId],
+      );
+      return true;
+    });
+  }
+
+  /** Firmaya ait geçerli (iptal edilmemiş, süresi dolmamış) davet. */
+  async activeInviteForDeveloper(
+    ctx: RequestContext, developerId: string,
+  ): Promise<{ id: string; token: string } | null> {
+    return this.db.withContext(ctx, async (c) => {
+      const { rows } = await c.query<{ id: string; token: string }>(
+        `SELECT id, token FROM project_invites
+          WHERE tenant_id = $1 AND developer_id = $2 AND revoked_at IS NULL
+            AND (expires_at IS NULL OR expires_at > now())
+          ORDER BY created_at DESC LIMIT 1`,
+        [ctx.tenantId, developerId],
+      );
+      return rows[0] ?? null;
+    });
+  }
+
+  /** Gönderiyi firmaya bağla + davet bilgisini nota ve payload'a işle. */
+  async attachInviteToSubmission(
+    ctx: RequestContext,
+    submissionId: string,
+    input: { developerId: string; inviteId: string; note: string; payload: Record<string, unknown> },
+  ): Promise<void> {
+    await this.db.withContext(ctx, async (c) => {
+      await c.query(
+        `UPDATE project_submissions
+            SET developer_id = $2,
+                invite_id = $3,
+                review_note = COALESCE(review_note || E'\n', '') || $4,
+                payload = payload || $5::jsonb,
+                updated_at = now()
+          WHERE tenant_id = $1 AND id = $6`,
+        [ctx.tenantId, input.developerId, input.inviteId, input.note,
+         JSON.stringify(input.payload), submissionId],
+      );
+    });
+  }
+
   async getInvite(ctx: RequestContext, id: string): Promise<InviteRow | null> {
     return this.db.withContext(ctx, async (c) => {
       const { rows } = await c.query<InviteRow>(
