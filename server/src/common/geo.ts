@@ -199,3 +199,33 @@ export function countryCityConflict(
   return `"${c}" ${expected?.tr ?? cityCountry} şehri, kayıtlı ülke ${
     BY_CODE.get(countryCode)?.tr ?? countryCode}`;
 }
+
+/**
+ * Serbest metinde geçen ülke/şehir adından ülke kodunu çıkarır.
+ *
+ * NEDEN VAR: Eylül'ün bilgi bankası araması ülkeden bağımsız yapılıyordu.
+ * "İstanbul'da Boğaz manzarası" sorusuna İspanya ve BAE yatırımcı profili
+ * tabloları dönüyordu (ölçüldü: skorlar 0,46-0,47, hepsi zayıf). Ülke
+ * bilinince o gürültü tamamen elenebiliyor.
+ *
+ * Tek eşleşme kuralı: metinde BİRDEN ÇOK ülke geçiyorsa null döner —
+ * "Türkiye mi Dubai mi" diye soran bir mesajda tek ülkeye daralmak
+ * yanlış olur, filtresiz arama daha doğrudur.
+ */
+export function detectCountryInText(text: string | null | undefined): string | null {
+  const folded = foldTr(text ?? '').replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!folded) return null;
+
+  const words = folded.split(' ');
+  const found = new Set<string>();
+  // 1-3 kelimelik pencereler: "abu dabi", "dubai marina", "istanbul" hepsi yakalanır.
+  for (let i = 0; i < words.length; i++) {
+    for (let n = 3; n >= 1; n--) {
+      if (i + n > words.length) continue;
+      const gram = words.slice(i, i + n).join(' ');
+      const code = NAME_ALIASES[gram] ?? CITY_TO_COUNTRY[gram];
+      if (code) { found.add(code); break; }
+    }
+  }
+  return found.size === 1 ? [...found][0] : null;
+}

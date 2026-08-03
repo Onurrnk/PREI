@@ -15,7 +15,7 @@ import type { OutboundMessageDto } from './dto/outbound-message.dto';
 import type { LeadProfileDto } from './dto/lead-profile.dto';
 import type { WebLeadDto } from './dto/web-lead.dto';
 import { buildWelcomeCopy } from './welcome-email-copy';
-import { normalizeTarget } from '../../common/geo';
+import { normalizeTarget, detectCountryInText } from '../../common/geo';
 import { buildMeetingTask, type MeetingEventDto } from './dto/meeting-event.dto';
 import type { KnowledgeAddDto } from './dto/knowledge-add.dto';
 import { parseCalendlyIcs } from './calendly-ics';
@@ -803,14 +803,50 @@ export class AgentService {
    * documents) benzerlik araması. Embedding n8n'de üretilir (OpenAI),
    * arama burada — service_role n8n'e hiç verilmez (OV-4).
    */
+  /**
+   * Bilgi bankası araması — ÜLKEYE DARALTILMIŞ + filtresizle tamamlanan.
+   *
+   * SORUN (ölçüldü 2026-08-04): arama ülkeden bağımsızdı. "İstanbul'da Boğaz
+   * manzaralı, 10M USD" sorusunda ilk 10 sonucun içinde İspanya ve BAE
+   * yatırımcı-profili tabloları vardı; oysa bilgi bankasında Bebek, Boğaziçi
+   * Kanunu ve merkez prestij ilçeleri dosyaları duruyordu. Skorların hepsi
+   * zayıftı (0,46-0,47), yani sıralama gürültüye açıktı.
+   *
+   * ÇÖZÜM: metinden ülke çıkarılabiliyorsa önce o ülkeye (ve ülkesiz genel
+   * içeriğe) daraltılmış arama yapılır. Daraltılmış sonuç azsa kalan yerler
+   * filtresiz aramayla TAMAMLANIR — daraltma asla "hiç bilgi yok" durumuna
+   * düşürmemeli, dar ama boş bir cevap geniş ve alakasızdan da kötüdür.
+   */
   async searchKnowledge(ctx: RequestContext, dto: KnowledgeSearchDto): Promise<KnowledgeChunk[]> {
+    const limit = dto.matchCount ?? 5;
+    const country = detectCountryInText(dto.text);
+
     return this.db.withContext(ctx, async (c) => {
       const vectorLiteral = `[${dto.embedding.join(',')}]`;
-      const { rows } = await c.query<{ id: string; content: string; metadata: Record<string, unknown>; similarity: number }>(
-        `SELECT id, content, metadata, similarity FROM match_documents($1::vector, $2, '{}'::jsonb)`,
-        [vectorLiteral, dto.matchCount ?? 5],
+      const ara = async (filter: string, n: number) => {
+        const { rows } = await c.query<KnowledgeChunk>(
+          `SELECT id, content, metadata, similarity FROM match_documents($1::vector, $2, $3::jsonb)`,
+          [vectorLiteral, n, filter],
+        );
+        return rows;
+      };
+
+      if (!country) return ara('{}', limit);
+
+      const dar = await ara(JSON.stringify({ country }), limit);
+      if (dar.length >= limit) {
+        this.logger.log(`Bilgi araması ${country} ile daraltıldı (${dar.length} sonuç).`);
+        return dar;
+      }
+
+      // Eksiği filtresizden tamamla; aynı parça iki kez girmesin.
+      const gorulen = new Set(dar.map((r) => r.id));
+      const genis = (await ara('{}', limit * 2)).filter((r) => !gorulen.has(r.id));
+      const sonuc = [...dar, ...genis].slice(0, limit);
+      this.logger.log(
+        `Bilgi araması ${country}: ${dar.length} daraltılmış + ${sonuc.length - dar.length} genel.`,
       );
-      return rows;
+      return sonuc;
     });
   }
 

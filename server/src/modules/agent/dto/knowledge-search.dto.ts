@@ -5,7 +5,7 @@
 // service_role burada gerekmiyor: backend kendi DB bağlantısıyla
 // match_documents'ı çağırır, n8n yalnız sonucu görür (OV-4).
 // =====================================================================
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsInt, IsNumber, IsOptional, Max, Min } from 'class-validator';
+import { ArrayMaxSize, ArrayMinSize, IsArray, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 export class KnowledgeSearchDto {
   @IsArray() @ArrayMinSize(1536) @ArrayMaxSize(1536) @IsNumber({}, { each: true })
@@ -13,4 +13,14 @@ export class KnowledgeSearchDto {
 
   @IsOptional() @IsInt() @Min(1) @Max(20)
   matchCount?: number;
+
+  /**
+   * Kullanicinin ham mesaji (istege bagli). Verilirse backend metinden
+   * ULKEYI cikarip aramayi o ulkeye daraltir. Olculdu: "Istanbul'da Bogaz
+   * manzarasi" sorusuna Ispanya ve BAE profil tablolari donuyordu.
+   * Embedding zaten n8n'de bu metinden uretiliyor; metni de gondermek
+   * ekstra maliyet degil.
+   */
+  @IsOptional() @IsString() @MaxLength(4000)
+  text?: string;
 }

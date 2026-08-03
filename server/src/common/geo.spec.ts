@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   foldTr, COUNTRIES, countryByCode, normalizeCountry, normalizeTarget,
-  countryCityConflict,
+  countryCityConflict, detectCountryInText,
 } from './geo';
 
 describe('foldTr', () => {
@@ -152,5 +152,41 @@ describe('countryCityConflict', () => {
   it('şehir boşsa uyarı yok', () => {
     expect(countryCityConflict('TR', null)).toBeNull();
     expect(countryCityConflict('TR', '   ')).toBeNull();
+  });
+});
+
+describe('detectCountryInText', () => {
+  it('şehirden ülkeyi çıkarır', () => {
+    expect(detectCountryInText('İstanbul\'da Boğaz manzaralı bir yer arıyoruz')).toBe('TR');
+    expect(detectCountryInText('Dubai Marina bölgesinde daire')).toBe('AE');
+  });
+
+  it('ülke adından çıkarır', () => {
+    expect(detectCountryInText('İspanya\'da yatırım düşünüyoruz')).toBe('ES');
+  });
+
+  it('Türkçe karakteri katlar (İ sorunu)', () => {
+    expect(detectCountryInText('ISTANBUL merkezde')).toBe('TR');
+    expect(detectCountryInText('istanbul merkezde')).toBe('TR');
+  });
+
+  it('çok kelimeli şehri yakalar', () => {
+    expect(detectCountryInText('abu dabi tarafına bakıyoruz')).toBe('AE');
+  });
+
+  // Birden çok ülke geçiyorsa daraltmak YANLIŞ olur — karşılaştırma sorusudur.
+  it('birden çok ülke geçiyorsa null döner', () => {
+    expect(detectCountryInText('Türkiye mi Dubai mi daha iyi?')).toBeNull();
+  });
+
+  it('ülke geçmiyorsa null', () => {
+    expect(detectCountryInText('kira getirisi nedir')).toBeNull();
+    expect(detectCountryInText('')).toBeNull();
+    expect(detectCountryInText(null)).toBeNull();
+  });
+
+  // İlçe adı da şehir haritasında: Bebek/Beşiktaş gibi.
+  it('ilçe adından da çıkarır', () => {
+    expect(detectCountryInText('Bebek veya Beşiktaş olabilir')).toBe('TR');
   });
 });
