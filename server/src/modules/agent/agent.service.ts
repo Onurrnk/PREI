@@ -510,6 +510,42 @@ export class AgentService {
    * gerçek telefon gelirse onunla DEĞİŞTİRİLİR. Kriterler leads.metadata
    * .criteria'ya merge edilir (yeni anahtar ekler, eskiyi korur).
    */
+  /**
+   * Sohbette çıkan mükerrer şüphesini GÖRÜNÜR kılar.
+   *
+   * Eskiden yalnız metadata'ya yazılıyordu; kimse bakmadığı için pratikte
+   * hiçbir yerde görünmüyordu. Elle kayıt yolunda zaten müşteri kartında
+   * beliren "🔁 Mükerrer kayıt" notu var — sohbet yolu da aynı nota düşer,
+   * böylece iki kanal aynı dili konuşur.
+   *
+   * Otomatik BİRLEŞTİRME yapılmaz: iki dosyanın aynı kişi olduğu kararı
+   * insanın. Burada yalnız işaret bırakılır.
+   */
+  private async flagChatDuplicate(
+    c: PoolClient, ctx: RequestContext,
+    contactId: string, otherId: string, matchedBy: 'e-posta' | 'telefon',
+  ): Promise<void> {
+    await c.query(
+      `UPDATE contacts SET metadata = coalesce(metadata,'{}'::jsonb)
+         || jsonb_build_object('duplicate_suspect_of', $2::text, 'duplicate_reason', $3::text)
+       WHERE id = $1`,
+      [contactId, otherId, matchedBy],
+    );
+    const body = `🔁 Mükerrer kayıt şüphesi (sohbet): Bu dosyada verilen ${matchedBy} `
+      + `bilgisi başka bir kişide de kayıtlı. İki dosya aynı kişiye ait olabilir — `
+      + `kontrol edip gerekiyorsa birleştirin. Otomatik birleştirme yapılmadı.`;
+    await c.query(
+      `INSERT INTO meeting_notes (tenant_id, contact_id, source_type, raw_content, metadata, created_by)
+       VALUES ($1,$2,'text',$3,$4::jsonb,$5)`,
+      [ctx.tenantId, contactId, body,
+       JSON.stringify({ kind: 'duplicate_inquiry', tag: 'General', subject: 'Mükerrer kayıt', source: 'sohbet' }),
+       ctx.userId],
+    );
+    this.logger.warn(
+      `Mükerrer şüphesi (${matchedBy}): contact ${contactId} ile ${otherId} aynı bilgiyi paylaşıyor`,
+    );
+  }
+
   async updateLeadProfile(
     ctx: RequestContext, dto: LeadProfileDto,
   ): Promise<{ lead_id: string; updated: string[]; welcome_email?: WebLeadResult['welcome_email'] }> {
@@ -557,15 +593,7 @@ export class AgentService {
         await c.query(`UPDATE contacts SET email = $2, updated_by = $3 WHERE id = $1`, [contactId, email, ctx.userId]);
         updated.push('email');
         if (dupe.length > 0) {
-          await c.query(
-            `UPDATE contacts SET metadata = coalesce(metadata,'{}'::jsonb)
-               || jsonb_build_object('duplicate_suspect_of', $2::text, 'duplicate_reason', 'email')
-             WHERE id = $1`,
-            [contactId, dupe[0].id],
-          );
-          this.logger.warn(
-            `Mükerrer şüphesi (e-posta): contact ${contactId} ile ${dupe[0].id} aynı e-postayı paylaşıyor`,
-          );
+          await this.flagChatDuplicate(c, ctx, contactId, dupe[0].id, 'e-posta');
         }
       }
       if (dto.phone && phoneReplaceable && dto.phone !== cur.phone) {
@@ -575,9 +603,22 @@ export class AgentService {
           await c.query(`RELEASE SAVEPOINT phone_upd`);
           updated.push('phone');
         } catch {
-          // uq_contacts_phone çakışması: aynı numaralı başka contact var —
-          // sessizce atla (merge kararı insana ait, otomatik birleştirme yok).
+          // uq_contacts_phone çakışması: aynı numaralı BAŞKA bir kişi var.
+          // Otomatik birleştirme yapılmaz (müşteri verisi, karar insanın) —
+          // ama eskiden sessizce atlanıyordu ve hiçbir yerde iz kalmıyordu.
+          // Artık işaretleniyor: aksi hâlde sohbette yanlış numara verildiği
+          // fark edilmiyor.
           await c.query(`ROLLBACK TO SAVEPOINT phone_upd`);
+          const { rows: other } = await c.query<{ id: string }>(
+            `SELECT id FROM contacts
+               WHERE tenant_id = $1 AND normalized_phone = regexp_replace($2, '[^0-9]', '', 'g')
+                 AND id <> $3 AND deleted_at IS NULL AND merged_into_id IS NULL
+               LIMIT 1`,
+            [ctx.tenantId, dto.phone, contactId],
+          );
+          if (other.length > 0) {
+            await this.flagChatDuplicate(c, ctx, contactId, other[0].id, 'telefon');
+          }
         }
       }
 
